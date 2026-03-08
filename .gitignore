@@ -1,0 +1,10 @@
+/docs
+/backend
+/frontend/node_modules
+/.env
+/frontend/.env
+/backend/.env
+/backend/.env.local
+/backend/.env.development
+/frontend/.env.local
+/frontend/.env.development
