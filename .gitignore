@@ -13,5 +13,7 @@
 /frontend/.env.local
 /frontend/.env.development
 /frontend/.env.example
+/frontend/.next/
 
-asd
+/prompts
+/skills
