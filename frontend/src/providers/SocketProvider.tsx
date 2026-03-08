@@ -1,0 +1,201 @@
+"use client";
+
+import { useEffect, useRef, createContext, useContext } from "react";
+import type { Socket } from "socket.io-client";
+import { getChatSocket, disconnectSockets } from "@/lib/socket";
+import { useAuthStore } from "@/stores/authStore";
+import { useSocketStore } from "@/stores/socketStore";
+import { useChatStore } from "@/stores/chatStore";
+import { usePresenceStore } from "@/stores/presenceStore";
+import { useTypingStore } from "@/stores/typingStore";
+import type {
+  MessageAckPayload,
+  MessageReceivePayload,
+  MessageUnsentPayload,
+  MessageReadReceiptPayload,
+  TypingUpdatePayload,
+  PresenceUpdatePayload,
+  ContactRequestPayload,
+  ContactAcceptedPayload,
+  MessageRequestNewPayload,
+  NotificationPayload,
+} from "@/types/socket";
+import type { Message } from "@/types/message";
+
+interface SocketContextValue {
+  chatSocket: Socket | null;
+}
+
+const SocketContext = createContext<SocketContextValue>({ chatSocket: null });
+
+export function useSocketContext() {
+  return useContext(SocketContext);
+}
+
+export function SocketProvider({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuthStore();
+  const { setChatStatus } = useSocketStore();
+  const {
+    replaceTempMessage,
+    addMessage,
+    updateMessage,
+    updateConversationLastMessage,
+    incrementUnread,
+    activeConversationId,
+  } = useChatStore();
+  const { setPresence } = usePresenceStore();
+  const { setTyping } = useTypingStore();
+  const socketRef = useRef<Socket | null>(null);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      disconnectSockets();
+      setChatStatus("disconnected");
+      return;
+    }
+
+    const socket = getChatSocket();
+    socketRef.current = socket;
+
+    setChatStatus("connecting");
+    socket.connect();
+
+    socket.on("connect", () => setChatStatus("connected"));
+    socket.on("disconnect", () => setChatStatus("disconnected"));
+    socket.on("connect_error", () => setChatStatus("error"));
+
+    // Message ack — replace optimistic message
+    socket.on("message:ack", (payload: MessageAckPayload) => {
+      replaceTempMessage(payload.conversationId, payload.tempId, {
+        id: payload.messageId,
+        conversationId: payload.conversationId,
+        senderId: "", // will be filled in by local state
+        type: "text",
+        content: null,
+        mediaUrl: null,
+        fileName: null,
+        fileSize: null,
+        readBy: [],
+        unsent: false,
+        createdAt: payload.timestamp,
+        pending: false,
+      } as Message);
+    });
+
+    // New message from another user
+    socket.on("message:receive", (payload: MessageReceivePayload) => {
+      const msg: Message = {
+        id: payload.messageId,
+        conversationId: payload.conversationId,
+        senderId: payload.senderId,
+        type: payload.type,
+        content: payload.content,
+        mediaUrl: payload.mediaUrl,
+        fileName: payload.fileName,
+        fileSize: payload.fileSize,
+        readBy: [],
+        unsent: false,
+        createdAt: payload.timestamp,
+      };
+      addMessage(payload.conversationId, msg);
+      updateConversationLastMessage(payload.conversationId, {
+        content: payload.content,
+        senderId: payload.senderId,
+        type: payload.type,
+        timestamp: payload.timestamp,
+      });
+      if (activeConversationId !== payload.conversationId) {
+        incrementUnread(payload.conversationId);
+      } else {
+        // Auto-mark as read
+        socket.emit("message:read", {
+          conversationId: payload.conversationId,
+          messageIds: [payload.messageId],
+        });
+      }
+    });
+
+    // Message unsent
+    socket.on("message:unsent", (payload: MessageUnsentPayload) => {
+      updateMessage(payload.conversationId, payload.messageId, {
+        unsent: true,
+        content: null,
+        mediaUrl: null,
+      });
+    });
+
+    // Read receipts
+    socket.on("message:read", (payload: MessageReadReceiptPayload) => {
+      payload.messageIds.forEach((msgId) => {
+        updateMessage(payload.conversationId, msgId, {
+          readBy: [], // will be enriched server-side
+        });
+      });
+    });
+
+    // Typing
+    socket.on("typing:update", (payload: TypingUpdatePayload) => {
+      setTyping(
+        payload.conversationId,
+        payload.userId,
+        payload.username,
+        payload.isTyping
+      );
+    });
+
+    // Presence
+    socket.on("presence:update", (payload: PresenceUpdatePayload) => {
+      setPresence(payload.userId, payload.status, payload.lastSeen);
+    });
+
+    // Notifications (contact request, message request, etc.)
+    socket.on("contact:request", (_payload: ContactRequestPayload) => {
+      // handled by notification hooks
+    });
+
+    socket.on("contact:accepted", (_payload: ContactAcceptedPayload) => {
+      // handled by notification hooks
+    });
+
+    socket.on("message-request:new", (_payload: MessageRequestNewPayload) => {
+      // handled by notification hooks
+    });
+
+    socket.on("notification:new", (_payload: NotificationPayload) => {
+      // handled by notification hooks
+    });
+
+    return () => {
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.off("connect_error");
+      socket.off("message:ack");
+      socket.off("message:receive");
+      socket.off("message:unsent");
+      socket.off("message:read");
+      socket.off("typing:update");
+      socket.off("presence:update");
+      socket.off("contact:request");
+      socket.off("contact:accepted");
+      socket.off("message-request:new");
+      socket.off("notification:new");
+    };
+  }, [
+    isAuthenticated,
+    setChatStatus,
+    replaceTempMessage,
+    addMessage,
+    updateMessage,
+    updateConversationLastMessage,
+    incrementUnread,
+    activeConversationId,
+    setPresence,
+    setTyping,
+  ]);
+
+  return (
+    <SocketContext.Provider value={{ chatSocket: socketRef.current }}>
+      {children}
+    </SocketContext.Provider>
+  );
+}

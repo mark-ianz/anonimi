@@ -1,0 +1,82 @@
+"use client";
+
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { UserPlus, MessageCircle } from "lucide-react";
+import type { SearchUser, PublicUser } from "@/types/user";
+import OnlineIndicator from "./OnlineIndicator";
+
+interface UserCardProps {
+  user: SearchUser | PublicUser;
+  showActions?: boolean;
+  onAddContact?: (echoId: string) => void;
+  onMessage?: (echoId: string) => void;
+  className?: string;
+}
+
+export default function UserCard({
+  user,
+  showActions,
+  onAddContact,
+  onMessage,
+  className,
+}: UserCardProps) {
+  const isContact = "isContact" in user ? user.isContact : false;
+
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors border-b border-border/20",
+        className
+      )}
+    >
+      {/* Avatar */}
+      <div className="relative shrink-0">
+        <div className="w-11 h-11 rounded-xl overflow-hidden bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-medium text-sm">
+          {user.profileImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={user.profileImage} alt={user.username} className="w-full h-full object-cover" />
+          ) : (
+            user.username[0].toUpperCase()
+          )}
+        </div>
+        <OnlineIndicator
+          status={user.onlineStatus}
+          size="sm"
+          className="absolute bottom-0 right-0 border-2 border-background rounded-full"
+        />
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <Link href={`/user/${user.echoId}`} className="text-sm font-medium hover:underline truncate block">
+          {user.username}
+        </Link>
+        <p className="text-xs text-muted-foreground">@{user.echoId}</p>
+      </div>
+
+      {/* Actions */}
+      {showActions && (
+        <div className="flex items-center gap-1.5 shrink-0">
+          {!isContact && onAddContact && (
+            <button
+              onClick={() => onAddContact(user.echoId)}
+              className="flex items-center gap-1.5 h-8 px-3 rounded-xl bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              Add
+            </button>
+          )}
+          {onMessage && (
+            <button
+              onClick={() => onMessage(user.echoId)}
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
+            >
+              <MessageCircle className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

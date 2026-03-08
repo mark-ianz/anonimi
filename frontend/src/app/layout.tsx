@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import { QueryProvider } from "@/providers/QueryProvider";
+import { SocketProvider } from "@/providers/SocketProvider";
+import { ThemeProvider } from "@/providers/ThemeProvider";
+import { Toaster } from "sonner";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -29,7 +33,24 @@ export default function RootLayout({
       <body
         className={`${outfit.variable} ${plusJakarta.variable} antialiased`}
       >
-        {children}
+        <QueryProvider>
+          <ThemeProvider>
+            <SocketProvider>
+              {children}
+              <Toaster
+                position="top-right"
+                richColors
+                closeButton
+                toastOptions={{
+                  classNames: {
+                    toast:
+                      "font-sans text-sm rounded-xl border border-border/50 shadow-elevated",
+                  },
+                }}
+              />
+            </SocketProvider>
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   );

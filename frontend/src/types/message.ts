@@ -1,0 +1,29 @@
+export type MessageType = "text" | "image" | "video" | "audio" | "file" | "system";
+
+export interface Message {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  type: MessageType;
+  content: string | null;
+  mediaUrl: string | null;
+  fileName: string | null;
+  fileSize: number | null;
+  readBy: string[];
+  unsent: boolean;
+  createdAt: string;
+  // Optimistic UI fields
+  tempId?: string;
+  pending?: boolean;
+  failed?: boolean;
+}
+
+export interface SendMessagePayload {
+  conversationId: string;
+  type: MessageType;
+  content: string | null;
+  mediaUrl?: string | null;
+  fileName?: string | null;
+  fileSize?: number | null;
+  tempId: string;
+}
