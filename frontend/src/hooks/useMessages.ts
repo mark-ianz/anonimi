@@ -31,11 +31,11 @@ export function useMessages(conversationId: string | null) {
       const res = await api.get("/messages", { params });
       return res.data as {
         data: Message[];
-        pagination: { nextCursor: string | null; hasMore: boolean };
+        pagination?: { nextCursor: string | null; hasMore: boolean };
       };
     },
     getNextPageParam: (lastPage) =>
-      lastPage.pagination.hasMore ? lastPage.pagination.nextCursor : undefined,
+      lastPage.pagination?.hasMore ? lastPage.pagination.nextCursor : undefined,
     initialPageParam: undefined as string | undefined,
     enabled: !!conversationId,
     staleTime: 1000 * 60,

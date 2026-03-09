@@ -54,7 +54,7 @@ export default function ContactList({ searchQuery = "" }: ContactListProps) {
           key={contact.contactId}
           contact={contact}
           onRemove={removeContact}
-          onSetNickname={setNickname}
+          onSetNickname={(contactId, nickname) => setNickname({ contactId, nickname })}
         />
       ))}
       <InfiniteScrollSentinel

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ShieldCheck } from "lucide-react";
@@ -8,7 +8,7 @@ import api from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import type { AuthUser } from "@/types/user";
 
-export default function VerifyPage() {
+function VerifyForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { setAuth } = useAuthStore();
@@ -129,5 +129,13 @@ export default function VerifyPage() {
         </button>
       </p>
     </div>
+  );
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense fallback={<div className="glass rounded-2xl p-8 shadow-elevated animate-pulse h-64" />}>
+      <VerifyForm />
+    </Suspense>
   );
 }

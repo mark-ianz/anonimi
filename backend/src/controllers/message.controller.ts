@@ -54,7 +54,7 @@ export const getMessages = async (
       limit ? parseInt(limit as string) : 30,
       cursor as string
     );
-    apiSuccess(res, result.messages, 200, {
+    apiPaginated(res, result.messages, {
       nextCursor: result.nextCursor,
       hasMore: result.hasMore,
       limit: result.limit,

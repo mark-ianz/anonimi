@@ -43,7 +43,7 @@ export const register = async (
     $or: [
       ...(email ? [{ email }] : []),
       ...(phone ? [{ phone }] : []),
-      [{ username }],
+      { username },
     ],
   });
 

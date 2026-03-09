@@ -20,11 +20,11 @@ export function useConversations() {
       const res = await api.get("/conversations", { params });
       return res.data as {
         data: Conversation[];
-        pagination: { nextCursor: string | null; hasMore: boolean };
+        pagination?: { nextCursor: string | null; hasMore: boolean };
       };
     },
     getNextPageParam: (lastPage) =>
-      lastPage.pagination.hasMore ? lastPage.pagination.nextCursor : undefined,
+      lastPage.pagination?.hasMore ? lastPage.pagination.nextCursor : undefined,
     initialPageParam: undefined as string | undefined,
     staleTime: 1000 * 30,
   });

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type SocketStatus = "disconnected" | "connecting" | "connected" | "error";
+export type SocketStatus = "disconnected" | "connecting" | "reconnecting" | "connected" | "error";
 
 interface SocketState {
   chatStatus: SocketStatus;

@@ -20,10 +20,10 @@ export function useContacts() {
       const res = await api.get("/contacts", { params });
       return res.data as {
         data: Contact[];
-        pagination: { nextCursor: string | null; hasMore: boolean };
+        pagination?: { nextCursor: string | null; hasMore: boolean };
       };
     },
-    getNextPageParam: (lp) => (lp.pagination.hasMore ? lp.pagination.nextCursor : undefined),
+    getNextPageParam: (lp) => (lp.pagination?.hasMore ? lp.pagination.nextCursor : undefined),
     initialPageParam: undefined as string | undefined,
     staleTime: 1000 * 60 * 2,
   });
@@ -34,12 +34,13 @@ export function useContacts() {
       const params: Record<string, string | number> = { limit: 20 };
       if (pageParam) params.cursor = pageParam as string;
       const res = await api.get("/contacts/requests", { params });
+      // The requests endpoint returns apiSuccess (no pagination wrapper)
       return res.data as {
         data: ContactRequest[];
-        pagination: { nextCursor: string | null; hasMore: boolean };
+        pagination?: { nextCursor: string | null; hasMore: boolean };
       };
     },
-    getNextPageParam: (lp) => (lp.pagination.hasMore ? lp.pagination.nextCursor : undefined),
+    getNextPageParam: (lp) => (lp.pagination?.hasMore ? lp.pagination.nextCursor : undefined),
     initialPageParam: undefined as string | undefined,
   });
 
@@ -49,6 +50,7 @@ export function useContacts() {
       return res.data.data;
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["users", "search"] });
       toast.success("Contact request sent.");
     },
     onError: (err: unknown) => {
