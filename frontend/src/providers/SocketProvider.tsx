@@ -64,19 +64,27 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     socket.on("disconnect", () => setChatStatus("disconnected"));
     socket.on("connect_error", () => setChatStatus("error"));
 
-    // Message ack — replace optimistic message
+    // Message ack — replace optimistic message, preserving its original content/type/senderId
     socket.on("message:ack", (payload: MessageAckPayload) => {
+      // Read the current store state at event time (not from a stale React closure)
+      // to find the original temp message and preserve its content fields.
+      const { messages: storeMessages } = useChatStore.getState();
+      const tempMsg = (storeMessages[payload.conversationId] ?? []).find(
+        (m) => m.tempId === payload.tempId
+      );
       replaceTempMessage(payload.conversationId, payload.tempId, {
+        ...(tempMsg ?? {
+          conversationId: payload.conversationId,
+          senderId: "",
+          type: "text" as const,
+          content: null,
+          mediaUrl: null,
+          fileName: null,
+          fileSize: null,
+          readBy: [],
+          unsent: false,
+        }),
         id: payload.messageId,
-        conversationId: payload.conversationId,
-        senderId: "", // will be filled in by local state
-        type: "text",
-        content: null,
-        mediaUrl: null,
-        fileName: null,
-        fileSize: null,
-        readBy: [],
-        unsent: false,
         createdAt: payload.timestamp,
         pending: false,
       } as Message);

@@ -18,7 +18,7 @@ import { MESSAGES_PER_PAGE } from "@/lib/constants";
 export function useMessages(conversationId: string | null) {
   const qc = useQueryClient();
   const { user } = useAuthStore();
-  const { addMessage, replaceTempMessage } = useChatStore();
+  const { addMessage, replaceTempMessage, messages: storeMessages } = useChatStore();
 
   const query = useInfiniteQuery({
     queryKey: ["messages", conversationId],
@@ -41,11 +41,21 @@ export function useMessages(conversationId: string | null) {
     staleTime: 1000 * 60,
   });
 
-  // Flatten pages — API returns newest-first, display oldest-first
-  const messages =
+  // Merge server-loaded messages (TanStack Query) with live/optimistic messages
+  // from chatStore (added by sendMessage optimistically or socket:receive events).
+  // chatStore is the source of truth for in-flight messages; TanStack Query is the
+  // source of truth for persisted history loaded from the server.
+  const queryMessages =
     query.data?.pages
       .flatMap((p) => p.data)
       .reverse() ?? [];
+
+  const liveMessages = storeMessages[conversationId ?? ""] ?? [];
+  // Only include store messages whose real id isn't already in the query cache.
+  // This prevents duplicates once TanStack Query is refetched.
+  const queryIds = new Set(queryMessages.map((m) => m.id));
+  const extraMessages = liveMessages.filter((m) => !queryIds.has(m.id));
+  const messages = [...queryMessages, ...extraMessages];
 
   const sendMessage = useCallback(
     (payload: Omit<SendMessagePayload, "tempId">) => {
