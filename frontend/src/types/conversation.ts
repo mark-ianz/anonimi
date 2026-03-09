@@ -8,6 +8,7 @@ export interface ConversationParticipant {
   echoId: string;
   username: string;
   nickname: string | null;
+  contactId: string | null;
   profileImage: string | null;
   onlineStatus: OnlineStatus;
 }

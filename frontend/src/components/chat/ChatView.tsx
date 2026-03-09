@@ -1,7 +1,7 @@
 ﻿"use client";
 
-import { useEffect, useCallback } from "react";
-import { ArrowLeft, MoreVertical, Phone, Video, UserPlus, Check, X, Clock } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, MoreVertical, Phone, Video, UserPlus, Check, X, Clock, User, Pencil, ShieldBan, Flag, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -16,6 +16,7 @@ import type { Conversation } from "@/types/conversation";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import ConnectionStatus from "@/components/shared/ConnectionStatus";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 
 interface ChatViewProps {
   conversation: Conversation;
@@ -37,6 +38,17 @@ export default function ChatView({ conversation }: ChatViewProps) {
   const qc = useQueryClient();
   const { setActiveConversation, clearUnread } = useChatStore();
   const { user: currentUser } = useAuthStore();
+
+  // Header menu state
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmBlock, setConfirmBlock] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [showNicknameForm, setShowNicknameForm] = useState(false);
+  const [nicknameValue, setNicknameValue] = useState("");
+  const [showReportForm, setShowReportForm] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDescription, setReportDescription] = useState("");
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const isGroup = conversation.type === "group";
   const participantId = conversation.participant?.id;
@@ -106,6 +118,77 @@ export default function ChatView({ conversation }: ChatViewProps) {
     onError: () => toast.error("Failed to ignore request."),
   });
 
+  const blockMutation = useMutation({
+    mutationFn: async () => {
+      await api.post("/blocks", { targetEchoId: conversation.participant?.echoId });
+    },
+    onSuccess: () => {
+      toast.success(`${displayName} has been blocked.`);
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+      router.push("/chat");
+    },
+    onError: () => toast.error("Failed to block user."),
+  });
+
+  const nicknameMutation = useMutation({
+    mutationFn: async (nickname: string | null) => {
+      if (isGroup) {
+        await api.patch(`/groups/${conversation.group?.id}/nickname`, { nickname });
+      } else {
+        await api.patch(`/contacts/${conversation.participant!.contactId}/nickname`, { nickname });
+      }
+    },
+    onSuccess: () => {
+      toast.success("Nickname updated.");
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+      qc.invalidateQueries({ queryKey: ["conversations", conversation.id] });
+      setShowNicknameForm(false);
+    },
+    onError: () => toast.error("Failed to update nickname."),
+  });
+
+  const reportMutation = useMutation({
+    mutationFn: async () => {
+      await api.post("/reports", {
+        targetType: "user",
+        targetId: conversation.participant?.id,
+        reason: reportReason,
+        description: reportDescription || undefined,
+      });
+    },
+    onSuccess: () => {
+      toast.success("Report submitted. Thank you.");
+      setShowReportForm(false);
+      setReportReason("");
+      setReportDescription("");
+    },
+    onError: () => toast.error("Failed to submit report."),
+  });
+
+  const leaveGroupMutation = useMutation({
+    mutationFn: async () => {
+      await api.post(`/groups/${conversation.group?.id}/leave`);
+    },
+    onSuccess: () => {
+      toast.success(`You left "${conversation.group?.name}".`);
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+      router.push("/chat");
+    },
+    onError: () => toast.error("Failed to leave group."),
+  });
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
+
   function getStatusText() {
     if (isGroup) return `${conversation.group?.memberCount ?? 0} members`;
     if (presenceStatus === "online") return "Online";
@@ -171,9 +254,88 @@ export default function ChatView({ conversation }: ChatViewProps) {
           <button className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors">
             <Video className="w-4 h-4" />
           </button>
-          <button className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors">
-            <MoreVertical className="w-4 h-4" />
-          </button>
+
+          {/* 3-dot menu */}
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              className={cn(
+                "w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors",
+                menuOpen && "bg-muted text-foreground"
+              )}
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 z-20 top-full mt-1 glass rounded-xl shadow-elevated py-1 min-w-44 animate-fade-in">
+                {!isGroup && (
+                  <Link
+                    href={`/user/${conversation.participant?.echoId}`}
+                    className="flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <User className="w-4 h-4 text-muted-foreground shrink-0" />
+                    View profile
+                  </Link>
+                )}
+
+                {/* Set Nickname — for contacts (private) or groups */}
+                {(!isGroup && conversation.participant?.contactId) || isGroup ? (
+                  <button
+                    onClick={() => {
+                      setNicknameValue(
+                        isGroup
+                          ? (conversation.group?.name ?? "")
+                          : (conversation.participant?.nickname ?? "")
+                      );
+                      setMenuOpen(false);
+                      setShowNicknameForm(true);
+                    }}
+                    className="flex items-center gap-2.5 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                  >
+                    <Pencil className="w-4 h-4 text-muted-foreground shrink-0" />
+                    Set nickname
+                  </button>
+                ) : null}
+
+                {/* Private-only: block + report */}
+                {!isGroup && (
+                  <>
+                    <div className="my-1 border-t border-border/30" />
+                    <button
+                      onClick={() => { setMenuOpen(false); setConfirmBlock(true); }}
+                      className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                    >
+                      <ShieldBan className="w-4 h-4 shrink-0" />
+                      Block user
+                    </button>
+                    <button
+                      onClick={() => { setMenuOpen(false); setShowReportForm(true); }}
+                      className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                    >
+                      <Flag className="w-4 h-4 shrink-0" />
+                      Report user
+                    </button>
+                  </>
+                )}
+
+                {/* Group-only: leave */}
+                {isGroup && (
+                  <>
+                    <div className="my-1 border-t border-border/30" />
+                    <button
+                      onClick={() => { setMenuOpen(false); setConfirmLeave(true); }}
+                      className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4 shrink-0" />
+                      Leave group
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -240,6 +402,131 @@ export default function ChatView({ conversation }: ChatViewProps) {
         disabled={isInputDisabled}
         placeholder={isInputDisabled ? "Accept the request to reply…" : "Message…"}
       />
+
+      {/* Block confirm */}
+      <ConfirmDialog
+        open={confirmBlock}
+        onClose={() => setConfirmBlock(false)}
+        onConfirm={() => blockMutation.mutate()}
+        title={`Block ${displayName}?`}
+        description="They won't be able to message you and you won't see their messages."
+        confirmLabel="Block"
+        variant="destructive"
+        loading={blockMutation.isPending}
+      />
+
+      {/* Leave group confirm */}
+      <ConfirmDialog
+        open={confirmLeave}
+        onClose={() => setConfirmLeave(false)}
+        onConfirm={() => leaveGroupMutation.mutate()}
+        title={`Leave "${conversation.group?.name}"?`}
+        description="You will no longer be a member of this group."
+        confirmLabel="Leave"
+        variant="destructive"
+        loading={leaveGroupMutation.isPending}
+      />
+
+      {/* Nickname modal */}
+      {showNicknameForm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowNicknameForm(false); }}
+        >
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="relative glass rounded-2xl p-6 w-full max-w-sm shadow-elevated animate-fade-in">
+            <h3 className="font-display font-semibold text-base mb-1">Set nickname</h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              Only visible to you. Leave empty to remove.
+            </p>
+            <input
+              autoFocus
+              value={nicknameValue}
+              onChange={(e) => setNicknameValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !nicknameMutation.isPending) {
+                  nicknameMutation.mutate(nicknameValue.trim() || null);
+                }
+                if (e.key === "Escape") setShowNicknameForm(false);
+              }}
+              maxLength={50}
+              className="w-full h-10 px-3 rounded-xl bg-muted/60 border border-border/50 text-sm focus:outline-none focus:ring-1 focus:ring-primary/40 mb-4"
+              placeholder={`Nickname for ${displayName}…`}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowNicknameForm(false)}
+                disabled={nicknameMutation.isPending}
+                className="flex-1 h-10 rounded-xl border border-border/50 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => nicknameMutation.mutate(nicknameValue.trim() || null)}
+                disabled={nicknameMutation.isPending}
+                className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                {nicknameMutation.isPending ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Report modal */}
+      {showReportForm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) { setShowReportForm(false); setReportReason(""); setReportDescription(""); } }}
+        >
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="relative glass rounded-2xl p-6 w-full max-w-sm shadow-elevated animate-fade-in">
+            <h3 className="font-display font-semibold text-base mb-1">Report {displayName}</h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              Your report is anonymous and will be reviewed by our team.
+            </p>
+            <div className="space-y-3 mb-5">
+              <select
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+                className="w-full h-10 px-3 rounded-xl bg-muted/60 border border-border/50 text-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
+              >
+                <option value="">Select a reason…</option>
+                <option value="spam">Spam or unwanted messages</option>
+                <option value="harassment">Harassment or bullying</option>
+                <option value="hate_speech">Hate speech</option>
+                <option value="impersonation">Impersonation</option>
+                <option value="inappropriate_content">Inappropriate content</option>
+                <option value="other">Other</option>
+              </select>
+              <textarea
+                value={reportDescription}
+                onChange={(e) => setReportDescription(e.target.value)}
+                maxLength={500}
+                rows={3}
+                className="w-full px-3 py-2 rounded-xl bg-muted/60 border border-border/50 text-sm focus:outline-none focus:ring-1 focus:ring-primary/40 resize-none"
+                placeholder="Additional details (optional)…"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowReportForm(false); setReportReason(""); setReportDescription(""); }}
+                disabled={reportMutation.isPending}
+                className="flex-1 h-10 rounded-xl border border-border/50 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => reportMutation.mutate()}
+                disabled={!reportReason || reportMutation.isPending}
+                className="flex-1 h-10 rounded-xl bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-50"
+              >
+                {reportMutation.isPending ? "Submitting…" : "Submit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
