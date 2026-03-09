@@ -10,12 +10,12 @@ import {
   Settings, 
   Shield,
   HelpCircle,
-  LogOut,
   Menu,
   Search,
   Bell
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SocketProvider } from "@/providers/SocketProvider";
 
 const navItems = [
   { href: "/chat", icon: MessageCircle, label: "Chats" },
@@ -38,8 +38,9 @@ export default function MainLayout({ children }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
-      {/* Sidebar */}
+    <SocketProvider>
+      <div className="flex h-screen bg-background overflow-hidden">
+        {/* Sidebar */}
       <aside 
         className={cn(
           "flex flex-col border-r border-border/50 transition-all duration-300 ease-out",
@@ -169,5 +170,6 @@ export default function MainLayout({ children }: SidebarProps) {
         </div>
       </main>
     </div>
+    </SocketProvider>
   );
 }
