@@ -18,7 +18,7 @@ import { MESSAGES_PER_PAGE } from "@/lib/constants";
 export function useMessages(conversationId: string | null) {
   const qc = useQueryClient();
   const { user } = useAuthStore();
-  const { addMessage, replaceTempMessage, messages: storeMessages } = useChatStore();
+  const { addMessage, replaceTempMessage, messages: storeMessages, updateMessage } = useChatStore();
 
   const query = useInfiniteQuery({
     queryKey: ["messages", conversationId],
@@ -127,6 +127,28 @@ export function useMessages(conversationId: string | null) {
   const unsendMutation = useMutation({
     mutationFn: async (messageId: string) => {
       await api.post(`/messages/${messageId}/unsend`);
+      return messageId;
+    },
+    onSuccess: (messageId) => {
+      if (!conversationId) return;
+      // Update TanStack Query cache so the sender sees the change immediately
+      qc.setQueryData(
+        ["messages", conversationId],
+        (old: { pages: { data: Message[] }[] } | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((p) => ({
+              ...p,
+              data: p.data.map((m) =>
+                m.id === messageId ? { ...m, unsent: true, content: null, mediaUrl: null } : m
+              ),
+            })),
+          };
+        }
+      );
+      // Also patch any in-flight copy in the chatStore
+      updateMessage(conversationId, messageId, { unsent: true, content: undefined, mediaUrl: null });
     },
     onError: (err: unknown) => {
       const msg =

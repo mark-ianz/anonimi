@@ -9,7 +9,7 @@ import { MessageRequest } from "../models/messageRequest.model";
 import { Block } from "../models/block.model";
 import { NotFoundError, ForbiddenError, ConflictError } from "../utils/apiError";
 import { MessageType } from "../types/enums";
-import { emitToUser } from "./notification.service";
+import { emitToUser, emitToConversation } from "./notification.service";
 
 interface ConversationParticipant {
   id: string;
@@ -529,6 +529,12 @@ export const unsendMessage = async (
   message.unsent = true;
   message.content = undefined;
   await message.save();
+
+  // Broadcast to all conversation participants so every client updates in real-time
+  emitToConversation(message.conversationId.toString(), "message:unsent", {
+    conversationId: message.conversationId.toString(),
+    messageId: message._id.toString(),
+  });
 
   return { message: "Message unsent." };
 };
