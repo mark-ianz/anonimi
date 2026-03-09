@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, createContext, useContext } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { Socket } from "socket.io-client";
 import { getChatSocket, disconnectSockets } from "@/lib/socket";
 import { useAuthStore } from "@/stores/authStore";
@@ -35,6 +36,7 @@ export function useSocketContext() {
 export function SocketProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
   const { setChatStatus } = useSocketStore();
+  const qc = useQueryClient();
   const {
     replaceTempMessage,
     addMessage,
@@ -68,7 +70,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     socket.on("message:ack", (payload: MessageAckPayload) => {
       // Read the current store state at event time (not from a stale React closure)
       // to find the original temp message and preserve its content fields.
-      const { messages: storeMessages } = useChatStore.getState();
+      const { messages: storeMessages, conversations } = useChatStore.getState();
       const tempMsg = (storeMessages[payload.conversationId] ?? []).find(
         (m) => m.tempId === payload.tempId
       );
@@ -88,6 +90,12 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         createdAt: payload.timestamp,
         pending: false,
       } as Message);
+
+      // If this conversation is not yet in the sidebar list (new pending conversation),
+      // invalidate so getConversations refetches and shows it.
+      if (!conversations.some((c) => c.id === payload.conversationId)) {
+        qc.invalidateQueries({ queryKey: ["conversations"] });
+      }
     });
 
     // New message from another user

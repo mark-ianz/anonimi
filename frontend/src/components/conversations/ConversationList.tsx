@@ -1,11 +1,15 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Link from "next/link";
+import { Inbox } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useConversations } from "@/hooks/useConversations";
 import ConversationItem from "./ConversationItem";
 import LoadingSkeleton from "@/components/shared/LoadingSkeleton";
 import EmptyState from "@/components/shared/EmptyState";
 import InfiniteScrollSentinel from "@/components/shared/InfiniteScroll";
+import api from "@/lib/api";
 
 interface ConversationListProps {
   activeConversationId?: string;
@@ -18,6 +22,16 @@ export default function ConversationList({
 }: ConversationListProps) {
   const { conversations, isLoading, isFetchingMore, hasMore, fetchMore } = useConversations();
 
+  const { data: messageRequests } = useQuery({
+    queryKey: ["message-requests"],
+    queryFn: async () => {
+      const res = await api.get("/conversations/requests");
+      return res.data.data as unknown[];
+    },
+    staleTime: 1000 * 60,
+  });
+  const requestCount = messageRequests?.length ?? 0;
+
   const filtered = searchQuery
     ? conversations.filter((c) => {
         const name =
@@ -28,25 +42,50 @@ export default function ConversationList({
       })
     : conversations;
 
+  const banner = requestCount > 0 && (
+    <Link
+      href="/message-requests"
+      className="flex items-center justify-between px-4 py-2.5 bg-amber-500/10 border-b border-amber-500/20 hover:bg-amber-500/15 transition-colors shrink-0"
+    >
+      <div className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400">
+        <Inbox className="w-4 h-4" />
+        Message Requests
+      </div>
+      <span className="min-w-4.5 h-4.5 px-1.5 rounded-full bg-amber-500 text-white text-[10px] font-semibold flex items-center justify-center">
+        {requestCount}
+      </span>
+    </Link>
+  );
+
   if (isLoading) {
-    return <LoadingSkeleton variant="conversation" rows={8} />;
+    return (
+      <div className="flex flex-col flex-1 overflow-hidden">
+        {banner}
+        <LoadingSkeleton variant="conversation" rows={8} />
+      </div>
+    );
   }
 
-  if (!isLoading && filtered.length === 0) {
+  if (filtered.length === 0) {
     return (
-      <EmptyState
-        variant={searchQuery ? "search" : "conversations"}
-        description={
-          searchQuery
-            ? `No conversations matching "${searchQuery}"`
-            : "Start a conversation with a contact."
-        }
-      />
+      <div className="flex flex-col flex-1 overflow-hidden">
+        {banner}
+        <EmptyState
+          variant={searchQuery ? "search" : "conversations"}
+          description={
+            searchQuery
+              ? `No conversations matching "${searchQuery}"`
+              : "Start a conversation with a contact."
+          }
+        />
+      </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex flex-col flex-1 overflow-hidden">
+      {banner}
+      <div className="flex-1 overflow-y-auto">
       {filtered.map((conv, i) => (
         <ConversationItem
           key={conv.id}
@@ -60,6 +99,7 @@ export default function ConversationList({
         hasMore={hasMore ?? false}
         isLoading={isFetchingMore}
       />
+      </div>
     </div>
   );
 }

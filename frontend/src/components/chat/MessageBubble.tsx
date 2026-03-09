@@ -29,6 +29,7 @@ export default function MessageBubble({
   const { user } = useAuthStore();
   const isMine = message.senderId === user?.id;
   const [showActions, setShowActions] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   if (message.unsent) {
     return (
@@ -58,7 +59,7 @@ export default function MessageBubble({
         isMine && "flex-row-reverse"
       )}
       onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
+      onMouseLeave={() => { if (!dialogOpen) setShowActions(false); }}
     >
       {/* Avatar */}
       <div className="w-8 shrink-0">
@@ -126,11 +127,11 @@ export default function MessageBubble({
       <div
         className={cn(
           "self-center transition-opacity",
-          showActions ? "opacity-100" : "opacity-0",
+          (showActions || dialogOpen) ? "opacity-100" : "opacity-0",
           isMine ? "order-first" : "order-last"
         )}
       >
-        <MessageActions message={message} isMine={isMine} />
+        <MessageActions message={message} isMine={isMine} onDialogOpenChange={setDialogOpen} />
       </div>
     </div>
   );

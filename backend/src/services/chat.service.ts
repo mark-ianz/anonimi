@@ -117,11 +117,26 @@ export const getConversations = async (
   limit: number = 20,
   cursor?: string
 ) => {
+  // Include conversations where user is the sender of an outgoing pending request.
+  // The base filter excludes all "pending" convs (receiver inbox), but the sender
+  // should still see their own pending outgoing requests in their chat list.
+  const outgoingPendingConvIds = await MessageRequest.find({
+    fromUserId: new Types.ObjectId(userId),
+    status: "pending",
+  }).distinct("conversationId");
+
   const query: Record<string, unknown> = {
     participants: new Types.ObjectId(userId),
-    // Exclude pending/ignored requests from the main inbox
-    requestStatus: { $in: [null, "accepted"] },
   };
+
+  if (outgoingPendingConvIds.length > 0) {
+    query.$or = [
+      { requestStatus: { $in: [null, "accepted"] } },
+      { _id: { $in: outgoingPendingConvIds } },
+    ];
+  } else {
+    query.requestStatus = { $in: [null, "accepted"] };
+  }
 
   if (cursor) {
     query.updatedAt = { $lt: new Date(cursor) };

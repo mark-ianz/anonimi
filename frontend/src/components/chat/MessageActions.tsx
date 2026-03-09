@@ -10,15 +10,21 @@ import type { Message } from "@/types/message";
 interface MessageActionsProps {
   message: Message;
   isMine: boolean;
+  onDialogOpenChange?: (open: boolean) => void;
 }
 
-export default function MessageActions({ message, isMine }: MessageActionsProps) {
+export default function MessageActions({ message, isMine, onDialogOpenChange }: MessageActionsProps) {
   const [open, setOpen] = useState(false);
   const [confirmUnsend, setConfirmUnsend] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const { deleteForMe, unsend } = useMessages(message.conversationId);
+
+  // Notify parent when any dialog is open so the opacity wrapper stays visible
+  useEffect(() => {
+    onDialogOpenChange?.(confirmDelete || confirmUnsend);
+  }, [confirmDelete, confirmUnsend, onDialogOpenChange]);
 
   useEffect(() => {
     if (!open) return;

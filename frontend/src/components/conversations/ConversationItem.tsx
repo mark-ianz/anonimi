@@ -52,7 +52,8 @@ export default function ConversationItem({
     .slice(0, 2)
     .toUpperCase();
 
-  const preview = getLastMessagePreview(conversation);
+  const isPending = conversation.requestStatus === "pending";
+  const preview = isPending ? "Pending request..." : getLastMessagePreview(conversation);
   const timestamp = conversation.lastMessage?.timestamp ?? conversation.updatedAt;
 
   return (
