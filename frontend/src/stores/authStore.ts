@@ -59,6 +59,11 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
       }),
+      // After Zustand rehydrates persisted state from localStorage, clear the
+      // loading flag so ProtectedRoute doesn't spin indefinitely.
+      onRehydrateStorage: () => (state) => {
+        state?.setLoading(false);
+      },
     }
   )
 );

@@ -36,4 +36,8 @@ export interface Conversation {
   updatedAt: string;
   createdAt?: string;
   requestStatus?: string | null;
+  /** ID of the MessageRequest document (present on pending/accepted/ignored private convs) */
+  requestId?: string | null;
+  /** ID of the user who initiated the message request */
+  requestFromUserId?: string | null;
 }

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import api from "@/lib/api";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useContacts } from "@/hooks/useContacts";
@@ -14,6 +16,7 @@ export default function UserSearchResults() {
   const [query, setQuery] = useState("");
   const debounced = useDebounce(query, 350);
   const { sendRequest } = useContacts();
+  const router = useRouter();
 
   const { data, isFetching } = useQuery({
     queryKey: ["users", "search", debounced],
@@ -23,6 +26,22 @@ export default function UserSearchResults() {
     },
     enabled: debounced.length >= 2,
     staleTime: 1000 * 30,
+  });
+
+  const openConversationMutation = useMutation({
+    mutationFn: async (echoId: string) => {
+      const res = await api.post("/conversations", { participantEchoId: echoId });
+      return res.data.data as { conversationId: string };
+    },
+    onSuccess: (data) => {
+      router.push(`/chat/${data.conversationId}`);
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { error?: { message?: string } } } })
+          ?.response?.data?.error?.message ?? "Failed to open conversation.";
+      toast.error(msg);
+    },
   });
 
   return (
@@ -47,8 +66,10 @@ export default function UserSearchResults() {
           user={user}
           showActions
           onAddContact={(echoId) => sendRequest(echoId)}
+          onMessage={(echoId) => openConversationMutation.mutate(echoId)}
         />
       ))}
     </div>
   );
 }
+

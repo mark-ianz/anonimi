@@ -5,6 +5,7 @@ import { User } from "../models/user.model";
 import { Types } from "mongoose";
 import { MessageType } from "../types/enums";
 import { emitToConversation, emitToUser } from "../services/notification.service";
+import * as chatService from "../services/chat.service";
 
 interface MessageSendPayload {
   conversationId: string;
@@ -27,68 +28,45 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
         return;
       }
 
-      const conversation = await Conversation.findById(conversationId);
-
-      if (!conversation) {
-        socket.emit("error", { code: "NOT_FOUND", message: "Conversation not found" });
-        return;
-      }
-
-      const isParticipant = conversation.participants.some(
-        (p) => p.toString() === userId
+      // Delegate to service — handles blocks, message requests, auto-accept, and notifications
+      const result = await chatService.sendMessage(
+        userId,
+        conversationId,
+        type as MessageType,
+        content,
+        mediaUrl,
+        fileName,
+        fileSize
       );
 
-      if (!isParticipant) {
-        socket.emit("error", { code: "PERMISSION_DENIED", message: "Not a participant" });
-        return;
-      }
-
-      const message = await Message.create({
-        conversationId: conversation._id,
-        senderId: new Types.ObjectId(userId),
-        type,
-        content,
-        mediaUrl,
-        fileName,
-        fileSize,
-        readBy: [new Types.ObjectId(userId)],
-        unsent: false,
-      });
-
-      conversation.lastMessage = {
-        content: content || "[Media]",
-        senderId: new Types.ObjectId(userId),
-        type,
-        timestamp: message.createdAt,
-      };
-      conversation.updatedAt = new Date();
-      await conversation.save();
-
-      const sender = await User.findById(userId).select("username profileImage");
-
+      // Acknowledge to sender
       socket.emit("message:ack", {
         tempId,
-        messageId: message._id.toString(),
-        conversationId: message.conversationId.toString(),
-        timestamp: message.createdAt.toISOString(),
+        messageId: result.message.id,
+        conversationId: result.message.conversationId,
+        timestamp: result.message.createdAt,
       });
 
+      // Broadcast to all other participants in the conversation room
       socket.to(`conversation:${conversationId}`).emit("message:receive", {
-        messageId: message._id.toString(),
-        conversationId: message.conversationId.toString(),
+        messageId: result.message.id,
+        conversationId: result.message.conversationId,
         senderId: userId,
-        senderUsername: sender?.username,
-        senderProfileImage: sender?.profileImage,
-        type,
-        content,
-        mediaUrl,
-        fileName,
-        fileSize,
-        timestamp: message.createdAt.toISOString(),
+        senderUsername: result.sender.username,
+        senderProfileImage: result.sender.profileImage,
+        type: result.message.type,
+        content: result.message.content,
+        mediaUrl: result.message.mediaUrl,
+        fileName: result.message.fileName,
+        fileSize: result.message.fileSize,
+        timestamp: result.message.createdAt,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in message:send:", error);
-      socket.emit("error", { code: "SERVER_ERROR", message: "Failed to send message" });
+      const code =
+        error.statusCode === 403 ? "PERMISSION_DENIED" :
+        error.statusCode === 404 ? "NOT_FOUND" : "SERVER_ERROR";
+      socket.emit("error", { code, message: error.message ?? "Failed to send message" });
     }
   });
 

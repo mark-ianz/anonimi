@@ -2,6 +2,38 @@ import { Request, Response, NextFunction } from "express";
 import * as chatService from "../services/chat.service";
 import { apiSuccess, apiPaginated } from "../utils/apiResponse";
 
+export const createOrGetConversation = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { participantEchoId } = req.body;
+    const result = await chatService.createOrGetConversation(
+      req.user!._id.toString(),
+      participantEchoId
+    );
+    apiSuccess(res, result, result.created ? 201 : 200);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getConversationRequests = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const result = await chatService.getConversationRequests(
+      req.user!._id.toString()
+    );
+    apiSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getConversations = async (
   req: Request,
   res: Response,
@@ -30,7 +62,7 @@ export const getConversation = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { conversationId } = req.params;
+    const conversationId = req.params.conversationId as string;
     const conversation = await chatService.getConversation(
       conversationId,
       req.user!._id.toString()
@@ -90,7 +122,7 @@ export const deleteMessageForMe = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { messageId } = req.params;
+    const messageId = req.params.messageId as string;
     const result = await chatService.deleteMessageForMe(
       messageId,
       req.user!._id.toString()
@@ -107,7 +139,7 @@ export const unsendMessage = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { messageId } = req.params;
+    const messageId = req.params.messageId as string;
     const result = await chatService.unsendMessage(
       messageId,
       req.user!._id.toString()

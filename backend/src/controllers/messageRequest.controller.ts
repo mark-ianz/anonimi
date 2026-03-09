@@ -6,6 +6,7 @@ import { Conversation } from "../models/conversation.model";
 import { Contact } from "../models/contact.model";
 import { apiSuccess } from "../utils/apiResponse";
 import { NotFoundError } from "../utils/apiError";
+import { emitToUser } from "../services/notification.service";
 import mongoose from "mongoose";
 
 export const getMessageRequests = async (
@@ -93,8 +94,25 @@ export const acceptMessageRequest = async (
       });
     }
 
+    const newRequestStatus = addToContacts ? null : "accepted";
     await Conversation.findByIdAndUpdate(request.conversationId, {
-      requestStatus: "accepted",
+      requestStatus: newRequestStatus,
+    });
+
+    // Notify original sender that their request was accepted
+    const accepter = await User.findById(req.user!._id).select(
+      "echoId username profileImage"
+    );
+    emitToUser(request.fromUserId.toString(), "message-request:accepted", {
+      requestId: request._id.toString(),
+      conversationId: request.conversationId.toString(),
+      acceptedBy: {
+        id: req.user!._id.toString(),
+        echoId: accepter?.echoId,
+        username: accepter?.username,
+        profileImage: accepter?.profileImage ?? null,
+      },
+      requestStatus: newRequestStatus,
     });
 
     apiSuccess(res, {
@@ -128,6 +146,10 @@ export const ignoreMessageRequest = async (
     if (!request) {
       throw new NotFoundError("Message request not found");
     }
+
+    await Conversation.findByIdAndUpdate(request.conversationId, {
+      requestStatus: "ignored",
+    });
 
     apiSuccess(res, { message: "Message request ignored." });
   } catch (error) {

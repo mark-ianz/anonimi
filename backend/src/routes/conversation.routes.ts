@@ -6,6 +6,9 @@ import { getMessagesSchema, sendMessageSchema, messageParamsSchema } from "../va
 
 const router = Router();
 
+// GET /requests must appear before /:conversationId to avoid route collision
+router.get("/requests", authenticate, conversationController.getConversationRequests);
+router.post("/", authenticate, conversationController.createOrGetConversation);
 router.get("/", authenticate, conversationController.getConversations);
 router.get("/:conversationId", authenticate, conversationController.getConversation);
 

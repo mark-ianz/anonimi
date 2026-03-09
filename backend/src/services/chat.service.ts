@@ -9,6 +9,7 @@ import { MessageRequest } from "../models/messageRequest.model";
 import { Block } from "../models/block.model";
 import { NotFoundError, ForbiddenError, ConflictError } from "../utils/apiError";
 import { MessageType } from "../types/enums";
+import { emitToUser } from "./notification.service";
 
 interface ConversationParticipant {
   id: string;
@@ -26,6 +27,91 @@ interface LastMessage {
   timestamp: Date;
 }
 
+export const createOrGetConversation = async (
+  userId: string,
+  participantEchoId: string
+) => {
+  const participant = await User.findOne({ echoId: participantEchoId }).select(
+    "_id echoId username profileImage"
+  );
+  if (!participant) throw new NotFoundError("User not found");
+
+  if (participant._id.toString() === userId) {
+    throw new ForbiddenError("Cannot create a conversation with yourself");
+  }
+
+  const isBlocked = await Block.findOne({
+    $or: [
+      { blockerId: new Types.ObjectId(userId), blockedId: participant._id, active: true },
+      { blockerId: participant._id, blockedId: new Types.ObjectId(userId), active: true },
+    ],
+  });
+  if (isBlocked) throw new ForbiddenError("Cannot create conversation with this user");
+
+  const existing = await Conversation.findOne({
+    type: "private",
+    participants: { $all: [new Types.ObjectId(userId), participant._id] },
+  });
+
+  if (existing) {
+    return {
+      conversationId: existing._id.toString(),
+      created: false,
+      requestStatus: existing.requestStatus ?? null,
+    };
+  }
+
+  const isContact = await Contact.findOne({
+    $or: [
+      { userId: new Types.ObjectId(userId), contactId: participant._id, status: "accepted" },
+      { userId: participant._id, contactId: new Types.ObjectId(userId), status: "accepted" },
+    ],
+  });
+
+  const requestStatus = isContact ? null : "pending";
+
+  const conversation = await Conversation.create({
+    type: "private",
+    participants: [new Types.ObjectId(userId), participant._id],
+    requestStatus,
+  });
+
+  return {
+    conversationId: conversation._id.toString(),
+    created: true,
+    requestStatus,
+  };
+};
+
+export const getConversationRequests = async (userId: string) => {
+  const requests = await MessageRequest.find({
+    toUserId: new Types.ObjectId(userId),
+    status: "pending",
+  })
+    .populate("fromUserId", "echoId username profileImage onlineStatus")
+    .populate("conversationId", "_id updatedAt lastMessage")
+    .sort({ createdAt: -1 })
+    .lean();
+
+  return (requests as any[]).map((r) => ({
+    id: r.conversationId._id.toString(),
+    type: "private" as const,
+    participant: {
+      id: r.fromUserId._id.toString(),
+      echoId: r.fromUserId.echoId,
+      username: r.fromUserId.username,
+      nickname: null,
+      profileImage: r.fromUserId.profileImage ?? null,
+      onlineStatus: r.fromUserId.onlineStatus ?? "offline",
+    },
+    lastMessage: r.conversationId.lastMessage ?? null,
+    requestStatus: "pending",
+    requestId: r._id.toString(),
+    unreadCount: 0,
+    updatedAt: r.conversationId.updatedAt,
+  }));
+};
+
 export const getConversations = async (
   userId: string,
   limit: number = 20,
@@ -33,6 +119,8 @@ export const getConversations = async (
 ) => {
   const query: Record<string, unknown> = {
     participants: new Types.ObjectId(userId),
+    // Exclude pending/ignored requests from the main inbox
+    requestStatus: { $in: [null, "accepted"] },
   };
 
   if (cursor) {
@@ -84,6 +172,7 @@ export const getConversations = async (
           },
           lastMessage: conv.lastMessage,
           unreadCount,
+          requestStatus: conv.requestStatus ?? null,
           updatedAt: conv.updatedAt,
         };
       } else {
@@ -109,6 +198,7 @@ export const getConversations = async (
           },
           lastMessage: conv.lastMessage,
           unreadCount,
+          requestStatus: null,
           updatedAt: conv.updatedAt,
         };
       }
@@ -153,6 +243,10 @@ export const getConversation = async (
       status: "accepted",
     });
 
+    const messageRequest = await MessageRequest.findOne({
+      conversationId: conversation._id,
+    }).select("_id fromUserId toUserId status");
+
     return {
       id: conversation._id.toString(),
       type: conversation.type,
@@ -164,7 +258,9 @@ export const getConversation = async (
         profileImage: user?.profileImage,
         onlineStatus: user?.onlineStatus,
       },
-      requestStatus: conversation.requestStatus,
+      requestStatus: conversation.requestStatus ?? null,
+      requestId: messageRequest?._id.toString() ?? null,
+      requestFromUserId: messageRequest?.fromUserId.toString() ?? null,
       createdAt: conversation.createdAt,
     };
   } else {
@@ -293,11 +389,59 @@ export const sendMessage = async (
       });
 
       if (!existingRequest) {
-        await MessageRequest.create({
+        // First message from a non-contact — create the request
+        const newRequest = await MessageRequest.create({
           conversationId: conversation._id,
           fromUserId: new Types.ObjectId(senderId),
           toUserId: recipientId,
           status: "pending",
+        });
+
+        if (!conversation.requestStatus) {
+          conversation.requestStatus = "pending";
+        }
+
+        // Notify recipient of the new message request
+        const senderForNotif = await User.findById(senderId).select(
+          "echoId username profileImage"
+        );
+        emitToUser(recipientId!.toString(), "message-request:new", {
+          requestId: newRequest._id.toString(),
+          conversationId: conversation._id.toString(),
+          from: {
+            id: senderId,
+            echoId: senderForNotif?.echoId,
+            username: senderForNotif?.username,
+            profileImage: senderForNotif?.profileImage ?? null,
+          },
+          preview: {
+            content,
+            type,
+            timestamp: new Date().toISOString(),
+          },
+        });
+      } else if (
+        conversation.requestStatus === "pending" &&
+        existingRequest.fromUserId.toString() !== senderId
+      ) {
+        // Recipient is replying — auto-accept the request
+        existingRequest.status = "accepted";
+        await existingRequest.save();
+        conversation.requestStatus = "accepted";
+
+        const senderForAccept = await User.findById(senderId).select(
+          "echoId username profileImage"
+        );
+        emitToUser(existingRequest.fromUserId.toString(), "message-request:accepted", {
+          requestId: existingRequest._id.toString(),
+          conversationId: conversation._id.toString(),
+          acceptedBy: {
+            id: senderId,
+            echoId: senderForAccept?.echoId,
+            username: senderForAccept?.username,
+            profileImage: senderForAccept?.profileImage ?? null,
+          },
+          requestStatus: "accepted",
         });
       }
     }
@@ -324,7 +468,7 @@ export const sendMessage = async (
   conversation.updatedAt = new Date();
   await conversation.save();
 
-  const sender = await User.findById(senderId).select("username profileImage");
+  const sender = await User.findById(senderId).select("echoId username profileImage");
 
   return {
     message: {
