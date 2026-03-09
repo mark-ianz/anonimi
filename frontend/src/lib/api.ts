@@ -76,6 +76,8 @@ api.interceptors.response.use(
 
         localStorage.setItem(ACCESS_TOKEN_KEY, newAccessToken);
         localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
+        // Keep the middleware cookie in sync with the refreshed token.
+        document.cookie = `access_token=${newAccessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
 
         processQueue(null, newAccessToken);
 
@@ -90,6 +92,7 @@ api.interceptors.response.use(
         if (typeof window !== "undefined") {
           localStorage.removeItem(ACCESS_TOKEN_KEY);
           localStorage.removeItem(REFRESH_TOKEN_KEY);
+          document.cookie = "access_token=; path=/; max-age=0; SameSite=Lax";
           window.location.href = "/login";
         }
         return Promise.reject(refreshError);

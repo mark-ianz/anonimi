@@ -6,15 +6,17 @@ const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password
 const APP_ROUTES = ["/chat", "/contacts", "/groups", "/message-requests", "/profile", "/settings", "/blocked", "/support", "/user"];
 
 function isPublicRoute(pathname: string): boolean {
-  return PUBLIC_ROUTES.some(route => route === pathname || (route !== "/" && pathname.startsWith(route)));
+  return PUBLIC_ROUTES.some(route =>
+    route === "/" ? pathname === "/" : pathname === route || pathname.startsWith(route + "/")
+  );
 }
 
 function isAuthRoute(pathname: string): boolean {
-  return AUTH_ROUTES.some(route => pathname.startsWith(route));
+  return AUTH_ROUTES.some(route => pathname === route || pathname.startsWith(route + "/"));
 }
 
 function isAppRoute(pathname: string): boolean {
-  return pathname.startsWith("/app") || APP_ROUTES.some(route => pathname.startsWith(route));
+  return pathname.startsWith("/app") || APP_ROUTES.some(route => pathname === route || pathname.startsWith(route + "/"));
 }
 
 function isAdminRoute(pathname: string): boolean {
@@ -42,7 +44,7 @@ export function middleware(request: NextRequest) {
 
   if (isPublicRoute(pathname)) {
     if (isAuthenticated) {
-      const redirectUrl = new URL("/app/chat", request.url);
+      const redirectUrl = new URL("/chat", request.url);
       return NextResponse.redirect(redirectUrl);
     }
     return NextResponse.next();
@@ -50,7 +52,7 @@ export function middleware(request: NextRequest) {
 
   if (isAuthRoute(pathname)) {
     if (isAuthenticated) {
-      const redirectUrl = new URL("/app/chat", request.url);
+      const redirectUrl = new URL("/chat", request.url);
       return NextResponse.redirect(redirectUrl);
     }
     return NextResponse.next();
@@ -73,7 +75,7 @@ export function middleware(request: NextRequest) {
     }
 
     if (userRole !== "admin" && userRole !== "super_admin") {
-      const redirectUrl = new URL("/app/chat", request.url);
+      const redirectUrl = new URL("/chat", request.url);
       return NextResponse.redirect(redirectUrl);
     }
 

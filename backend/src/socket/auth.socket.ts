@@ -1,16 +1,16 @@
 import { Socket } from "socket.io";
 import { verifyAccessToken } from "../utils/jwt";
 import { User } from "../models/user.model";
-import { Types } from "mongoose";
 import { OnlineStatus } from "../types/enums";
 
-export const socketAuth = async (socket: Socket): Promise<void> => {
+export const socketAuth = async (
+  socket: Socket,
+  next: (err?: Error) => void
+): Promise<void> => {
   const token = socket.handshake.auth.token;
 
   if (!token) {
-    socket.emit("connect_error", { message: "No token provided" });
-    socket.disconnect();
-    return;
+    return next(new Error("No token provided"));
   }
 
   try {
@@ -19,15 +19,11 @@ export const socketAuth = async (socket: Socket): Promise<void> => {
     const user = await User.findById(decoded.userId);
 
     if (!user) {
-      socket.emit("connect_error", { message: "User not found" });
-      socket.disconnect();
-      return;
+      return next(new Error("User not found"));
     }
 
     if (user.status === "banned") {
-      socket.emit("connect_error", { message: "Account is banned" });
-      socket.disconnect();
-      return;
+      return next(new Error("Account is banned"));
     }
 
     user.onlineStatus = OnlineStatus.ONLINE;
@@ -41,8 +37,8 @@ export const socketAuth = async (socket: Socket): Promise<void> => {
     };
 
     socket.join(`user:${decoded.userId}`);
-  } catch (error) {
-    socket.emit("connect_error", { message: "Invalid token" });
-    socket.disconnect();
+    next();
+  } catch {
+    return next(new Error("Invalid token"));
   }
 };

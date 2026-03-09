@@ -29,6 +29,10 @@ export const useAuthStore = create<AuthState>()(
         if (typeof window !== "undefined") {
           localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
           localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+          // Write cookie so Next.js middleware can detect authentication server-side.
+          // Max-age matches refresh token lifetime (7 days) so the cookie persists
+          // for the full session; actual JWT validation still happens server-side.
+          document.cookie = `access_token=${accessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
         }
         set({ user, accessToken, refreshToken, isAuthenticated: true, isLoading: false });
       },
@@ -39,6 +43,8 @@ export const useAuthStore = create<AuthState>()(
         if (typeof window !== "undefined") {
           localStorage.removeItem(ACCESS_TOKEN_KEY);
           localStorage.removeItem(REFRESH_TOKEN_KEY);
+          // Clear the authentication cookie used by Next.js middleware.
+          document.cookie = "access_token=; path=/; max-age=0; SameSite=Lax";
         }
         set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
       },
