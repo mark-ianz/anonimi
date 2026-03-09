@@ -486,6 +486,7 @@ The default view when entering the application.
 **Layout:**
 - Header: Contact name/avatar, online status, actions menu (profile, block, report)
 - Message area: Scrollable message list (infinite scroll upward for history)
+- Non-contact notice banner (conditionally rendered — see below)
 - Input area: Text input, attachment buttons (image, file), send button
 
 **Message bubble features:**
@@ -501,6 +502,50 @@ The default view when entering the application.
 - New messages appear instantly at bottom
 - Auto-scroll to newest message
 - Optimistic message rendering (show immediately, confirm on ack)
+
+#### Non-Contact Notice Banner
+
+The banner is displayed in the chat view when `conversation.requestStatus` is `"pending"`. The content differs based on whether the current user is the **sender** (User A) or the **recipient** (User B).
+
+**Sender view** (`requestStatus === "pending"` and `currentUser === sender`):
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  ℹ  Your message is a request — [Username] hasn't accepted yet. │
+│     You can keep sending messages while you wait.               │
+│                                                         [Send Contact Request]  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+- MessageInput is **enabled** — sender can keep sending freely.
+- "Send Contact Request" button is shown if no contact request is pending or accepted.
+- If the other user already has a pending contact request pointing to the current user, show "Accept Contact Request" instead.
+
+**Recipient view** (`requestStatus === "pending"` and `currentUser === recipient`):
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  📩  Message request from [Username]                            │
+│      [Username] is not in your contacts.                        │
+│                                    [Accept]  [Ignore]           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+- MessageInput is **disabled** — recipient cannot reply until they accept.
+- **Accept** → `PATCH /api/message-requests/:id/accept { addToContacts: false }` — moves conversation to main inbox, re-enables input.
+- **Ignore** → `PATCH /api/message-requests/:id/ignore` — hides conversation, navigates user away.
+- Optionally, an "Accept & Add to Contacts" secondary action can also be offered.
+
+**Contact request controls** (shown within the banner for both sides when applicable):
+
+| Condition | Button shown |
+|-----------|-------------|
+| No contact relationship, no pending request | "Send Contact Request" |
+| Current user already sent a pending request | "Contact Request Pending" (disabled) |
+| Other user sent a pending request to current user | "Accept Contact Request" |
+| Both are already contacts (requestStatus → null) | Banner not shown |
+
+Accepting a contact request within the chat immediately upgrades `requestStatus` to `null` and re-enables the MessageInput for both parties.
 
 ### 8.2 Groups (`/app/groups`)
 
@@ -546,9 +591,23 @@ The default view when entering the application.
 
 ### 8.4 Message Requests (`/app/message-requests`)
 
-- List of message requests from non-contacts
-- Each item: sender info, message preview, timestamp
-- Actions: Accept (move to conversation list), Accept + Add to Contacts, Ignore
+**List view:**
+- Shows all conversations with `requestStatus: "pending"` (not yet accepted or ignored).
+- Each list item: sender avatar, username, EchoID, message preview, timestamp.
+- Empty state: "No pending message requests."
+
+**Per-item actions:**
+- **Accept** → `PATCH /api/message-requests/:id/accept { addToContacts: false }` — moves conversation to main chat inbox.
+- **Accept & Add to Contacts** → same but with `{ addToContacts: true }` — also creates the contact relationship and sets `requestStatus` to `null`.
+- **Ignore** → `PATCH /api/message-requests/:id/ignore` — hides conversation from both inbox and requests list.
+
+**Click to preview:**
+- Clicking a request item navigates to `/app/chat/[conversationId]`, showing the conversation with the recipient-side non-contact banner.
+- Accepting or ignoring from within the chat view works the same as from the list.
+
+**Sidebar badge:**
+- The "Message Requests" nav item displays an unread count badge showing the number of `pending` requests.
+- Badge updates in real-time via `message-request:new` socket events.
 
 ### 8.5 Profile (`/app/profile`)
 
@@ -570,6 +629,12 @@ Public profile view for another user:
 - Online status / last seen
 - Contact status (is contact, pending, none)
 - Actions: Send message, Add to contacts, Block, Report
+
+**"Send Message" action:**
+- Calls `POST /api/conversations { participantEchoId: "..." }`.
+- If a conversation already exists, returns the existing `conversationId`.
+- If no conversation exists, creates one (with `requestStatus: "pending"` if not contacts, or `null` if already contacts).
+- Navigates to `/app/chat/[conversationId]` after the call resolves.
 
 ### 8.7 Settings (`/app/settings`)
 
@@ -724,7 +789,7 @@ src/components/
 |-----------|---------|
 | `UserProfile` | Profile display |
 | `UserProfileEditor` | Profile edit form |
-| `UserSearchResults` | Search result list |
+| `UserSearchResults` | Search result list with "Add Contact" and "Send Message" actions per result |
 | `UserCard` | Compact user card |
 | `AvatarUpload` | Profile image upload |
 | `OnlineIndicator` | Online/offline dot |

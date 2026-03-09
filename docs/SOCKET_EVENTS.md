@@ -438,6 +438,38 @@ A new message request arrived from a non-contact.
 }
 ```
 
+**Client Handling:**
+- Increment the Message Requests badge count in the sidebar.
+- If the user is on the `/app/message-requests` page, append the new item to the list.
+
+---
+
+### `message-request:accepted`
+
+The recipient accepted a message request. Sent to the original sender.
+
+**Target:** `user:<senderUserId>` room.
+
+**Payload:**
+```json
+{
+  "requestId": "60d5ecb54b24a1001c8e4b60",
+  "conversationId": "60d5ecb54b24a1001c8e4b61",
+  "acceptedBy": {
+    "id": "60d5ecb54b24a1001c8e4b3b",
+    "echoId": "eid_b7G2mN48",
+    "username": "jane_smith",
+    "profileImage": "/uploads/avatars/uuid2.jpg"
+  },
+  "requestStatus": "accepted"
+}
+```
+
+**Client Handling:**
+- If the sender currently has this conversation open, dismiss the sender-side non-contact notice banner.
+- Update the local `conversation.requestStatus` to `"accepted"` in the query cache.
+- The sender's `MessageInput` remains enabled (it was never disabled for the sender).
+
 ---
 
 ### `group:member-joined`

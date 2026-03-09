@@ -263,54 +263,159 @@ Messages where the current user is in the `deletedFor` array are excluded:
 
 ### Problem
 
-When a non-contact sends a message, the recipient should have control over whether to engage. The message request system acts as a gatekeeper.
+When a non-contact sends a message, the recipient should have control over whether to engage. The message request system acts as a gatekeeper — like Facebook Messenger's message request flow — while still allowing the sender to keep sending messages before acceptance.
 
-### Flow
+### Initiating a Conversation with a Non-Contact
+
+User A can start a conversation with any user they find through search or profile browsing, regardless of contact status.
 
 ```
-User A (non-contact)                    User B
-    │                                     │
-    │  Sends message to User B            │
-    │────────────────────────────────────▶│
-    │                                     │
-    │  Message stored in DB               │
-    │  Conversation created with          │
-    │  requestStatus: "pending"           │
-    │                                     │
-    │                            ┌────────┤
-    │                            │ Message │
-    │                            │ appears │
-    │                            │ in      │
-    │                            │ Message │
-    │                            │Requests │
-    │                            │ section │
-    │                            └────────┤
-    │                                     │
-    │                  OPTIONS:           │
-    │                  ┌─ Accept message ─── Moves conversation to main inbox
-    │                  │                     User A can continue messaging
-    │                  ├─ Accept + Add ───── Same as above + creates contact
-    │                  │  to contacts        relationship
-    │                  └─ Ignore request ─── Conversation hidden
-    │                                        User A is not notified
+User A (non-contact)
+    │
+    │  Finds User B via search or profile view
+    │  Clicks "Send Message"
+    │
+    ▼
+POST /api/conversations  { participantEchoId: "eid_b7G2mN48" }
+    │
+    │  If conversation already exists → returns existing
+    │  If no conversation → creates new with:
+    │       requestStatus: "pending"   (they are not contacts)
+    │       requestStatus: null        (they are already contacts)
+    │
+    ▼
+Redirect to /chat/[conversationId]
 ```
 
-### Data Model
+Once in the chat view, User A can type and send their first message freely. The backend records the message and creates a `MessageRequest` document linking the conversation to the recipient.
 
-The `conversations` collection includes a `requestStatus` field for private conversations:
+---
+
+### Full Flow
+
+```
+User A (non-contact / sender)             User B (recipient)
+    │                                           │
+    │  Sends message                            │
+    │──────────────────────────────────────────▶│
+    │                                           │
+    │  Message stored in DB                     │
+    │  Conversation.requestStatus = "pending"   │
+    │  MessageRequest record created            │
+    │  Socket: message-request:new ────────────▶│
+    │                                           │
+    │                              ┌────────────┤
+    │                              │ Appears in  │
+    │                              │ Message     │
+    │                              │ Requests    │
+    │                              └────────────┤
+    │                                           │
+    │  User A can continue sending              │
+    │  more messages freely                     │
+    │  (no additional requests created)         │
+    │                                           │
+    │                         ┌─── OPTION A: Accept ──────────────────────────┐
+    │                         │    PATCH /api/message-requests/:id/accept      │
+    │                         │    requestStatus → "accepted"                  │
+    │                         │    Conversation moves to main inbox            │
+    │                         │    Socket: message-request:accepted → User A   │
+    │◀────────────────────────┘    User B can now reply freely                 │
+    │                                                                           │
+    │                         ┌─── OPTION B: Accept + Add to Contacts ────────┐
+    │                         │    Same as Accept but also creates Contact     │
+    │                         │    relationship (requestStatus → null)         │
+    │◀────────────────────────┘                                                 │
+    │                                                                           │
+    │                         ┌─── OPTION C: Reply (auto-accept) ─────────────┐
+    │                         │    Recipient sends a message                   │
+    │                         │    requestStatus auto-upgrades → "accepted"    │
+    │◀────────────────────────┘    No explicit accept action needed            │
+    │                                                                           │
+    │                         └─── OPTION D: Ignore ───────────────────────────
+    │                              PATCH /api/message-requests/:id/ignore
+    │                              requestStatus → "ignored"
+    │                              Conversation hidden from both inboxes
+    │                              User A is NOT notified
+```
+
+---
+
+### requestStatus State Machine
+
+```
+               ┌──────────────────────────────────────────────────────┐
+               │                                                      │
+               ▼                                                      │
+         ┌─────────┐   recipient accepts / replies   ┌────────────┐  │
+  null ──▶│ pending │─────────────────────────────────▶│ accepted  │  │
+  (if     └─────────┘                                 └────────────┘  │
+  contacts)    │                                                      │
+               │  recipient ignores                  ┌────────────┐  │
+               └────────────────────────────────────▶│  ignored   │──┘
+                                                      └────────────┘
+                                                      (can be re-accepted later)
+
+null = both users are contacts (no request state needed)
+```
 
 | Value | Meaning |
 |-------|---------|
-| `null` | Both users are contacts — normal conversation |
+| `null` | Both users are contacts — normal conversation, no gating |
 | `"pending"` | Message request sent, awaiting recipient action |
-| `"accepted"` | Recipient accepted the message request |
-| `"ignored"` | Recipient ignored the request |
+| `"accepted"` | Recipient accepted — conversation is in main inbox |
+| `"ignored"` | Recipient ignored — conversation hidden, not deleted |
+
+---
+
+### Sender vs. Recipient Behavior
+
+The UI and permissions differ based on which side of the request you are on:
+
+| Scenario | Sender (User A) | Recipient (User B) |
+|----------|-----------------|-------------------|
+| `requestStatus: "pending"` | Can send messages freely | Cannot reply — MessageInput is disabled |
+| `requestStatus: "pending"` | Sees "Your message is a request" notice | Sees "Message request" banner with Accept / Ignore |
+| `requestStatus: "accepted"` | Full chat access | Full chat access |
+| `requestStatus: "ignored"` | Cannot message (conversation is effectively closed) | Conversation hidden — can be un-ignored from requests view |
+
+---
+
+### Auto-Accept on Reply
+
+If the recipient types and sends a message into a `pending` conversation, the backend automatically upgrades `requestStatus` to `"accepted"`. This means:
+
+- No explicit accept step is required — replying IS the acceptance.
+- The `MessageRequest` record status is set to `"accepted"`.
+- A `message-request:accepted` socket event is emitted to the original sender.
+
+---
+
+### Contact Request Integration within Chat
+
+While a message request is pending (or even after it is accepted), either party may choose to send or accept a contact request, independently of the message request status.
+
+**"Send Contact Request" button** — shown when:
+- Neither user has a contact relationship
+- Neither has a pending contact request from the other
+
+**"Accept Contact Request" button** — shown when:
+- The other party already sent a contact request that is pending
+
+When a contact request is accepted within the chat:
+- A standard `Contact` record is created for both users.
+- `Conversation.requestStatus` is set to `null` (no longer gated).
+- Any `MessageRequest` for this conversation is marked `"accepted"`.
+- The recipient's MessageInput is immediately re-enabled if it was gated.
+
+---
 
 ### Rules
 
-- Only the **first message** from a non-contact triggers a message request. Subsequent messages from the same sender within the same conversation do not create additional requests.
-- Ignored conversations can still be accepted later (they are hidden, not deleted).
-- If the sender is blocked, no message request is created — the message is simply rejected.
+- Only the **first message** from a non-contact triggers a `MessageRequest` record. Subsequent messages from the same sender in the same conversation do not create additional requests.
+- The sender can continue sending messages at any time while `requestStatus` is `"pending"` — messages are stored and visible on the sender's side. The recipient sees them all upon accepting.
+- Ignored conversations can still be found and accepted later from the Message Requests view — they are hidden, not deleted.
+- If the sender is blocked, no message or message request is created — the send attempt is rejected silently.
+- When a contact relationship is established (either via accept-with-contacts or a standalone contact request), `requestStatus` is set to `null`, removing all gating permanently.
 
 ---
 

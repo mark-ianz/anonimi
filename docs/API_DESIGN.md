@@ -604,6 +604,50 @@ Set or update a contact nickname.
 
 ## 4. Conversations
 
+### POST /api/conversations
+
+Open or create a private conversation with another user. If a conversation between the two users already exists, returns the existing one. If not, creates a new conversation.
+
+**Request Body:**
+```json
+{
+  "participantEchoId": "eid_b7G2mN48"
+}
+```
+
+**Response (200 — existing conversation):**
+```json
+{
+  "success": true,
+  "data": {
+    "conversationId": "60d5ecb54b24a1001c8e4b3f",
+    "created": false,
+    "requestStatus": null
+  }
+}
+```
+
+**Response (201 — new conversation created):**
+```json
+{
+  "success": true,
+  "data": {
+    "conversationId": "60d5ecb54b24a1001c8e4b60",
+    "created": true,
+    "requestStatus": "pending"
+  }
+}
+```
+
+`requestStatus` will be `null` if the two users are already contacts, or `"pending"` if they are not.
+
+**Errors:**
+- `404` — User with the given EchoID not found
+- `400` — Cannot create conversation with yourself
+- `403` — You are blocked by or have blocked this user
+
+---
+
 ### GET /api/conversations
 
 List the authenticated user's conversations.
@@ -637,6 +681,7 @@ List the authenticated user's conversations.
         "timestamp": "2026-03-08T11:45:00Z"
       },
       "unreadCount": 3,
+      "requestStatus": null,
       "updatedAt": "2026-03-08T11:45:00Z"
     },
     {
@@ -655,6 +700,7 @@ List the authenticated user's conversations.
         "timestamp": "2026-03-08T11:30:00Z"
       },
       "unreadCount": 0,
+      "requestStatus": null,
       "updatedAt": "2026-03-08T11:30:00Z"
     }
   ],
@@ -662,7 +708,44 @@ List the authenticated user's conversations.
 }
 ```
 
-Note: `unreadCount` is computed as messages not in the user's `readBy` since their last read timestamp.
+Note: `unreadCount` is computed as messages not in the user's `readBy` since their last read timestamp. `requestStatus` is included on all private conversations — `null` means full access, `"pending"` means gated, `"accepted"` means formerly-gated but now open, `"ignored"` means hidden.
+
+This endpoint returns only conversations the current user has access to in their **main chat inbox** — conversations with `requestStatus: "pending"` or `"ignored"` are **excluded** from this list (they appear under `GET /api/conversations/requests` instead).
+
+---
+
+### GET /api/conversations/requests
+
+List all conversations with `requestStatus: "pending"` where the current user is the **recipient** (i.e. the message request inbox).
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "60d5ecb54b24a1001c8e4b61",
+      "type": "private",
+      "participant": {
+        "id": "60d5ecb54b24a1001c8e4b3d",
+        "echoId": "eid_c9H4pQ67",
+        "username": "bob_builder",
+        "profileImage": null
+      },
+      "lastMessage": {
+        "content": "Hey, I found you on EchoID!",
+        "senderId": "60d5ecb54b24a1001c8e4b3d",
+        "type": "text",
+        "timestamp": "2026-03-08T10:00:00Z"
+      },
+      "requestStatus": "pending",
+      "requestId": "60d5ecb54b24a1001c8e4b60",
+      "updatedAt": "2026-03-08T10:00:00Z"
+    }
+  ],
+  "pagination": { "nextCursor": null, "hasMore": false }
+}
+```
 
 ---
 

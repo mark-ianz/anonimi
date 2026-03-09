@@ -236,8 +236,26 @@ This document defines the phased implementation plan for EchoID. Each phase buil
 ### Frontend Tasks
 
 - [ ] Build message requests page (`/app/message-requests`):
-  - [ ] Request list with accept/ignore/add-to-contacts actions
-  - [ ] Separate section in sidebar navigation
+  - [ ] Request list with accept / accept-and-add-to-contacts / ignore actions
+  - [ ] Clicking a request navigates to the conversation (full chat view with recipient banner)
+  - [ ] Sidebar "Message Requests" nav item with live unread-count badge
+  - [ ] Badge updates in real-time via `message-request:new` socket event
+- [ ] Build "Send Message" entry points for non-contacts:
+  - [ ] "Send Message" button in `UserSearchResults` alongside "Add Contact"
+  - [ ] "Send Message" button on `UserProfile` page (`/app/user/[echoId]`)
+  - [ ] Both call `POST /api/conversations` then navigate to `/app/chat/[conversationId]`
+- [ ] Implement non-contact notice banner in `ChatView`:
+  - [ ] Determine current user's role: sender or recipient (compare `currentUserId` with `MessageRequest.fromUserId`)
+  - [ ] **Recipient banner**: "Message request from [Username]" + Accept + Ignore buttons; disable `MessageInput`
+  - [ ] **Sender banner**: "Your message is a request — [Username] hasn't accepted yet"; keep `MessageInput` enabled
+  - [ ] Accept action: `PATCH /api/message-requests/:id/accept` → re-enable `MessageInput`, dismiss banner, move to main inbox
+  - [ ] Ignore action: `PATCH /api/message-requests/:id/ignore` → navigate away from conversation
+  - [ ] On `message-request:accepted` socket event → remove banner, enable input for sender
+- [ ] Add contact request controls inside ChatView banner:
+  - [ ] "Send Contact Request" shown when no contact relationship and no pending request
+  - [ ] "Contact Request Pending" (disabled) shown when current user already sent a request
+  - [ ] "Accept Contact Request" shown when the other party sent a pending contact request
+  - [ ] Accepting a contact request within chat upgrades `requestStatus` to `null` for both sides
 - [ ] Build block/unblock functionality (from profile view)
 - [ ] Build block list page (`/app/blocked`)
 - [ ] Implement typing indicators:
