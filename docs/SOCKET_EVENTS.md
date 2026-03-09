@@ -2,6 +2,8 @@
 
 This document specifies all real-time WebSocket events used in EchoID, including namespaces, authentication, event payloads, room management, and connection lifecycle.
 
+> **Frontend note:** The Socket.IO client connects only within the authenticated `(main)` route group layout via `SocketProvider`. Marketing and auth pages do not establish WebSocket connections. See **FRONTEND_DESIGN.md** for client-side integration details.
+
 ---
 
 ## Socket.IO Server Configuration

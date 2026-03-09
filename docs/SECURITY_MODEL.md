@@ -557,3 +557,29 @@ Applied globally via middleware (e.g., `helmet`):
 | `mongo-sanitize` | NoSQL injection prevention |
 | `multer` | File upload parsing |
 | `file-type` | MIME type detection (magic bytes) |
+
+---
+
+## 16. Frontend Authentication Routing
+
+The Next.js frontend enforces authentication boundaries at the routing layer using Next.js middleware, providing defense-in-depth alongside backend token validation.
+
+### Middleware Auth Check
+
+A `middleware.ts` file at `src/` intercepts every navigation request and applies the following rules:
+
+| Route Pattern | No Token | Valid Token | Valid Token + Admin Role |
+|---------------|----------|-------------|--------------------------|
+| `/`, `/about`, `/features`, `/contact`, `/faq`, `/privacy`, `/terms` | Allow | Allow | Allow |
+| `/login`, `/register` | Allow | Redirect → `/app/chat` | Redirect → `/app/chat` |
+| `/verify`, `/forgot-password`, `/reset-password` | Allow | Allow | Allow |
+| `/app/*` | Redirect → `/login` | Allow | Allow |
+| `/admin/*` | Redirect → `/login` | Redirect → `/app/chat` | Allow |
+
+### Security Considerations
+
+1. **Cookie-only tokens:** The `access_token` is stored in an httpOnly cookie, not localStorage. The middleware reads this cookie server-side during SSR/navigation.
+2. **Role enforcement is server-validated:** The middleware reads the JWT payload for role checks, but all admin actions are re-validated server-side by the backend API.
+3. **No sensitive data in client state:** User tokens are never exposed to JavaScript. Zustand stores hold user profile data, not raw tokens.
+4. **WebSocket auth:** The Socket.IO client sends the access token during the handshake. The server validates the token before accepting the connection. This is independent of the middleware routing.
+5. **Redirect loops prevention:** The middleware explicitly allows auth pages for unauthenticated users and skips static assets (`_next/`, images, fonts).

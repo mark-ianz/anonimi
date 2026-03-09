@@ -9,10 +9,11 @@ This document defines the complete directory layout for both the backend and fro
 ```
 EchoID/
 ├── backend/                    # Express + Socket.IO API server
-├── frontend/                   # Next.js web client
+├── frontend/                   # Next.js enterprise web application
 ├── docs/                       # Architecture and planning documents
 │   ├── README.md
 │   ├── ARCHITECTURE.md
+│   ├── FRONTEND_DESIGN.md
 │   ├── SYSTEM_DESIGN.md
 │   ├── DATABASE_SCHEMA.md
 │   ├── API_DESIGN.md
@@ -188,70 +189,97 @@ backend/
 
 ## Frontend Structure
 
+The frontend is an **enterprise SaaS web application** with four distinct experiences: public marketing site, authentication, authenticated application, and admin panel. Each has its own route group and layout.
+
 ```
 frontend/
 ├── public/
 │   ├── favicon.ico
-│   └── images/                        # Static images (logos, icons)
+│   ├── images/                        # Static images (logos, icons, og-images)
+│   │   ├── logo.svg
+│   │   ├── logo-dark.svg
+│   │   ├── og-image.png              # Open Graph social preview image
+│   │   └── hero/                      # Landing page hero assets
+│   └── fonts/                         # Self-hosted fonts (if needed)
 │
 ├── src/
 │   ├── app/                           # Next.js App Router
 │   │   ├── layout.tsx                 # Root layout (providers, fonts, global styles)
-│   │   ├── page.tsx                   # Landing/home page
-│   │   ├── globals.css                # Global Tailwind + custom styles
+│   │   ├── page.tsx                   # Root page (redirect: auth → /app/chat, unauth → marketing)
+│   │   ├── globals.css                # Global Tailwind + custom CSS variables
+│   │   ├── not-found.tsx              # Custom 404 page
 │   │   │
-│   │   ├── (auth)/                    # Auth route group (no layout nesting)
+│   │   ├── (public)/                  # PUBLIC MARKETING SITE — route group
+│   │   │   ├── layout.tsx             # Marketing layout (navbar + footer)
+│   │   │   ├── about/
+│   │   │   │   └── page.tsx           # About page
+│   │   │   ├── features/
+│   │   │   │   └── page.tsx           # Features showcase page
+│   │   │   ├── contact/
+│   │   │   │   └── page.tsx           # Contact form / info page
+│   │   │   ├── faq/
+│   │   │   │   └── page.tsx           # FAQ accordion page
+│   │   │   ├── privacy/
+│   │   │   │   └── page.tsx           # Privacy policy
+│   │   │   └── terms/
+│   │   │       └── page.tsx           # Terms of service
+│   │   │
+│   │   ├── (auth)/                    # AUTHENTICATION — route group (minimal layout)
+│   │   │   ├── layout.tsx             # Auth layout (centered card, no nav)
 │   │   │   ├── login/
-│   │   │   │   └── page.tsx
+│   │   │   │   └── page.tsx           # Login form
 │   │   │   ├── register/
-│   │   │   │   └── page.tsx
+│   │   │   │   └── page.tsx           # Registration form
 │   │   │   ├── verify/
-│   │   │   │   └── page.tsx
+│   │   │   │   └── page.tsx           # Email/phone verification (OTP)
 │   │   │   ├── forgot-password/
-│   │   │   │   └── page.tsx
+│   │   │   │   └── page.tsx           # Request password reset
 │   │   │   └── reset-password/
-│   │   │       └── page.tsx
+│   │   │       └── page.tsx           # Reset password with token
 │   │   │
-│   │   ├── (main)/                    # Main app route group (shared layout with sidebar)
-│   │   │   ├── layout.tsx             # Main app layout (sidebar + header + content)
-│   │   │   ├── chat/
-│   │   │   │   ├── page.tsx           # Conversation list (default view)
-│   │   │   │   └── [conversationId]/
-│   │   │   │       └── page.tsx       # Active conversation / chat view
-│   │   │   ├── contacts/
-│   │   │   │   ├── page.tsx           # Contacts list
-│   │   │   │   └── requests/
-│   │   │   │       └── page.tsx       # Contact requests
-│   │   │   ├── groups/
-│   │   │   │   ├── page.tsx           # Groups list
-│   │   │   │   ├── create/
-│   │   │   │   │   └── page.tsx       # Create group form
-│   │   │   │   └── [groupId]/
-│   │   │   │       ├── page.tsx       # Group chat view
-│   │   │   │       └── settings/
-│   │   │   │           └── page.tsx   # Group settings
-│   │   │   ├── message-requests/
-│   │   │   │   └── page.tsx           # Message requests list
-│   │   │   ├── profile/
-│   │   │   │   └── page.tsx           # Own profile view + edit
-│   │   │   ├── user/
-│   │   │   │   └── [echoId]/
-│   │   │   │       └── page.tsx       # Public user profile
-│   │   │   ├── settings/
-│   │   │   │   └── page.tsx           # App settings
-│   │   │   ├── blocked/
-│   │   │   │   └── page.tsx           # Block list
-│   │   │   └── support/
-│   │   │       ├── page.tsx           # My support tickets
-│   │   │       ├── create/
-│   │   │       │   └── page.tsx       # Create ticket
-│   │   │       └── [ticketId]/
-│   │   │           └── page.tsx       # Ticket detail + thread
+│   │   ├── (main)/                    # AUTHENTICATED APP — route group (sidebar layout)
+│   │   │   ├── layout.tsx             # App layout (sidebar + SocketProvider + content)
+│   │   │   ├── app/
+│   │   │   │   ├── chat/
+│   │   │   │   │   ├── page.tsx       # Conversation list (default app view)
+│   │   │   │   │   └── [conversationId]/
+│   │   │   │   │       └── page.tsx   # Active conversation / chat view
+│   │   │   │   ├── contacts/
+│   │   │   │   │   ├── page.tsx       # Contacts list
+│   │   │   │   │   └── requests/
+│   │   │   │   │       └── page.tsx   # Contact requests
+│   │   │   │   ├── groups/
+│   │   │   │   │   ├── page.tsx       # Groups list
+│   │   │   │   │   ├── create/
+│   │   │   │   │   │   └── page.tsx   # Create group form
+│   │   │   │   │   └── [groupId]/
+│   │   │   │   │       ├── page.tsx   # Group chat view
+│   │   │   │   │       └── settings/
+│   │   │   │   │           └── page.tsx # Group settings
+│   │   │   │   ├── message-requests/
+│   │   │   │   │   └── page.tsx       # Message requests from non-contacts
+│   │   │   │   ├── profile/
+│   │   │   │   │   └── page.tsx       # Own profile view + edit
+│   │   │   │   ├── user/
+│   │   │   │   │   └── [echoId]/
+│   │   │   │   │       └── page.tsx   # Public user profile
+│   │   │   │   ├── settings/
+│   │   │   │   │   └── page.tsx       # Application settings
+│   │   │   │   ├── blocked/
+│   │   │   │   │   └── page.tsx       # Block list
+│   │   │   │   └── support/
+│   │   │   │       ├── page.tsx       # My support tickets
+│   │   │   │       ├── create/
+│   │   │   │       │   └── page.tsx   # Create ticket
+│   │   │   │       └── [ticketId]/
+│   │   │   │           └── page.tsx   # Ticket detail + thread
+│   │   │   │
+│   │   │   └── middleware.ts          # (Optional) Additional app-level middleware
 │   │   │
-│   │   └── (admin)/                   # Admin route group (separate layout)
+│   │   └── (admin)/                   # ADMIN PANEL — route group (admin layout)
 │   │       ├── layout.tsx             # Admin layout (admin sidebar + header)
 │   │       └── admin/
-│   │           ├── page.tsx           # Admin dashboard home
+│   │           ├── page.tsx           # Admin dashboard home (metrics)
 │   │           ├── users/
 │   │           │   ├── page.tsx       # User search + list
 │   │           │   └── [userId]/
@@ -278,6 +306,8 @@ frontend/
 │   │           └── logs/
 │   │               └── page.tsx       # Admin activity logs
 │   │
+│   ├── middleware.ts                  # Next.js root middleware (auth routing)
+│   │
 │   ├── components/
 │   │   ├── ui/                        # shadcn/ui components (auto-generated)
 │   │   │   ├── button.tsx
@@ -287,11 +317,35 @@ frontend/
 │   │   │   ├── avatar.tsx
 │   │   │   ├── badge.tsx
 │   │   │   ├── card.tsx
+│   │   │   ├── accordion.tsx          # Used for FAQ
 │   │   │   ├── scroll-area.tsx
 │   │   │   ├── skeleton.tsx
 │   │   │   ├── toast.tsx
 │   │   │   ├── tooltip.tsx
+│   │   │   ├── sheet.tsx              # Mobile sidebar drawer
+│   │   │   ├── separator.tsx
+│   │   │   ├── tabs.tsx
 │   │   │   └── ...                    # Other shadcn/ui components as needed
+│   │   │
+│   │   ├── marketing/                 # Marketing site components
+│   │   │   ├── MarketingNavbar.tsx    # Public site top navigation
+│   │   │   ├── MarketingFooter.tsx    # Public site footer
+│   │   │   ├── HeroSection.tsx        # Landing page hero
+│   │   │   ├── FeatureCard.tsx        # Feature display card
+│   │   │   ├── FeatureGrid.tsx        # Features grid layout
+│   │   │   ├── HowItWorksStep.tsx     # Step in "How It Works" section
+│   │   │   ├── CTASection.tsx         # Call to action section
+│   │   │   ├── FAQAccordion.tsx       # FAQ expandable item
+│   │   │   └── ContactForm.tsx        # Contact page form
+│   │   │
+│   │   ├── auth/                      # Auth form components
+│   │   │   ├── LoginForm.tsx          # Email/password login form
+│   │   │   ├── RegisterForm.tsx       # Registration form
+│   │   │   ├── ForgotPasswordForm.tsx # Password reset request
+│   │   │   ├── ResetPasswordForm.tsx  # New password form
+│   │   │   ├── VerifyCodeInput.tsx    # OTP verification input
+│   │   │   ├── PasswordStrength.tsx   # Password strength indicator
+│   │   │   └── AuthCard.tsx           # Wrapper card for auth forms
 │   │   │
 │   │   ├── chat/                      # Chat-specific components
 │   │   │   ├── ChatView.tsx           # Main chat container
@@ -346,6 +400,7 @@ frontend/
 │   │   └── shared/                    # Shared/reusable components
 │   │       ├── ProtectedRoute.tsx     # Auth guard wrapper
 │   │       ├── AdminRoute.tsx         # Admin role guard wrapper
+│   │       ├── AppSidebar.tsx         # Main app sidebar navigation
 │   │       ├── LoadingSkeleton.tsx    # Loading placeholder
 │   │       ├── EmptyState.tsx         # Empty data display
 │   │       ├── ErrorBoundary.tsx      # React error boundary
@@ -411,6 +466,20 @@ frontend/
 ├── components.json                    # shadcn/ui configuration
 └── README.md
 ```
+
+### Key Design Decisions
+
+1. **Route groups separate layouts:** `(public)`, `(auth)`, `(main)`, and `(admin)` each define their own `layout.tsx`, ensuring each experience has the appropriate navigation structure.
+
+2. **Application routes nest under `/app`:** All authenticated app routes live under `/app/*` within the `(main)` route group. This cleanly separates application routes from marketing routes.
+
+3. **Marketing components are isolated:** Components for the public site (`components/marketing/`) are separate from application components, preventing accidental coupling.
+
+4. **Auth components are standalone:** Authentication forms have their own component directory, decoupled from the rest of the application.
+
+5. **Root middleware handles routing:** A single `middleware.ts` at the `src/` root handles all authentication-based routing logic (redirect unauthenticated users from `/app/*`, redirect authenticated users from `/login`, etc.).
+
+6. **SocketProvider wraps only the app layout:** The WebSocket connection is established only within the `(main)` layout, not globally. Marketing and auth pages do not open socket connections.
 
 ---
 
@@ -506,9 +575,11 @@ Both `backend` and `frontend` would import from `@echoid/shared`.
 
 5. **Index files for aggregation** — `routes/index.ts` aggregates all route files. Avoid deep re-exporting chains that obscure import sources.
 
-6. **Component composition** — Prefer many small components (`MessageBubble`, `ReadReceipt`, `TypingIndicator`) over monolithic page components.
+6. **Component composition** — Prefer many small components (`MessageBubble`, `ReadReceipt`, `TypingIndicator`) over monolithic page components. Components are organized by domain: `marketing/`, `auth/`, `chat/`, `conversations/`, `contacts/`, `groups/`, `user/`, `admin/`, and `shared/`.
 
-7. **Separation of concerns (frontend)** — 
+7. **Route group isolation** — Each route group (`(public)`, `(auth)`, `(main)`, `(admin)`) has its own layout and should not import components from other route groups' layouts. Shared components live in `components/shared/`.
+
+8. **Separation of concerns (frontend)** — 
    - **Pages** (`app/`) — Routing, data fetching setup, layout.
    - **Components** (`components/`) — UI rendering, user interaction.
    - **Hooks** (`hooks/`) — Reusable stateful logic.

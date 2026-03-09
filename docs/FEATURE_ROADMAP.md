@@ -53,30 +53,72 @@ This document defines the phased implementation plan for EchoID. Each phase buil
 
 ### Frontend Tasks
 
+#### Project Setup & Infrastructure
 - [ ] Install and configure shadcn/ui
 - [ ] Install and configure TanStack Query
 - [ ] Install and configure Zustand
 - [ ] Set up API client (Axios or fetch wrapper) with auth interceptor
-- [ ] Build auth pages:
-  - [ ] Registration page
-  - [ ] Email verification page
-  - [ ] Login page
-  - [ ] Forgot password page
-  - [ ] Reset password page
-- [ ] Build user profile page (view own profile, edit)
-- [ ] Build user search page/component
-- [ ] Build public profile view (view another user)
 - [ ] Implement auth state management (Zustand store)
-- [ ] Set up protected route wrapper
-- [ ] Build base layout (sidebar, header, main content area)
+- [ ] Set up `ThemeProvider` (dark/light mode)
+- [ ] Set up `QueryProvider` wrapper
+
+#### Next.js Root Middleware (Auth Routing)
+- [ ] Create `src/middleware.ts` with authentication-based routing:
+  - [ ] Read `access_token` cookie to determine auth state
+  - [ ] Unauthenticated users accessing `/app/*` → redirect to `/login`
+  - [ ] Unauthenticated users accessing `/admin/*` → redirect to `/login`
+  - [ ] Authenticated users accessing `/login` or `/register` → redirect to `/app/chat`
+  - [ ] Public routes (`/`, `/about`, `/features`, `/contact`, `/faq`, `/privacy`, `/terms`) → always accessible
+  - [ ] Admin routes (`/admin/*`) → check user role, redirect non-admins to `/app/chat`
+
+#### Root Layout & Route Groups
+- [ ] Build root `layout.tsx` (providers, fonts, global styles — no navigation)
+- [ ] Build root `page.tsx` (redirect: authenticated → `/app/chat`, unauthenticated → landing)
+- [ ] Create four route group layouts:
+  - [ ] `(public)/layout.tsx` — Marketing layout (MarketingNavbar + MarketingFooter)
+  - [ ] `(auth)/layout.tsx` — Auth layout (centered card, minimal, no navigation)
+  - [ ] `(main)/layout.tsx` — App layout (AppSidebar + content area + SocketProvider)
+  - [ ] `(admin)/layout.tsx` — Admin layout (AdminSidebar + header + content area)
+
+#### Public Marketing Site (`(public)` route group)
+- [ ] Build `MarketingNavbar` component (logo, nav links, Login/Register CTAs)
+- [ ] Build `MarketingFooter` component (links, copyright)
+- [ ] Build landing page (`/`) — hero section, features overview, how-it-works, CTA
+- [ ] Build About page (`/about`) — mission, team, platform story
+- [ ] Build Features page (`/features`) — feature cards with icons and descriptions
+- [ ] Build Contact page (`/contact`) — contact form + info
+- [ ] Build FAQ page (`/faq`) — accordion-based Q&A
+- [ ] Build Privacy Policy page (`/privacy`) — legal content
+- [ ] Build Terms of Service page (`/terms`) — legal content
+
+#### Authentication Pages (`(auth)` route group)
+- [ ] Build `AuthCard` wrapper component (centered card with logo)
+- [ ] Build Login page — email/password form with "Forgot password?" and register links
+- [ ] Build Registration page — username, email, password, confirm password
+- [ ] Build Email Verification page — OTP code input with resend timer
+- [ ] Build Forgot Password page — email input form
+- [ ] Build Reset Password page — new password form with strength indicator
+
+#### Authenticated Application Pages (`(main)` route group)
+- [ ] Build `AppSidebar` component (nav: Chat, Contacts, Groups, Profile, Settings, Support)
+- [ ] Build user profile page (`/app/profile`) — view own profile, edit
+- [ ] Build user search page/component
+- [ ] Build public profile view (`/app/user/[echoId]`)
+- [ ] Build settings page (`/app/settings`) — theme, notifications, account
+- [ ] Set up protected route wrapper (`ProtectedRoute` component)
 
 ### Acceptance Criteria
 
+- Public marketing site is accessible without authentication.
+- Marketing pages render with proper SEO metadata.
+- Authenticated users visiting `/login` or `/register` are redirected to `/app/chat`.
+- Unauthenticated users visiting `/app/*` are redirected to `/login`.
 - Users can register with email, verify, and log in.
 - JWT tokens work correctly with refresh rotation.
 - Users can view and edit their profiles.
 - Users can search for other users by EchoID or username.
 - Public profiles show only public information (no email/phone).
+- All four layouts render correctly with proper navigation.
 
 ---
 
@@ -116,23 +158,26 @@ This document defines the phased implementation plan for EchoID. Each phase buil
 ### Frontend Tasks
 
 - [ ] Install and configure Socket.IO client
+- [ ] Build `SocketProvider` (wraps only the `(main)` layout, not global)
 - [ ] Build Socket.IO connection manager (with auth + reconnect)
-- [ ] Build conversation list sidebar
-- [ ] Build chat view:
+- [ ] Build `ConnectionStatus` component (WebSocket connection indicator)
+- [ ] Build conversation list sidebar (`ConversationList`, `ConversationItem`, `ConversationSearch`)
+- [ ] Build chat view (`/app/chat/[conversationId]`):
+  - [ ] `ChatView` container with `MessageList` and `MessageInput`
   - [ ] Message list with infinite scroll (upward for older messages)
-  - [ ] Message input area
-  - [ ] Message bubbles (sent vs. received styling)
+  - [ ] Message input area with send button
+  - [ ] `MessageBubble` (sent vs. received styling)
   - [ ] Scroll-to-bottom behavior for new messages
-- [ ] Build contacts page:
-  - [ ] Contacts list
-  - [ ] Incoming requests tab
+- [ ] Build contacts page (`/app/contacts`):
+  - [ ] `ContactList` and `ContactItem` components
+  - [ ] Incoming requests tab (`/app/contacts/requests`)
+  - [ ] `ContactRequestCard` with accept/decline actions
   - [ ] Send contact request (from profile or search)
-  - [ ] Accept/decline request actions
-  - [ ] Contact nickname management
-- [ ] Create Zustand store for active conversation state
-- [ ] Create Zustand store for socket connection state
+  - [ ] `NicknameEditor` dialog
+- [ ] Create Zustand store for active conversation state (`chatStore`)
+- [ ] Create Zustand store for socket connection state (`socketStore`)
 - [ ] Integrate TanStack Query for conversation/message fetching
-- [ ] Implement cursor-based pagination hook
+- [ ] Implement cursor-based pagination hook (`useInfiniteScroll`)
 
 ### Acceptance Criteria
 
@@ -190,28 +235,29 @@ This document defines the phased implementation plan for EchoID. Each phase buil
 
 ### Frontend Tasks
 
-- [ ] Build message requests section (separate tab or section in sidebar)
-- [ ] Build accept/ignore/add-to-contacts actions
+- [ ] Build message requests page (`/app/message-requests`):
+  - [ ] Request list with accept/ignore/add-to-contacts actions
+  - [ ] Separate section in sidebar navigation
 - [ ] Build block/unblock functionality (from profile view)
-- [ ] Build block list page
+- [ ] Build block list page (`/app/blocked`)
 - [ ] Implement typing indicators:
-  - [ ] Detect input activity → emit typing events
-  - [ ] Debounce at 2-second intervals
-  - [ ] Display "User is typing..." in chat view
+  - [ ] Detect input activity → emit typing events (debounce 2s)
+  - [ ] `TypingIndicator` component — display "User is typing..." in chat view
 - [ ] Implement read receipts:
   - [ ] Emit read events when conversation is focused
-  - [ ] Display sent/delivered/read indicators on messages
+  - [ ] `ReadReceipt` component — sent/delivered/read indicators on messages
 - [ ] Implement presence indicators:
-  - [ ] Online/offline dot on avatars
-  - [ ] "Last seen" display
+  - [ ] `OnlineIndicator` component — online/offline dot on avatars
+  - [ ] "Last seen" display on profiles
+  - [ ] Create Zustand store for presence state (`presenceStore`)
 - [ ] Build media upload UI:
-  - [ ] Image attachment button in chat input
+  - [ ] Image attachment button in `MessageInput`
   - [ ] File attachment button
+  - [ ] `MediaPreview` component in messages
   - [ ] Upload progress indicator
-  - [ ] Image preview in messages
   - [ ] File download link in messages
 - [ ] Build message deletion UI:
-  - [ ] Long-press/right-click context menu
+  - [ ] `MessageActions` context menu (right-click / long-press)
   - [ ] "Delete for me" option
   - [ ] "Unsend" option (for own messages within time limit)
   - [ ] "This message was unsent" placeholder display
@@ -273,24 +319,25 @@ This document defines the phased implementation plan for EchoID. Each phase buil
 
 ### Frontend Tasks
 
-- [ ] Build group creation dialog:
+- [ ] Build groups list page (`/app/groups`)
+- [ ] Build `CreateGroupDialog`:
   - [ ] Group name input
-  - [ ] Group image upload
+  - [ ] Group image upload (`AvatarUpload` reuse)
   - [ ] Member search and selection (prioritize contacts)
-- [ ] Build group chat view (extends private chat view):
-  - [ ] Group header with name, image, member count
+- [ ] Build group chat view (`/app/groups/[groupId]`, extends private chat view):
+  - [ ] `GroupHeader` — name, image, member count
   - [ ] Group info panel (show members, settings)
   - [ ] System messages (join, leave, nickname change)
   - [ ] Multiple typing indicators ("Alice, Bob are typing...")
-- [ ] Build group settings page:
+- [ ] Build group settings page (`/app/groups/[groupId]/settings`):
   - [ ] Edit name and image (admin/owner)
   - [ ] Toggle join requests (admin/owner)
-  - [ ] View member list with roles
-  - [ ] Promote/demote members (owner/admin)
+  - [ ] `GroupMemberList` with `GroupMemberItem` rows
+  - [ ] `RoleSelector` — promote/demote members (owner/admin)
   - [ ] Remove members (owner/admin)
   - [ ] Leave group option
 - [ ] Build group nickname management
-- [ ] Build join request approval UI (for admins)
+- [ ] Build `JoinRequestCard` — join request approval UI (for admins)
 - [ ] Build group mute/archive/delete-locally options
 
 ### Acceptance Criteria
@@ -342,24 +389,24 @@ This document defines the phased implementation plan for EchoID. Each phase buil
 
 ### Frontend Tasks
 
-- [ ] Build admin layout (separate from user layout)
-- [ ] Build admin dashboard home (overview metrics)
-- [ ] Build user management page:
+- [ ] Build `(admin)` route group layout with `AdminSidebar` component
+- [ ] Build admin dashboard home (`/admin`) — `MetricCard` overview metrics
+- [ ] Build user management page (`/admin/users`):
   - [ ] User search with all fields
-  - [ ] Full user profile view
-  - [ ] Warn/ban/unban actions
+  - [ ] Full user profile view (`/admin/users/[userId]`)
+  - [ ] `WarnDialog` and `BanDialog` action modals
   - [ ] Role management (super admin)
-- [ ] Build report queue page:
-  - [ ] List pending reports (sortable, filterable)
-  - [ ] Report detail view (with message snapshot)
+- [ ] Build report queue page (`/admin/reports`):
+  - [ ] `ReportCard` list — pending reports (sortable, filterable)
+  - [ ] `ReportDetail` view (`/admin/reports/[reportId]`) with message snapshot
   - [ ] Claim/resolve/dismiss actions
   - [ ] Quick-action: ban user from report
-- [ ] Build ban management page:
+- [ ] Build ban management page (`/admin/bans`):
   - [ ] Active bans list
   - [ ] Ban history
   - [ ] Unban action
-- [ ] Build message viewer for admins (read-only conversation browser)
-- [ ] Build group management page (view, archive groups)
+- [ ] Build `ConversationViewer` (`/admin/messages/[conversationId]`) — read-only conversation browser
+- [ ] Build group management page (`/admin/groups`) — view, archive groups
 
 ### Acceptance Criteria
 
@@ -401,13 +448,14 @@ This document defines the phased implementation plan for EchoID. Each phase buil
 ### Frontend Tasks
 
 - [ ] Build user-facing support pages:
-  - [ ] Create ticket form
-  - [ ] Ticket list (my tickets)
-  - [ ] Ticket detail with threaded messages
+  - [ ] Create ticket form (`/app/support/create`)
+  - [ ] Ticket list (`/app/support`) — my tickets
+  - [ ] Ticket detail with threaded messages (`/app/support/[ticketId]`)
   - [ ] Reply to ticket
 - [ ] Build admin support section:
-  - [ ] Support ticket queue (filterable)
-  - [ ] Ticket detail with thread
+  - [ ] Support ticket queue (`/admin/support`) — filterable by status
+  - [ ] `TicketCard` list component
+  - [ ] Ticket detail with thread (`/admin/support/[ticketId]`)
   - [ ] Assign/claim ticket
   - [ ] Status transition controls
   - [ ] Reply as staff
@@ -455,20 +503,21 @@ This document defines the phased implementation plan for EchoID. Each phase buil
 
 ### Frontend Tasks
 
-- [ ] Build analytics dashboard page:
-  - [ ] Key metrics cards (total users, active, messages/day)
-  - [ ] Charts (user growth, message volume, reports over time)
+- [ ] Build analytics dashboard page (`/admin/analytics`):
+  - [ ] `MetricCard` key metrics (total users, active, messages/day)
+  - [ ] `AnalyticsChart` wrapper for charts (user growth, message volume, reports over time)
   - [ ] Date range selector
-- [ ] Build admin activity log viewer:
-  - [ ] Chronological log list
+- [ ] Build admin activity log viewer (`/admin/logs`):
+  - [ ] Chronological `AdminLogEntry` list
   - [ ] Filters (by admin, action type, date range)
   - [ ] Log detail view
 - [ ] Optimize frontend performance:
-  - [ ] Virtual scrolling for long message lists
+  - [ ] `InfiniteScroll` virtual scrolling for long message lists
   - [ ] Image lazy loading
-  - [ ] Connection state indicator in UI
-- [ ] Add error boundary components
-- [ ] Add loading skeletons for all data-fetching components
+  - [ ] `ConnectionStatus` indicator in app layout
+- [ ] Add `ErrorBoundary` component wrapping each route group
+- [ ] Add `LoadingSkeleton` components for all data-fetching pages
+- [ ] Optimize marketing pages for Core Web Vitals (LCP, CLS, INP)
 
 ### Acceptance Criteria
 

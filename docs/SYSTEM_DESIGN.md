@@ -786,3 +786,64 @@ User                           Server                      Support Staff
 - `bug_report`
 - `feature_request`
 - `other`
+
+---
+
+## 15. Frontend Routing & Layout System
+
+The web application is an enterprise SaaS platform built with Next.js App Router. The frontend uses four distinct route groups, each with its own layout, serving different audiences and purposes.
+
+> For the complete frontend specification, see **FRONTEND_DESIGN.md**.
+
+### Route Groups
+
+| Route Group | URL Prefix | Layout | Audience |
+|-------------|-----------|--------|----------|
+| `(public)` | `/`, `/about`, `/features`, `/contact`, `/faq`, `/privacy`, `/terms` | Marketing (navbar + footer) | Everyone |
+| `(auth)` | `/login`, `/register`, `/verify`, `/forgot-password`, `/reset-password` | Auth (centered card) | Unauthenticated users |
+| `(main)` | `/app/*` | Application (sidebar + content + SocketProvider) | Authenticated users |
+| `(admin)` | `/admin/*` | Admin (admin sidebar + content) | Admin/super-admin users |
+
+### Authentication Routing Middleware
+
+A single Next.js `middleware.ts` at the `src/` root intercepts every request and applies routing rules based on the `access_token` cookie:
+
+```
+Request ──▶ middleware.ts
+              │
+              ├── /app/* or /admin/* routes:
+              │     ├── No access_token → redirect to /login
+              │     └── Has access_token:
+              │           ├── /admin/* + role ≠ admin → redirect to /app/chat
+              │           └── Otherwise → allow
+              │
+              ├── /login, /register routes:
+              │     ├── Has valid access_token → redirect to /app/chat
+              │     └── No access_token → allow
+              │
+              └── Public routes (/, /about, etc.):
+                    └── Always allow (no auth check)
+```
+
+### Layout Isolation
+
+Each route group defines its own `layout.tsx`, ensuring:
+
+1. **Marketing layout** — `MarketingNavbar` and `MarketingFooter` only render on public pages. No sidebar, no WebSocket connections.
+2. **Auth layout** — Minimal centered card with logo. No navigation chrome.
+3. **Application layout** — `AppSidebar` with navigation, `SocketProvider` for real-time features. WebSocket connects only when this layout mounts.
+4. **Admin layout** — `AdminSidebar` with admin navigation. Separate from the main app sidebar.
+
+### State Management Architecture
+
+| Concern | Technology | Scope |
+|---------|-----------|-------|
+| Auth state (user, tokens) | Zustand (`authStore`) | Global |
+| Active conversation, drafts | Zustand (`chatStore`) | Application |
+| Socket connection status | Zustand (`socketStore`) | Application |
+| Online presence map | Zustand (`presenceStore`) | Application |
+| Typing indicators | Zustand (`typingStore`) | Application |
+| UI state (sidebar, theme) | Zustand (`uiStore`) | Global |
+| Server data (messages, contacts, groups) | TanStack Query | Application |
+
+Zustand stores hold ephemeral client state. TanStack Query manages all server-fetched data with caching, background refetching, and optimistic updates.

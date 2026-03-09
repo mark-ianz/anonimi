@@ -1,6 +1,8 @@
 # API Design
 
-This document specifies the complete REST API for EchoID. All endpoints follow consistent conventions for authentication, request/response format, and error handling.
+This document specifies the complete REST API for the EchoID backend. All endpoints follow consistent conventions for authentication, request/response format, and error handling.
+
+The Next.js frontend consumes this API from all four route groups (marketing contact form, auth pages, authenticated app, admin panel). For frontend architecture details, see **FRONTEND_DESIGN.md**.
 
 ---
 

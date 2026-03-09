@@ -1,6 +1,6 @@
 # Architecture Overview
 
-This document describes the high-level system architecture of EchoID, including the three-tier layout, service boundaries, middleware pipeline, and the media storage abstraction layer.
+This document describes the high-level system architecture of EchoID, including the three-tier layout, frontend application structure, service boundaries, middleware pipeline, and the media storage abstraction layer.
 
 ---
 
@@ -10,20 +10,40 @@ This document describes the high-level system architecture of EchoID, including 
 ┌─────────────────────────────────────────────────────────────────────┐
 │                          CLIENTS                                    │
 │                                                                     │
-│   ┌──────────────────┐          ┌──────────────────┐                │
-│   │   Next.js Web    │          │  Mobile App      │                │
-│   │   (App Router)   │          │  (Future)        │                │
-│   │                  │          │                  │                │
-│   │  - Tailwind CSS  │          │  - React Native  │                │
-│   │  - shadcn/ui     │          │    or Flutter    │                │
-│   │  - TanStack Query│          │  - Same API      │                │
-│   │  - Zustand       │          │                  │                │
-│   └────────┬─────────┘          └────────┬─────────┘                │
-│            │                             │                          │
-└────────────┼─────────────────────────────┼──────────────────────────┘
-             │ HTTPS (REST)                │ HTTPS (REST)
-             │ WSS (Socket.IO)             │ WSS (Socket.IO)
-             ▼                             ▼
+│   ┌──────────────────────────────────┐   ┌──────────────────┐       │
+│   │   Next.js Enterprise Web App     │   │  Mobile App      │       │
+│   │   (App Router)                   │   │  (Future)        │       │
+│   │                                  │   │                  │       │
+│   │  ┌────────────────────────────┐  │   │  - React Native  │       │
+│   │  │ Public Marketing Site     │  │   │    or Flutter    │       │
+│   │  │ /, /about, /features,     │  │   │  - Same API      │       │
+│   │  │ /contact, /faq, /privacy, │  │   │                  │       │
+│   │  │ /terms                    │  │   └────────┬─────────┘       │
+│   │  └────────────────────────────┘  │            │                 │
+│   │  ┌────────────────────────────┐  │            │                 │
+│   │  │ Auth Pages                │  │            │                 │
+│   │  │ /login, /register,        │  │            │                 │
+│   │  │ /forgot-password, /verify │  │            │                 │
+│   │  └────────────────────────────┘  │            │                 │
+│   │  ┌────────────────────────────┐  │            │                 │
+│   │  │ Authenticated App         │  │            │                 │
+│   │  │ /app/chat, /app/groups,   │  │            │                 │
+│   │  │ /app/contacts, /app/*     │  │            │                 │
+│   │  └────────────────────────────┘  │            │                 │
+│   │  ┌────────────────────────────┐  │            │                 │
+│   │  │ Admin Panel               │  │            │                 │
+│   │  │ /admin/*                  │  │            │                 │
+│   │  └────────────────────────────┘  │            │                 │
+│   │                                  │            │                 │
+│   │  - Tailwind CSS + shadcn/ui      │            │                 │
+│   │  - TanStack Query + Zustand      │            │                 │
+│   │  - Socket.IO Client              │            │                 │
+│   └──────────────┬───────────────────┘            │                 │
+│                  │                                │                 │
+└──────────────────┼────────────────────────────────┼─────────────────┘
+                   │ HTTPS (REST)                   │ HTTPS (REST)
+                   │ WSS (Socket.IO)                │ WSS (Socket.IO)
+                   ▼                                ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     API GATEWAY LAYER                               │
 │                                                                     │
@@ -117,16 +137,39 @@ This document describes the high-level system architecture of EchoID, including 
 
 ### Tier 1 — Client (Presentation)
 
-The client tier is responsible for rendering the UI, managing local state, and communicating with the backend over REST and WebSocket.
+The client tier is an **enterprise SaaS web application** that serves four distinct experiences: a public marketing site, authentication flows, the authenticated chat application, and an admin panel.
 
 | Concern | Technology |
 |---------|------------|
-| Routing & SSR | Next.js App Router |
+| Routing & SSR | Next.js App Router (route groups, middleware, layouts) |
 | Styling | Tailwind CSS |
 | UI Components | shadcn/ui |
 | Server Data | TanStack Query (fetching, caching, optimistic updates) |
 | Client State | Zustand (UI state, socket connection state, active chat) |
 | Real-time | Socket.IO client (messaging, typing, presence) |
+| Forms | React Hook Form + Zod validation |
+
+### Frontend Application Structure
+
+The frontend is composed of four route groups, each with its own layout:
+
+| Route Group | URL Pattern | Layout | Description |
+|-------------|-------------|--------|-------------|
+| `(public)` | `/`, `/about`, `/features`, `/faq`, `/contact`, `/privacy`, `/terms` | Marketing (navbar + footer) | Public marketing site for unauthenticated visitors |
+| `(auth)` | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify` | Minimal centered | Authentication pages |
+| `(main)` | `/app/*` | App (sidebar + content) | Authenticated application with chat, groups, contacts, settings |
+| `(admin)` | `/admin/*` | Admin (admin sidebar + content) | Admin panel for user management, reports, analytics |
+
+### Authentication-Based Routing
+
+A Next.js middleware enforces authentication routing:
+
+- **Unauthenticated user visits `/`** → sees the public landing page
+- **Authenticated user visits `/`** → redirected to `/app/chat`
+- **Unauthenticated user visits `/app/*`** → redirected to `/login`
+- **Non-admin visits `/admin/*`** → redirected to `/app/chat`
+
+See [FRONTEND_DESIGN.md](./FRONTEND_DESIGN.md) for the complete frontend specification.
 
 The frontend is a **standalone application** that talks exclusively to the backend API. It has no direct database access. Every page and component fetches data through API calls or receives it via WebSocket events.
 
