@@ -69,7 +69,7 @@ const buildMessageNotificationCopy = (senderName: string, unreadCount: number) =
 
   return {
     title: `${safeName}`,
-    body: `You have ${formatUnreadCap(unreadCount)} unread ${noun} from ${safeName}. Click to view.`,
+    body: `You have ${formatUnreadCap(unreadCount)} unread ${noun} from ${safeName}.`,
   };
 };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, createContext, useContext } from "react";
+import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Socket } from "socket.io-client";
 import { toast } from "sonner";
@@ -37,6 +38,7 @@ export function useSocketContext() {
 }
 
 export function SocketProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const { isAuthenticated } = useAuthStore();
   const { setChatStatus } = useSocketStore();
   const qc = useQueryClient();
@@ -51,6 +53,21 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const { setPresence } = usePresenceStore();
   const { setTyping } = useTypingStore();
   const socketRef = useRef<Socket | null>(null);
+
+  const resolveNotificationHref = (data: Record<string, unknown>) => {
+    const href = data.href;
+    if (typeof href === "string") {
+      if (href === "/contacts/requests") return "/contacts?tab=requests";
+      return href;
+    }
+
+    const conversationId = data.conversationId;
+    if (typeof conversationId === "string") {
+      return `/chat/${conversationId}`;
+    }
+
+    return "/chat";
+  };
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -278,7 +295,16 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         unreadMessages > 1;
 
       if (!isAggregatedMessageUpdate && !isActiveMessageNotification) {
-        toast.info(payload.title, { description: payload.body, duration: 4500 });
+        const href = resolveNotificationHref(payload.data);
+        const description = payload.body.replace(/\s*Click to view\.?\s*$/i, "").trim();
+        toast.info(payload.title, {
+          description,
+          duration: 4500,
+          action: {
+            label: "View message",
+            onClick: () => router.push(href),
+          },
+        });
       }
     });
 
@@ -309,6 +335,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     activeConversationId,
     setPresence,
     setTyping,
+    router,
   ]);
 
   return (

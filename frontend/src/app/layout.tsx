@@ -51,6 +51,8 @@ export default function RootLayout({
                 classNames: {
                   toast:
                     "font-sans text-sm rounded-xl border border-border/50 shadow-elevated",
+                  actionButton:
+                    "!bg-transparent !text-primary !shadow-none !border-0 !p-0 !h-auto underline underline-offset-2 hover:opacity-80",
                 },
               }}
             />
