@@ -8,7 +8,6 @@ import {
   Users, 
   UserCircle2, 
   Settings, 
-  Shield,
   HelpCircle,
   Menu,
   Search,
@@ -32,7 +31,6 @@ const navItems = [
 
 const bottomNavItems = [
   { href: "/support", icon: HelpCircle, label: "Support" },
-  { href: "/admin", icon: Shield, label: "Admin" },
 ];
 
 interface SidebarProps {
