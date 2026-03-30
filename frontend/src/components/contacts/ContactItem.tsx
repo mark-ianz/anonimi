@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { MoreVertical, MessageCircle, UserMinus, Edit2, Check, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { MoreVertical, UserMinus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -14,16 +15,16 @@ import ConfirmDialog from "@/components/shared/ConfirmDialog";
 interface ContactItemProps {
   contact: Contact;
   onRemove: (contactId: string) => void;
-  onSetNickname: (contactId: string, nickname: string) => void;
 }
 
-export default function ContactItem({ contact, onRemove, onSetNickname }: ContactItemProps) {
+export default function ContactItem({ contact, onRemove }: ContactItemProps) {
   const router = useRouter();
   const { status: presenceStatus } = usePresence(contact.echoId);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [editingNickname, setEditingNickname] = useState(false);
-  const [nicknameInput, setNicknameInput] = useState(contact.nickname ?? "");
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const displayName = contact.nickname ?? contact.username;
 
@@ -38,14 +39,59 @@ export default function ContactItem({ contact, onRemove, onSetNickname }: Contac
     onError: () => toast.error("Failed to open conversation."),
   });
 
-  function handleNicknameSave() {
-    onSetNickname(contact.contactId, nicknameInput.trim());
-    setEditingNickname(false);
-  }
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const updateMenuPosition = () => {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const menuWidth = 160;
+      const viewportWidth = window.innerWidth;
+      const left = Math.max(8, Math.min(rect.right - menuWidth, viewportWidth - menuWidth - 8));
+      setMenuPosition({ top: rect.bottom + 6, left });
+    };
+
+    const handleOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (triggerRef.current?.contains(target)) return;
+      if (menuRef.current?.contains(target)) return;
+      setMenuOpen(false);
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+      }
+    };
+
+    updateMenuPosition();
+    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("keydown", handleEscape);
+    window.addEventListener("resize", updateMenuPosition);
+    window.addEventListener("scroll", updateMenuPosition, true);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("keydown", handleEscape);
+      window.removeEventListener("resize", updateMenuPosition);
+      window.removeEventListener("scroll", updateMenuPosition, true);
+    };
+  }, [menuOpen]);
 
   return (
     <>
-      <div className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors group border-b border-border/20">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => openConversationMutation.mutate()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openConversationMutation.mutate();
+          }
+        }}
+        className="group flex cursor-pointer items-center gap-3 border-b border-border/20 px-4 py-3 transition-colors hover:bg-muted/40"
+      >
         {/* Avatar */}
         <div className="relative shrink-0">
           <div className="w-11 h-11 rounded-xl overflow-hidden bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-medium text-sm">
@@ -72,70 +118,47 @@ export default function ContactItem({ contact, onRemove, onSetNickname }: Contac
 
         {/* Info */}
         <div className="flex-1 min-w-0">
-          {editingNickname ? (
-            <div className="flex items-center gap-1">
-              <input
-                value={nicknameInput}
-                onChange={(e) => setNicknameInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleNicknameSave();
-                  if (e.key === "Escape") setEditingNickname(false);
-                }}
-                autoFocus
-                className="flex-1 h-7 px-2 rounded-lg text-sm bg-muted/60 border border-border/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
-                placeholder="Set nickname..."
-              />
-              <button onClick={handleNicknameSave} className="w-6 h-6 rounded flex items-center justify-center text-green-500 hover:bg-green-500/10">
-                <Check className="w-3.5 h-3.5" />
-              </button>
-              <button onClick={() => setEditingNickname(false)} className="w-6 h-6 rounded flex items-center justify-center text-muted-foreground hover:bg-muted">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ) : (
-            <p className="text-sm font-medium truncate">{displayName}</p>
-          )}
+          <p className="text-sm font-medium truncate">{displayName}</p>
           <p className="text-xs text-muted-foreground truncate">@{contact.echoId}</p>
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
-            onClick={() => openConversationMutation.mutate()}
-            disabled={openConversationMutation.isPending}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50"
-            title="Message"
+            ref={triggerRef}
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen((v) => !v);
+            }}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            aria-label="Contact actions"
           >
-            <MessageCircle className="w-4 h-4" />
+            <MoreVertical className="w-4 h-4" />
           </button>
-          <div className="relative">
-            <button
-              onClick={() => setMenuOpen((v) => !v)}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            >
-              <MoreVertical className="w-4 h-4" />
-            </button>
-            {menuOpen && (
-              <div className="absolute right-0 z-10 top-full mt-1 glass rounded-xl shadow-elevated py-1 min-w-40 animate-fade-in">
-                <button
-                  onClick={() => { setEditingNickname(true); setMenuOpen(false); }}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  {contact.nickname ? "Edit nickname" : "Set nickname"}
-                </button>
-                <button
-                  onClick={() => { setConfirmRemove(true); setMenuOpen(false); }}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-                >
-                  <UserMinus className="w-4 h-4" />
-                  Remove contact
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       </div>
+
+      {menuOpen && menuPosition && typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className="fixed z-120 min-w-40 animate-fade-in overflow-hidden rounded-xl border border-border/70 bg-card/95 p-1 shadow-elevated backdrop-blur-sm"
+            style={{ top: menuPosition.top, left: menuPosition.left }}
+          >
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setConfirmRemove(true);
+                setMenuOpen(false);
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10"
+            >
+              <UserMinus className="w-4 h-4" />
+              Remove contact
+            </button>
+          </div>,
+          document.body
+        )}
 
       <ConfirmDialog
         open={confirmRemove}

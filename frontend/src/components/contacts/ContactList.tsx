@@ -17,7 +17,6 @@ export default function ContactList({ searchQuery = "" }: ContactListProps) {
     hasMoreContacts,
     fetchMoreContacts,
     removeContact,
-    setNickname,
   } = useContacts();
 
   const filtered = searchQuery
@@ -54,7 +53,6 @@ export default function ContactList({ searchQuery = "" }: ContactListProps) {
           key={contact.contactId}
           contact={contact}
           onRemove={removeContact}
-          onSetNickname={(contactId, nickname) => setNickname({ contactId, nickname })}
         />
       ))}
       <InfiniteScrollSentinel
