@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -27,9 +28,11 @@ export function useAuth() {
 
   // Sync profile into store when fetched
   const profile = profileQuery.data;
-  if (profile && user?.id !== profile.id) {
-    setUser(profile);
-  }
+  useEffect(() => {
+    if (profile) {
+      setUser(profile);
+    }
+  }, [profile, setUser]);
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
@@ -73,9 +76,19 @@ export function useAuth() {
       toast.success("Profile updated.");
     },
     onError: (err: unknown) => {
-      const msg =
-        (err as { response?: { data?: { error?: { message?: string } } } })
-          ?.response?.data?.error?.message ?? "Failed to update profile.";
+      const responseError = (err as {
+        response?: {
+          data?: {
+            error?: {
+              message?: string;
+              details?: Array<{ path?: string; message?: string }>;
+            };
+          };
+        };
+      })?.response?.data?.error;
+
+      const detailMessage = responseError?.details?.[0]?.message;
+      const msg = detailMessage ?? responseError?.message ?? "Failed to update profile.";
       toast.error(msg);
     },
   });

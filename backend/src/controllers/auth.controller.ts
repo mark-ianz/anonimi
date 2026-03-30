@@ -8,8 +8,8 @@ export const register = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { email, phone, username, password } = req.body;
-    const result = await authService.register(email, phone, username, password);
+    const { email, username, password } = req.body;
+    const result = await authService.register(email, username, password);
     apiSuccess(res, result, 201);
   } catch (error) {
     next(error);
@@ -125,6 +125,7 @@ export const getProfile = async (
       id: user._id.toString(),
       echoId: user.echoId,
       username: user.username,
+      usernameCanEdit: !user.usernameChangedAt,
       email: user.email,
       phone: user.phone,
       profileImage: user.profileImage,
@@ -158,6 +159,7 @@ export const updateProfile = async (
       id: user._id.toString(),
       echoId: user.echoId,
       username: user.username,
+      usernameCanEdit: !user.usernameChangedAt,
       email: user.email,
       phone: user.phone,
       profileImage: user.profileImage,

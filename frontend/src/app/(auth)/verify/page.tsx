@@ -15,6 +15,7 @@ function VerifyForm() {
 
   const target = searchParams.get("target") ?? "";
   const type = (searchParams.get("type") ?? "email") as "email" | "phone";
+  const targetLabel = type === "phone" ? "phone" : "email";
 
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,7 +86,7 @@ function VerifyForm() {
           <ShieldCheck className="w-7 h-7 text-primary" />
         </div>
         <h1 className="font-display text-2xl font-semibold tracking-tight">
-          Verify your {type}
+          Verify your {targetLabel}
         </h1>
         <p className="text-muted-foreground text-sm mt-1 text-center">
           We sent a 6-digit code to{" "}

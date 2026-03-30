@@ -19,13 +19,10 @@ const schema = z
       .regex(
         /^[a-zA-Z0-9_.]+$/,
         "Username can only contain letters, numbers, _ and ."
-      ),
-    email: z.string().email("Invalid email address").optional().or(z.literal("")),
-    phone: z
-      .string()
-      .regex(/^\+?[1-9]\d{7,14}$/, "Invalid phone number")
+      )
       .optional()
       .or(z.literal("")),
+    email: z.string().email("Invalid email address"),
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
@@ -36,10 +33,6 @@ const schema = z
   .refine((d) => d.password === d.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
-  })
-  .refine((d) => d.email || d.phone, {
-    message: "Email or phone is required",
-    path: ["email"],
   });
 
 type FormData = z.infer<typeof schema>;
@@ -56,16 +49,18 @@ export default function RegisterPage() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const payload: Record<string, string> = { username: data.username, password: data.password };
-      if (data.email) payload.email = data.email;
-      if (data.phone) payload.phone = data.phone;
+      const normalizedEmail = data.email.trim().toLowerCase();
+      const payload: Record<string, string> = {
+        email: normalizedEmail,
+        password: data.password,
+      };
+
+      const username = (data.username ?? "").trim();
+      if (username) payload.username = username;
 
       await api.post("/auth/register", payload);
-      const target = data.email ? data.email : data.phone!;
       toast.success("Account created! Check your inbox for the verification code.");
-      router.push(
-        `/verify?target=${encodeURIComponent(target)}&type=${data.email ? "email" : "phone"}`
-      );
+      router.push(`/verify?target=${encodeURIComponent(normalizedEmail)}&type=email`);
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { error?: { message?: string } } } })
@@ -98,18 +93,19 @@ export default function RegisterPage() {
             {...register("username")}
             type="text"
             autoComplete="username"
-            placeholder="john_doe"
+            placeholder="Optional (auto-generated if empty)"
             className="h-11 w-full rounded-xl border border-border/70 bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
           />
+          <p className="mt-1 text-xs text-muted-foreground">
+            For better anonymity, avoid using your real name as username.
+          </p>
           {errors.username && (
             <p className="text-destructive text-xs mt-1">{errors.username.message}</p>
           )}
         </div>
 
         <div>
-          <label className="mb-1.5 block font-mono text-[0.66rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-            Email <span className="font-sans normal-case tracking-normal">(or phone below)</span>
-          </label>
+          <label className="mb-1.5 block font-mono text-[0.66rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">Email</label>
           <input
             {...register("email")}
             type="email"
@@ -120,19 +116,6 @@ export default function RegisterPage() {
           {errors.email && (
             <p className="text-destructive text-xs mt-1">{errors.email.message}</p>
           )}
-        </div>
-
-        <div>
-          <label className="mb-1.5 block font-mono text-[0.66rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-            Phone <span className="font-sans normal-case tracking-normal">(optional if email provided)</span>
-          </label>
-          <input
-            {...register("phone")}
-            type="tel"
-            autoComplete="tel"
-            placeholder="+12345678900"
-            className="h-11 w-full rounded-xl border border-border/70 bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-          />
         </div>
 
         <div>

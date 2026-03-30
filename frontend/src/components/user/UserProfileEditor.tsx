@@ -4,16 +4,33 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import type { AuthUser } from "@/types/user";
 import { Save } from "lucide-react";
+import { toast } from "sonner";
 
 export default function UserProfileEditor() {
   const { user, updateProfile, isUpdatingProfile } = useAuth();
 
   const [username, setUsername] = useState(user?.username ?? "");
   const [phone, setPhone] = useState(user?.phone ?? "");
+  const canEditUsername = user?.usernameCanEdit ?? false;
 
   function handleSave() {
     const patch: Partial<Pick<AuthUser, "username" | "phone">> = {};
-    if (username.trim() && username.trim() !== user?.username) patch.username = username.trim();
+    const nextUsername = username.trim();
+
+    if (nextUsername && nextUsername !== user?.username) {
+      if (nextUsername.length < 3 || nextUsername.length > 30) {
+        toast.error("Username must be between 3 and 30 characters.");
+        return;
+      }
+
+      if (!/^[a-zA-Z0-9_.]+$/.test(nextUsername)) {
+        toast.error("Username can only contain letters, numbers, underscores, and periods.");
+        return;
+      }
+
+      patch.username = nextUsername;
+    }
+
     if (phone.trim() !== (user?.phone ?? "")) patch.phone = phone.trim() || undefined;
     if (Object.keys(patch).length > 0) updateProfile(patch);
   }
@@ -27,8 +44,14 @@ export default function UserProfileEditor() {
           onChange={(e) => setUsername(e.target.value)}
           placeholder="Your username"
           maxLength={30}
-          className="w-full h-10 px-3 rounded-xl bg-muted/50 border-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+          disabled={!canEditUsername}
+          className="w-full h-10 px-3 rounded-xl bg-muted/50 border-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all disabled:cursor-not-allowed disabled:opacity-70"
         />
+        <p className="text-xs text-muted-foreground">
+          {canEditUsername
+            ? "For better anonymity, avoid using your real name. Username can be changed once."
+            : "Username change already used. You can only change username once."}
+        </p>
       </div>
 
       <div className="space-y-1.5">
@@ -40,6 +63,7 @@ export default function UserProfileEditor() {
           type="tel"
           className="w-full h-10 px-3 rounded-xl bg-muted/50 border-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
         />
+        <p className="text-xs text-muted-foreground">Optional. Add a phone number for account recovery and extra security.</p>
       </div>
 
       <div className="space-y-1.5">

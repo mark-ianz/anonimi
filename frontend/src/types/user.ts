@@ -19,6 +19,7 @@ export interface User {
 export interface AuthUser extends User {
   email: string | null;
   phone: string | null;
+  usernameCanEdit: boolean;
   emailVerified: boolean;
   phoneVerified: boolean;
 }

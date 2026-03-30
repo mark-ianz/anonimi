@@ -28,35 +28,60 @@ interface LoginResult {
     profileImage: string | null;
     role: string;
     status: string;
+    usernameCanEdit: boolean;
     appearanceStatus: string;
     onlineStatus: string;
     lastSeen: Date | null;
   };
 }
 
+const USERNAME_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
+
+const generateCryptoUsername = (): string => {
+  const bytes = crypto.randomBytes(6);
+  let suffix = "";
+
+  for (const byte of bytes) {
+    suffix += USERNAME_ALPHABET[byte % USERNAME_ALPHABET.length];
+  }
+
+  return `anon_${suffix}`;
+};
+
+const resolveUniqueUsername = async (preferredUsername?: string): Promise<string> => {
+  if (preferredUsername) {
+    const existing = await User.findOne({ username: preferredUsername }).select("_id");
+    if (existing) {
+      throw new ConflictError("Username already taken");
+    }
+
+    return preferredUsername;
+  }
+
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const candidate = generateCryptoUsername();
+    const existing = await User.findOne({ username: candidate }).select("_id");
+    if (!existing) {
+      return candidate;
+    }
+  }
+
+  throw new ConflictError("Unable to generate unique username. Please try again.");
+};
+
 export const register = async (
-  email?: string,
-  phone?: string,
-  username: string,
+  email: string,
+  username: string | undefined,
   password: string
 ): Promise<RegisterResult> => {
-  const existingUser = await User.findOne({
-    $or: [
-      ...(email ? [{ email }] : []),
-      ...(phone ? [{ phone }] : []),
-      { username },
-    ],
-  });
+  const normalizedEmail = email.trim().toLowerCase();
+  const existingUser = await User.findOne({ email: normalizedEmail });
 
   if (existingUser) {
-    if (existingUser.email === email) {
-      throw new ConflictError("Email already in use");
-    }
-    if (existingUser.phone === phone) {
-      throw new ConflictError("Phone number already in use");
-    }
-    throw new ConflictError("Username already taken");
+    throw new ConflictError("Email already in use");
   }
+
+  const resolvedUsername = await resolveUniqueUsername(username);
 
   const verificationCode = crypto.randomInt(100000, 999999).toString();
   const verificationCodeExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
@@ -65,9 +90,8 @@ export const register = async (
 
   const user = await User.create({
     echoId: generateEchoId(),
-    email,
-    phone,
-    username,
+    email: normalizedEmail,
+    username: resolvedUsername,
     passwordHash,
     verificationCode,
     verificationCodeExpiresAt,
@@ -75,11 +99,11 @@ export const register = async (
     status: UserStatus.PENDING,
   });
 
-  console.log(`Verification code for ${email || phone}: ${verificationCode}`);
+  console.log(`Verification code for ${normalizedEmail}: ${verificationCode}`);
 
   return {
     message: "Verification code sent. Please verify your account.",
-    verificationTarget: email ? "email" : "phone",
+    verificationTarget: "email",
   };
 };
 
@@ -114,6 +138,7 @@ export const verifyEmail = async (
       profileImage: user.profileImage,
       role: user.role,
       status: user.status,
+      usernameCanEdit: !user.usernameChangedAt,
       appearanceStatus: user.appearanceStatus,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
@@ -152,6 +177,7 @@ export const verifyPhone = async (
       profileImage: user.profileImage,
       role: user.role,
       status: user.status,
+      usernameCanEdit: !user.usernameChangedAt,
       appearanceStatus: user.appearanceStatus,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
@@ -163,8 +189,9 @@ export const login = async (
   identifier: string,
   password: string
 ): Promise<LoginResult> => {
+  const normalizedIdentifier = identifier.trim().toLowerCase();
   const user = await User.findOne({
-    $or: [{ email: identifier }, { phone: identifier }, { username: identifier }],
+    $or: [{ email: normalizedIdentifier }, { phone: normalizedIdentifier }],
   }).select("+passwordHash");
 
   if (!user) {
@@ -195,6 +222,7 @@ export const login = async (
       profileImage: user.profileImage,
       role: user.role,
       status: user.status,
+      usernameCanEdit: !user.usernameChangedAt,
       appearanceStatus: user.appearanceStatus,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
@@ -323,7 +351,7 @@ export const updateProfile = async (
     throw new NotFoundError("User not found");
   }
 
-  if (updates.username) {
+  if (updates.username && updates.username !== user.username) {
     const existingUser = await User.findOne({
       username: updates.username,
       _id: { $ne: userId },
@@ -334,12 +362,7 @@ export const updateProfile = async (
     }
 
     if (user.usernameChangedAt) {
-      const daysSinceChange = Math.floor(
-        (Date.now() - user.usernameChangedAt.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      if (daysSinceChange < 30) {
-        throw new ConflictError("Username can only be changed once every 30 days");
-      }
+      throw new ConflictError("Username can only be changed once");
     }
 
     user.username = updates.username;

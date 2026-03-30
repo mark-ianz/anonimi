@@ -19,7 +19,7 @@ const faqs = [
   },
   {
     question: "Can I change my EchoID?",
-    answer: "Your EchoID is unique and cannot be changed. This helps maintain trust and accountability in the platform. However, you can update your display name and profile picture anytime.",
+    answer: "Your EchoID is unique and cannot be changed. This helps maintain trust and accountability in the platform. You can update your username once and your profile picture anytime.",
   },
   {
     question: "How do group chats work?",

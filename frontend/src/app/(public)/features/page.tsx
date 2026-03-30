@@ -23,10 +23,11 @@ const features = [
   {
     icon: Shield,
     title: "Privacy-First Identity",
-    description: "Your EchoID is generated uniquely — no phone numbers or personal info required. Stay anonymous while chatting.",
+    description: "Your EchoID is generated uniquely with email-only signup, optional usernames, and no phone requirement at registration.",
     details: [
       "Unique generated IDs",
       "No phone number required",
+      "Optional auto-generated username",
       "Public profile options",
       "Custom display names",
     ],

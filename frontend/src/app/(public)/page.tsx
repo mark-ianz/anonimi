@@ -8,7 +8,7 @@ const steps = [
   {
     icon: UserPlus,
     title: "Sign up and get your EchoID",
-    description: "Create a free account and receive your unique EchoID instantly. No phone number required.",
+    description: "Create a free account with email and receive your EchoID instantly. Username is optional and auto-generated if you skip it.",
   },
   {
     icon: Share2,
