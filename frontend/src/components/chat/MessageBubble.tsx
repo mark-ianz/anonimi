@@ -64,7 +64,7 @@ export default function MessageBubble({
       {/* Avatar */}
       <div className="w-8 shrink-0">
         {showAvatar && !isMine && (
-          <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xs font-medium">
+          <div className="w-8 h-8 rounded-full overflow-hidden bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xs font-medium">
             {senderImage ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={senderImage} alt={senderName ?? ""} className="w-full h-full object-cover" />
@@ -99,7 +99,7 @@ export default function MessageBubble({
 
           {/* Text content */}
           {message.content && (
-            <p className="whitespace-pre-wrap break-words">{message.content}</p>
+            <p className="whitespace-pre-wrap wrap-break-word">{message.content}</p>
           )}
 
           {/* Pending/failed indicator */}
@@ -111,15 +111,18 @@ export default function MessageBubble({
           )}
         </div>
 
-        {/* Footer: time + read receipt */}
-        <div className={cn("flex items-center gap-1.5 mt-0.5 mx-1", isMine && "flex-row-reverse")}>
-          <DateDisplay date={message.createdAt} format="time" />
-          {isMine && (
-            <ReadReceipt
-              readBy={message.readBy}
-              participantCount={participantCount}
-            />
-          )}
+        {/* Footer: hover timestamp + read receipt */}
+        <div className={cn("flex min-h-4 items-center gap-1.5 mt-0.5 mx-1", isMine && "flex-row-reverse")}>
+            <span className="opacity-0 transition-opacity group-hover:opacity-100 text-xs text-muted-foreground">
+              <DateDisplay date={message.createdAt} format="time" className="text-xs text-muted-foreground" />
+            </span>
+            {isMine && (
+              <ReadReceipt
+                readBy={message.readBy}
+                participantCount={participantCount}
+                className="opacity-70"
+              />
+            )}
         </div>
       </div>
 

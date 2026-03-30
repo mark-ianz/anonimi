@@ -4,6 +4,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { usePresence } from "@/hooks/usePresence";
 import { useChatStore } from "@/stores/chatStore";
+import { useAuthStore } from "@/stores/authStore";
 import type { Conversation } from "@/types/conversation";
 import DateDisplay from "@/components/shared/DateDisplay";
 
@@ -29,6 +30,7 @@ export default function ConversationItem({
   isActive,
   style,
 }: ConversationItemProps) {
+  const { user } = useAuthStore();
   const { unreadCounts } = useChatStore();
   const isGroup = conversation.type === "group";
   const participantId = conversation.participant?.id;
@@ -53,7 +55,13 @@ export default function ConversationItem({
     .toUpperCase();
 
   const isPending = conversation.requestStatus === "pending";
-  const preview = isPending ? "Pending request..." : getLastMessagePreview(conversation);
+  const lastSenderIsMe = conversation.lastMessage?.senderId === user?.id;
+  const basePreview = getLastMessagePreview(conversation);
+  const preview = isPending
+    ? "Pending request..."
+    : lastSenderIsMe
+    ? `You: ${basePreview}`
+    : basePreview;
   const timestamp = conversation.lastMessage?.timestamp ?? conversation.updatedAt;
 
   return (

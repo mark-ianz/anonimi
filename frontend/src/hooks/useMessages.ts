@@ -18,7 +18,13 @@ import { MESSAGES_PER_PAGE } from "@/lib/constants";
 export function useMessages(conversationId: string | null) {
   const qc = useQueryClient();
   const { user } = useAuthStore();
-  const { addMessage, replaceTempMessage, messages: storeMessages, updateMessage } = useChatStore();
+  const {
+    addMessage,
+    replaceTempMessage,
+    messages: storeMessages,
+    updateMessage,
+    updateConversationLastMessage,
+  } = useChatStore();
 
   const query = useInfiniteQuery({
     queryKey: ["messages", conversationId],
@@ -78,6 +84,12 @@ export function useMessages(conversationId: string | null) {
       };
 
       addMessage(payload.conversationId, optimistic);
+      updateConversationLastMessage(payload.conversationId, {
+        content: payload.content,
+        senderId: user.id,
+        type: payload.type,
+        timestamp: optimistic.createdAt,
+      });
 
       const socket = getChatSocket();
       if (socket.connected) {
@@ -98,7 +110,7 @@ export function useMessages(conversationId: string | null) {
           });
       }
     },
-    [user, addMessage, replaceTempMessage]
+    [user, addMessage, replaceTempMessage, updateConversationLastMessage]
   );
 
   const deleteForMeMutation = useMutation({

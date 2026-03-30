@@ -22,12 +22,23 @@ function shouldShowDateDivider(prev: string | undefined, curr: string): boolean 
   return a !== b;
 }
 
+function shouldShowTimeDivider(prev: string | undefined, curr: string): boolean {
+  if (!prev) return true;
+  const prevDate = new Date(prev);
+  const currDate = new Date(curr);
+  if (prevDate.toDateString() !== currDate.toDateString()) return true;
+
+  const diffMs = Math.abs(currDate.getTime() - prevDate.getTime());
+  return diffMs >= 15 * 60 * 1000;
+}
+
 export default function MessageList({ conversation }: MessageListProps) {
   const { user } = useAuthStore();
   const { messages, isLoading, isFetchingMore, hasMore, fetchMore } = useMessages(conversation.id);
   const { typingUsers } = useTyping(conversation.id);
   const bottomRef = useRef<HTMLDivElement>(null);
   const isFirstLoad = useRef(true);
+  const lastMessageIdRef = useRef<string | null>(null);
 
   // Scroll to bottom on first load and when new messages arrive from me
   useEffect(() => {
@@ -40,10 +51,14 @@ export default function MessageList({ conversation }: MessageListProps) {
   useEffect(() => {
     if (!messages.length) return;
     const last = messages[messages.length - 1];
-    if (last.senderId === user?.id) {
+    const newestChanged = lastMessageIdRef.current !== last.id;
+    lastMessageIdRef.current = last.id;
+
+    // Older history pages are prepended and should never pull viewport to bottom.
+    if (!isFetchingMore && newestChanged && last.senderId === user?.id) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, user?.id]);
+  }, [messages, user?.id, isFetchingMore]);
 
   // Participant lookup for group conversations
   const participantCount =
@@ -71,12 +86,13 @@ export default function MessageList({ conversation }: MessageListProps) {
       {messages.map((message, index) => {
         const prev = messages[index - 1];
         const showDivider = shouldShowDateDivider(prev?.createdAt, message.createdAt);
+        const showTimeCluster = shouldShowTimeDivider(prev?.createdAt, message.createdAt);
         const isFirst = !prev || prev.senderId !== message.senderId || showDivider;
         const showAvatar = isFirst;
 
         // Find sender info for group
         let senderName: string | undefined;
-        let senderImage: string | null = null;
+        const senderImage: string | null = null;
 
         if (conversation.type === "group") {
           // We don't have individual member info here; show senderId shortened
@@ -92,6 +108,15 @@ export default function MessageList({ conversation }: MessageListProps) {
                 </div>
               </div>
             )}
+
+            {showTimeCluster && (
+              <div className="flex items-center justify-center py-1.5">
+                <div className="rounded-full border border-border/50 bg-background/75 px-2.5 py-0.5 text-[11px] text-muted-foreground">
+                  <DateDisplay date={message.createdAt} format="time" className="text-[11px] text-muted-foreground" />
+                </div>
+              </div>
+            )}
+
             <MessageBubble
               message={message}
               isFirst={isFirst}
