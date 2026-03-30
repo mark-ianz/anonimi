@@ -58,6 +58,7 @@ export interface MessageReceivePayload {
 export interface MessageUnsentPayload {
   messageId: string;
   conversationId: string;
+  unsentAt?: string;
 }
 
 export interface MessageReadReceiptPayload {

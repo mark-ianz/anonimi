@@ -22,6 +22,7 @@ export function useMessages(conversationId: string | null) {
     addMessage,
     replaceTempMessage,
     messages: storeMessages,
+    removeMessage,
     updateMessage,
     updateConversationLastMessage,
   } = useChatStore();
@@ -132,6 +133,8 @@ export function useMessages(conversationId: string | null) {
           };
         }
       );
+      removeMessage(conversationId, messageId);
+      qc.invalidateQueries({ queryKey: ["conversations"] });
     },
     onError: () => toast.error("Failed to delete message."),
   });
@@ -143,6 +146,7 @@ export function useMessages(conversationId: string | null) {
     },
     onSuccess: (messageId) => {
       if (!conversationId) return;
+      const unsentAt = new Date().toISOString();
       // Update TanStack Query cache so the sender sees the change immediately
       qc.setQueryData(
         ["messages", conversationId],
@@ -153,14 +157,15 @@ export function useMessages(conversationId: string | null) {
             pages: old.pages.map((p) => ({
               ...p,
               data: p.data.map((m) =>
-                m.id === messageId ? { ...m, unsent: true, content: null, mediaUrl: null } : m
+                m.id === messageId ? { ...m, unsent: true, unsentAt, content: null, mediaUrl: null } : m
               ),
             })),
           };
         }
       );
       // Also patch any in-flight copy in the chatStore
-      updateMessage(conversationId, messageId, { unsent: true, content: undefined, mediaUrl: null });
+      updateMessage(conversationId, messageId, { unsent: true, unsentAt, content: undefined, mediaUrl: null });
+      qc.invalidateQueries({ queryKey: ["conversations"] });
     },
     onError: (err: unknown) => {
       const msg =

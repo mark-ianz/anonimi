@@ -135,11 +135,40 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     // Message unsent
     socket.on("message:unsent", (payload: MessageUnsentPayload) => {
+      const unsentAt = payload.unsentAt ?? new Date().toISOString();
+
+      qc.setQueryData(
+        ["messages", payload.conversationId],
+        (old:
+          | {
+              pages: Array<{ data: Message[] }>;
+              pageParams: unknown[];
+            }
+          | undefined) => {
+          if (!old) return old;
+
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              data: page.data.map((message) =>
+                message.id === payload.messageId
+                  ? { ...message, unsent: true, unsentAt, content: null, mediaUrl: null }
+                  : message
+              ),
+            })),
+          };
+        }
+      );
+
       updateMessage(payload.conversationId, payload.messageId, {
         unsent: true,
+        unsentAt,
         content: null,
         mediaUrl: null,
       });
+
+      qc.invalidateQueries({ queryKey: ["conversations"] });
     });
 
     // Read receipts

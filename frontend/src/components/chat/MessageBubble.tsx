@@ -53,16 +53,9 @@ export default function MessageBubble({
         last: "rounded-2xl rounded-tl-sm",
       }[timestampBubblePosition];
 
-  if (message.unsent) {
-    return (
-      <div className={cn("flex items-end gap-2 px-4 py-0.5", isMine && "flex-row-reverse")}>
-        <div className="w-8 shrink-0" />
-        <div className="px-3 py-2 rounded-2xl bg-muted/50 text-muted-foreground text-sm italic">
-          Message was unsent
-        </div>
-      </div>
-    );
-  }
+  const tooltipPositionClass = isMine
+    ? (message.unsent ? "right-[calc(100%+8px)]" : "left-[calc(100%+8px)]")
+    : "right-[calc(100%+8px)]";
 
   if (message.type === "system") {
     return (
@@ -77,7 +70,7 @@ export default function MessageBubble({
   return (
     <div
       className={cn(
-        "flex items-end gap-2 px-4 py-0.5 animate-message-appear",
+        "relative flex items-end gap-2 px-4 py-0.5 animate-message-appear hover:z-30",
         isMine && "flex-row-reverse"
       )}
       onMouseEnter={() => setShowActions(true)}
@@ -118,21 +111,37 @@ export default function MessageBubble({
           {/* Hover timestamp tooltip */}
           <div
             className={cn(
-              "pointer-events-none absolute left-[calc(100%+8px)] top-1/2 z-10 -translate-y-1/2 whitespace-nowrap rounded-md border border-border/60 bg-background/95 px-2 py-0.5 text-[11px] text-muted-foreground opacity-0 shadow-soft transition-opacity group-hover/bubble:opacity-100"
+              "pointer-events-none absolute top-1/2 z-80 hidden -translate-y-1/2 whitespace-nowrap rounded-md border border-border/60 bg-background/95 px-2 py-0.5 text-[11px] text-muted-foreground shadow-soft group-hover/bubble:block",
+              tooltipPositionClass
             )}
           >
-            <DateDisplay date={message.createdAt} format="time" className="text-[11px] text-muted-foreground" />
+            {message.unsent ? (
+              <div className="space-y-0.5">
+                <div>
+                  <span className="text-muted-foreground/80">Sent: </span>
+                  <DateDisplay date={message.createdAt} format="time" className="text-[11px] text-muted-foreground inline" />
+                </div>
+                <div>
+                  <span className="text-muted-foreground/80">Unsent: </span>
+                  <DateDisplay date={message.unsentAt ?? message.createdAt} format="time" className="text-[11px] text-muted-foreground inline" />
+                </div>
+              </div>
+            ) : (
+              <DateDisplay date={message.createdAt} format="time" className="text-[11px] text-muted-foreground" />
+            )}
           </div>
 
           {/* Media content */}
-          {message.type !== "text" && message.mediaUrl && (
+          {!message.unsent && message.type !== "text" && message.mediaUrl && (
             <MediaPreview message={message} />
           )}
 
           {/* Text content */}
-          {message.content && (
+          {message.unsent ? (
+            <p className="italic text-current">Message was unsent</p>
+          ) : message.content ? (
             <p className="whitespace-pre-wrap wrap-break-word">{message.content}</p>
-          )}
+          ) : null}
 
           {/* Pending/failed indicator */}
           {message.pending && (
@@ -142,7 +151,7 @@ export default function MessageBubble({
             <span className="text-xs text-destructive mt-1 block text-right">Failed</span>
           )}
 
-          {isMine && !message.pending && !message.failed && showReadReceipt && (
+          {isMine && !message.pending && !message.failed && !message.unsent && showReadReceipt && (
             <div className="group mt-1 flex justify-end">
               <ReadReceipt
                 readBy={message.readBy}

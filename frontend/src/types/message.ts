@@ -11,6 +11,7 @@ export interface Message {
   fileSize: number | null;
   readBy: string[];
   unsent: boolean;
+  unsentAt?: string | null;
   createdAt: string;
   // Optimistic UI fields
   tempId?: string;

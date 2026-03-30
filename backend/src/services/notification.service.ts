@@ -18,7 +18,7 @@ export const getIO = (): Server => {
 
 export const emitToUser = (userId: string, event: string, data: unknown) => {
   if (io) {
-    io.to(`user:${userId}`).emit(event, data);
+    io.of("/chat").to(`user:${userId}`).emit(event, data);
   }
 };
 
@@ -30,16 +30,16 @@ export const emitToConversation = (
 ) => {
   if (io) {
     if (excludeUserId) {
-      io.to(`conversation:${conversationId}`).emit(event, data);
+      io.of("/chat").to(`conversation:${conversationId}`).emit(event, data);
     } else {
-      io.to(`conversation:${conversationId}`).emit(event, data);
+      io.of("/chat").to(`conversation:${conversationId}`).emit(event, data);
     }
   }
 };
 
 export const emitToAdmins = (event: string, data: unknown) => {
   if (io) {
-    io.to("admin:dashboard").emit(event, data);
+    io.of("/admin").to("admin:dashboard").emit(event, data);
   }
 };
 

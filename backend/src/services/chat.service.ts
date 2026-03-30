@@ -350,6 +350,7 @@ export const getMessages = async (
       fileSize: m.fileSize,
       readBy: m.readBy.map((r: Types.ObjectId) => r.toString()),
       unsent: m.unsent,
+      unsentAt: m.unsent ? m.updatedAt : null,
       createdAt: m.createdAt,
     })),
     nextCursor: hasMore ? data[data.length - 1]._id.toString() : undefined,
@@ -594,6 +595,7 @@ export const unsendMessage = async (
   emitToConversation(message.conversationId.toString(), "message:unsent", {
     conversationId: message.conversationId.toString(),
     messageId: message._id.toString(),
+    unsentAt: message.updatedAt,
   });
 
   return { message: "Message unsent." };
