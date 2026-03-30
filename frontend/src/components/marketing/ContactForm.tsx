@@ -19,8 +19,8 @@ export default function ContactForm() {
 
   if (submitted) {
     return (
-      <div className="p-6 border border-border/50 rounded-lg text-center">
-        <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+      <div className="mt-6 border-t border-border/50 pt-6 text-center">
+        <div className="w-16 h-16 mx-auto rounded-full border border-border/60 bg-primary/10 flex items-center justify-center">
           <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
@@ -41,14 +41,14 @@ export default function ContactForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4 p-6 border border-border/50 rounded-lg">
+    <form onSubmit={onSubmit} className="mt-6 space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <label htmlFor="name" className="text-sm font-medium">Name</label>
           <input 
             id="name" 
             name="name"
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="flex h-11 w-full rounded-xl border border-input/80 bg-background/65 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             placeholder="John Doe" 
             required 
           />
@@ -59,7 +59,7 @@ export default function ContactForm() {
             id="email" 
             name="email"
             type="email" 
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="flex h-11 w-full rounded-xl border border-input/80 bg-background/65 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             placeholder="john@example.com" 
             required 
           />
@@ -71,7 +71,7 @@ export default function ContactForm() {
         <input 
           id="subject" 
           name="subject"
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          className="flex h-11 w-full rounded-xl border border-input/80 bg-background/65 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           placeholder="How can we help?" 
           required 
         />
@@ -82,7 +82,7 @@ export default function ContactForm() {
         <textarea 
           id="message" 
           name="message"
-          className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          className="flex min-h-35 w-full rounded-xl border border-input/80 bg-background/65 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           placeholder="Tell us more about your inquiry..." 
           required 
         />

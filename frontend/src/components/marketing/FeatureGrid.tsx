@@ -38,22 +38,24 @@ export default function FeatureGrid() {
   const [coreFeature, ...secondaryFeatures] = features;
 
   return (
-    <section className="py-20 md:py-24">
+    <section className="relative py-20 md:py-24">
+      <div className="pointer-events-none absolute inset-x-0 top-10 -z-10 h-88 bg-[radial-gradient(circle_at_20%_18%,rgba(23,62,86,0.14),transparent_45%),radial-gradient(circle_at_88%_30%,rgba(46,113,128,0.14),transparent_48%)]" />
+
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        <div className="mb-12 border-l border-border/70 pl-5 md:mb-14 md:pl-6">
-          <p className="font-mono text-[0.68rem] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+        <div className="mb-12 md:mb-14">
+          <p className="inline-flex rounded-full border border-border/70 bg-card/70 px-3 py-1 font-mono text-[0.68rem] font-medium uppercase tracking-[0.14em] text-muted-foreground">
             Feature Set
           </p>
-          <h2 className="mt-3 max-w-2xl text-3xl leading-[1.02] font-semibold sm:text-4xl md:text-[2.8rem]">
-            The essentials for modern private chat.
+          <h2 className="mt-4 max-w-3xl text-3xl leading-[0.98] font-semibold sm:text-4xl md:text-[2.95rem]">
+            Private chat primitives, composed like a system.
           </h2>
-          <p className="mt-4 max-w-2xl text-base text-muted-foreground">
-            No clutter. Just dependable messaging primitives with strong defaults.
+          <p className="mt-4 max-w-2xl text-base text-muted-foreground md:text-lg">
+            A bento layout built around identity safety, speed, and control, not decorative filler.
           </p>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:gap-5">
-          <div className="md:col-span-7">
+          <div className="md:col-span-8">
             <FeatureCard
               icon={coreFeature.icon}
               title={coreFeature.title}
@@ -64,7 +66,7 @@ export default function FeatureGrid() {
             />
           </div>
 
-          <div className="grid gap-4 md:col-span-5">
+          <div className="grid gap-4 md:col-span-4">
             {secondaryFeatures.slice(0, 2).map((feature, index) => (
               <FeatureCard
                 key={feature.title}
@@ -77,8 +79,8 @@ export default function FeatureGrid() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:col-span-12 md:grid-cols-3 md:gap-5">
-            {secondaryFeatures.slice(2).map((feature, index) => (
+          <div className="grid grid-cols-1 gap-4 md:col-span-7 md:grid-cols-2 md:gap-5">
+            {secondaryFeatures.slice(2, 4).map((feature, index) => (
               <FeatureCard
                 key={feature.title}
                 icon={feature.icon}
@@ -86,6 +88,37 @@ export default function FeatureGrid() {
                 description={feature.description}
                 delay={(index + 3) * 90}
                 emphasized={index === 0}
+              />
+            ))}
+          </div>
+
+          <div className="rounded-3xl border border-border/70 bg-card/70 p-6 shadow-soft md:col-span-5 md:p-7">
+            <p className="font-mono text-[0.68rem] uppercase tracking-[0.12em] text-muted-foreground">Design Principle</p>
+            <h3 className="mt-3 text-2xl leading-tight font-semibold">Every identity interaction needs a recovery path.</h3>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              EchoID now includes verification resume, resend with cooldown, and explicit pending-account continuation from login.
+            </p>
+            <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
+              <div className="rounded-2xl border border-border/65 bg-background/70 p-3">
+                <p className="font-mono text-[0.65rem] uppercase tracking-[0.08em] text-muted-foreground">Recovery</p>
+                <p className="mt-1 font-medium">Resume + resend</p>
+              </div>
+              <div className="rounded-2xl border border-border/65 bg-background/70 p-3">
+                <p className="font-mono text-[0.65rem] uppercase tracking-[0.08em] text-muted-foreground">Routing</p>
+                <p className="mt-1 font-medium">Guarded verify flow</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:col-span-12 md:grid-cols-2 md:gap-5">
+            {secondaryFeatures.slice(4).map((feature, index) => (
+              <FeatureCard
+                key={feature.title}
+                icon={feature.icon}
+                title={feature.title}
+                description={feature.description}
+                delay={(index + 7) * 90}
+                size="compact"
               />
             ))}
           </div>

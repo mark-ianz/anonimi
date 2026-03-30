@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { MessageCircle, Shield, Users, Zap, Lock, Bell, Settings, Image } from "lucide-react";
+import { MessageCircle, Shield, Users, Zap, Lock, Bell, Image } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -80,39 +80,42 @@ const features = [
 
 export default function FeaturesPage() {
   return (
-    <div className="pt-24 pb-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl sm:text-5xl font-display font-bold">
+    <div className="relative overflow-hidden pb-20 pt-24 md:pb-24">
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-124 bg-[radial-gradient(circle_at_8%_16%,rgba(12,55,80,0.14),transparent_42%),radial-gradient(circle_at_92%_20%,rgba(36,107,124,0.14),transparent_45%)]" />
+
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-16 border-b border-border/55 pb-10 text-center md:mb-20">
+          <p className="inline-flex rounded-full border border-border/70 bg-card/75 px-3 py-1 font-mono text-[0.68rem] uppercase tracking-[0.14em] text-muted-foreground">
+            Capability Matrix
+          </p>
+          <h1 className="mt-4 text-4xl font-display font-bold sm:text-5xl md:text-6xl">
             Features
           </h1>
-          <p className="mt-4 text-xl text-muted-foreground max-w-2xl mx-auto">
-            Everything you need for modern, secure communication
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground md:text-xl">
+            Built as a layered messaging stack: identity, transport, control, and moderation.
           </p>
         </div>
 
-        <div className="space-y-24">
+        <div className="space-y-12 md:space-y-14">
           {features.map((feature, index) => (
             <div
               key={feature.title}
-              className={`flex flex-col lg:flex-row gap-12 items-center ${
-                index % 2 === 1 ? "lg:flex-row-reverse" : ""
-              }`}
+              className="grid items-center gap-7 border-b border-border/45 pb-10 md:pb-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-10"
             >
-              <div className="flex-1">
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <div>
+                <div className="h-14 w-14 rounded-full border border-border/60 bg-background/45 flex items-center justify-center">
                   <feature.icon className="w-7 h-7 text-primary" />
                 </div>
-                <h2 className="mt-6 text-2xl sm:text-3xl font-display font-bold">
+                <h2 className="mt-6 text-2xl font-display font-bold sm:text-3xl">
                   {feature.title}
                 </h2>
-                <p className="mt-4 text-lg text-muted-foreground">
+                <p className="mt-4 text-base leading-relaxed text-muted-foreground md:text-lg">
                   {feature.description}
                 </p>
-                <ul className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <ul className="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {feature.details.map((detail) => (
-                    <li key={detail} className="flex items-center gap-2 text-sm">
-                      <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
+                    <li key={detail} className="flex items-center gap-2 text-sm text-foreground/90">
+                      <div className="w-5 h-5 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
                         <svg className="w-3 h-3 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                         </svg>
@@ -122,9 +125,10 @@ export default function FeaturesPage() {
                   ))}
                 </ul>
               </div>
-              <div className="flex-1 w-full">
-                <div className="aspect-square max-w-md mx-auto rounded-2xl bg-muted/30 border border-border/50 flex items-center justify-center">
-                  <feature.icon className="w-24 h-24 text-muted-foreground/30" />
+              <div className="w-full">
+                <div className="relative mx-auto flex aspect-square max-w-md items-center justify-center overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_16%_18%,rgba(44,106,130,0.22),transparent_42%),radial-gradient(circle_at_84%_82%,rgba(18,52,91,0.24),transparent_45%),linear-gradient(165deg,rgba(255,255,255,0.64),rgba(255,255,255,0.2))]">
+                  <div className="absolute inset-3 rounded-[1.2rem] border border-white/25" />
+                  <feature.icon className="relative z-10 w-24 h-24 text-foreground/50" />
                 </div>
               </div>
             </div>
