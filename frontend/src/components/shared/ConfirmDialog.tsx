@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { AlertTriangle } from "lucide-react";
 
@@ -40,7 +41,7 @@ export default function ConfirmDialog({
 
   if (!open) return null;
 
-  return (
+  const modal = (
     <div
       ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -95,4 +96,6 @@ export default function ConfirmDialog({
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }
