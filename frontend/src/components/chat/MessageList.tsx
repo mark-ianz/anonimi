@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useMessages } from "@/hooks/useMessages";
 import { useTyping } from "@/hooks/useTyping";
 import { useAuthStore } from "@/stores/authStore";
+import { getChatSocket } from "@/lib/socket";
 import type { Conversation } from "@/types/conversation";
 import MessageBubble from "./MessageBubble";
 import TypingIndicator from "./TypingIndicator";
@@ -46,6 +47,11 @@ export default function MessageList({ conversation }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const isFirstLoad = useRef(true);
   const lastMessageIdRef = useRef<string | null>(null);
+  const emittedReadIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    emittedReadIdsRef.current.clear();
+  }, [conversation.id]);
 
   // Scroll to bottom on first load and when new messages arrive from me
   useEffect(() => {
@@ -66,6 +72,30 @@ export default function MessageList({ conversation }: MessageListProps) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, user?.id, isFetchingMore]);
+
+  // When opening a conversation, immediately mark all unread incoming messages as read.
+  useEffect(() => {
+    if (!user?.id || !messages.length) return;
+
+    const unreadIncomingIds = messages
+      .filter((message) => {
+        if (message.senderId === user.id) return false;
+        if (message.unsent) return false;
+        if (message.readBy.includes(user.id)) return false;
+        return !emittedReadIdsRef.current.has(message.id);
+      })
+      .map((message) => message.id);
+
+    if (!unreadIncomingIds.length) return;
+
+    unreadIncomingIds.forEach((id) => emittedReadIdsRef.current.add(id));
+
+    const socket = getChatSocket();
+    socket.emit("message:read", {
+      conversationId: conversation.id,
+      messageIds: unreadIncomingIds,
+    });
+  }, [messages, conversation.id, user?.id]);
 
   // Participant lookup for group conversations
   const participantCount =

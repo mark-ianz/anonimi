@@ -144,15 +144,44 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     // Read receipts
     socket.on("message:read", (payload: MessageReadReceiptPayload) => {
+      const readerId = payload.readBy.userId;
+
+      qc.setQueryData(
+        ["messages", payload.conversationId],
+        (old:
+          | {
+              pages: Array<{ data: Message[] }>;
+              pageParams: unknown[];
+            }
+          | undefined) => {
+          if (!old) return old;
+
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              data: page.data.map((message) => {
+                if (!payload.messageIds.includes(message.id)) return message;
+                if (message.readBy.includes(readerId)) return message;
+                return {
+                  ...message,
+                  readBy: [...message.readBy, readerId],
+                };
+              }),
+            })),
+          };
+        }
+      );
+
       const { messages } = useChatStore.getState();
       const conversationMessages = messages[payload.conversationId] ?? [];
 
       payload.messageIds.forEach((msgId) => {
         const currentMessage = conversationMessages.find((msg) => msg.id === msgId);
         const existingReadBy = currentMessage?.readBy ?? [];
-        const nextReadBy = existingReadBy.includes(payload.readBy.userId)
+        const nextReadBy = existingReadBy.includes(readerId)
           ? existingReadBy
-          : [...existingReadBy, payload.readBy.userId];
+          : [...existingReadBy, readerId];
 
         updateMessage(payload.conversationId, msgId, {
           readBy: nextReadBy,
