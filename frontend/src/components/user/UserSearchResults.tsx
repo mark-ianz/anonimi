@@ -17,6 +17,18 @@ interface UserSearchResultsProps {
   onQueryChange?: (value: string) => void;
 }
 
+function isBroadPeopleQuery(value: string) {
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return false;
+  const generic = new Set(["eid", "eid_", "id", "echoid", "echo", "user", "users"]);
+  if (generic.has(normalized)) return true;
+  if (normalized.startsWith("eid")) {
+    const suffix = normalized.replace(/^eid_?/, "").replace(/[^a-z0-9]/gi, "");
+    return suffix.length < 3;
+  }
+  return false;
+}
+
 export default function UserSearchResults({
   query,
   onQueryChange,
@@ -26,6 +38,7 @@ export default function UserSearchResults({
   const resolvedQuery = query ?? internalQuery;
   const setQuery = onQueryChange ?? setInternalQuery;
   const debounced = useDebounce(resolvedQuery, 350);
+  const broadQuery = isBroadPeopleQuery(debounced);
   const { sendRequestAsync } = useContacts();
   const router = useRouter();
 
@@ -35,7 +48,7 @@ export default function UserSearchResults({
       const res = await api.get("/users/search", { params: { q: debounced, limit: 10 } });
       return res.data.data as SearchUser[];
     },
-    enabled: debounced.length >= 2,
+    enabled: debounced.length >= 2 && !broadQuery,
     staleTime: 1000 * 30,
   });
 
@@ -65,7 +78,13 @@ export default function UserSearchResults({
 
       {isFetching && <LoadingSkeleton rows={3} variant="conversation" />}
 
-      {!isFetching && data && data.length === 0 && debounced.length >= 2 && (
+      {!isFetching && broadQuery && (
+        <p className="text-sm text-muted-foreground text-center py-6">
+          Query is too broad. Use a username or at least 3 characters after eid.
+        </p>
+      )}
+
+      {!isFetching && !broadQuery && data && data.length === 0 && debounced.length >= 2 && (
         <p className="text-sm text-muted-foreground text-center py-6">
           No users found for &quot;{debounced}&quot;
         </p>

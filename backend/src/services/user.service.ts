@@ -13,16 +13,49 @@ interface SearchResult {
   onlineStatus: string;
 }
 
+const GENERIC_SEARCH_TOKENS = new Set([
+  "eid",
+  "eid_",
+  "id",
+  "echoid",
+  "echo",
+  "user",
+  "users",
+]);
+
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 export const searchUsers = async (
   query: string,
   limit: number = 10,
   cursor?: string
 ): Promise<{ users: SearchResult[]; nextCursor?: string }> => {
+  const normalized = query.trim().toLowerCase();
+
+  if (!normalized) {
+    return { users: [] };
+  }
+
+  const hasEchoPrefix = normalized.startsWith("eid");
+  const echoSuffix = normalized.replace(/^eid_?/, "").replace(/[^a-z0-9]/gi, "");
+  const isGeneric =
+    GENERIC_SEARCH_TOKENS.has(normalized) ||
+    (hasEchoPrefix && echoSuffix.length < 3);
+
+  // Prevent broad wildcard-like queries (e.g. "eid") from listing everyone.
+  if (isGeneric) {
+    return { users: [] };
+  }
+
+  const escapedQuery = escapeRegex(normalized);
+  const usernameRegex = new RegExp(escapedQuery, "i");
+
+  const echoRegex = hasEchoPrefix
+    ? new RegExp(`^eid_${escapeRegex(echoSuffix)}`, "i")
+    : new RegExp(escapedQuery, "i");
+
   const searchQuery = {
-    $or: [
-      { username: { $regex: query, $options: "i" } },
-      { echoId: { $regex: query, $options: "i" } },
-    ],
+    $or: [{ username: usernameRegex }, { echoId: echoRegex }],
   };
 
   const users = await User.find(searchQuery)
