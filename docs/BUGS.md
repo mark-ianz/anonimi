@@ -94,3 +94,31 @@ Implemented policy:
 * Each blocking state has a clear next action
 
 New:
+I tried logging in this: {
+  "_id": {
+    "$oid": "69c9fb1401d0426ef441b956"
+  },
+  "echoId": "eid_6r1aunby",
+  "username": "anon_t4k55y",
+  "email": "awdawd@gmail.com",
+  "passwordHash": "$2b$12$ZAyMVkhAeIZ9gvTQSPX/m.u3mPxJRrxvM0MjCih5srSjcNLDBEClK",
+  "role": "user",
+  "status": "pending",
+  "appearanceStatus": "online",
+  "onlineStatus": "offline",
+  "emailVerified": false,
+  "phoneVerified": false,
+  "verificationCode": "993182",
+  "verificationCodeExpiresAt": {
+    "$date": "2026-03-30T04:39:52.105Z"
+  },
+  "createdAt": {
+    "$date": "2026-03-30T04:24:52.335Z"
+  },
+  "updatedAt": {
+    "$date": "2026-03-30T04:24:52.335Z"
+  },
+  "__v": 0
+}
+
+It was checked as pending and told shows the continue verification which is correct. But the problem when I clicked the "Continue Verification", it pops up an error toast with this message "This verification session is no longer valid. Please register or sign in again." and brings me back to register.

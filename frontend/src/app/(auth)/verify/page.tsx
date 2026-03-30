@@ -58,7 +58,26 @@ function VerifyForm() {
 
         if (!mounted) return;
 
-        if (!res.data?.data?.canVerify) {
+        const verification = res.data?.data as
+          | {
+              canVerify?: boolean;
+              reason?: string;
+            }
+          | undefined;
+
+        if (!verification?.canVerify) {
+          // Keep users in verify flow for recoverable states so they can use Resend.
+          if (
+            verification?.reason === "code_expired" ||
+            verification?.reason === "no_code"
+          ) {
+            setIsCheckingContext(false);
+            toast.info("Your previous code expired. Please resend a new code.", {
+              duration: 5000,
+            });
+            return;
+          }
+
           clearPendingVerification();
           redirectToRegister("This verification session is no longer valid. Please register or sign in again.");
           return;

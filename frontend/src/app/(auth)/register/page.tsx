@@ -64,7 +64,18 @@ export default function RegisterPage() {
 
         if (!mounted) return;
 
-        if (res.data?.data?.canVerify) {
+        const verification = res.data?.data as
+          | {
+              canVerify?: boolean;
+              reason?: string;
+            }
+          | undefined;
+
+        if (
+          verification?.canVerify ||
+          verification?.reason === "code_expired" ||
+          verification?.reason === "no_code"
+        ) {
           router.replace(
             `/verify?target=${encodeURIComponent(pending.target)}&type=${pending.type}`
           );
