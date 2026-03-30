@@ -1,21 +1,28 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, MessageCircle, UserPlus, Ban } from "lucide-react";
+import { ArrowLeft, MessageCircle, UserPlus, Ban, Flag, SendHorizontal, MoreHorizontal, X } from "lucide-react";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import type { PublicUser } from "@/types/user";
+import type { ReportReason } from "@/types/report";
 import { API_BASE } from "@/lib/constants";
 import OnlineIndicator from "@/components/user/OnlineIndicator";
+import { useEffect, useRef, useState } from "react";
 
 export default function UserProfilePage() {
   const { echoId } = useParams<{ echoId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user: me } = useAuthStore();
+  const [reportReason, setReportReason] = useState<ReportReason>("harassment");
+  const [reportDescription, setReportDescription] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["user-profile", echoId],
@@ -56,11 +63,8 @@ export default function UserProfilePage() {
 
   const messageMutation = useMutation({
     mutationFn: async () => {
-      // Find or create conversation — backend handles this via message request flow
-      const res = await api.post("/messages", {
-        targetEchoId: echoId,
-      });
-      return res.data.data;
+      const res = await api.post("/conversations", { participantEchoId: echoId });
+      return res.data.data as { conversationId: string };
     },
     onSuccess: (data) => {
       if (data?.conversationId) {
@@ -72,24 +76,73 @@ export default function UserProfilePage() {
     },
   });
 
+  const reportMutation = useMutation({
+    mutationFn: async () => {
+      if (!profile?.id) throw new Error("Missing target user");
+      await api.post("/reports", {
+        targetType: "user",
+        targetId: profile.id,
+        reason: reportReason,
+        description: reportDescription.trim() || undefined,
+      });
+    },
+    onSuccess: () => {
+      toast.success("Report submitted. Thank you.");
+      setReportDescription("");
+      setReportModalOpen(false);
+    },
+    onError: () => {
+      toast.error("Failed to submit report");
+    },
+  });
+
   const profile = data;
   const isMe = profile?.id === me?.id;
 
+  useEffect(() => {
+    if (!menuOpen && !reportModalOpen) return;
+
+    const onMouseDown = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        setReportModalOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onMouseDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [menuOpen, reportModalOpen]);
+
   return (
     <ProtectedRoute>
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="p-4 border-b border-border/30 shrink-0 flex items-center gap-3">
+      <div className="flex h-full flex-col">
+        <div className="shrink-0 border-b border-border/30 p-4">
+          <div className="mx-auto flex w-full max-w-2xl items-center gap-3">
           <button
             onClick={() => router.back()}
             className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted/60 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <h1 className="text-xl font-display font-semibold">Profile</h1>
+            <div>
+              <p className="font-mono text-[0.62rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                Public Profile
+              </p>
+              <h1 className="text-xl font-display font-semibold">User Details</h1>
+            </div>
+          </div>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
             <div className="flex justify-center py-16">
@@ -101,105 +154,200 @@ export default function UserProfilePage() {
               <p className="text-xs text-muted-foreground">This profile doesn't exist or is unavailable.</p>
             </div>
           ) : (
-            <div className="p-6 space-y-6 max-w-lg mx-auto w-full">
-              {/* Avatar + status */}
-              <div className="flex flex-col items-center gap-3">
-                <div className="relative">
-                  {profile.profileImage ? (
-                    <img
-                      src={`${API_BASE.replace("/api", "")}${profile.profileImage}`}
-                      alt={profile.username}
-                      className="w-24 h-24 rounded-full object-cover shadow-elevated"
-                    />
-                  ) : (
-                    <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center shadow-elevated">
-                      <span className="text-3xl font-bold text-muted-foreground">
-                        {profile.username[0].toUpperCase()}
-                      </span>
+            <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6">
+              <div className="overflow-hidden rounded-3xl border border-border/70 bg-card/75 shadow-elevated">
+                <div className="relative border-b border-border/60 bg-linear-to-br from-background via-card/80 to-muted/35 px-6 pb-6 pt-8 sm:px-8">
+                  {!isMe && (
+                    <div className="absolute right-4 top-4 z-10" ref={menuRef}>
+                      <button
+                        type="button"
+                        onClick={() => setMenuOpen((prev) => !prev)}
+                        className="grid h-9 w-9 place-items-center rounded-lg border border-border/70 bg-card/85 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        aria-label="More actions"
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </button>
+
+                      {menuOpen && (
+                        <div className="absolute right-0 top-full mt-2 w-44 rounded-xl border border-border/70 bg-card p-1.5 shadow-elevated">
+                          <button
+                            type="button"
+                            disabled={blockMutation.isPending || !!profile.isBlocked}
+                            onClick={() => {
+                              setMenuOpen(false);
+                              blockMutation.mutate();
+                            }}
+                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <Ban className="h-4 w-4" />
+                            {profile.isBlocked ? "Blocked" : "Block User"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMenuOpen(false);
+                              setReportModalOpen(true);
+                            }}
+                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-amber-700 transition-colors hover:bg-amber-500/10 dark:text-amber-300"
+                          >
+                            <Flag className="h-4 w-4" />
+                            Report User
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
-                  <div className="absolute bottom-1 right-1">
-                    <OnlineIndicator status={profile.onlineStatus} size="md" />
+
+                  <div className="mx-auto flex w-full max-w-md flex-col items-center text-center">
+                    <div className="relative">
+                      {profile.profileImage ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={`${API_BASE.replace("/api", "")}${profile.profileImage}`}
+                          alt={profile.username}
+                          className="h-28 w-28 rounded-full object-cover shadow-elevated"
+                        />
+                      ) : (
+                        <div className="grid h-28 w-28 place-items-center rounded-full bg-linear-to-br from-cyan-500 to-blue-600 text-4xl font-bold text-white shadow-elevated">
+                          {profile.username[0].toUpperCase()}
+                        </div>
+                      )}
+                      <div className="absolute -bottom-1 -right-1">
+                        <OnlineIndicator status={profile.onlineStatus} size="md" />
+                      </div>
+                    </div>
+
+                    <h2 className="mt-4 font-display text-3xl font-semibold leading-none">{profile.username}</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">@{profile.echoId}</p>
+                    {profile.contactNickname ? (
+                      <p className="mt-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                        Saved as {profile.contactNickname}
+                      </p>
+                    ) : null}
+
+                    <div className="mt-5 w-full rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-sm text-muted-foreground">
+                      <p>
+                        {profile.onlineStatus === "online"
+                          ? "Active now"
+                          : profile.onlineStatus === "away"
+                          ? "Away"
+                          : profile.onlineStatus === "dnd"
+                          ? "Do Not Disturb"
+                          : profile.lastSeen
+                          ? `Last seen ${new Date(profile.lastSeen).toLocaleDateString()}`
+                          : "Offline"}
+                      </p>
+                      {profile.createdAt ? (
+                        <p className="mt-1">
+                          Member since {new Date(profile.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                        </p>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
-                <div className="text-center">
-                  <p className="font-display font-bold text-xl">{profile.username}</p>
-                  <p className="text-sm text-muted-foreground">@{profile.echoId}</p>
-                  {profile.contactNickname && (
-                    <p className="text-xs text-primary mt-1">Saved as &quot;{profile.contactNickname}&quot;</p>
-                  )}
-                </div>
-              </div>
 
-              {/* Status info */}
-              <div className="bg-muted/40 border border-border/30 rounded-2xl p-3 text-center">
-                <p className="text-xs text-muted-foreground">
-                  {profile.onlineStatus === "online"
-                    ? "Active now"
-                    : profile.onlineStatus === "away"
-                    ? "Away"
-                    : profile.onlineStatus === "dnd"
-                    ? "Do Not Disturb"
-                    : profile.lastSeen
-                    ? `Last seen ${new Date(profile.lastSeen).toLocaleDateString()}`
-                    : "Offline"}
-                </p>
-                {profile.createdAt && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Member since {new Date(profile.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-                  </p>
+                {!isMe && (
+                  <div className="space-y-4 p-6 sm:p-8">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <button
+                        onClick={() => addContactMutation.mutate()}
+                        disabled={addContactMutation.isPending || profile.isContact}
+                        className="flex h-11 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {addContactMutation.isPending ? (
+                          <div className="h-4 w-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />
+                        ) : (
+                          <UserPlus className="h-4 w-4" />
+                        )}
+                        {profile.isContact ? "Already a Contact" : "Add Contact"}
+                      </button>
+
+                      <button
+                        onClick={() => messageMutation.mutate()}
+                        disabled={messageMutation.isPending}
+                        className="flex h-11 items-center justify-center gap-2 rounded-xl border border-border/70 bg-background text-sm font-semibold transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {messageMutation.isPending ? (
+                          <div className="h-4 w-4 rounded-full border-2 border-foreground/40 border-t-foreground animate-spin" />
+                        ) : (
+                          <MessageCircle className="h-4 w-4" />
+                        )}
+                        Message
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
-
-              {/* Actions */}
-              {!isMe && (
-                <div className="space-y-2">
-                  {profile.isContact ? (
-                    <button
-                      onClick={() => router.push(`/chat`)}
-                      className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      Message
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => addContactMutation.mutate()}
-                      disabled={addContactMutation.isPending}
-                      className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-                    >
-                      {addContactMutation.isPending ? (
-                        <div className="w-4 h-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />
-                      ) : (
-                        <>
-                          <UserPlus className="w-4 h-4" />
-                          Add Contact
-                        </>
-                      )}
-                    </button>
-                  )}
-
-                  {!profile.isBlocked && (
-                    <button
-                      onClick={() => blockMutation.mutate()}
-                      disabled={blockMutation.isPending}
-                      className="w-full h-10 rounded-xl border border-destructive/40 text-destructive text-sm font-medium hover:bg-destructive/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-                    >
-                      {blockMutation.isPending ? (
-                        <div className="w-4 h-4 rounded-full border-2 border-destructive border-t-transparent animate-spin" />
-                      ) : (
-                        <>
-                          <Ban className="w-4 h-4" />
-                          Block User
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
           )}
         </div>
+
+        {reportModalOpen && !isMe && profile && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setReportModalOpen(false)}>
+            <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" />
+            <div
+              className="relative w-full max-w-md rounded-2xl border border-border/70 bg-card p-5 shadow-elevated"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setReportModalOpen(false)}
+                className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                aria-label="Close report modal"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              <h3 className="text-lg font-semibold">Report Details</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Report @{profile.echoId}. Add optional context to help moderation.
+              </p>
+
+              <div className="mt-4 grid gap-2">
+                <select
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value as ReportReason)}
+                  className="h-10 rounded-lg border border-border/70 bg-background px-2 text-sm"
+                >
+                  <option value="harassment">Harassment</option>
+                  <option value="spam">Spam</option>
+                  <option value="hate_speech">Hate Speech</option>
+                  <option value="violence">Violence</option>
+                  <option value="explicit_content">Explicit Content</option>
+                  <option value="misinformation">Misinformation</option>
+                  <option value="other">Other</option>
+                </select>
+                <textarea
+                  value={reportDescription}
+                  onChange={(e) => setReportDescription(e.target.value)}
+                  placeholder="Optional details"
+                  rows={4}
+                  className="w-full resize-none rounded-lg border border-border/70 bg-background px-3 py-2 text-sm"
+                />
+              </div>
+
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setReportModalOpen(false)}
+                  className="h-9 rounded-lg border border-border/70 px-3 text-sm font-medium transition-colors hover:bg-muted"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => reportMutation.mutate()}
+                  disabled={reportMutation.isPending}
+                  className="inline-flex h-9 items-center gap-2 rounded-lg bg-amber-500/15 px-3 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:text-amber-300"
+                >
+                  <Flag className="h-4 w-4" />
+                  Submit Report
+                  <SendHorizontal className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </ProtectedRoute>
   );

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { 
   MessageCircle, 
   Users, 
@@ -62,10 +62,12 @@ const appearanceOptions: {
 ];
 
 export default function MainLayout({ children }: SidebarProps) {
+  const router = useRouter();
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
+  const [sidebarSearch, setSidebarSearch] = useState("");
   const { user } = useAuthStore();
   const { updateProfile, isUpdatingProfile } = useAuth();
   const {
@@ -182,6 +184,13 @@ export default function MainLayout({ children }: SidebarProps) {
     setStatusMenuOpen(false);
   };
 
+  const handleSidebarSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const q = sidebarSearch.trim();
+    if (!q) return;
+    router.push(`/search?q=${encodeURIComponent(q)}`);
+  };
+
   return (
     <SocketProvider>
       <div className="flex h-screen overflow-hidden bg-background">
@@ -208,14 +217,23 @@ export default function MainLayout({ children }: SidebarProps) {
 
         {!isCollapsed && (
           <div className="px-3 py-3">
-            <div className="relative">
+            <form onSubmit={handleSidebarSearchSubmit} className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input 
                 type="text" 
-                placeholder="Search..." 
-                className="h-9 w-full rounded-lg border border-border/60 bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:border-primary/35 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                placeholder="Search everything..." 
+                value={sidebarSearch}
+                onChange={(e) => setSidebarSearch(e.target.value)}
+                className="h-9 w-full rounded-lg border border-border/60 bg-background pl-9 pr-10 text-sm placeholder:text-muted-foreground focus:border-primary/35 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               />
-            </div>
+              <button
+                type="submit"
+                aria-label="Search"
+                className="absolute right-1.5 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <Search className="h-3.5 w-3.5" />
+              </button>
+            </form>
           </div>
         )}
 
