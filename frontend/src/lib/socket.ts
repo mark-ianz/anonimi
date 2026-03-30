@@ -5,7 +5,7 @@ let chatSocket: Socket | null = null;
 let adminSocket: Socket | null = null;
 
 export function getChatSocket(): Socket {
-  if (!chatSocket || !chatSocket.connected) {
+  if (!chatSocket) {
     const token =
       typeof window !== "undefined"
         ? localStorage.getItem(ACCESS_TOKEN_KEY)
@@ -20,12 +20,20 @@ export function getChatSocket(): Socket {
       reconnectionDelayMax: 5000,
       autoConnect: false,
     });
+  } else {
+    const token =
+      typeof window !== "undefined"
+        ? localStorage.getItem(ACCESS_TOKEN_KEY)
+        : null;
+    if (token) {
+      chatSocket.auth = { token };
+    }
   }
   return chatSocket;
 }
 
 export function getAdminSocket(): Socket {
-  if (!adminSocket || !adminSocket.connected) {
+  if (!adminSocket) {
     const token =
       typeof window !== "undefined"
         ? localStorage.getItem(ACCESS_TOKEN_KEY)
@@ -40,6 +48,14 @@ export function getAdminSocket(): Socket {
       reconnectionDelayMax: 5000,
       autoConnect: false,
     });
+  } else {
+    const token =
+      typeof window !== "undefined"
+        ? localStorage.getItem(ACCESS_TOKEN_KEY)
+        : null;
+    if (token) {
+      adminSocket.auth = { token };
+    }
   }
   return adminSocket;
 }

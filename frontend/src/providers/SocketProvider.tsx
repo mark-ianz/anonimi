@@ -48,7 +48,6 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     updateMessage,
     updateConversationLastMessage,
     incrementUnread,
-    activeConversationId,
   } = useChatStore();
   const { setPresence } = usePresenceStore();
   const { setTyping } = useTypingStore();
@@ -140,7 +139,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         type: payload.type,
         timestamp: payload.timestamp,
       });
-      if (activeConversationId !== payload.conversationId) {
+      const { activeConversationId: currentActiveConversationId } = useChatStore.getState();
+      if (currentActiveConversationId !== payload.conversationId) {
         incrementUnread(payload.conversationId);
       } else {
         // Auto-mark as read
@@ -281,7 +281,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       const isActiveMessageNotification =
         payload.type === "message_received" &&
         !!payloadConversationId &&
-        payloadConversationId === activeConversationId;
+        payloadConversationId === useChatStore.getState().activeConversationId;
 
       if (isActiveMessageNotification) {
         api.patch(`/notifications/${payload.id}/read`).catch(() => undefined);
@@ -332,7 +332,6 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     updateMessage,
     updateConversationLastMessage,
     incrementUnread,
-    activeConversationId,
     setPresence,
     setTyping,
     router,
