@@ -101,7 +101,6 @@ export default function MessageList({ conversation }: MessageListProps) {
         const showDivider = shouldShowDateDivider(prev?.createdAt, message.createdAt);
         const showTimeCluster = shouldShowTimeDivider(prev?.createdAt, message.createdAt);
         const isFirst = !prev || prev.senderId !== message.senderId || showDivider;
-        const showAvatar = isFirst;
         const bucketKey = getTimeBucketKey(message.createdAt);
 
         const sameTimestampSenderAsPrev =
@@ -113,6 +112,8 @@ export default function MessageList({ conversation }: MessageListProps) {
           !!next &&
           next.senderId === message.senderId &&
           getTimeBucketKey(next.createdAt) === bucketKey;
+
+        const showAvatar = !sameTimestampSenderAsNext;
 
         let timestampBubblePosition: TimestampBubblePosition = "single";
         if (!sameTimestampSenderAsPrev && sameTimestampSenderAsNext) {

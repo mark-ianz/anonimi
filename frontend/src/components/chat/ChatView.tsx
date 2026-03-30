@@ -414,11 +414,13 @@ export default function ChatView({ conversation }: ChatViewProps) {
       <MessageList conversation={conversation} />
 
       {/* Input */}
-      <MessageInput
-        conversationId={conversation.id}
-        disabled={isInputDisabled}
-        placeholder={isInputDisabled ? "Accept the request to reply…" : "Message…"}
-      />
+      <div className="mt-4">
+        <MessageInput
+          conversationId={conversation.id}
+          disabled={isInputDisabled}
+          placeholder={isInputDisabled ? "Accept the request to reply…" : "Message…"}
+        />
+      </div>
 
       {/* Block confirm */}
       <ConfirmDialog
