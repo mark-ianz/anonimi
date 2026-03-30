@@ -26,20 +26,22 @@ export default function LandingPage() {
   return (
     <>
       <HeroSection />
-      
-      {/* How It Works Section */}
-      <section className="py-20 lg:py-28">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-display font-bold">
-              How it works
+
+      <section className="py-20 md:py-24">
+        <div className="mx-auto max-w-6xl px-5 sm:px-8">
+          <div className="mb-12 border-l border-border/70 pl-5 md:mb-14 md:pl-6">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              Start In Minutes
+            </p>
+            <h2 className="mt-3 max-w-2xl text-3xl leading-[1.02] font-semibold sm:text-4xl md:text-[2.8rem]">
+              A quiet setup flow designed for focus.
             </h2>
-            <p className="mt-4 text-lg text-muted-foreground">
-              Get started in three simple steps
+            <p className="mt-4 max-w-xl text-base text-muted-foreground">
+              Create your identity, share it once, then talk privately across every device.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-5">
             {steps.map((step, index) => (
               <HowItWorksStep
                 key={step.title}

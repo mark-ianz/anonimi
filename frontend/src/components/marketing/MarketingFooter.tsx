@@ -15,23 +15,22 @@ const legalLinks = [
 
 export default function MarketingFooter() {
   return (
-    <footer className="bg-muted/30 border-t border-border/50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Brand */}
+    <footer className="border-t border-border/60 bg-card/40">
+      <div className="mx-auto max-w-6xl px-5 py-14 sm:px-8">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-4 md:gap-8">
           <div className="md:col-span-2">
             <Link href="/" className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[oklch(0.55_0.15_250)] to-[oklch(0.45_0.12_300)] flex items-center justify-center shadow-md">
-                <MessageCircle className="w-5 h-5 text-white" />
+              <div className="grid h-9 w-9 place-items-center rounded-xl border border-border/70 bg-background">
+                <MessageCircle className="h-4 w-4 text-foreground" />
               </div>
-              <span className="font-display font-bold text-xl tracking-tight">
+              <span className="font-display text-xl font-semibold tracking-[0.02em]">
                 EchoID
               </span>
             </Link>
-            <p className="mt-4 text-sm text-muted-foreground max-w-sm">
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
               Private messaging, reimagined. A secure, real-time chat platform with privacy-first identity.
             </p>
-            <div className="flex gap-4 mt-6">
+            <div className="mt-6 flex gap-4">
               <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
                 <Twitter className="w-5 h-5" />
               </a>
@@ -41,15 +40,14 @@ export default function MarketingFooter() {
             </div>
           </div>
 
-          {/* Product */}
           <div>
-            <h4 className="font-semibold text-sm">Product</h4>
+            <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Product</h4>
             <nav className="mt-4 flex flex-col gap-2">
               {productLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                 >
                   {link.label}
                 </Link>
@@ -57,15 +55,14 @@ export default function MarketingFooter() {
             </nav>
           </div>
 
-          {/* Legal */}
           <div>
-            <h4 className="font-semibold text-sm">Legal</h4>
+            <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Legal</h4>
             <nav className="mt-4 flex flex-col gap-2">
               {legalLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                 >
                   {link.label}
                 </Link>
@@ -74,8 +71,8 @@ export default function MarketingFooter() {
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-border/50">
-          <p className="text-sm text-muted-foreground text-center">
+        <div className="mt-12 border-t border-border/60 pt-8">
+          <p className="text-center text-sm text-muted-foreground">
             © {new Date().getFullYear()} EchoID. All rights reserved.
           </p>
         </div>

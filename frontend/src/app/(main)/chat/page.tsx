@@ -7,19 +7,24 @@ import ProtectedRoute from "@/components/shared/ProtectedRoute";
 export default function ChatPage() {
   return (
     <ProtectedRoute>
-      <div className="flex h-full">
-        {/* Conversation list - full width on mobile, fixed width on desktop */}
-        <div className="w-full md:w-80 lg:w-96 border-r border-border/50 flex flex-col shrink-0">
+      <div className="flex h-full bg-background">
+        <div className="w-full shrink-0 border-r border-border/60 md:w-80 lg:w-96">
           <ConversationSearch />
         </div>
 
-        {/* Empty state shown on md+ when no chat is selected */}
-        <div className="hidden md:flex flex-1 items-center justify-center bg-muted/20">
-          <EmptyState
-            variant="messages"
-            title="Select a conversation"
-            description="Choose from your existing conversations or start a new one to begin messaging."
-          />
+        <div className="hidden flex-1 bg-card/30 md:flex md:flex-col">
+          <div className="h-16 border-b border-border/60 px-6 flex items-center">
+            <p className="font-mono text-[0.66rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+              Conversation Preview
+            </p>
+          </div>
+          <div className="flex-1 flex items-center justify-center">
+            <EmptyState
+              variant="messages"
+              title="Select a conversation"
+              description="Choose from your conversations or start a new chat to begin messaging."
+            />
+          </div>
         </div>
       </div>
     </ProtectedRoute>

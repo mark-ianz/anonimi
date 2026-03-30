@@ -17,40 +17,42 @@ export default function ContactsPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="p-4 border-b border-border/30 shrink-0 space-y-3">
+      <div className="flex h-full flex-col bg-background">
+        <div className="shrink-0 space-y-3 border-b border-border/60 bg-card/45 p-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-display font-semibold">Contacts</h1>
+            <div>
+              <p className="font-mono text-[0.66rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                Network
+              </p>
+              <h1 className="mt-1 text-2xl leading-tight font-semibold">Contacts</h1>
+            </div>
             <button
               onClick={() => setAddingContact((v) => !v)}
               title={addingContact ? "Cancel" : "Add contact"}
-              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+              className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors ${
                 addingContact
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "border-border/70 bg-muted text-foreground"
+                  : "border-border/70 bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
               {addingContact ? <X className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
             </button>
           </div>
 
-          {/* Add Contact search panel */}
           {addingContact && (
             <div className="animate-fade-in">
               <UserSearchResults />
             </div>
           )}
 
-          {/* Tabs + contact filter search — hidden while adding */}
           {!addingContact && (
             <>
-              <div className="flex gap-1 p-1 bg-muted/50 rounded-xl">
+              <div className="flex gap-1 rounded-xl border border-border/60 bg-background p-1">
                 <button
                   onClick={() => setTab("contacts")}
                   className={`flex-1 h-8 rounded-lg text-sm font-medium transition-colors ${
                     tab === "contacts"
-                      ? "bg-background text-foreground shadow-sm"
+                      ? "bg-muted text-foreground"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -60,7 +62,7 @@ export default function ContactsPage() {
                   onClick={() => setTab("requests")}
                   className={`flex-1 h-8 rounded-lg text-sm font-medium transition-colors relative ${
                     tab === "requests"
-                      ? "bg-background text-foreground shadow-sm"
+                      ? "bg-muted text-foreground"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -84,7 +86,6 @@ export default function ContactsPage() {
           )}
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto">
           {addingContact ? null : tab === "contacts" ? (
             <ContactList searchQuery={search} />

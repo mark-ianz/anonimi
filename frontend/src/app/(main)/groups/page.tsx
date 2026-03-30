@@ -22,14 +22,18 @@ export default function GroupsPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="p-4 border-b border-border/30 shrink-0 space-y-3">
+      <div className="flex h-full flex-col bg-background">
+        <div className="shrink-0 space-y-3 border-b border-border/60 bg-card/45 p-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-display font-semibold">Groups</h1>
+            <div>
+              <p className="font-mono text-[0.66rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                Collaboration
+              </p>
+              <h1 className="mt-1 text-2xl leading-tight font-semibold">Groups</h1>
+            </div>
             <button
               onClick={() => setShowCreate(true)}
-              className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/70 bg-background text-foreground transition-colors hover:bg-muted"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -37,7 +41,6 @@ export default function GroupsPage() {
           <SearchInput placeholder="Search groups..." value={search} onChange={setSearch} />
         </div>
 
-        {/* List */}
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
             <LoadingSkeleton variant="conversation" rows={5} />
@@ -49,7 +52,7 @@ export default function GroupsPage() {
               action={
                 <button
                   onClick={() => setShowCreate(true)}
-                  className="flex items-center gap-2 h-9 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                  className="flex h-9 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   <Plus className="w-4 h-4" />
                   New Group

@@ -35,28 +35,60 @@ const features = [
 ];
 
 export default function FeatureGrid() {
+  const [coreFeature, ...secondaryFeatures] = features;
+
   return (
-    <section className="py-20 lg:py-28 bg-muted/30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-display font-bold">
-            Everything you need to chat
+    <section className="py-20 md:py-24">
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+        <div className="mb-12 border-l border-border/70 pl-5 md:mb-14 md:pl-6">
+          <p className="font-mono text-[0.68rem] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+            Feature Set
+          </p>
+          <h2 className="mt-3 max-w-2xl text-3xl leading-[1.02] font-semibold sm:text-4xl md:text-[2.8rem]">
+            The essentials for modern private chat.
           </h2>
-          <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Powerful features designed for modern communication. Simple, secure, and built for you.
+          <p className="mt-4 max-w-2xl text-base text-muted-foreground">
+            No clutter. Just dependable messaging primitives with strong defaults.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((feature, index) => (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:gap-5">
+          <div className="md:col-span-7">
             <FeatureCard
-              key={feature.title}
-              icon={feature.icon}
-              title={feature.title}
-              description={feature.description}
-              delay={index * 100}
+              icon={coreFeature.icon}
+              title={coreFeature.title}
+              description={coreFeature.description}
+              delay={0}
+              emphasized
+              size="feature"
             />
-          ))}
+          </div>
+
+          <div className="grid gap-4 md:col-span-5">
+            {secondaryFeatures.slice(0, 2).map((feature, index) => (
+              <FeatureCard
+                key={feature.title}
+                icon={feature.icon}
+                title={feature.title}
+                description={feature.description}
+                delay={(index + 1) * 90}
+                size="compact"
+              />
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:col-span-12 md:grid-cols-3 md:gap-5">
+            {secondaryFeatures.slice(2).map((feature, index) => (
+              <FeatureCard
+                key={feature.title}
+                icon={feature.icon}
+                title={feature.title}
+                description={feature.description}
+                delay={(index + 3) * 90}
+                emphasized={index === 0}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>

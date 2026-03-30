@@ -1,77 +1,71 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Shield, Zap, Users } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 export default function HeroSection() {
   return (
-    <section className="relative overflow-hidden pt-32 pb-20 lg:pt-40 lg:pb-28">
-      {/* Background Effects */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[oklch(0.55_0.15_250)]/20 rounded-full blur-3xl" />
-      </div>
+    <section className="relative overflow-hidden px-5 pb-16 pt-28 sm:px-8 md:pt-32 lg:pb-20 lg:pt-36">
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-116 bg-[radial-gradient(circle_at_12%_6%,rgba(12,39,60,0.09),transparent_40%),radial-gradient(circle_at_90%_18%,rgba(32,121,136,0.1),transparent_46%),linear-gradient(180deg,rgba(255,255,255,0.64),transparent)]" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-8">
-            <Zap className="w-4 h-4" />
-            <span>Secure real-time messaging</span>
-          </div>
+      <div className="mx-auto max-w-6xl">
+        <div className="grid gap-10 border-y border-border/70 py-12 md:grid-cols-[minmax(0,1fr)_minmax(0,0.88fr)] md:gap-12 md:py-14">
+          <div className="animate-reveal-up">
+            <p className="inline-flex rounded-full border border-border/70 bg-background/80 px-3 py-1 font-mono text-[0.68rem] font-medium uppercase tracking-[0.16em] text-foreground/88">
+              Private Messaging Infrastructure
+            </p>
 
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-display font-bold tracking-tight">
-            Private messaging,
-            <span className="block mt-2 bg-gradient-to-r from-primary to-[oklch(0.55_0.15_250)] bg-clip-text text-transparent">
-              reimagined
-            </span>
-          </h1>
+            <h1 className="mt-6 max-w-[14ch] text-4xl leading-[0.95] font-semibold sm:text-5xl md:text-6xl">
+              Chat identity with less surface, more trust.
+            </h1>
 
-          <p className="mt-8 text-xl text-muted-foreground max-w-2xl mx-auto">
-            Experience secure, real-time communication with privacy-first identity. 
-            Your conversations, your rules — end-to-end encrypted and always under your control.
-          </p>
+            <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+              EchoID gives every user a private alias instead of exposing personal contact data.
+              Messages stay direct, encrypted, and intentionally simple.
+            </p>
 
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button size="lg" className="text-base px-8 h-12" asChild>
-              <Link href="/register">
-                Get Started Free
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" className="text-base px-8 h-12" asChild>
-              <Link href="/features">
-                Learn More
-              </Link>
-            </Button>
-          </div>
-
-          {/* Trust badges */}
-          <div className="mt-16 flex flex-wrap items-center justify-center gap-8 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-primary" />
-              <span>End-to-end encrypted</span>
+            <div className="mt-9 flex flex-wrap items-center gap-3">
+              <Button size="lg" className="h-11 rounded-full px-7 text-sm font-semibold" asChild>
+                <Link href="/register">
+                  Create Account
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-11 rounded-full border-border/80 bg-background/70 px-7 text-sm font-semibold"
+                asChild
+              >
+                <Link href="/features">Explore Features</Link>
+              </Button>
             </div>
-            <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" />
-              <span>Privacy-first identity</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-primary" />
-              <span>Real-time messaging</span>
+
+            <div className="mt-10 grid max-w-2xl grid-cols-1 gap-2 font-mono text-[0.72rem] uppercase tracking-[0.08em] text-muted-foreground sm:grid-cols-3">
+              <p>End-to-end encryption</p>
+              <p>Alias-only discovery</p>
+              <p>Realtime transport layer</p>
             </div>
           </div>
-        </div>
 
-        {/* Hero Image/Preview */}
-        <div className="mt-20 relative">
-          <div className="rounded-2xl border border-border/50 bg-background/50 p-2 shadow-2xl">
-            <div className="rounded-xl bg-muted overflow-hidden aspect-video relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-[oklch(0.55_0.15_250)]/5" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary to-[oklch(0.55_0.15_250)] flex items-center justify-center shadow-lg">
-                    <span className="text-3xl font-display font-bold text-white">E</span>
+          <div className="animate-reveal-up [animation-delay:140ms]">
+            <div className="rounded-[1.5rem] border border-border/75 bg-card/70 p-5 shadow-soft">
+              <div className="rounded-2xl border border-border/65 bg-background/85 p-5">
+                <div className="mb-5 flex items-center justify-between border-b border-border/55 pb-3">
+                  <p className="font-mono text-[0.68rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                    Message Preview
+                  </p>
+                  <p className="font-mono text-[0.68rem] font-medium uppercase tracking-[0.06em] text-foreground/85">12 ms</p>
+                </div>
+                <div className="space-y-3">
+                  <div className="max-w-[82%] rounded-2xl rounded-bl-sm border border-border/65 bg-card px-4 py-3 text-sm leading-relaxed text-foreground animate-drift">
+                    Need a secure group room for tonight&apos;s drop?
                   </div>
-                  <p className="mt-4 text-muted-foreground">EchoID Chat Interface</p>
+                  <div className="ml-auto max-w-[82%] rounded-2xl rounded-br-sm bg-primary px-4 py-3 text-sm leading-relaxed text-primary-foreground">
+                    Created. Invite link expires in 10 minutes.
+                  </div>
+                  <div className="max-w-[82%] rounded-2xl rounded-bl-sm border border-border/65 bg-card px-4 py-3 text-sm leading-relaxed text-foreground">
+                    Perfect. Sending EchoID now.
+                  </div>
                 </div>
               </div>
             </div>

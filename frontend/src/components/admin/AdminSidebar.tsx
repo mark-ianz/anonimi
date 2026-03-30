@@ -48,19 +48,17 @@ export default function AdminSidebar() {
   );
 
   return (
-    <aside className="w-60 h-full flex flex-col border-r border-border/30 bg-background/80 backdrop-blur-sm shrink-0">
-      {/* Brand */}
-      <div className="h-14 flex items-center gap-2.5 px-4 border-b border-border/30 shrink-0">
-        <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-          <span className="text-xs font-bold text-primary-foreground">E</span>
+    <aside className="h-full w-60 shrink-0 border-r border-border/60 bg-card/45 flex flex-col">
+      <div className="flex h-14 items-center gap-2.5 border-b border-border/50 px-4 shrink-0">
+        <div className="grid h-7 w-7 place-items-center rounded-lg border border-border/70 bg-background">
+          <span className="font-display text-xs font-semibold">E</span>
         </div>
         <div>
-          <p className="text-sm font-bold font-display">EchoID</p>
-          <p className="text-[10px] text-muted-foreground leading-none">Admin Panel</p>
+          <p className="text-sm font-semibold">EchoID</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted-foreground leading-none">Admin Panel</p>
         </div>
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
         {visible.map(({ href, label, icon: Icon }) => {
           const isActive = href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
@@ -69,9 +67,9 @@ export default function AdminSidebar() {
               key={href}
               href={href}
               className={cn(
-                "flex items-center gap-2.5 h-9 px-3 rounded-xl text-sm transition-colors",
+                "flex h-9 items-center gap-2.5 rounded-lg px-3 text-sm transition-colors",
                 isActive
-                  ? "bg-primary/10 text-primary font-medium"
+                  ? "bg-primary/12 text-foreground font-medium"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}
             >
@@ -82,8 +80,7 @@ export default function AdminSidebar() {
         })}
       </nav>
 
-      {/* User + logout */}
-      <div className="p-3 border-t border-border/30 shrink-0">
+      <div className="border-t border-border/50 p-3 shrink-0">
         <div className="flex items-center gap-2.5 mb-2">
           {user?.profileImage ? (
             <img
@@ -100,12 +97,12 @@ export default function AdminSidebar() {
           )}
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium truncate">{user?.username}</p>
-            <p className="text-[10px] text-muted-foreground capitalize">{user?.role?.replace("_", " ")}</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.06em] text-muted-foreground">{user?.role?.replace("_", " ")}</p>
           </div>
         </div>
         <button
           onClick={logout}
-          className="w-full flex items-center gap-2 h-8 px-3 rounded-lg text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+          className="w-full flex items-center gap-2 h-8 px-3 rounded-lg font-mono text-[0.68rem] uppercase tracking-[0.08em] text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
         >
           <LogOut className="w-3.5 h-3.5" />
           Sign out

@@ -51,7 +51,6 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
@@ -76,31 +75,31 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="glass rounded-2xl p-8 shadow-elevated">
-      <div className="flex flex-col items-center mb-8">
-        <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-md mb-4"
-          style={{ background: "var(--echo-gradient)" }}
-        >
-          <span className="text-white font-display font-bold text-2xl">E</span>
-        </div>
-        <h1 className="font-display text-2xl font-semibold tracking-tight">
-          Create account
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Join EchoID today
+    <div className="rounded-3xl border border-border/70 bg-card/80 p-7 shadow-soft sm:p-8">
+      <div className="mb-8">
+        <p className="font-mono text-[0.68rem] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+          Create Account
         </p>
+        <div className="mt-4 flex items-center gap-3">
+          <div className="grid h-11 w-11 place-items-center rounded-xl border border-border/70 bg-background">
+            <span className="font-display text-lg font-semibold">E</span>
+          </div>
+          <div>
+            <h1 className="text-3xl leading-[0.98] font-semibold">Create account</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Join EchoID today</p>
+          </div>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1.5">Username</label>
+          <label className="mb-1.5 block font-mono text-[0.66rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">Username</label>
           <input
             {...register("username")}
             type="text"
             autoComplete="username"
             placeholder="john_doe"
-            className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border/60 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
+            className="h-11 w-full rounded-xl border border-border/70 bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
           />
           {errors.username && (
             <p className="text-destructive text-xs mt-1">{errors.username.message}</p>
@@ -108,15 +107,15 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1.5">
-            Email <span className="text-muted-foreground font-normal">(or phone below)</span>
+          <label className="mb-1.5 block font-mono text-[0.66rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+            Email <span className="font-sans normal-case tracking-normal">(or phone below)</span>
           </label>
           <input
             {...register("email")}
             type="email"
             autoComplete="email"
             placeholder="john@example.com"
-            className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border/60 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
+            className="h-11 w-full rounded-xl border border-border/70 bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
           />
           {errors.email && (
             <p className="text-destructive text-xs mt-1">{errors.email.message}</p>
@@ -124,27 +123,27 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1.5">
-            Phone <span className="text-muted-foreground font-normal">(optional if email provided)</span>
+          <label className="mb-1.5 block font-mono text-[0.66rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+            Phone <span className="font-sans normal-case tracking-normal">(optional if email provided)</span>
           </label>
           <input
             {...register("phone")}
             type="tel"
             autoComplete="tel"
             placeholder="+12345678900"
-            className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border/60 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
+            className="h-11 w-full rounded-xl border border-border/70 bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1.5">Password</label>
+          <label className="mb-1.5 block font-mono text-[0.66rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">Password</label>
           <div className="relative">
             <input
               {...register("password")}
               type={showPassword ? "text" : "password"}
               autoComplete="new-password"
               placeholder="••••••••"
-              className="w-full h-10 px-3 pr-10 rounded-lg bg-muted/50 border border-border/60 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
+              className="h-11 w-full rounded-xl border border-border/70 bg-background px-3 pr-10 text-sm placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             />
             <button
               type="button"
@@ -160,13 +159,13 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1.5">Confirm password</label>
+          <label className="mb-1.5 block font-mono text-[0.66rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">Confirm password</label>
           <input
             {...register("confirmPassword")}
             type={showPassword ? "text" : "password"}
             autoComplete="new-password"
             placeholder="••••••••"
-            className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border/60 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
+            className="h-11 w-full rounded-xl border border-border/70 bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
           />
           {errors.confirmPassword && (
             <p className="text-destructive text-xs mt-1">{errors.confirmPassword.message}</p>
@@ -176,8 +175,7 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full h-10 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2 transition-opacity disabled:opacity-60"
-          style={{ background: "var(--echo-gradient)" }}
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition-opacity hover:bg-primary/90 disabled:opacity-60"
         >
           {isSubmitting ? (
             <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -192,7 +190,7 @@ export default function RegisterPage() {
 
       <p className="text-center text-sm text-muted-foreground mt-6">
         Already have an account?{" "}
-        <Link href="/login" className="text-primary font-medium hover:underline">
+        <Link href="/login" className="font-semibold text-primary hover:underline">
           Sign in
         </Link>
       </p>

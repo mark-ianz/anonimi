@@ -9,17 +9,18 @@ interface HowItWorksStepProps {
 
 export default function HowItWorksStep({ number, icon: Icon, title, description }: HowItWorksStepProps) {
   return (
-    <div className="flex flex-col items-center text-center">
-      <div className="relative">
-        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-          <Icon className="w-8 h-8 text-primary" />
-        </div>
-        <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold">
-          {number}
+    <article className="group rounded-2xl border border-border/70 bg-card/55 p-6 transition-colors duration-300 hover:bg-card/88">
+      <div className="mb-4 flex items-center justify-between border-b border-border/60 pb-4">
+        <p className="font-mono text-[0.66rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+          Step {number}
+        </p>
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/70 bg-background">
+          <Icon className="h-4 w-4 text-foreground" />
         </div>
       </div>
-      <h3 className="mt-6 text-lg font-semibold">{title}</h3>
-      <p className="mt-2 text-sm text-muted-foreground max-w-xs">{description}</p>
-    </div>
+
+      <h3 className="text-xl leading-tight font-semibold">{title}</h3>
+      <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">{description}</p>
+    </article>
   );
 }

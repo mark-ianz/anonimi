@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 function AdminLayoutWithSocket({ children }: { children: React.ReactNode }) {
   return (
     <SocketProvider>
-      <div className="flex h-screen overflow-hidden bg-muted/20">
+      <div className="flex h-screen overflow-hidden bg-background">
         <AdminSidebar />
         <main className="flex-1 overflow-hidden flex flex-col">{children}</main>
       </div>

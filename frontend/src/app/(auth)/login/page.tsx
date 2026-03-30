@@ -48,22 +48,25 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="glass rounded-2xl p-8 shadow-elevated">
-      {/* Logo */}
-      <div className="flex flex-col items-center mb-8">
-        <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-md mb-4"
-          style={{ background: "var(--echo-gradient)" }}>
-          <span className="text-white font-display font-bold text-2xl">E</span>
+    <div className="rounded-3xl border border-border/70 bg-card/80 p-7 shadow-soft sm:p-8">
+      <div className="mb-8">
+        <p className="font-mono text-[0.68rem] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+          Sign In
+        </p>
+        <div className="mt-4 flex items-center gap-3">
+          <div className="grid h-11 w-11 place-items-center rounded-xl border border-border/70 bg-background">
+            <span className="font-display text-lg font-semibold">E</span>
+          </div>
+          <div>
+            <h1 className="text-3xl leading-[0.98] font-semibold">Welcome back</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Sign in to EchoID</p>
+          </div>
         </div>
-        <h1 className="font-display text-2xl font-semibold tracking-tight">
-          Welcome back
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">Sign in to EchoID</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1.5">
+          <label className="mb-1.5 block font-mono text-[0.66rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
             Email or phone
           </label>
           <input
@@ -71,7 +74,7 @@ export default function LoginPage() {
             type="text"
             autoComplete="email"
             placeholder="john@example.com"
-            className="w-full h-10 px-3 rounded-lg bg-muted/50 border border-border/60 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
+            className="h-11 w-full rounded-xl border border-border/70 bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
           />
           {errors.identifier && (
             <p className="text-destructive text-xs mt-1">
@@ -82,10 +85,10 @@ export default function LoginPage() {
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-sm font-medium">Password</label>
+            <label className="block font-mono text-[0.66rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">Password</label>
             <Link
               href="/forgot-password"
-              className="text-xs text-primary hover:underline"
+              className="font-mono text-[0.66rem] uppercase tracking-[0.08em] text-primary hover:underline"
             >
               Forgot password?
             </Link>
@@ -96,7 +99,7 @@ export default function LoginPage() {
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
               placeholder="••••••••"
-              className="w-full h-10 px-3 pr-10 rounded-lg bg-muted/50 border border-border/60 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
+              className="h-11 w-full rounded-xl border border-border/70 bg-background px-3 pr-10 text-sm placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             />
             <button
               type="button"
@@ -120,8 +123,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full h-10 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2 transition-opacity disabled:opacity-60"
-          style={{ background: "var(--echo-gradient)" }}
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition-opacity hover:bg-primary/90 disabled:opacity-60"
         >
           {isSubmitting ? (
             <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -136,7 +138,7 @@ export default function LoginPage() {
 
       <p className="text-center text-sm text-muted-foreground mt-6">
         Don&apos;t have an account?{" "}
-        <Link href="/register" className="text-primary font-medium hover:underline">
+        <Link href="/register" className="font-semibold text-primary hover:underline">
           Create one
         </Link>
       </p>

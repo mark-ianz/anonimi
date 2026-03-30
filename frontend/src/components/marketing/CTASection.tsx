@@ -4,46 +4,29 @@ import { ArrowRight } from "lucide-react";
 
 export default function CTASection() {
   return (
-    <section className="py-20 lg:py-28">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative rounded-3xl bg-gradient-to-br from-primary to-[ok.55_0lch(0.15_250)] overflow-hidden">
-          {/* Background pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute inset-0" style={{
-              backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
-              backgroundSize: '32px 32px'
-            }} />
-          </div>
-
-          <div className="relative px-8 py-16 lg:py-20 text-center">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-white">
-              Ready to get started?
-            </h2>
-            <p className="mt-4 text-lg text-white/80 max-w-2xl mx-auto">
-              Join thousands of users who have already discovered a better way to communicate. 
-              Sign up for free today.
+    <section className="py-20 md:py-24">
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+        <div className="rounded-[1.75rem] border border-border/75 bg-card/65 px-6 py-12 sm:px-10 sm:py-14">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              Build With EchoID
             </p>
-            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button 
-                size="lg" 
-                variant="secondary" 
-                className="text-base px-8 h-12"
-                asChild
-              >
+            <h2 className="mt-4 text-3xl leading-[1.04] font-semibold sm:text-4xl md:text-[2.8rem]">
+              Ready to move to private-first messaging?
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+              Start free, claim your identity, and launch secure conversations in minutes.
+            </p>
+
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Button size="lg" className="h-11 rounded-full px-7 text-sm font-semibold" asChild>
                 <Link href="/register">
                   Create Free Account
-                  <ArrowRight className="ml-2 w-5 h-5" />
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="text-base px-8 h-12 border-white/20 text-white hover:bg-white/10"
-                asChild
-              >
-                <Link href="/about">
-                  Learn More
-                </Link>
+              <Button size="lg" variant="outline" className="h-11 rounded-full px-7 text-sm font-semibold" asChild>
+                <Link href="/about">Learn More</Link>
               </Button>
             </div>
           </div>

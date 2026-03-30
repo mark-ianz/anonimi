@@ -18,14 +18,18 @@ export default function ConversationSearch({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="p-4 border-b border-border/30 shrink-0">
-        <div className="flex items-center justify-between mb-3">
-          <h1 className="text-xl font-display font-semibold">Messages</h1>
+      <div className="shrink-0 border-b border-border/60 bg-card/45 p-4">
+        <div className="mb-3 flex items-start justify-between">
+          <div>
+            <p className="font-mono text-[0.66rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+              Workspace
+            </p>
+            <h1 className="mt-1 text-2xl leading-tight font-semibold">Messages</h1>
+          </div>
           {onNewChat && (
             <button
               onClick={onNewChat}
-              className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/70 bg-background text-foreground transition-colors hover:bg-muted"
               title="New conversation"
             >
               <Edit className="w-4 h-4" />
