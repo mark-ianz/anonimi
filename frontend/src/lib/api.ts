@@ -34,6 +34,7 @@ const NON_REFRESHABLE_AUTH_PATHS = [
   "/auth/forgot-password",
   "/auth/reset-password",
   "/auth/verification-status",
+  "/auth/resend-verification",
 ];
 
 const isNonRefreshableAuthRequest = (url?: string) => {

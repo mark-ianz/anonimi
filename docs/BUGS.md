@@ -92,3 +92,5 @@ Implemented policy:
 * The system should never trap the user
 * Register -> Verify -> Login has explicit recovery paths
 * Each blocking state has a clear next action
+
+New:

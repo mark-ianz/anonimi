@@ -11,6 +11,7 @@ import { Message } from "../models/message.model";
 import { AdminLog } from "../models/adminLog.model";
 import { NotFoundError, ForbiddenError, ConflictError } from "../utils/apiError";
 import { UserRole, UserStatus } from "../types/enums";
+import { createAndEmitNotification } from "./notification.service";
 
 export const createAdminLog = async (
   adminId: string,
@@ -114,6 +115,16 @@ export const warnUser = async (
   }
 
   await createAdminLog(adminId, "warn_user", "user", userId, { message }, ipAddress);
+
+  await createAndEmitNotification({
+    userId,
+    type: "warning",
+    title: "Account warning",
+    body: message,
+    data: {
+      href: "/support",
+    },
+  });
 
   return { message: "Warning issued" };
 };
@@ -306,6 +317,18 @@ export const resolveReport = async (
     ipAddress
   );
 
+  await createAndEmitNotification({
+    userId: report.reporterId.toString(),
+    type: "report_update",
+    title: "Report reviewed",
+    body: `Your report was resolved with outcome: ${resolution}.`,
+    data: {
+      reportId: report._id.toString(),
+      resolution,
+      href: "/support",
+    },
+  });
+
   return { message: "Report resolved" };
 };
 
@@ -325,6 +348,18 @@ export const dismissReport = async (
   await report.save();
 
   await createAdminLog(adminId, "dismiss_report", "report", reportId, {}, ipAddress);
+
+  await createAndEmitNotification({
+    userId: report.reporterId.toString(),
+    type: "report_update",
+    title: "Report reviewed",
+    body: "Your report was reviewed and dismissed.",
+    data: {
+      reportId: report._id.toString(),
+      resolution: "dismissed",
+      href: "/support",
+    },
+  });
 
   return { message: "Report dismissed" };
 };
@@ -414,6 +449,17 @@ export const assignTicket = async (
   ticket.status = "assigned";
   await ticket.save();
 
+  await createAndEmitNotification({
+    userId: ticket.userId.toString(),
+    type: "ticket_update",
+    title: "Support ticket assigned",
+    body: `Your ticket "${ticket.subject}" has been assigned to a support staff member.`,
+    data: {
+      ticketId: ticket._id.toString(),
+      href: `/support/${ticket._id.toString()}`,
+    },
+  });
+
   return { message: "Ticket assigned" };
 };
 
@@ -430,6 +476,18 @@ export const updateTicketStatus = async (
 
   ticket.status = status;
   await ticket.save();
+
+  await createAndEmitNotification({
+    userId: ticket.userId.toString(),
+    type: "ticket_update",
+    title: "Support ticket updated",
+    body: `Your ticket \"${ticket.subject}\" status is now ${status.replace(/_/g, " ")}.`,
+    data: {
+      ticketId: ticket._id.toString(),
+      status,
+      href: `/support/${ticket._id.toString()}`,
+    },
+  });
 
   return { message: "Ticket status updated" };
 };
@@ -454,6 +512,17 @@ export const replyToTicketAsStaff = async (
 
   ticket.status = "in_progress";
   await ticket.save();
+
+  await createAndEmitNotification({
+    userId: ticket.userId.toString(),
+    type: "ticket_reply",
+    title: "New support reply",
+    body: "Support staff replied to your ticket.",
+    data: {
+      ticketId: ticket._id.toString(),
+      href: `/support/${ticket._id.toString()}`,
+    },
+  });
 
   return {
     messageId: message._id.toString(),

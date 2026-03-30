@@ -11,6 +11,7 @@ import reportRoutes from "./report.routes";
 import supportRoutes from "./support.routes";
 import mediaRoutes from "./media.routes";
 import adminRoutes from "./admin.routes";
+import notificationRoutes from "./notification.routes";
 
 const router = Router();
 
@@ -26,6 +27,7 @@ router.use("/reports", reportRoutes);
 router.use("/support", supportRoutes);
 router.use("/media", mediaRoutes);
 router.use("/admin", adminRoutes);
+router.use("/notifications", notificationRoutes);
 
 router.get("/health", (req, res) => {
   res.json({

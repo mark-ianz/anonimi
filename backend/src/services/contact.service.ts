@@ -148,6 +148,22 @@ export const acceptContactRequest = async (
   };
 };
 
+export const getContactRequestOwner = async (userId: string, contactId: string) => {
+  const contact = await Contact.findOne({
+    _id: new Types.ObjectId(contactId),
+    contactId: new Types.ObjectId(userId),
+    status: "pending",
+  }).select("userId");
+
+  if (!contact) {
+    return null;
+  }
+
+  return {
+    userId: contact.userId.toString(),
+  };
+};
+
 export const declineContactRequest = async (
   userId: string,
   contactId: string

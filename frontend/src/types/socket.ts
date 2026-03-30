@@ -117,6 +117,18 @@ export interface MessageRequestNewPayload {
   };
 }
 
+export interface MessageRequestAcceptedPayload {
+  requestId: string;
+  conversationId: string;
+  acceptedBy: {
+    id: string;
+    echoId?: string;
+    username?: string;
+    profileImage: string | null;
+  };
+  requestStatus: "accepted" | null;
+}
+
 export interface GroupMemberJoinedPayload {
   groupId: string;
   member: {
@@ -158,16 +170,12 @@ export interface GroupRoleChangedPayload {
 
 export interface NotificationPayload {
   id: string;
-  type:
-    | "contact_request"
-    | "message_request"
-    | "group_invite"
-    | "ticket_reply"
-    | "warning"
-    | "system";
+  type: string;
   title: string;
   body: string;
   data: Record<string, unknown>;
+  read?: boolean;
+  readAt?: string | null;
   createdAt: string;
 }
 

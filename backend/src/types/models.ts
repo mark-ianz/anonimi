@@ -188,3 +188,16 @@ export interface IRefreshToken extends Document {
   expiresAt: Date;
   createdAt: Date;
 }
+
+export interface INotification extends Document {
+  _id: Types.ObjectId;
+  userId: Types.ObjectId;
+  type: string;
+  title: string;
+  body: string;
+  data: Record<string, unknown>;
+  read: boolean;
+  readAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}

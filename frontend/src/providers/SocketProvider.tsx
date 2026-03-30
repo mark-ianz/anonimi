@@ -3,6 +3,7 @@
 import { useEffect, useRef, createContext, useContext } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Socket } from "socket.io-client";
+import { toast } from "sonner";
 import { getChatSocket, disconnectSockets } from "@/lib/socket";
 import { useAuthStore } from "@/stores/authStore";
 import { useSocketStore } from "@/stores/socketStore";
@@ -19,6 +20,7 @@ import type {
   ContactRequestPayload,
   ContactAcceptedPayload,
   MessageRequestNewPayload,
+  MessageRequestAcceptedPayload,
   NotificationPayload,
 } from "@/types/socket";
 import type { Message } from "@/types/message";
@@ -166,19 +168,29 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     // Notifications (contact request, message request, etc.)
     socket.on("contact:request", (_payload: ContactRequestPayload) => {
-      // handled by notification hooks
+      qc.invalidateQueries({ queryKey: ["contacts", "requests"] });
+      qc.invalidateQueries({ queryKey: ["notifications"] });
     });
 
     socket.on("contact:accepted", (_payload: ContactAcceptedPayload) => {
-      // handled by notification hooks
+      qc.invalidateQueries({ queryKey: ["contacts"] });
+      qc.invalidateQueries({ queryKey: ["notifications"] });
     });
 
     socket.on("message-request:new", (_payload: MessageRequestNewPayload) => {
-      // handled by notification hooks
+      qc.invalidateQueries({ queryKey: ["message-requests"] });
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+      qc.invalidateQueries({ queryKey: ["notifications"] });
     });
 
-    socket.on("notification:new", (_payload: NotificationPayload) => {
-      // handled by notification hooks
+    socket.on("message-request:accepted", (_payload: MessageRequestAcceptedPayload) => {
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+    });
+
+    socket.on("notification:new", (payload: NotificationPayload) => {
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+      toast.info(payload.title, { description: payload.body, duration: 4500 });
     });
 
     return () => {
@@ -194,6 +206,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       socket.off("contact:request");
       socket.off("contact:accepted");
       socket.off("message-request:new");
+      socket.off("message-request:accepted");
       socket.off("notification:new");
     };
   }, [

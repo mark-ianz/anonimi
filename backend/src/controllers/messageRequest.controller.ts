@@ -6,7 +6,10 @@ import { Conversation } from "../models/conversation.model";
 import { Contact } from "../models/contact.model";
 import { apiSuccess } from "../utils/apiResponse";
 import { NotFoundError } from "../utils/apiError";
-import { emitToUser } from "../services/notification.service";
+import {
+  emitToUser,
+  createAndEmitNotification,
+} from "../services/notification.service";
 import mongoose from "mongoose";
 
 export const getMessageRequests = async (
@@ -113,6 +116,17 @@ export const acceptMessageRequest = async (
         profileImage: accepter?.profileImage ?? null,
       },
       requestStatus: newRequestStatus,
+    });
+
+    await createAndEmitNotification({
+      userId: request.fromUserId.toString(),
+      type: "message_request_accepted",
+      title: "Message request accepted",
+      body: `${accepter?.username ?? "A user"} accepted your message request.`,
+      data: {
+        conversationId: request.conversationId.toString(),
+        href: `/chat/${request.conversationId.toString()}`,
+      },
     });
 
     apiSuccess(res, {

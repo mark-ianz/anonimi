@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import * as contactService from "../services/contact.service";
 import { apiSuccess, apiPaginated } from "../utils/apiResponse";
+import { User } from "../models/user.model";
+import { createAndEmitNotification } from "../services/notification.service";
 
 export const getContacts = async (
   req: Request,
@@ -45,10 +47,28 @@ export const sendContactRequest = async (
 ): Promise<void> => {
   try {
     const { targetEchoId } = req.body;
+    const sender = await User.findById(req.user!._id).select("username echoId");
+    const targetUser = await User.findOne({ echoId: targetEchoId }).select("_id");
+
     const result = await contactService.sendContactRequest(
       req.user!._id.toString(),
       targetEchoId
     );
+
+    if (targetUser) {
+      await createAndEmitNotification({
+        userId: targetUser._id.toString(),
+        type: "contact_request",
+        title: "New contact request",
+        body: `${sender?.username ?? "Someone"} sent you a contact request.`,
+        data: {
+          fromUserId: req.user!._id.toString(),
+          fromEchoId: sender?.echoId,
+          href: "/contacts/requests",
+        },
+      });
+    }
+
     apiSuccess(res, result, 201);
   } catch (error) {
     next(error);
@@ -62,10 +82,31 @@ export const acceptContactRequest = async (
 ): Promise<void> => {
   try {
     const { contactId } = req.params;
+    const requester = await contactService.getContactRequestOwner(
+      req.user!._id.toString(),
+      contactId
+    );
+
     const result = await contactService.acceptContactRequest(
       req.user!._id.toString(),
       contactId
     );
+
+    const accepter = await User.findById(req.user!._id).select("username echoId");
+    if (requester?.userId) {
+      await createAndEmitNotification({
+        userId: requester.userId,
+        type: "contact_accepted",
+        title: "Contact request accepted",
+        body: `${accepter?.username ?? "A user"} accepted your contact request.`,
+        data: {
+          acceptedByUserId: req.user!._id.toString(),
+          acceptedByEchoId: accepter?.echoId,
+          href: "/contacts",
+        },
+      });
+    }
+
     apiSuccess(res, result);
   } catch (error) {
     next(error);

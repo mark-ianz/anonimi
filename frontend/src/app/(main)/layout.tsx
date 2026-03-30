@@ -14,6 +14,12 @@ import {
   Bell,
   Check,
   ChevronDown,
+  Clock3,
+  ShieldAlert,
+  UserPlus2,
+  MessagesSquare,
+  LifeBuoy,
+  BellDot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SocketProvider } from "@/providers/SocketProvider";
@@ -27,6 +33,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useAuth } from "@/hooks/useAuth";
 import { getChatSocket } from "@/lib/socket";
 import type { AppearanceStatus, OnlineStatus } from "@/types/user";
+import { useNotifications } from "@/hooks/useNotifications";
 
 const navItems = [
   { href: "/chat", icon: MessageCircle, label: "Chats" },
@@ -58,9 +65,19 @@ export default function MainLayout({ children }: SidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+  const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
   const { user } = useAuthStore();
   const { updateProfile, isUpdatingProfile } = useAuth();
+  const {
+    notifications,
+    unreadCount,
+    isLoading: isLoadingNotifications,
+    markRead,
+    markAllRead,
+    isMarkingAllRead,
+  } = useNotifications();
   const statusMenuRef = useRef<HTMLDivElement>(null);
+  const notificationMenuRef = useRef<HTMLDivElement>(null);
 
   const currentStatus = (user?.onlineStatus ?? "offline") as OnlineStatus;
   const currentAppearance = (user?.appearanceStatus ?? "online") as AppearanceStatus;
@@ -80,17 +97,77 @@ export default function MainLayout({ children }: SidebarProps) {
   };
 
   useEffect(() => {
-    if (!statusMenuOpen) return;
+    if (!statusMenuOpen && !notificationMenuOpen) return;
 
     const onClickOutside = (event: MouseEvent) => {
       if (statusMenuRef.current && !statusMenuRef.current.contains(event.target as Node)) {
         setStatusMenuOpen(false);
       }
+      if (notificationMenuRef.current && !notificationMenuRef.current.contains(event.target as Node)) {
+        setNotificationMenuOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
-  }, [statusMenuOpen]);
+  }, [notificationMenuOpen, statusMenuOpen]);
+
+  const formatNotificationTime = (value: string) => {
+    const date = new Date(value);
+    return date.toLocaleString();
+  };
+
+  const getNotificationMeta = (type: string) => {
+    const normalized = type.toLowerCase();
+
+    if (normalized.includes("admin") || normalized.includes("report") || normalized.includes("warning")) {
+      return {
+        label: "Moderation",
+        chipClass: "bg-amber-500/12 text-amber-700 dark:text-amber-300",
+        dotClass: "bg-amber-500",
+        Icon: ShieldAlert,
+      };
+    }
+
+    if (normalized.includes("contact") || normalized.includes("request")) {
+      return {
+        label: "Request",
+        chipClass: "bg-sky-500/12 text-sky-700 dark:text-sky-300",
+        dotClass: "bg-sky-500",
+        Icon: UserPlus2,
+      };
+    }
+
+    if (normalized.includes("message") || normalized.includes("chat")) {
+      return {
+        label: "Message",
+        chipClass: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300",
+        dotClass: "bg-emerald-500",
+        Icon: MessagesSquare,
+      };
+    }
+
+    if (normalized.includes("support") || normalized.includes("ticket")) {
+      return {
+        label: "Support",
+        chipClass: "bg-violet-500/12 text-violet-700 dark:text-violet-300",
+        dotClass: "bg-violet-500",
+        Icon: LifeBuoy,
+      };
+    }
+
+    return {
+      label: "Update",
+      chipClass: "bg-primary/12 text-primary",
+      dotClass: "bg-primary",
+      Icon: BellDot,
+    };
+  };
+
+  const resolveNotificationHref = (data: Record<string, unknown>) => {
+    const href = data.href;
+    return typeof href === "string" ? href : "/chat";
+  };
 
   const handleStatusSelect = (status: AppearanceStatus) => {
     if (!user || status === user.appearanceStatus) {
@@ -233,12 +310,90 @@ export default function MainLayout({ children }: SidebarProps) {
       </aside>
 
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex h-14 items-center justify-between border-b border-border/60 bg-background/75 px-4 backdrop-blur-sm">
+        <header className="relative z-20 flex h-14 items-center justify-between border-b border-border/60 bg-background/75 px-4 backdrop-blur-sm">
           <div className="flex items-center gap-3">
-            <button className="relative rounded-lg p-2 transition-colors hover:bg-muted">
-              <Bell className="w-5 h-5 text-muted-foreground" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full" />
-            </button>
+            <div className="relative z-50" ref={notificationMenuRef}>
+              <button
+                onClick={() => setNotificationMenuOpen((prev) => !prev)}
+                className="relative rounded-lg p-2 transition-colors hover:bg-muted"
+                aria-label="Open notifications"
+              >
+                <Bell className="w-5 h-5 text-muted-foreground" />
+                {unreadCount > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-destructive px-1 py-0.5 text-center text-[10px] font-semibold leading-none text-destructive-foreground">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {notificationMenuOpen && (
+                <div className="absolute left-0 top-full z-50 mt-2 w-[min(92vw,24rem)] rounded-xl border border-border/70 bg-card/95 p-2 shadow-elevated backdrop-blur-sm">
+                  <div className="flex items-center justify-between border-b border-border/60 px-2 pb-2">
+                    <p className="text-sm font-semibold">Notifications</p>
+                    <button
+                      onClick={() => markAllRead()}
+                      disabled={isMarkingAllRead || unreadCount === 0}
+                      className="text-xs font-medium text-primary transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Mark all read
+                    </button>
+                  </div>
+
+                  <div className="notification-scrollbar max-h-96 overflow-y-auto py-1 pr-1">
+                    {isLoadingNotifications ? (
+                      <p className="px-2 py-6 text-center text-sm text-muted-foreground">Loading notifications...</p>
+                    ) : notifications.length === 0 ? (
+                      <p className="px-2 py-6 text-center text-sm text-muted-foreground">You&apos;re all caught up.</p>
+                    ) : (
+                      notifications.slice(0, 20).map((notification) => {
+                        const meta = getNotificationMeta(notification.type);
+
+                        return (
+                          <Link
+                            key={notification.id}
+                            href={resolveNotificationHref(notification.data)}
+                            onClick={() => {
+                              if (!notification.read) {
+                                markRead(notification.id);
+                              }
+                              setNotificationMenuOpen(false);
+                            }}
+                            className={cn(
+                              "group block rounded-lg border border-transparent px-2 py-2.5 transition-colors hover:bg-muted",
+                              !notification.read && "bg-primary/8 border-primary/20"
+                            )}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="mb-1 flex items-center gap-2">
+                                  <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]", meta.chipClass)}>
+                                    <meta.Icon className="h-3 w-3" />
+                                    {meta.label}
+                                  </span>
+                                </div>
+                                <p className="truncate text-sm font-medium text-foreground">
+                                  {notification.title}
+                                </p>
+                                <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                                  {notification.body}
+                                </p>
+                                <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+                                  <Clock3 className="h-3 w-3" />
+                                  {formatNotificationTime(notification.createdAt)}
+                                </p>
+                              </div>
+                              {!notification.read && (
+                                <span className={cn("mt-1 h-2.5 w-2.5 rounded-full", meta.dotClass)} />
+                              )}
+                            </div>
+                          </Link>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-3">

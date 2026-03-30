@@ -9,7 +9,11 @@ import { MessageRequest } from "../models/messageRequest.model";
 import { Block } from "../models/block.model";
 import { NotFoundError, ForbiddenError, ConflictError } from "../utils/apiError";
 import { MessageType } from "../types/enums";
-import { emitToUser, emitToConversation } from "./notification.service";
+import {
+  emitToUser,
+  emitToConversation,
+  createAndEmitNotification,
+} from "./notification.service";
 
 interface ConversationParticipant {
   id: string;
@@ -437,6 +441,18 @@ export const sendMessage = async (
             timestamp: new Date().toISOString(),
           },
         });
+
+        await createAndEmitNotification({
+          userId: recipientId!.toString(),
+          type: "message_request",
+          title: "New message request",
+          body: `${senderForNotif?.username ?? "Someone"} sent you a message request.`,
+          data: {
+            conversationId: conversation._id.toString(),
+            fromUserId: senderId,
+            href: "/message-requests",
+          },
+        });
       } else if (
         conversation.requestStatus === "pending" &&
         existingRequest.fromUserId.toString() !== senderId
@@ -459,6 +475,17 @@ export const sendMessage = async (
             profileImage: senderForAccept?.profileImage ?? null,
           },
           requestStatus: "accepted",
+        });
+
+        await createAndEmitNotification({
+          userId: existingRequest.fromUserId.toString(),
+          type: "message_request_accepted",
+          title: "Message request accepted",
+          body: `${senderForAccept?.username ?? "A user"} accepted your request.`,
+          data: {
+            conversationId: conversation._id.toString(),
+            href: `/chat/${conversation._id.toString()}`,
+          },
         });
       }
     }
@@ -486,6 +513,24 @@ export const sendMessage = async (
   await conversation.save();
 
   const sender = await User.findById(senderId).select("echoId username profileImage");
+
+  const recipientIds = conversation.participants
+    .map((participant) => participant.toString())
+    .filter((participantId) => participantId !== senderId);
+
+  for (const recipientId of recipientIds) {
+    await createAndEmitNotification({
+      userId: recipientId,
+      type: "message_received",
+      title: `New message from ${sender?.username ?? "a contact"}`,
+      body: content?.trim() ? content.slice(0, 140) : "Sent you a message.",
+      data: {
+        conversationId: conversation._id.toString(),
+        senderId,
+        href: `/chat/${conversation._id.toString()}`,
+      },
+    });
+  }
 
   return {
     message: {
