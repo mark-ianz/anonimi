@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { UserPlus, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
@@ -15,9 +14,40 @@ export default function ContactsPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tab = searchParams.get("tab") === "requests" ? "requests" : "contacts";
-  const [search, setSearch] = useState("");
-  const [addingContact, setAddingContact] = useState(false);
+  const search = searchParams.get("q") ?? "";
+  const addingContact = searchParams.get("mode") === "add";
   const { requests, isLoadingRequests, acceptRequest, declineRequest } = useContacts();
+  const filteredRequests = requests.filter((req) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      req.from.username.toLowerCase().includes(q) ||
+      req.from.echoId.toLowerCase().includes(q)
+    );
+  });
+
+  const setQuery = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const next = value.trim();
+    if (next) {
+      params.set("q", next);
+    } else {
+      params.delete("q");
+    }
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname);
+  };
+
+  const toggleAddingContact = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (addingContact) {
+      params.delete("mode");
+    } else {
+      params.set("mode", "add");
+    }
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname);
+  };
 
   const setTab = (nextTab: "contacts" | "requests") => {
     const params = new URLSearchParams(searchParams.toString());
@@ -44,21 +74,22 @@ export default function ContactsPage() {
               <h1 className="mt-1 text-2xl leading-tight font-semibold">Contacts</h1>
             </div>
             <button
-              onClick={() => setAddingContact((v) => !v)}
+              onClick={toggleAddingContact}
               title={addingContact ? "Cancel" : "Add contact"}
-              className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors ${
+              className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold transition-all ${
                 addingContact
-                  ? "border-border/70 bg-muted text-foreground"
-                  : "border-border/70 bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "border border-border/70 bg-muted text-foreground"
+                  : "bg-primary text-primary-foreground shadow-soft hover:bg-primary/90"
               }`}
             >
-              {addingContact ? <X className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+              {addingContact ? <X className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+              <span>{addingContact ? "Close" : "Add Contact"}</span>
             </button>
           </div>
 
           {addingContact && (
             <div className="animate-fade-in">
-              <UserSearchResults />
+              <UserSearchResults query={search} onQueryChange={setQuery} />
             </div>
           )}
 
@@ -92,13 +123,11 @@ export default function ContactsPage() {
                 </button>
               </div>
 
-              {tab === "contacts" && (
-                <SearchInput
-                  placeholder="Search contacts..."
-                  value={search}
-                  onChange={setSearch}
-                />
-              )}
+              <SearchInput
+                placeholder={tab === "contacts" ? "Search contacts..." : "Search requests..."}
+                value={search}
+                onChange={setQuery}
+              />
             </>
           )}
         </div>
@@ -122,8 +151,13 @@ export default function ContactsPage() {
                     New contact requests will appear here.
                   </p>
                 </div>
+              ) : filteredRequests.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+                  <p className="font-medium text-sm mb-1">No matching requests</p>
+                  <p className="text-xs text-muted-foreground">Try another username or EchoID.</p>
+                </div>
               ) : (
-                requests.map((req) => (
+                filteredRequests.map((req) => (
                   <ContactRequestCard
                     key={req.requestId}
                     request={req}

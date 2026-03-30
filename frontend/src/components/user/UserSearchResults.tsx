@@ -12,9 +12,19 @@ import UserCard from "./UserCard";
 import SearchInput from "@/components/shared/SearchInput";
 import LoadingSkeleton from "@/components/shared/LoadingSkeleton";
 
-export default function UserSearchResults() {
-  const [query, setQuery] = useState("");
-  const debounced = useDebounce(query, 350);
+interface UserSearchResultsProps {
+  query?: string;
+  onQueryChange?: (value: string) => void;
+}
+
+export default function UserSearchResults({
+  query,
+  onQueryChange,
+}: UserSearchResultsProps) {
+  const [internalQuery, setInternalQuery] = useState("");
+  const resolvedQuery = query ?? internalQuery;
+  const setQuery = onQueryChange ?? setInternalQuery;
+  const debounced = useDebounce(resolvedQuery, 350);
   const { sendRequest } = useContacts();
   const router = useRouter();
 
@@ -48,7 +58,7 @@ export default function UserSearchResults() {
     <div className="flex flex-col gap-3">
       <SearchInput
         placeholder="Search by username or EchoID..."
-        value={query}
+        value={resolvedQuery}
         onChange={setQuery}
       />
 

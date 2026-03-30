@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { UserPlus, MessageCircle } from "lucide-react";
 import type { SearchUser, PublicUser } from "@/types/user";
@@ -21,18 +21,28 @@ export default function UserCard({
   onMessage,
   className,
 }: UserCardProps) {
+  const router = useRouter();
   const isContact = "isContact" in user ? user.isContact : false;
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      onClick={() => router.push(`/user/${user.echoId}`)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          router.push(`/user/${user.echoId}`);
+        }
+      }}
       className={cn(
-        "flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors border-b border-border/20",
+        "flex cursor-pointer items-center gap-3 border-b border-border/20 px-4 py-3 transition-colors hover:bg-muted/40",
         className
       )}
     >
       {/* Avatar */}
       <div className="relative shrink-0">
-        <div className="w-11 h-11 rounded-xl overflow-hidden bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-medium text-sm">
+        <div className="w-11 h-11 rounded-xl overflow-hidden bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-medium text-sm">
           {user.profileImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={user.profileImage} alt={user.username} className="w-full h-full object-cover" />
@@ -49,9 +59,9 @@ export default function UserCard({
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <Link href={`/user/${user.echoId}`} className="text-sm font-medium hover:underline truncate block">
+        <p className="truncate text-sm font-medium hover:underline">
           {user.username}
-        </Link>
+        </p>
         <p className="text-xs text-muted-foreground">@{user.echoId}</p>
       </div>
 
@@ -60,7 +70,10 @@ export default function UserCard({
         <div className="flex items-center gap-1.5 shrink-0">
           {!isContact && onAddContact && (
             <button
-              onClick={() => onAddContact(user.echoId)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddContact(user.echoId);
+              }}
               className="flex items-center gap-1.5 h-8 px-3 rounded-xl bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
             >
               <UserPlus className="w-3.5 h-3.5" />
@@ -69,7 +82,10 @@ export default function UserCard({
           )}
           {onMessage && (
             <button
-              onClick={() => onMessage(user.echoId)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onMessage(user.echoId);
+              }}
               className="w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
             >
               <MessageCircle className="w-4 h-4" />
