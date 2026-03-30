@@ -19,5 +19,6 @@ router.patch(
 );
 router.patch("/read-all", authenticate, notificationController.readAllNotifications);
 router.patch("/:notificationId/read", authenticate, validate(notificationParamsSchema), notificationController.readNotification);
+router.delete("/:notificationId", authenticate, validate(notificationParamsSchema), notificationController.removeNotification);
 
 export default router;

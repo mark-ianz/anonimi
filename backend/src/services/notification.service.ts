@@ -249,34 +249,50 @@ export const markNotificationRead = async (
   userId: string,
   notificationId: string
 ) => {
-  const updated = await Notification.findOneAndUpdate(
+  const notification = await Notification.findOne(
     {
       _id: new Types.ObjectId(notificationId),
       userId: new Types.ObjectId(userId),
-    },
-    {
-      read: true,
-      readAt: new Date(),
-    },
-    { new: true }
+    }
   );
 
-  if (!updated) {
+  if (!notification) {
     throw new NotFoundError("Notification not found");
   }
+
+  if (notification.type === MESSAGE_RECEIVED_TYPE) {
+    await Notification.deleteOne({ _id: notification._id });
+    return {
+      id: notification._id.toString(),
+      read: true,
+      readAt: new Date(),
+      deleted: true,
+    };
+  }
+
+  notification.read = true;
+  notification.readAt = new Date();
+  const updated = await notification.save();
 
   return {
     id: updated._id.toString(),
     read: updated.read,
     readAt: updated.readAt,
+    deleted: false,
   };
 };
 
 export const markAllNotificationsRead = async (userId: string) => {
+  await Notification.deleteMany({
+    userId: new Types.ObjectId(userId),
+    type: MESSAGE_RECEIVED_TYPE,
+  });
+
   await Notification.updateMany(
     {
       userId: new Types.ObjectId(userId),
       read: false,
+      type: { $ne: MESSAGE_RECEIVED_TYPE },
     },
     {
       read: true,
@@ -291,21 +307,29 @@ export const markMessageNotificationsReadByConversation = async (
   userId: string,
   conversationId: string
 ) => {
-  const result = await Notification.updateMany(
+  const result = await Notification.deleteMany(
     {
       userId: new Types.ObjectId(userId),
       type: MESSAGE_RECEIVED_TYPE,
-      read: false,
       "data.conversationId": conversationId,
-    },
-    {
-      read: true,
-      readAt: new Date(),
     }
   );
 
   return {
-    message: "Conversation message notifications marked as read",
-    modifiedCount: result.modifiedCount,
+    message: "Conversation message notifications cleared",
+    modifiedCount: result.deletedCount ?? 0,
   };
+};
+
+export const deleteNotification = async (userId: string, notificationId: string) => {
+  const deleted = await Notification.findOneAndDelete({
+    _id: new Types.ObjectId(notificationId),
+    userId: new Types.ObjectId(userId),
+  });
+
+  if (!deleted) {
+    throw new NotFoundError("Notification not found");
+  }
+
+  return { id: deleted._id.toString(), deleted: true };
 };

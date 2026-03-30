@@ -20,6 +20,7 @@ import {
   MessagesSquare,
   LifeBuoy,
   BellDot,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SocketProvider } from "@/providers/SocketProvider";
@@ -75,6 +76,7 @@ export default function MainLayout({ children }: SidebarProps) {
     unreadCount,
     isLoading: isLoadingNotifications,
     markRead,
+    deleteNotification,
     markAllRead,
     isMarkingAllRead,
   } = useNotifications();
@@ -405,6 +407,20 @@ export default function MainLayout({ children }: SidebarProps) {
                               {!notification.read && (
                                 <span className={cn("mt-1 h-2.5 w-2.5 rounded-full", meta.dotClass)} />
                               )}
+
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  deleteNotification(notification.id);
+                                }}
+                                className="mt-0.5 shrink-0 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover:opacity-100"
+                                aria-label="Delete notification"
+                                title="Delete notification"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
                             </div>
                           </Link>
                         );

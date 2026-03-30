@@ -53,6 +53,18 @@ export function useNotifications() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (notificationId: string) => {
+      await api.delete(`/notifications/${notificationId}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+    },
+    onError: () => {
+      toast.error("Failed to delete notification.");
+    },
+  });
+
   const firstPage = query.data?.pages[0];
 
   return {
@@ -63,6 +75,7 @@ export function useNotifications() {
     hasMore: query.hasNextPage,
     fetchMore: query.fetchNextPage,
     markRead: markReadMutation.mutate,
+    deleteNotification: deleteMutation.mutate,
     markAllRead: markAllReadMutation.mutate,
     isMarkingAllRead: markAllReadMutation.isPending,
   };

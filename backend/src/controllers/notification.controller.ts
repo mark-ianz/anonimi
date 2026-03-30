@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { apiSuccess } from "../utils/apiResponse";
 import {
+  deleteNotification,
   listNotifications,
   markAllNotificationsRead,
   markMessageNotificationsReadByConversation,
@@ -60,6 +61,20 @@ export const readConversationMessageNotifications = async (
       req.user!._id.toString(),
       conversationId
     );
+    apiSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const removeNotification = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { notificationId } = req.params;
+    const result = await deleteNotification(req.user!._id.toString(), notificationId);
     apiSuccess(res, result);
   } catch (error) {
     next(error);
