@@ -156,7 +156,7 @@ The frontend is composed of four route groups, each with its own layout:
 | Route Group | URL Pattern | Layout | Description |
 |-------------|-------------|--------|-------------|
 | `(public)` | `/`, `/about`, `/features`, `/faq`, `/contact`, `/privacy`, `/terms` | Marketing (navbar + footer) | Public marketing site for unauthenticated visitors |
-| `(auth)` | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify` | Minimal centered | Authentication pages |
+| `(auth)` | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify` | Minimal centered | Authentication pages (email verification) |
 | `(main)` | `/app/*` | App (sidebar + content) | Authenticated application with chat, groups, contacts, settings |
 | `(admin)` | `/admin/*` | Admin (admin sidebar + content) | Admin panel for user management, reports, analytics |
 
@@ -222,7 +222,7 @@ Each service encapsulates a domain's business logic. Services are stateless clas
 
 | Service | Responsibility |
 |---------|----------------|
-| **AuthService** | Registration, login, email/phone verification, password reset, JWT token generation and refresh |
+| **AuthService** | Email-based registration/login, crypto username generation fallback, one-time username edit enforcement, optional recovery phone updates, email verification, password reset, JWT token generation and refresh |
 | **UserService** | Profile CRUD, EchoID generation, user search, avatar management, online status tracking |
 | **ChatService** | Message creation, retrieval with cursor pagination, message deletion (for-me, unsend), conversation management |
 | **ContactService** | Contact requests (send, accept, decline), nickname management, contacts list retrieval |

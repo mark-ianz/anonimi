@@ -32,7 +32,9 @@ This document defines the phased implementation plan for EchoID. Each phase buil
 - [ ] Create the `User` model with all schema fields and indexes
 - [ ] Implement EchoID generation (`eid_` + 8 chars via nanoid)
 - [ ] Build `AuthService`:
-  - [ ] Registration with email (hash password with bcrypt)
+  - [ ] Registration with email only (hash password with bcrypt)
+  - [ ] Optional username at registration; generate random username when omitted
+  - [ ] Enforce single manual username edit policy
   - [ ] Email verification with time-limited codes
   - [ ] Login with email + password
   - [ ] JWT access token generation (15-min expiry)
@@ -41,9 +43,9 @@ This document defines the phased implementation plan for EchoID. Each phase buil
   - [ ] Password reset (forgot + reset endpoints)
   - [ ] Logout (invalidate refresh token)
 - [ ] Build `UserService`:
-  - [ ] Get own profile (`GET /api/users/me`)
-  - [ ] Update profile (`PATCH /api/users/me`)
-  - [ ] Upload avatar (`POST /api/users/me/avatar`)
+  - [ ] Get own profile (`GET /api/auth/me`)
+  - [ ] Update profile (`PATCH /api/auth/me`)
+  - [ ] Upload avatar (`POST /api/auth/me/avatar`)
   - [ ] User search by EchoID and username (`GET /api/users/search`)
   - [ ] Get public profile (`GET /api/users/:echoId`)
 - [ ] Set up auth middleware (JWT verification)
@@ -94,7 +96,8 @@ This document defines the phased implementation plan for EchoID. Each phase buil
 #### Authentication Pages (`(auth)` route group)
 - [ ] Build `AuthCard` wrapper component (centered card with logo)
 - [ ] Build Login page — email/password form with "Forgot password?" and register links
-- [ ] Build Registration page — username, email, password, confirm password
+- [ ] Build Registration page — email, optional username, password, confirm password
+- [ ] Add registration helper note discouraging real-name usernames for anonymity
 - [ ] Build Email Verification page — OTP code input with resend timer
 - [ ] Build Forgot Password page — email input form
 - [ ] Build Reset Password page — new password form with strength indicator
@@ -113,12 +116,49 @@ This document defines the phased implementation plan for EchoID. Each phase buil
 - Marketing pages render with proper SEO metadata.
 - Authenticated users visiting `/login` or `/register` are redirected to `/app/chat`.
 - Unauthenticated users visiting `/app/*` are redirected to `/login`.
-- Users can register with email, verify, and log in.
+- Users can register with email only, verify, and log in.
+- Users can register without username and receive a random generated username.
+- Users can optionally add phone later for recovery/security.
+- Username manual edit is limited to one change.
 - JWT tokens work correctly with refresh rotation.
 - Users can view and edit their profiles.
 - Users can search for other users by EchoID or username.
 - Public profiles show only public information (no email/phone).
 - All four layouts render correctly with proper navigation.
+
+### Privacy-First Rollout Order (Task 2)
+
+Apply these in order to minimize regressions:
+
+1. Backend schema and validation changes for future users only.
+2. Auth service/controller contract updates (register/login/profile).
+3. Frontend auth forms and helper copy updates.
+4. Profile/settings account fields (optional recovery phone, one-time username edit UX).
+5. End-to-end and regression validation.
+
+Notes:
+- Existing test users can remain unchanged during this phase.
+- New signup behavior applies to newly created users.
+
+### Privacy-First Test Matrix
+
+- Register with email + password, no username:
+  - Expect crypto-random username generation.
+  - Expect successful email verification and login.
+- Register with email + password + custom username:
+  - Expect normal account creation and verification.
+- Login with email:
+  - Expect success for active account.
+- Login with phone (if phone exists on account):
+  - Expect success.
+- Add phone after signup from profile/settings:
+  - Expect success and persistence.
+- Username update (first manual change):
+  - Expect success.
+- Username update (second manual change attempt):
+  - Expect rejection with clear error.
+- Privacy copy:
+  - Register page shows recommendation against real-name usernames for anonymity.
 
 ---
 

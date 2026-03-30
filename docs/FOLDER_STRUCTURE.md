@@ -231,7 +231,7 @@ frontend/
 │   │   │   ├── register/
 │   │   │   │   └── page.tsx           # Registration form
 │   │   │   ├── verify/
-│   │   │   │   └── page.tsx           # Email/phone verification (OTP)
+│   │   │   │   └── page.tsx           # Email verification (OTP)
 │   │   │   ├── forgot-password/
 │   │   │   │   └── page.tsx           # Request password reset
 │   │   │   └── reset-password/

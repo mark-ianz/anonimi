@@ -49,9 +49,9 @@ Collection: users
 {
   _id:              ObjectId,          // Auto-generated
   echoId:         String,            // "eid_a8F3kP29" — generated, immutable
-  username:         String,            // "john_doe" — unique, user-chosen
+  username:         String,            // "john_doe" — unique, user-provided or system-generated
   email:            String,            // "john@example.com" — unique, private
-  phone:            String | null,     // "+1234567890" — optional, private
+  phone:            String | null,     // "+1234567890" — optional, private, recovery-only
   passwordHash:     String,            // bcrypt hash
   profileImage:     String | null,     // URL/path to avatar
   role:             String,            // "user" | "super_admin" | "moderator" | "support_staff"
@@ -59,12 +59,12 @@ Collection: users
   onlineStatus:     String,            // "online" | "offline"
   lastSeen:         Date | null,       // Last activity timestamp
   emailVerified:    Boolean,           // Email verification status
-  phoneVerified:    Boolean,           // Phone verification status
-  verificationCode: String | null,     // Temporary, for email/phone verification
+  phoneVerified:    Boolean,           // Phone verification status (if phone added later)
+  verificationCode: String | null,     // Temporary, for email verification
   verificationCodeExpiresAt: Date | null,
   passwordResetToken:     String | null,
   passwordResetExpiresAt: Date | null,
-  usernameChangedAt: Date | null,      // Rate-limit username changes (30 days)
+  usernameChangedAt: Date | null,      // Records the single allowed manual username change
   createdAt:        Date,              // Auto (Mongoose timestamps)
   updatedAt:        Date               // Auto (Mongoose timestamps)
 }
@@ -89,6 +89,9 @@ Collection: users
 - `verificationCode` and `passwordResetToken` are temporary fields, cleared after use.
 - `role` defaults to `"user"`. Admin roles are assigned by Super Admin only.
 - The text index on `username` and `echoId` supports the user search feature.
+- Registration requires email; phone can be added later for recovery/security.
+- If username is omitted during registration, a crypto-random unique username is generated.
+- Username manual edit is allowed once ever (applies to generated and custom usernames).
 
 ---
 

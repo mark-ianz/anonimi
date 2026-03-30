@@ -96,12 +96,17 @@ Register a new user account.
 **Request Body:**
 ```json
 {
-  "email": "john@example.com",        // Required (if registering with email)
-  "phone": "+1234567890",             // Required (if registering with phone)
-  "username": "john_doe",             // Required, 3-30 chars, alphanumeric + _ .
+  "email": "john@example.com",        // Required
+  "username": "john_doe",             // Optional, 3-30 chars, alphanumeric + _ .
   "password": "SecurePass123!"        // Required, min 8 chars, complexity rules
 }
 ```
+
+**Behavior:**
+- If `username` is omitted, the system generates a random unique username using a crypto-secure generator.
+- For privacy, users are encouraged not to use their real name as username.
+- A username can be manually changed once (including accounts that started with generated usernames).
+- This rule applies to newly created accounts in the privacy-first flow.
 
 **Response (201):**
 ```json
@@ -115,7 +120,7 @@ Register a new user account.
 ```
 
 **Errors:**
-- `409` — Email/phone/username already taken
+- `409` — Email/username already taken
 - `400` — Validation error (password too weak, invalid email format, etc.)
 
 ---
@@ -153,30 +158,14 @@ Verify email address with code sent during registration.
 
 ---
 
-### POST /api/auth/verify-phone 🔓
-
-Verify phone number with SMS code.
-
-**Request Body:**
-```json
-{
-  "phone": "+1234567890",
-  "code": "482913"
-}
-```
-
-**Response:** Same structure as verify-email.
-
----
-
 ### POST /api/auth/login 🔓
 
-Login with email/phone and password.
+Login with email or phone number and password.
 
 **Request Body:**
 ```json
 {
-  "identifier": "john@example.com",   // Email or phone number
+  "identifier": "john@example.com",   // Email or phone number (if registered)
   "password": "SecurePass123!"
 }
 ```
@@ -371,7 +360,7 @@ Note: `isContact`, `isBlocked`, and `contactNickname` are computed relative to t
 
 ---
 
-### GET /api/users/me
+### GET /api/auth/me
 
 Get the authenticated user's full profile.
 
@@ -383,8 +372,9 @@ Get the authenticated user's full profile.
     "id": "60d5ecb54b24a1001c8e4b3a",
     "echoId": "eid_a8F3kP29",
     "username": "john_doe",
+    "usernameCanEdit": true,
     "email": "john@example.com",
-    "phone": "+1234567890",
+    "phone": null,
     "profileImage": "/uploads/avatars/uuid.jpg",
     "role": "user",
     "status": "active",
@@ -398,10 +388,11 @@ Get the authenticated user's full profile.
 ```
 
 Note: This is the only endpoint that returns email and phone — only for the authenticated user's own profile.
+Phone is optional and intended for account recovery/security.
 
 ---
 
-### PATCH /api/users/me
+### PATCH /api/auth/me
 
 Update the authenticated user's profile.
 
@@ -413,6 +404,10 @@ Update the authenticated user's profile.
 }
 ```
 
+Notes:
+- `username` is optional and can only be manually changed once ever.
+- `phone` is optional and can be added after account creation for account recovery.
+
 **Response (200):**
 ```json
 {
@@ -423,11 +418,11 @@ Update the authenticated user's profile.
 
 **Errors:**
 - `409` — Username already taken
-- `429` — Username change rate limited (once per 30 days)
+- `409` — Username change not allowed (already changed once)
 
 ---
 
-### POST /api/users/me/avatar
+### POST /api/auth/me/avatar
 
 Upload or update profile image.
 

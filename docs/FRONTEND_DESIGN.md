@@ -86,7 +86,7 @@ These are implemented as **Next.js route groups** with separate layouts, sharing
 /register                   → Registration form
 /forgot-password            → Password reset request
 /reset-password             → Password reset with token
-/verify                     → Email/phone verification
+/verify                     → Email verification
 ```
 
 #### Application Routes (Authentication Required)
@@ -404,7 +404,10 @@ All authentication pages use the **Auth Layout** (centered card).
 
 **Form fields:**
 - Email — email input
-- Username — text input (3–30 chars, alphanumeric + `_.`)
+- Username — optional text input (3–30 chars, alphanumeric + `_.`)
+   - Inline note: using your real name is not recommended for stronger anonymity
+   - If left empty, system generates a crypto-random username
+   - Manual username edit is allowed once
 - Password — password input with strength indicator
 - Confirm password — password input
 - Accept terms checkbox → links to `/terms` and `/privacy`
@@ -618,8 +621,8 @@ Accepting a contact request within the chat immediately upgrades `requestStatus`
 
 **Edit mode:**
 - Avatar upload
-- Username field (with availability check)
-- Phone number field
+- Username field (with availability check; manual change allowed once ever)
+- Phone number field (optional; recommended for account recovery)
 - Password change section (current password + new password)
 
 ### 8.6 User Profile (`/app/user/[echoId]`)
@@ -640,7 +643,7 @@ Public profile view for another user:
 
 Settings organized in tabs or sections:
 
-- **Account:** Email, phone, password change
+- **Account:** Email, optional recovery phone, password change
 - **Notifications:** Notification preferences (sound, desktop notifications)
 - **Privacy:** Online status visibility, read receipts toggle
 - **Appearance:** Theme (light/dark/system), chat bubble style
