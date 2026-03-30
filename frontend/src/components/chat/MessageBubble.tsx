@@ -16,6 +16,8 @@ interface MessageBubbleProps {
   senderName?: string;
   senderImage?: string | null;
   participantCount?: number;
+  conversationType?: "private" | "group";
+  showReadReceipt?: boolean;
 }
 
 export default function MessageBubble({
@@ -25,6 +27,8 @@ export default function MessageBubble({
   senderName,
   senderImage,
   participantCount = 2,
+  conversationType = "private",
+  showReadReceipt = true,
 }: MessageBubbleProps) {
   const { user } = useAuthStore();
   const isMine = message.senderId === user?.id;
@@ -55,7 +59,7 @@ export default function MessageBubble({
   return (
     <div
       className={cn(
-        "flex items-end gap-2 px-4 py-0.5 group animate-message-appear",
+        "group flex items-end gap-2 px-4 py-0 animate-message-appear",
         isMine && "flex-row-reverse"
       )}
       onMouseEnter={() => setShowActions(true)}
@@ -84,7 +88,7 @@ export default function MessageBubble({
         {/* Bubble */}
         <div
           className={cn(
-            "relative px-3 py-2 rounded-2xl text-sm leading-relaxed",
+            "relative rounded-2xl px-3 py-2 text-sm leading-relaxed",
             isMine
               ? "bg-primary text-primary-foreground rounded-br-sm"
               : "bg-card border border-border/50 text-foreground rounded-bl-sm",
@@ -92,6 +96,16 @@ export default function MessageBubble({
             message.failed && "border-destructive/50 bg-destructive/5"
           )}
         >
+          {/* Hover timestamp tooltip */}
+          <div
+            className={cn(
+              "pointer-events-none absolute -top-7 z-10 rounded-md border border-border/60 bg-background/95 px-2 py-0.5 text-[11px] text-muted-foreground opacity-0 shadow-soft transition-opacity group-hover:opacity-100",
+              isMine ? "right-0" : "left-0"
+            )}
+          >
+            <DateDisplay date={message.createdAt} format="time" className="text-[11px] text-muted-foreground" />
+          </div>
+
           {/* Media content */}
           {message.type !== "text" && message.mediaUrl && (
             <MediaPreview message={message} />
@@ -109,20 +123,18 @@ export default function MessageBubble({
           {message.failed && (
             <span className="text-xs text-destructive mt-1 block text-right">Failed</span>
           )}
-        </div>
 
-        {/* Footer: hover timestamp + read receipt */}
-        <div className={cn("flex min-h-4 items-center gap-1.5 mt-0.5 mx-1", isMine && "flex-row-reverse")}>
-            <span className="opacity-0 transition-opacity group-hover:opacity-100 text-xs text-muted-foreground">
-              <DateDisplay date={message.createdAt} format="time" className="text-xs text-muted-foreground" />
-            </span>
-            {isMine && (
+          {isMine && !message.pending && !message.failed && showReadReceipt && (
+            <div className="group mt-1 flex justify-end">
               <ReadReceipt
                 readBy={message.readBy}
                 participantCount={participantCount}
+                conversationType={conversationType}
+                currentUserId={user?.id}
                 className="opacity-70"
               />
-            )}
+            </div>
+          )}
         </div>
       </div>
 

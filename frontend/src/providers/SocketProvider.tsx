@@ -144,9 +144,18 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     // Read receipts
     socket.on("message:read", (payload: MessageReadReceiptPayload) => {
+      const { messages } = useChatStore.getState();
+      const conversationMessages = messages[payload.conversationId] ?? [];
+
       payload.messageIds.forEach((msgId) => {
+        const currentMessage = conversationMessages.find((msg) => msg.id === msgId);
+        const existingReadBy = currentMessage?.readBy ?? [];
+        const nextReadBy = existingReadBy.includes(payload.readBy.userId)
+          ? existingReadBy
+          : [...existingReadBy, payload.readBy.userId];
+
         updateMessage(payload.conversationId, msgId, {
-          readBy: [], // will be enriched server-side
+          readBy: nextReadBy,
         });
       });
     });

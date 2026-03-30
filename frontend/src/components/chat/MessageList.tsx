@@ -32,6 +32,11 @@ function shouldShowTimeDivider(prev: string | undefined, curr: string): boolean 
   return diffMs >= 15 * 60 * 1000;
 }
 
+function getTimeBucketKey(value: string): number {
+  const time = new Date(value).getTime();
+  return Math.floor(time / (15 * 60 * 1000));
+}
+
 export default function MessageList({ conversation }: MessageListProps) {
   const { user } = useAuthStore();
   const { messages, isLoading, isFetchingMore, hasMore, fetchMore } = useMessages(conversation.id);
@@ -66,6 +71,11 @@ export default function MessageList({ conversation }: MessageListProps) {
       ? (conversation.group?.memberCount ?? 2)
       : 2;
 
+  const latestOutgoingIndex = messages.reduce((latest, msg, idx) => {
+    if (msg.senderId !== user?.id) return latest;
+    return idx;
+  }, -1);
+
   if (isLoading) {
     return <LoadingSkeleton variant="message" rows={8} className="flex-1" />;
   }
@@ -89,6 +99,29 @@ export default function MessageList({ conversation }: MessageListProps) {
         const showTimeCluster = shouldShowTimeDivider(prev?.createdAt, message.createdAt);
         const isFirst = !prev || prev.senderId !== message.senderId || showDivider;
         const showAvatar = isFirst;
+
+        let showReadReceipt = true;
+        if (message.senderId === user?.id) {
+          if (conversation.type === "private") {
+            // Private chat: only the latest outgoing message should carry status.
+            showReadReceipt = index === latestOutgoingIndex;
+          } else {
+          const bucketKey = getTimeBucketKey(message.createdAt);
+          let nextMineIndex = -1;
+          for (let i = index + 1; i < messages.length; i += 1) {
+            const candidate = messages[i];
+            if (candidate.senderId !== user?.id) continue;
+            if (getTimeBucketKey(candidate.createdAt) !== bucketKey) continue;
+            nextMineIndex = i;
+            break;
+          }
+
+          if (nextMineIndex !== -1) {
+            // Group chat: one status per 15-minute timestamp cluster.
+            showReadReceipt = false;
+          }
+          }
+        }
 
         // Find sender info for group
         let senderName: string | undefined;
@@ -124,6 +157,8 @@ export default function MessageList({ conversation }: MessageListProps) {
               senderName={senderName}
               senderImage={senderImage}
               participantCount={participantCount}
+              conversationType={conversation.type}
+              showReadReceipt={showReadReceipt}
             />
           </div>
         );
