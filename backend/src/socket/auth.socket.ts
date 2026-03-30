@@ -1,7 +1,7 @@
 import { Socket } from "socket.io";
 import { verifyAccessToken } from "../utils/jwt";
 import { User } from "../models/user.model";
-import { OnlineStatus } from "../types/enums";
+import { AppearanceStatus, OnlineStatus } from "../types/enums";
 
 export const socketAuth = async (
   socket: Socket,
@@ -26,7 +26,12 @@ export const socketAuth = async (
       return next(new Error("Account is banned"));
     }
 
-    user.onlineStatus = OnlineStatus.ONLINE;
+    const effectiveStatus =
+      user.appearanceStatus === AppearanceStatus.INVISIBLE
+        ? OnlineStatus.OFFLINE
+        : (user.appearanceStatus as unknown as OnlineStatus);
+
+    user.onlineStatus = effectiveStatus;
     user.lastSeen = new Date();
     await user.save();
 

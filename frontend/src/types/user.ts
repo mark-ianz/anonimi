@@ -1,6 +1,7 @@
 export type UserRole = "user" | "moderator" | "support_staff" | "super_admin";
 export type UserStatus = "active" | "banned" | "pending_verification";
-export type OnlineStatus = "online" | "offline" | "away";
+export type OnlineStatus = "online" | "away" | "dnd" | "offline";
+export type AppearanceStatus = "online" | "away" | "dnd" | "invisible";
 
 export interface User {
   id: string;
@@ -9,6 +10,7 @@ export interface User {
   profileImage: string | null;
   role: UserRole;
   status: UserStatus;
+  appearanceStatus: AppearanceStatus;
   onlineStatus: OnlineStatus;
   lastSeen: string;
   createdAt: string;

@@ -10,7 +10,7 @@ import {
   verifyRefreshToken,
 } from "../utils/jwt";
 import { ConflictError, UnauthorizedError, NotFoundError } from "../utils/apiError";
-import { UserRole, UserStatus } from "../types/enums";
+import { AppearanceStatus, OnlineStatus, UserRole, UserStatus } from "../types/enums";
 import { createAdminLog } from "./admin.service";
 
 interface RegisterResult {
@@ -28,6 +28,7 @@ interface LoginResult {
     profileImage: string | null;
     role: string;
     status: string;
+    appearanceStatus: string;
     onlineStatus: string;
     lastSeen: Date | null;
   };
@@ -113,6 +114,7 @@ export const verifyEmail = async (
       profileImage: user.profileImage,
       role: user.role,
       status: user.status,
+      appearanceStatus: user.appearanceStatus,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
     },
@@ -150,6 +152,7 @@ export const verifyPhone = async (
       profileImage: user.profileImage,
       role: user.role,
       status: user.status,
+      appearanceStatus: user.appearanceStatus,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
     },
@@ -192,6 +195,7 @@ export const login = async (
       profileImage: user.profileImage,
       role: user.role,
       status: user.status,
+      appearanceStatus: user.appearanceStatus,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
     },
@@ -311,7 +315,7 @@ export const getProfile = async (userId: string) => {
 
 export const updateProfile = async (
   userId: string,
-  updates: { username?: string; phone?: string }
+  updates: { username?: string; phone?: string; appearanceStatus?: AppearanceStatus }
 ) => {
   const user = await User.findById(userId);
 
@@ -344,6 +348,15 @@ export const updateProfile = async (
 
   if (updates.phone) {
     user.phone = updates.phone;
+  }
+
+  if (updates.appearanceStatus) {
+    user.appearanceStatus = updates.appearanceStatus;
+    user.onlineStatus =
+      updates.appearanceStatus === AppearanceStatus.INVISIBLE
+        ? OnlineStatus.OFFLINE
+        : (updates.appearanceStatus as unknown as OnlineStatus);
+    user.lastSeen = new Date();
   }
 
   await user.save();

@@ -18,7 +18,7 @@ export function useAuth() {
   const profileQuery = useQuery({
     queryKey: ["auth", "me"],
     queryFn: async () => {
-      const res = await api.get("/users/me");
+      const res = await api.get("/auth/me");
       return res.data.data as AuthUser;
     },
     enabled: isAuthenticated,
@@ -50,7 +50,7 @@ export function useAuth() {
     mutationFn: async (file: File) => {
       const form = new FormData();
       form.append("avatar", file);
-      const res = await api.post("/users/me/avatar", form, {
+      const res = await api.post("/auth/me/avatar", form, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       return res.data.data as { profileImage: string };
@@ -63,8 +63,8 @@ export function useAuth() {
   });
 
   const updateProfileMutation = useMutation({
-    mutationFn: async (patch: Partial<Pick<AuthUser, "username" | "phone">>) => {
-      const res = await api.patch("/users/me", patch);
+    mutationFn: async (patch: Partial<Pick<AuthUser, "username" | "phone" | "appearanceStatus">>) => {
+      const res = await api.patch("/auth/me", patch);
       return res.data.data as AuthUser;
     },
     onSuccess: (data) => {

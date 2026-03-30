@@ -23,11 +23,20 @@ interface ChatViewProps {
 }
 
 function OnlineDot({ status }: { status: string }) {
+  const dotClass =
+    status === "online"
+      ? "bg-green-500"
+      : status === "away"
+      ? "bg-yellow-500"
+      : status === "dnd"
+      ? "bg-red-500"
+      : "bg-muted-foreground/40";
+
   return (
     <span
       className={cn(
         "inline-block w-2 h-2 rounded-full",
-        status === "online" ? "bg-green-500" : "bg-muted-foreground/40"
+        dotClass
       )}
     />
   );
@@ -192,6 +201,8 @@ export default function ChatView({ conversation }: ChatViewProps) {
   function getStatusText() {
     if (isGroup) return `${conversation.group?.memberCount ?? 0} members`;
     if (presenceStatus === "online") return "Online";
+    if (presenceStatus === "away") return "Away";
+    if (presenceStatus === "dnd") return "Do Not Disturb";
     if (lastSeen) {
       const date = new Date(lastSeen);
       const now = new Date();
@@ -232,7 +243,13 @@ export default function ChatView({ conversation }: ChatViewProps) {
             <span
               className={cn(
                 "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-background",
-                presenceStatus === "online" ? "bg-green-500" : "bg-muted-foreground/40"
+                presenceStatus === "online"
+                  ? "bg-green-500"
+                  : presenceStatus === "away"
+                  ? "bg-yellow-500"
+                  : presenceStatus === "dnd"
+                  ? "bg-red-500"
+                  : "bg-muted-foreground/40"
               )}
             />
           )}

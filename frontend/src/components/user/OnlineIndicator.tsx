@@ -19,12 +19,14 @@ const sizeMap = {
 const colorMap: Record<OnlineStatus, string> = {
   online: "bg-green-500",
   away: "bg-yellow-500",
+  dnd: "bg-red-500",
   offline: "bg-muted-foreground/40",
 };
 
 const labelMap: Record<OnlineStatus, string> = {
   online: "Online",
   away: "Away",
+  dnd: "Do Not Disturb",
   offline: "Offline",
 };
 
@@ -38,7 +40,7 @@ export default function OnlineIndicator({
     <span className={cn("flex items-center gap-1.5", className)}>
       <span
         className={cn(
-          "rounded-full flex-shrink-0",
+          "rounded-full shrink-0",
           sizeMap[size],
           colorMap[status],
           status === "online" && "animate-pulse"

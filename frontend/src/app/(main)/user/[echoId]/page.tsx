@@ -136,6 +136,10 @@ export default function UserProfilePage() {
                 <p className="text-xs text-muted-foreground">
                   {profile.onlineStatus === "online"
                     ? "Active now"
+                    : profile.onlineStatus === "away"
+                    ? "Away"
+                    : profile.onlineStatus === "dnd"
+                    ? "Do Not Disturb"
                     : profile.lastSeen
                     ? `Last seen ${new Date(profile.lastSeen).toLocaleDateString()}`
                     : "Offline"}

@@ -13,7 +13,16 @@ export enum UserStatus {
 
 export enum OnlineStatus {
   ONLINE = "online",
+  AWAY = "away",
+  DND = "dnd",
   OFFLINE = "offline",
+}
+
+export enum AppearanceStatus {
+  ONLINE = "online",
+  AWAY = "away",
+  DND = "dnd",
+  INVISIBLE = "invisible",
 }
 
 export enum MessageType {

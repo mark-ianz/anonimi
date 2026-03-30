@@ -80,7 +80,7 @@ export interface TypingUpdatePayload {
 export interface PresenceUpdatePayload {
   userId: string;
   status: OnlineStatus;
-  lastSeen: string;
+  lastSeen?: string;
 }
 
 export interface ContactRequestPayload {

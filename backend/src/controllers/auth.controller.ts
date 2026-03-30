@@ -130,6 +130,7 @@ export const getProfile = async (
       profileImage: user.profileImage,
       role: user.role,
       status: user.status,
+      appearanceStatus: user.appearanceStatus,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
       emailVerified: user.emailVerified,
@@ -147,16 +148,27 @@ export const updateProfile = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { username, phone } = req.body;
+    const { username, phone, appearanceStatus } = req.body;
     const user = await authService.updateProfile(req.user!._id.toString(), {
       username,
       phone,
+      appearanceStatus,
     });
     apiSuccess(res, {
       id: user._id.toString(),
       echoId: user.echoId,
       username: user.username,
+      email: user.email,
       phone: user.phone,
+      profileImage: user.profileImage,
+      role: user.role,
+      status: user.status,
+      appearanceStatus: user.appearanceStatus,
+      onlineStatus: user.onlineStatus,
+      lastSeen: user.lastSeen,
+      emailVerified: user.emailVerified,
+      phoneVerified: user.phoneVerified,
+      createdAt: user.createdAt,
     });
   } catch (error) {
     next(error);

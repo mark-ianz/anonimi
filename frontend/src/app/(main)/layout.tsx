@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
@@ -11,7 +11,9 @@ import {
   HelpCircle,
   Menu,
   Search,
-  Bell
+  Bell,
+  Check,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SocketProvider } from "@/providers/SocketProvider";
@@ -21,6 +23,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAuthStore } from "@/stores/authStore";
+import { useAuth } from "@/hooks/useAuth";
+import { getChatSocket } from "@/lib/socket";
+import type { AppearanceStatus, OnlineStatus } from "@/types/user";
 
 const navItems = [
   { href: "/chat", icon: MessageCircle, label: "Chats" },
@@ -37,9 +43,65 @@ interface SidebarProps {
   children: React.ReactNode;
 }
 
+const appearanceOptions: {
+  value: AppearanceStatus;
+  label: string;
+  dotClass: string;
+}[] = [
+  { value: "online", label: "Online", dotClass: "bg-green-500" },
+  { value: "away", label: "Away", dotClass: "bg-yellow-500" },
+  { value: "dnd", label: "Do Not Disturb", dotClass: "bg-red-500" },
+  { value: "invisible", label: "Invisible", dotClass: "bg-muted-foreground/45" },
+];
+
 export default function MainLayout({ children }: SidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+  const { user } = useAuthStore();
+  const { updateProfile, isUpdatingProfile } = useAuth();
+  const statusMenuRef = useRef<HTMLDivElement>(null);
+
+  const currentStatus = (user?.onlineStatus ?? "offline") as OnlineStatus;
+  const currentAppearance = (user?.appearanceStatus ?? "online") as AppearanceStatus;
+
+  const appearanceLabelMap: Record<AppearanceStatus, string> = {
+    online: "Online",
+    away: "Away",
+    dnd: "Do Not Disturb",
+    invisible: "Invisible",
+  };
+
+  const statusDotMap: Record<OnlineStatus, string> = {
+    online: "bg-green-500 animate-pulse-soft",
+    away: "bg-yellow-500",
+    dnd: "bg-red-500",
+    offline: "bg-muted-foreground/45",
+  };
+
+  useEffect(() => {
+    if (!statusMenuOpen) return;
+
+    const onClickOutside = (event: MouseEvent) => {
+      if (statusMenuRef.current && !statusMenuRef.current.contains(event.target as Node)) {
+        setStatusMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [statusMenuOpen]);
+
+  const handleStatusSelect = (status: AppearanceStatus) => {
+    if (!user || status === user.appearanceStatus) {
+      setStatusMenuOpen(false);
+      return;
+    }
+
+    updateProfile({ appearanceStatus: status });
+    getChatSocket().emit("presence:set-status", { status });
+    setStatusMenuOpen(false);
+  };
 
   return (
     <SocketProvider>
@@ -180,9 +242,48 @@ export default function MainLayout({ children }: SidebarProps) {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 rounded-full border border-border/60 bg-card/70 px-3 py-1.5">
-              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse-soft" />
-              <span className="font-mono text-[0.66rem] font-medium uppercase tracking-[0.08em] text-muted-foreground">Online</span>
+            <div className="relative" ref={statusMenuRef}>
+              <button
+                onClick={() => setStatusMenuOpen((prev) => !prev)}
+                className="flex items-center gap-2 rounded-full border border-border/60 bg-card/70 px-3 py-1.5 transition-colors hover:bg-card"
+                aria-label="Change visibility status"
+              >
+                <div className={cn("h-2 w-2 rounded-full", statusDotMap[currentStatus])} />
+                <span className="font-mono text-[0.66rem] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+                  {appearanceLabelMap[currentAppearance]}
+                </span>
+                <ChevronDown
+                  className={cn(
+                    "h-3.5 w-3.5 text-muted-foreground transition-transform",
+                    statusMenuOpen && "rotate-180"
+                  )}
+                />
+              </button>
+
+              {statusMenuOpen && (
+                <div className="absolute right-0 top-full z-40 mt-2 min-w-48 rounded-xl border border-border/70 bg-card/95 p-1.5 shadow-elevated backdrop-blur-sm">
+                  {appearanceOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => handleStatusSelect(option.value)}
+                      disabled={isUpdatingProfile}
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm transition-colors",
+                        "hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60",
+                        currentAppearance === option.value && "bg-primary/10"
+                      )}
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <span className={cn("h-2.5 w-2.5 rounded-full", option.dotClass)} />
+                        <span className="text-foreground">{option.label}</span>
+                      </span>
+                      {currentAppearance === option.value && (
+                        <Check className="h-4 w-4 text-primary" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <button className="flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-card text-sm font-medium text-foreground">
               U

@@ -71,8 +71,8 @@ export default function ConversationItem({
           className={cn(
             "w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center text-white font-medium text-sm",
             isGroup
-              ? "bg-gradient-to-br from-violet-500 to-purple-600"
-              : "bg-gradient-to-br from-cyan-500 to-blue-600"
+              ? "bg-linear-to-br from-violet-500 to-purple-600"
+              : "bg-linear-to-br from-cyan-500 to-blue-600"
           )}
         >
           {displayImage ? (
@@ -82,8 +82,19 @@ export default function ConversationItem({
             initials
           )}
         </div>
-        {!isGroup && presenceStatus === "online" && (
-          <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
+        {!isGroup && (
+          <span
+            className={cn(
+              "absolute bottom-0 right-0 w-3 h-3 border-2 border-background rounded-full",
+              presenceStatus === "online"
+                ? "bg-green-500"
+                : presenceStatus === "away"
+                ? "bg-yellow-500"
+                : presenceStatus === "dnd"
+                ? "bg-red-500"
+                : "bg-muted-foreground/40"
+            )}
+          />
         )}
       </div>
 
@@ -116,7 +127,7 @@ export default function ConversationItem({
             {preview}
           </p>
           {hasUnread && (
-            <span className="shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-white text-[10px] font-semibold flex items-center justify-center">
+            <span className="shrink-0 min-w-4.5 h-4.5 px-1 rounded-full bg-primary text-white text-[10px] font-semibold flex items-center justify-center">
               {unread > 99 ? "99+" : unread}
             </span>
           )}

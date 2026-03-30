@@ -71,8 +71,12 @@ export interface TypingUpdatePayload {
 
 export interface PresenceUpdatePayload {
   userId: string;
-  status: "online" | "offline";
+  status: "online" | "away" | "dnd" | "offline";
   lastSeen?: string;
+}
+
+export interface PresenceSetStatusPayload {
+  status: "online" | "away" | "dnd" | "invisible";
 }
 
 export interface ContactRequestPayload {

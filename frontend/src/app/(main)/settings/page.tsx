@@ -6,6 +6,9 @@ import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import { Moon, Sun, Monitor, Bell, Shield, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/uiStore";
+import { useAuth } from "@/hooks/useAuth";
+import { useSocketContext } from "@/providers/SocketProvider";
+import type { AppearanceStatus } from "@/types/user";
 
 type Theme = "light" | "dark" | "system";
 
@@ -15,9 +18,52 @@ const themes: { value: Theme; label: string; icon: React.ElementType }[] = [
   { value: "system", label: "System", icon: Monitor },
 ];
 
+const appearanceOptions: {
+  value: AppearanceStatus;
+  label: string;
+  description: string;
+  dotClass: string;
+}[] = [
+  {
+    value: "online",
+    label: "Online",
+    description: "Show as available",
+    dotClass: "bg-green-500",
+  },
+  {
+    value: "away",
+    label: "Away",
+    description: "Show as temporarily away",
+    dotClass: "bg-yellow-500",
+  },
+  {
+    value: "dnd",
+    label: "Do Not Disturb",
+    description: "Show as busy",
+    dotClass: "bg-red-500",
+  },
+  {
+    value: "invisible",
+    label: "Invisible",
+    description: "Appear offline to others",
+    dotClass: "bg-muted-foreground/45",
+  },
+];
+
 export default function SettingsPage() {
   const { theme, setTheme } = useUIStore();
   const [notifications, setNotifications] = useState(true);
+  const { user, updateProfile, isUpdatingProfile } = useAuth();
+  const { chatSocket } = useSocketContext();
+
+  const appearanceStatus = user?.appearanceStatus ?? "online";
+
+  const handleAppearanceChange = (status: AppearanceStatus) => {
+    if (!user || status === user.appearanceStatus) return;
+
+    updateProfile({ appearanceStatus: status });
+    chatSocket?.emit("presence:set-status", { status });
+  };
 
   return (
     <ProtectedRoute>
@@ -48,6 +94,44 @@ export default function SettingsPage() {
                 >
                   <Icon className="w-5 h-5" />
                   {label}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="space-y-3 rounded-2xl border border-border/60 bg-card/45 p-5">
+            <h2 className="font-mono text-[0.68rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+              Status Visibility
+            </h2>
+            <div className="grid gap-2">
+              {appearanceOptions.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => handleAppearanceChange(option.value)}
+                  disabled={isUpdatingProfile}
+                  className={cn(
+                    "flex items-center justify-between rounded-xl border px-3 py-2.5 text-left transition-colors",
+                    appearanceStatus === option.value
+                      ? "border-primary/45 bg-primary/10"
+                      : "border-border/60 bg-background hover:bg-muted/40",
+                    isUpdatingProfile && "opacity-80"
+                  )}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className={cn("h-2.5 w-2.5 rounded-full", option.dotClass)} />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{option.label}</p>
+                      <p className="text-xs text-muted-foreground">{option.description}</p>
+                    </div>
+                  </div>
+                  <span
+                    className={cn(
+                      "h-4 w-4 rounded-full border",
+                      appearanceStatus === option.value
+                        ? "border-primary bg-primary"
+                        : "border-border/70"
+                    )}
+                  />
                 </button>
               ))}
             </div>

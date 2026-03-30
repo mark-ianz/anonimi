@@ -20,6 +20,7 @@ export const updateProfileSchema = z.object({
       )
       .optional(),
     phone: z.string().optional(),
+    appearanceStatus: z.enum(["online", "away", "dnd", "invisible"]).optional(),
   }),
 });
 

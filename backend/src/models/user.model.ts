@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 import { IUser } from "../types/models";
-import { UserRole, UserStatus, OnlineStatus } from "../types/enums";
+import { UserRole, UserStatus, OnlineStatus, AppearanceStatus } from "../types/enums";
 
 const userSchema = new Schema<IUser>(
   {
@@ -12,6 +12,7 @@ const userSchema = new Schema<IUser>(
     profileImage: { type: String },
     role: { type: String, enum: UserRole, default: UserRole.USER },
     status: { type: String, enum: UserStatus, default: UserStatus.PENDING },
+    appearanceStatus: { type: String, enum: AppearanceStatus, default: AppearanceStatus.ONLINE },
     onlineStatus: { type: String, enum: OnlineStatus, default: OnlineStatus.OFFLINE },
     lastSeen: { type: Date },
     emailVerified: { type: Boolean, default: false },

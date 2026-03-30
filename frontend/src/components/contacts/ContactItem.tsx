@@ -59,7 +59,13 @@ export default function ContactItem({ contact, onRemove, onSetNickname }: Contac
           <span
             className={cn(
               "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-background",
-              presenceStatus === "online" ? "bg-green-500" : "bg-muted-foreground/40"
+              presenceStatus === "online"
+                ? "bg-green-500"
+                : presenceStatus === "away"
+                ? "bg-yellow-500"
+                : presenceStatus === "dnd"
+                ? "bg-red-500"
+                : "bg-muted-foreground/40"
             )}
           />
         </div>
