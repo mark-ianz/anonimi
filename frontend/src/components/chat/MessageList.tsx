@@ -11,6 +11,8 @@ import InfiniteScrollSentinel from "@/components/shared/InfiniteScroll";
 import LoadingSkeleton from "@/components/shared/LoadingSkeleton";
 import DateDisplay from "@/components/shared/DateDisplay";
 
+type TimestampBubblePosition = "single" | "first" | "middle" | "last";
+
 interface MessageListProps {
   conversation: Conversation;
 }
@@ -95,10 +97,31 @@ export default function MessageList({ conversation }: MessageListProps) {
       {/* Messages */}
       {messages.map((message, index) => {
         const prev = messages[index - 1];
+        const next = messages[index + 1];
         const showDivider = shouldShowDateDivider(prev?.createdAt, message.createdAt);
         const showTimeCluster = shouldShowTimeDivider(prev?.createdAt, message.createdAt);
         const isFirst = !prev || prev.senderId !== message.senderId || showDivider;
         const showAvatar = isFirst;
+        const bucketKey = getTimeBucketKey(message.createdAt);
+
+        const sameTimestampSenderAsPrev =
+          !!prev &&
+          prev.senderId === message.senderId &&
+          getTimeBucketKey(prev.createdAt) === bucketKey;
+
+        const sameTimestampSenderAsNext =
+          !!next &&
+          next.senderId === message.senderId &&
+          getTimeBucketKey(next.createdAt) === bucketKey;
+
+        let timestampBubblePosition: TimestampBubblePosition = "single";
+        if (!sameTimestampSenderAsPrev && sameTimestampSenderAsNext) {
+          timestampBubblePosition = "first";
+        } else if (sameTimestampSenderAsPrev && sameTimestampSenderAsNext) {
+          timestampBubblePosition = "middle";
+        } else if (sameTimestampSenderAsPrev && !sameTimestampSenderAsNext) {
+          timestampBubblePosition = "last";
+        }
 
         let showReadReceipt = true;
         if (message.senderId === user?.id) {
@@ -106,7 +129,6 @@ export default function MessageList({ conversation }: MessageListProps) {
             // Private chat: only the latest outgoing message should carry status.
             showReadReceipt = index === latestOutgoingIndex;
           } else {
-          const bucketKey = getTimeBucketKey(message.createdAt);
           let nextMineIndex = -1;
           for (let i = index + 1; i < messages.length; i += 1) {
             const candidate = messages[i];
@@ -159,6 +181,7 @@ export default function MessageList({ conversation }: MessageListProps) {
               participantCount={participantCount}
               conversationType={conversation.type}
               showReadReceipt={showReadReceipt}
+              timestampBubblePosition={timestampBubblePosition}
             />
           </div>
         );

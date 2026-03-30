@@ -18,6 +18,7 @@ interface MessageBubbleProps {
   participantCount?: number;
   conversationType?: "private" | "group";
   showReadReceipt?: boolean;
+  timestampBubblePosition?: "single" | "first" | "middle" | "last";
 }
 
 export default function MessageBubble({
@@ -29,11 +30,28 @@ export default function MessageBubble({
   participantCount = 2,
   conversationType = "private",
   showReadReceipt = true,
+  timestampBubblePosition = "single",
 }: MessageBubbleProps) {
   const { user } = useAuthStore();
   const isMine = message.senderId === user?.id;
   const [showActions, setShowActions] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  const bubbleShapeClass = isMine
+    ? {
+        // Outgoing (right side): timestamp-chain points live on right corners.
+        single: "rounded-2xl",
+        first: "rounded-2xl rounded-br-sm",
+        middle: "rounded-2xl rounded-tr-[4px] rounded-br-[4px]",
+        last: "rounded-2xl rounded-tr-sm",
+      }[timestampBubblePosition]
+    : {
+        // Incoming (left side): timestamp-chain points live on left corners.
+        single: "rounded-2xl",
+        first: "rounded-2xl rounded-bl-sm",
+        middle: "rounded-2xl rounded-tl-[4px] rounded-bl-[4px]",
+        last: "rounded-2xl rounded-tl-sm",
+      }[timestampBubblePosition];
 
   if (message.unsent) {
     return (
@@ -59,7 +77,7 @@ export default function MessageBubble({
   return (
     <div
       className={cn(
-        "group flex items-end gap-2 px-4 py-0 animate-message-appear",
+        "group flex items-end gap-2 px-4 py-0.5 animate-message-appear",
         isMine && "flex-row-reverse"
       )}
       onMouseEnter={() => setShowActions(true)}
@@ -88,10 +106,11 @@ export default function MessageBubble({
         {/* Bubble */}
         <div
           className={cn(
-            "relative rounded-2xl px-3 py-2 text-sm leading-relaxed",
+            "relative px-3 py-2 text-sm leading-relaxed",
+            bubbleShapeClass,
             isMine
-              ? "bg-primary text-primary-foreground rounded-br-sm"
-              : "bg-card border border-border/50 text-foreground rounded-bl-sm",
+              ? "bg-primary text-primary-foreground"
+              : "bg-card border border-border/50 text-foreground",
             message.pending && "opacity-70",
             message.failed && "border-destructive/50 bg-destructive/5"
           )}
