@@ -126,6 +126,7 @@ Every user receives a **generated EchoID** at account creation. This ID is the p
 - Users share this ID to start conversations (similar to sharing a phone number, but privacy-first).
 - Users can also be searched by **username**.
 - **Email** and **phone number** are used **only** for authentication and verification — they are never publicly searchable.
+- Verification is recoverable: pending users can resume verification and request a new code when needed.
 
 ---
 

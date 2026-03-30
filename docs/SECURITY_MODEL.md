@@ -571,15 +571,15 @@ A `middleware.ts` file at `src/` intercepts every navigation request and applies
 | Route Pattern | No Token | Valid Token | Valid Token + Admin Role |
 |---------------|----------|-------------|--------------------------|
 | `/`, `/about`, `/features`, `/contact`, `/faq`, `/privacy`, `/terms` | Allow | Allow | Allow |
-| `/login`, `/register` | Allow | Redirect → `/app/chat` | Redirect → `/app/chat` |
-| `/verify`, `/forgot-password`, `/reset-password` | Allow | Allow | Allow |
+| `/login`, `/register` | Allow | Redirect → `/chat` | Redirect → `/chat` |
+| `/verify`, `/forgot-password`, `/reset-password` | Allow | Redirect → `/chat` | Redirect → `/chat` |
 | `/app/*` | Redirect → `/login` | Allow | Allow |
-| `/admin/*` | Redirect → `/login` | Redirect → `/app/chat` | Allow |
+| `/admin/*` | Redirect → `/login` | Redirect → `/chat` | Allow |
 
 ### Security Considerations
 
-1. **Cookie-only tokens:** The `access_token` is stored in an httpOnly cookie, not localStorage. The middleware reads this cookie server-side during SSR/navigation.
+1. **Hybrid token strategy:** Access and refresh tokens are stored in localStorage for API auth headers, and an `access_token` cookie is mirrored so Next.js middleware can perform route checks.
 2. **Role enforcement is server-validated:** The middleware reads the JWT payload for role checks, but all admin actions are re-validated server-side by the backend API.
-3. **No sensitive data in client state:** User tokens are never exposed to JavaScript. Zustand stores hold user profile data, not raw tokens.
+3. **Client exposure tradeoff acknowledged:** Tokens are available to client JavaScript by design in the current architecture; sensitive operations are still enforced server-side with JWT validation and role checks.
 4. **WebSocket auth:** The Socket.IO client sends the access token during the handshake. The server validates the token before accepting the connection. This is independent of the middleware routing.
 5. **Redirect loops prevention:** The middleware explicitly allows auth pages for unauthenticated users and skips static assets (`_next/`, images, fonts).

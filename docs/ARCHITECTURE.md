@@ -165,9 +165,10 @@ The frontend is composed of four route groups, each with its own layout:
 A Next.js middleware enforces authentication routing:
 
 - **Unauthenticated user visits `/`** → sees the public landing page
-- **Authenticated user visits `/`** → redirected to `/app/chat`
+- **Authenticated user visits `/`** → redirected to `/chat`
 - **Unauthenticated user visits `/app/*`** → redirected to `/login`
-- **Non-admin visits `/admin/*`** → redirected to `/app/chat`
+- **Non-admin visits `/admin/*`** → redirected to `/chat`
+- **Unauthenticated user visits `/verify` without valid context** → redirected to `/register` by verification flow checks
 
 See [FRONTEND_DESIGN.md](./FRONTEND_DESIGN.md) for the complete frontend specification.
 
@@ -222,7 +223,7 @@ Each service encapsulates a domain's business logic. Services are stateless clas
 
 | Service | Responsibility |
 |---------|----------------|
-| **AuthService** | Email-based registration/login, crypto username generation fallback, one-time username edit enforcement, optional recovery phone updates, email verification, password reset, JWT token generation and refresh |
+| **AuthService** | Email-based registration/login, crypto username generation fallback, one-time username edit enforcement, optional recovery phone updates, email verification, verification-status checks, resend-verification lifecycle, password reset, JWT token generation and refresh |
 | **UserService** | Profile CRUD, EchoID generation, user search, avatar management, online status tracking |
 | **ChatService** | Message creation, retrieval with cursor pagination, message deletion (for-me, unsend), conversation management |
 | **ContactService** | Contact requests (send, accept, decline), nickname management, contacts list retrieval |
@@ -273,7 +274,7 @@ Middlewares execute in order for every HTTP request. Each middleware can short-c
 |------------|----------|
 | **CORS** | Allows configured origins. Supports credentials (cookies). Exposes necessary headers. |
 | **Rate Limiter** | Tiered limits: Auth routes (5 req/min), Search (30 req/min), General API (100 req/min), Messages (60 req/min). Uses sliding window. |
-| **Auth** | Extracts JWT from `Authorization: Bearer <token>` header or `access_token` httpOnly cookie. Verifies signature and expiry. Attaches decoded user to `req.user`. Routes marked `public: true` skip auth. |
+| **Auth** | Extracts JWT from `Authorization: Bearer <token>` header. Verifies signature and expiry. Attaches decoded user to `req.user`. Public routes bypass auth middleware. |
 | **Validation** | Each route defines a Zod schema for `body`, `params`, and/or `query`. Middleware validates against schema and returns 400 with structured errors on failure. |
 | **Error Handler** | Catches all thrown/next(err) errors. Maps known error types (ValidationError, AuthError, NotFoundError, ForbiddenError) to appropriate HTTP status codes. Returns consistent error response format. |
 

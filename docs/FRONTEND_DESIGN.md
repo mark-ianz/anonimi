@@ -158,16 +158,16 @@ Middleware Logic:
    - If NOT authenticated → allow access (show marketing page)
 
 3. If path matches AUTH routes (/login, /register, /forgot-password, /reset-password, /verify):
-   - If authenticated → redirect to /app/chat
+   - If authenticated → redirect to /chat
    - If NOT authenticated → allow access (show auth page)
 
-4. If path matches APP routes (/app/*):
+4. If path matches APP routes (/app/* and core app pages like /chat, /contacts, /groups, /message-requests, /profile, /settings, /blocked, /support, /user/*):
    - If authenticated → allow access
    - If NOT authenticated → redirect to /login?redirect={originalPath}
 
 5. If path matches ADMIN routes (/admin/*):
    - If authenticated AND has admin role → allow access
-   - If authenticated but NOT admin → redirect to /app/chat
+   - If authenticated but NOT admin → redirect to /chat
    - If NOT authenticated → redirect to /login?redirect={originalPath}
 ```
 
@@ -389,13 +389,13 @@ All authentication pages use the **Auth Layout** (centered card).
 **Form fields:**
 - Identifier (email or phone) — text input
 - Password — password input with show/hide toggle
-- "Remember me" checkbox (optional)
 - "Forgot password?" link → `/forgot-password`
 
 **Actions:**
 - Submit → `POST /api/auth/login`
-- On success → redirect to `/app/chat` (or `redirect` param if present)
-- On error → display error message (invalid credentials, account banned, etc.)
+- On success → redirect to `/chat` (or `redirect` param if present)
+- On error → show persistent inline error + toast feedback
+- If response indicates pending verification → show "Continue verification" action to route users to `/verify?target=...&type=...`
 
 **Footer:**
 - "Don't have an account? Sign up" → `/register`
@@ -416,6 +416,7 @@ All authentication pages use the **Auth Layout** (centered card).
 - Submit → `POST /api/auth/register`
 - On success → redirect to `/verify` with email prefilled
 - On error → display field-level validation errors
+- On page load, if a valid pending verification state exists, auto-resume to `/verify` instead of rendering the register form
 
 **Footer:**
 - "Already have an account? Log in" → `/login`
@@ -453,10 +454,16 @@ Accessed via email link with `?token=xxx` query parameter.
 - Instruction text: "Enter the code sent to your email"
 - Resend code button (with cooldown timer)
 
+**Access control:**
+- Page requires valid `target` and `type` query params
+- Client validates verification context via `GET /api/auth/verification-status`
+- Invalid, missing, already-verified, or non-pending contexts redirect to `/register`
+
 **Actions:**
 - Submit → `POST /api/auth/verify-email`
-- On success → redirect to `/app/chat` (user is now logged in)
+- On success → redirect to `/chat` (user is now logged in)
 - On error → display error (invalid/expired code)
+- Resend → `POST /api/auth/resend-verification` with 30-second cooldown
 
 ---
 
@@ -880,8 +887,9 @@ The API client (`src/lib/api.ts`) is an Axios instance configured with:
 
 - Base URL from environment variable
 - `withCredentials: true` (send cookies)
-- Request interceptor: attach access token from cookie or auth header
+- Request interceptor: attach access token from localStorage as `Authorization` bearer token
 - Response interceptor: on 401, attempt token refresh via `/api/auth/refresh-token`, then retry the original request
+- Refresh is intentionally skipped for auth flow endpoints (login/register/verify/forgot/reset/verification-status/resend-verification) to avoid false redirects and UI flicker on expected auth errors
 - Error transformation: map API errors to consistent format
 
 ### Fetching Patterns

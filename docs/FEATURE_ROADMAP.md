@@ -160,6 +160,19 @@ Notes:
 - Privacy copy:
   - Register page shows recommendation against real-name usernames for anonymity.
 
+### Cross-Reference: Auth & Verification Bugfix Set (Completed)
+
+This roadmap milestone includes the resolved login/verification UX and recovery fixes documented in [docs/BUGS.md](docs/BUGS.md).
+
+Completed items linked to this phase:
+
+- Stable failed-login feedback (persistent inline message + readable toast)
+- Removed false refresh/flicker behavior on auth failures
+- Recoverable verification flow after tab close
+- Verification page access control via verification-status checks
+- Pending verification persistence and auto-resume
+- Resend verification endpoint and verify-page resend UX (cooldown + feedback)
+
 ---
 
 ## Phase 2 — Core Messaging

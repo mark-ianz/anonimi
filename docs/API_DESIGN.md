@@ -129,6 +129,69 @@ Register a new user account.
 
 Verify email address with code sent during registration.
 
+---
+
+### GET /api/auth/verification-status 🔓
+
+Validate whether a verification session is still valid for a target account.
+
+**Query Parameters:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | `email` \| `phone` | Yes | Verification target type |
+| `target` | string | Yes | Email address or phone number |
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "canVerify": true,
+    "reason": "pending",
+    "type": "email",
+    "target": "john@example.com"
+  }
+}
+```
+
+Possible `reason` values when `canVerify` is `false`:
+- `not_found`
+- `already_verified`
+- `not_pending`
+- `no_code`
+- `code_expired`
+
+---
+
+### POST /api/auth/resend-verification 🔓
+
+Regenerate and resend a verification code for pending accounts.
+
+**Request Body:**
+```json
+{
+  "type": "email",
+  "target": "john@example.com"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "A new verification code has been sent.",
+    "verificationTarget": "email"
+  }
+}
+```
+
+**Errors:**
+- `404` — Verification target not found
+- `409` — Account already verified or not pending verification
+
+---
+
 **Request Body:**
 ```json
 {
@@ -193,7 +256,7 @@ Login with email or phone number and password.
 
 **Errors:**
 - `401` — Invalid credentials
-- `403` — Account banned or pending verification
+- `401` — Account banned or pending verification
 
 ---
 

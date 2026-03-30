@@ -477,7 +477,7 @@ frontend/
 
 4. **Auth components are standalone:** Authentication forms have their own component directory, decoupled from the rest of the application.
 
-5. **Root middleware handles routing:** A single `middleware.ts` at the `src/` root handles all authentication-based routing logic (redirect unauthenticated users from `/app/*`, redirect authenticated users from `/login`, etc.).
+5. **Root middleware handles routing:** A single `middleware.ts` at the `src/` root handles all authentication-based routing logic (redirect unauthenticated users from app routes to `/login`, redirect authenticated users from auth pages to `/chat`, and enforce admin route guards).
 
 6. **SocketProvider wraps only the app layout:** The WebSocket connection is established only within the `(main)` layout, not globally. Marketing and auth pages do not open socket connections.
 
