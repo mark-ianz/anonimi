@@ -77,7 +77,7 @@ export default function MessageBubble({
   return (
     <div
       className={cn(
-        "group flex items-end gap-2 px-4 py-0.5 animate-message-appear",
+        "flex items-end gap-2 px-4 py-0.5 animate-message-appear",
         isMine && "flex-row-reverse"
       )}
       onMouseEnter={() => setShowActions(true)}
@@ -106,7 +106,7 @@ export default function MessageBubble({
         {/* Bubble */}
         <div
           className={cn(
-            "relative px-3 py-2 text-sm leading-relaxed",
+            "group/bubble relative px-3 py-2 text-sm leading-relaxed",
             bubbleShapeClass,
             isMine
               ? "bg-primary text-primary-foreground"
@@ -118,8 +118,7 @@ export default function MessageBubble({
           {/* Hover timestamp tooltip */}
           <div
             className={cn(
-              "pointer-events-none absolute -top-7 z-10 rounded-md border border-border/60 bg-background/95 px-2 py-0.5 text-[11px] text-muted-foreground opacity-0 shadow-soft transition-opacity group-hover:opacity-100",
-              isMine ? "right-0" : "left-0"
+              "pointer-events-none absolute left-[calc(100%+8px)] top-1/2 z-10 -translate-y-1/2 whitespace-nowrap rounded-md border border-border/60 bg-background/95 px-2 py-0.5 text-[11px] text-muted-foreground opacity-0 shadow-soft transition-opacity group-hover/bubble:opacity-100"
             )}
           >
             <DateDisplay date={message.createdAt} format="time" className="text-[11px] text-muted-foreground" />
