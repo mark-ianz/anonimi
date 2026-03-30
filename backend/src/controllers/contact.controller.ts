@@ -64,7 +64,7 @@ export const sendContactRequest = async (
         data: {
           fromUserId: req.user!._id.toString(),
           fromEchoId: sender?.echoId,
-          href: "/contacts/requests",
+          href: "/contacts?tab=requests",
         },
       });
     }

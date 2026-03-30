@@ -166,7 +166,9 @@ export default function MainLayout({ children }: SidebarProps) {
 
   const resolveNotificationHref = (data: Record<string, unknown>) => {
     const href = data.href;
-    return typeof href === "string" ? href : "/chat";
+    if (typeof href !== "string") return "/chat";
+    if (href === "/contacts/requests") return "/contacts?tab=requests";
+    return href;
   };
 
   const handleStatusSelect = (status: AppearanceStatus) => {

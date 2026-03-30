@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { UserPlus, X } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import ContactList from "@/components/contacts/ContactList";
 import ContactRequestCard from "@/components/contacts/ContactRequestCard";
@@ -10,10 +11,26 @@ import UserSearchResults from "@/components/user/UserSearchResults";
 import { useContacts } from "@/hooks/useContacts";
 
 export default function ContactsPage() {
-  const [tab, setTab] = useState<"contacts" | "requests">("contacts");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tab = searchParams.get("tab") === "requests" ? "requests" : "contacts";
   const [search, setSearch] = useState("");
   const [addingContact, setAddingContact] = useState(false);
   const { requests, isLoadingRequests, acceptRequest, declineRequest } = useContacts();
+
+  const setTab = (nextTab: "contacts" | "requests") => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (nextTab === "requests") {
+      params.set("tab", "requests");
+    } else {
+      params.delete("tab");
+    }
+
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname);
+  };
 
   return (
     <ProtectedRoute>
