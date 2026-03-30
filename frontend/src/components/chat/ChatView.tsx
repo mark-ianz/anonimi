@@ -82,8 +82,23 @@ export default function ChatView({ conversation }: ChatViewProps) {
   useEffect(() => {
     setActiveConversation(conversation.id);
     clearUnread(conversation.id);
-    return () => setActiveConversation(null);
-  }, [conversation.id, setActiveConversation, clearUnread]);
+    const socket = getChatSocket();
+    socket.emit("conversation:active", { conversationId: conversation.id });
+
+    api
+      .patch(`/notifications/messages/read-by-conversation/${conversation.id}`)
+      .then(() => {
+        qc.invalidateQueries({ queryKey: ["notifications"] });
+      })
+      .catch(() => {
+        // Keep UX smooth; this sync call is best-effort.
+      });
+
+    return () => {
+      setActiveConversation(null);
+      socket.emit("conversation:active", { conversationId: null });
+    };
+  }, [conversation.id, setActiveConversation, clearUnread, qc]);
 
   // Listen for message-request:accepted event (shown to the sender when recipient accepts)
   useEffect(() => {

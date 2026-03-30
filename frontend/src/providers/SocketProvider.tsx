@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { Socket } from "socket.io-client";
 import { toast } from "sonner";
 import { getChatSocket, disconnectSockets } from "@/lib/socket";
+import api from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { useSocketStore } from "@/stores/socketStore";
 import { useChatStore } from "@/stores/chatStore";
@@ -256,8 +257,29 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     });
 
     socket.on("notification:new", (payload: NotificationPayload) => {
+      const payloadConversationId =
+        typeof payload.data?.conversationId === "string"
+          ? payload.data.conversationId
+          : null;
+      const isActiveMessageNotification =
+        payload.type === "message_received" &&
+        !!payloadConversationId &&
+        payloadConversationId === activeConversationId;
+
+      if (isActiveMessageNotification) {
+        api.patch(`/notifications/${payload.id}/read`).catch(() => undefined);
+      }
+
       qc.invalidateQueries({ queryKey: ["notifications"] });
-      toast.info(payload.title, { description: payload.body, duration: 4500 });
+      const unreadMessages = Number(payload.data?.unreadMessages);
+      const isAggregatedMessageUpdate =
+        payload.type === "message_received" &&
+        Number.isFinite(unreadMessages) &&
+        unreadMessages > 1;
+
+      if (!isAggregatedMessageUpdate && !isActiveMessageNotification) {
+        toast.info(payload.title, { description: payload.body, duration: 4500 });
+      }
     });
 
     return () => {

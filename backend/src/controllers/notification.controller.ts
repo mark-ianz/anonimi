@@ -3,6 +3,7 @@ import { apiSuccess } from "../utils/apiResponse";
 import {
   listNotifications,
   markAllNotificationsRead,
+  markMessageNotificationsReadByConversation,
   markNotificationRead,
 } from "../services/notification.service";
 
@@ -42,6 +43,23 @@ export const readAllNotifications = async (
 ): Promise<void> => {
   try {
     const result = await markAllNotificationsRead(req.user!._id.toString());
+    apiSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const readConversationMessageNotifications = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { conversationId } = req.params;
+    const result = await markMessageNotificationsReadByConversation(
+      req.user!._id.toString(),
+      conversationId
+    );
     apiSuccess(res, result);
   } catch (error) {
     next(error);

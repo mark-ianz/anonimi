@@ -13,6 +13,7 @@ import {
   emitToUser,
   emitToConversation,
   createAndEmitNotification,
+  decrementMessageNotificationOnUnsend,
 } from "./notification.service";
 
 interface ConversationParticipant {
@@ -366,7 +367,10 @@ export const sendMessage = async (
   content?: string,
   mediaUrl?: string,
   fileName?: string,
-  fileSize?: number
+  fileSize?: number,
+  options?: {
+    suppressNotificationUserIds?: string[];
+  }
 ) => {
   const conversation = await Conversation.findById(conversationId);
 
@@ -518,8 +522,11 @@ export const sendMessage = async (
   const recipientIds = conversation.participants
     .map((participant) => participant.toString())
     .filter((participantId) => participantId !== senderId);
+  const suppressedRecipients = new Set(options?.suppressNotificationUserIds ?? []);
 
   for (const recipientId of recipientIds) {
+    if (suppressedRecipients.has(recipientId)) continue;
+
     await createAndEmitNotification({
       userId: recipientId,
       type: "message_received",
@@ -528,6 +535,7 @@ export const sendMessage = async (
       data: {
         conversationId: conversation._id.toString(),
         senderId,
+        senderUsername: sender?.username ?? "Someone",
         href: `/chat/${conversation._id.toString()}`,
       },
     });
@@ -597,6 +605,16 @@ export const unsendMessage = async (
     messageId: message._id.toString(),
     unsentAt: message.updatedAt,
   });
+
+  const conversation = await Conversation.findById(message.conversationId).select("participants");
+  const recipientIds =
+    conversation?.participants
+      .map((participant) => participant.toString())
+      .filter((participantId) => participantId !== senderId) ?? [];
+
+  for (const recipientId of recipientIds) {
+    await decrementMessageNotificationOnUnsend(recipientId, senderId);
+  }
 
   return { message: "Message unsent." };
 };

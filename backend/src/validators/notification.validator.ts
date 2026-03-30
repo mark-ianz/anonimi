@@ -12,3 +12,9 @@ export const notificationParamsSchema = z.object({
     notificationId: z.string().min(1, "Notification id is required"),
   }),
 });
+
+export const conversationNotificationParamsSchema = z.object({
+  params: z.object({
+    conversationId: z.string().min(1, "Conversation id is required"),
+  }),
+});

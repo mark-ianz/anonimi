@@ -18,6 +18,8 @@ interface MessageSendPayload {
 }
 
 export const setupChatHandler = (io: Server, socket: Socket): void => {
+  socket.data.activeConversationId = null;
+
   socket.on("message:send", async (payload: MessageSendPayload) => {
     try {
       const { conversationId, type, content, mediaUrl, fileName, fileSize, tempId } = payload;
@@ -28,6 +30,28 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
         return;
       }
 
+      const conversation = await Conversation.findById(conversationId).select("participants");
+      if (!conversation) {
+        socket.emit("error", { code: "NOT_FOUND", message: "Conversation not found" });
+        return;
+      }
+
+      const recipientIds = conversation.participants
+        .map((participant) => participant.toString())
+        .filter((participantId) => participantId !== userId);
+
+      const suppressNotificationUserIds: string[] = [];
+      for (const recipientId of recipientIds) {
+        const sockets = await io.of("/chat").in(`user:${recipientId}`).fetchSockets();
+        const isViewingConversation = sockets.some(
+          (recipientSocket) => recipientSocket.data.activeConversationId === conversationId
+        );
+
+        if (isViewingConversation) {
+          suppressNotificationUserIds.push(recipientId);
+        }
+      }
+
       // Delegate to service — handles blocks, message requests, auto-accept, and notifications
       const result = await chatService.sendMessage(
         userId,
@@ -36,7 +60,8 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
         content,
         mediaUrl,
         fileName,
-        fileSize
+        fileSize,
+        { suppressNotificationUserIds }
       );
 
       // Acknowledge to sender
@@ -155,6 +180,31 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
       socket.leave(`conversation:${conversationId}`);
     } catch (error) {
       console.error("Error in conversation:leave:", error);
+    }
+  });
+
+  socket.on("conversation:active", async (payload: { conversationId: string | null }) => {
+    try {
+      const { conversationId } = payload;
+      const userId = socket.data.user?.userId;
+      if (!userId) return;
+
+      if (!conversationId) {
+        socket.data.activeConversationId = null;
+        return;
+      }
+
+      const conversation = await Conversation.findById(conversationId).select("participants");
+      if (!conversation) return;
+
+      const isParticipant = conversation.participants.some(
+        (participant) => participant.toString() === userId
+      );
+
+      if (!isParticipant) return;
+      socket.data.activeConversationId = conversationId;
+    } catch (error) {
+      console.error("Error in conversation:active:", error);
     }
   });
 
