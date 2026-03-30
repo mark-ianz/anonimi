@@ -1,6 +1,5 @@
 "use client";
 
-import { use } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import api from "@/lib/api";
@@ -8,7 +7,6 @@ import type { Conversation } from "@/types/conversation";
 import ChatView from "@/components/chat/ChatView";
 import ConversationSearch from "@/components/conversations/ConversationSearch";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
-import LoadingSkeleton from "@/components/shared/LoadingSkeleton";
 
 export default function ConversationPage() {
   const params = useParams();
@@ -33,7 +31,7 @@ export default function ConversationPage() {
         </div>
 
         {/* Chat view */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="relative z-10 flex-1 flex flex-col overflow-visible">
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />

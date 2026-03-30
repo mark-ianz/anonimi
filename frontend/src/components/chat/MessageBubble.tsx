@@ -54,8 +54,10 @@ export default function MessageBubble({
       }[timestampBubblePosition];
 
   const tooltipPositionClass = isMine
-    ? (message.unsent ? "right-[calc(100%+8px)]" : "left-[calc(100%+8px)]")
-    : "right-[calc(100%+8px)]";
+    ? (message.unsent
+      ? "right-[calc(100%+8px)] top-1/2 -translate-y-1/2"
+      : "left-[calc(100%+8px)] top-1/2 -translate-y-1/2")
+    : "left-[calc(100%+8px)] top-1/2 -translate-y-1/2";
 
   if (message.type === "system") {
     return (
@@ -111,7 +113,7 @@ export default function MessageBubble({
           {/* Hover timestamp tooltip */}
           <div
             className={cn(
-              "pointer-events-none absolute top-1/2 z-80 hidden -translate-y-1/2 whitespace-nowrap rounded-md border border-border/60 bg-background/95 px-2 py-0.5 text-[11px] text-muted-foreground shadow-soft group-hover/bubble:block",
+              "pointer-events-none absolute z-80 hidden whitespace-nowrap rounded-md border border-border/60 bg-background/95 px-2 py-0.5 text-[11px] text-muted-foreground shadow-soft group-hover/bubble:block",
               tooltipPositionClass
             )}
           >
