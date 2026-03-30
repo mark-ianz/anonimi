@@ -22,10 +22,11 @@ export default function UserSearchResults({
   onQueryChange,
 }: UserSearchResultsProps) {
   const [internalQuery, setInternalQuery] = useState("");
+  const [requestedEchoIds, setRequestedEchoIds] = useState<Set<string>>(new Set());
   const resolvedQuery = query ?? internalQuery;
   const setQuery = onQueryChange ?? setInternalQuery;
   const debounced = useDebounce(resolvedQuery, 350);
-  const { sendRequest } = useContacts();
+  const { sendRequestAsync } = useContacts();
   const router = useRouter();
 
   const { data, isFetching } = useQuery({
@@ -70,15 +71,28 @@ export default function UserSearchResults({
         </p>
       )}
 
-      {data && data.map((user) => (
-        <UserCard
-          key={user.id}
-          user={user}
-          showActions
-          onAddContact={(echoId) => sendRequest(echoId)}
-          onMessage={(echoId) => openConversationMutation.mutate(echoId)}
-        />
-      ))}
+      {data && data.map((user) => {
+        const dynamicUser = requestedEchoIds.has(user.echoId)
+          ? { ...user, isContact: true }
+          : user;
+
+        return (
+          <UserCard
+            key={user.id}
+            user={dynamicUser}
+            showActions
+            onAddContact={async (echoId) => {
+              try {
+                await sendRequestAsync(echoId);
+                setRequestedEchoIds((prev) => new Set(prev).add(echoId));
+              } catch {
+                // Error toast is handled by useContacts.
+              }
+            }}
+            onMessage={(echoId) => openConversationMutation.mutate(echoId)}
+          />
+        );
+      })}
     </div>
   );
 }

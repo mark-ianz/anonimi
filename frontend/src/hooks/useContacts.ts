@@ -114,6 +114,7 @@ export function useContacts() {
     isLoadingRequests: requestsQuery.isLoading,
 
     sendRequest: sendRequestMutation.mutate,
+    sendRequestAsync: sendRequestMutation.mutateAsync,
     acceptRequest: acceptMutation.mutate,
     declineRequest: declineMutation.mutate,
     removeContact: removeMutation.mutate,
