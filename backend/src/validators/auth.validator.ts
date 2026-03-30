@@ -36,6 +36,20 @@ export const verifyPhoneSchema = z.object({
   }),
 });
 
+export const verificationStatusSchema = z.object({
+  query: z.object({
+    target: z.string().min(1, "Verification target is required"),
+    type: z.enum(["email", "phone"]),
+  }),
+});
+
+export const resendVerificationSchema = z.object({
+  body: z.object({
+    target: z.string().min(1, "Verification target is required"),
+    type: z.enum(["email", "phone"]),
+  }),
+});
+
 export const loginSchema = z.object({
   body: z.object({
     identifier: z.string().min(1, "Identifier is required"),

@@ -11,6 +11,11 @@ import { toast } from "sonner";
 import api from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import type { AuthUser } from "@/types/user";
+import {
+  clearPendingVerification,
+  savePendingVerification,
+  type VerificationType,
+} from "@/lib/verification";
 
 const schema = z.object({
   identifier: z.string().min(1, "Email or phone is required"),
@@ -22,6 +27,11 @@ export default function LoginPage() {
   const router = useRouter();
   const { setAuth } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [pendingVerification, setPendingVerification] = useState<{
+    type: VerificationType;
+    target: string;
+  } | null>(null);
 
   const {
     register,
@@ -30,6 +40,9 @@ export default function LoginPage() {
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   const onSubmit = async (data: FormData) => {
+    setSubmitError(null);
+    setPendingVerification(null);
+
     try {
       const res = await api.post("/auth/login", data);
       const { accessToken, refreshToken, user } = res.data.data as {
@@ -38,12 +51,25 @@ export default function LoginPage() {
         user: AuthUser;
       };
       setAuth(user, accessToken, refreshToken);
+      clearPendingVerification();
       router.push("/chat");
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { error?: { message?: string } } } })
           ?.response?.data?.error?.message ?? "Login failed. Please try again.";
-      toast.error(msg);
+      setSubmitError(msg);
+      toast.error(msg, { duration: 5000 });
+
+      if (msg.toLowerCase().includes("not verified")) {
+        const identifier = data.identifier.trim();
+        const type: VerificationType = identifier.includes("@") ? "email" : "phone";
+        const target = type === "email" ? identifier.toLowerCase() : identifier;
+
+        if (target) {
+          savePendingVerification({ type, target });
+          setPendingVerification({ type, target });
+        }
+      }
     }
   };
 
@@ -134,6 +160,26 @@ export default function LoginPage() {
             </>
           )}
         </button>
+
+        {submitError && (
+          <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {submitError}
+          </div>
+        )}
+
+        {pendingVerification && (
+          <button
+            type="button"
+            onClick={() =>
+              router.push(
+                `/verify?target=${encodeURIComponent(pendingVerification.target)}&type=${pendingVerification.type}`
+              )
+            }
+            className="h-10 w-full rounded-xl border border-primary/30 bg-primary/10 text-sm font-semibold text-primary transition-colors hover:bg-primary/20"
+          >
+            Continue verification
+          </button>
+        )}
       </form>
 
       <p className="text-center text-sm text-muted-foreground mt-6">

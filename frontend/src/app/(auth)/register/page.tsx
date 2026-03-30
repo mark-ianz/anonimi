@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -9,6 +9,11 @@ import { z } from "zod";
 import { Eye, EyeOff, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import {
+  clearPendingVerification,
+  getPendingVerification,
+  savePendingVerification,
+} from "@/lib/verification";
 
 const schema = z
   .object({
@@ -40,12 +45,57 @@ type FormData = z.infer<typeof schema>;
 export default function RegisterPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [isCheckingResume, setIsCheckingResume] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const resumeVerificationIfNeeded = async () => {
+      const pending = getPendingVerification();
+      if (!pending) {
+        if (mounted) setIsCheckingResume(false);
+        return;
+      }
+
+      try {
+        const res = await api.get("/auth/verification-status", {
+          params: { target: pending.target, type: pending.type },
+        });
+
+        if (!mounted) return;
+
+        if (res.data?.data?.canVerify) {
+          router.replace(
+            `/verify?target=${encodeURIComponent(pending.target)}&type=${pending.type}`
+          );
+          return;
+        }
+
+        clearPendingVerification();
+        setIsCheckingResume(false);
+      } catch {
+        if (!mounted) return;
+        clearPendingVerification();
+        setIsCheckingResume(false);
+      }
+    };
+
+    void resumeVerificationIfNeeded();
+
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
+
+  if (isCheckingResume) {
+    return <div className="rounded-3xl border border-border/70 bg-card/80 p-7 shadow-soft sm:p-8 h-155 animate-pulse" />;
+  }
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -59,6 +109,7 @@ export default function RegisterPage() {
       if (username) payload.username = username;
 
       await api.post("/auth/register", payload);
+      savePendingVerification({ type: "email", target: normalizedEmail });
       toast.success("Account created! Check your inbox for the verification code.");
       router.push(`/verify?target=${encodeURIComponent(normalizedEmail)}&type=email`);
     } catch (err: unknown) {

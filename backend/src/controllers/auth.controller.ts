@@ -44,6 +44,35 @@ export const verifyPhone = async (
   }
 };
 
+export const getVerificationStatus = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const type = req.query.type as "email" | "phone";
+    const target = req.query.target as string;
+    const result = await authService.getVerificationStatus(type, target);
+    apiSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resendVerification = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { type, target } = req.body as { type: "email" | "phone"; target: string };
+    const result = await authService.resendVerificationCode(type, target);
+    apiSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const login = async (
   req: Request,
   res: Response,

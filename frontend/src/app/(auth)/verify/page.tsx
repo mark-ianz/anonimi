@@ -7,19 +7,88 @@ import { ShieldCheck } from "lucide-react";
 import api from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import type { AuthUser } from "@/types/user";
+import {
+  clearPendingVerification,
+  getPendingVerification,
+  savePendingVerification,
+  type VerificationType,
+} from "@/lib/verification";
 
 function VerifyForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { setAuth } = useAuthStore();
 
-  const target = searchParams.get("target") ?? "";
-  const type = (searchParams.get("type") ?? "email") as "email" | "phone";
+  const rawTarget = searchParams.get("target") ?? "";
+  const rawType = searchParams.get("type") ?? "email";
+  const type: VerificationType = rawType === "phone" ? "phone" : "email";
+  const target = type === "email" ? rawTarget.trim().toLowerCase() : rawTarget.trim();
   const targetLabel = type === "phone" ? "phone" : "email";
 
   const [code, setCode] = useState(["", "", "", "", "", ""]);
+  const [isCheckingContext, setIsCheckingContext] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const redirectToRegister = (message: string) => {
+      if (!mounted) return;
+      toast.error(message, { duration: 4500 });
+      router.replace("/register");
+    };
+
+    const validateContext = async () => {
+      const isValidType = rawType === "email" || rawType === "phone";
+      if (!target || !isValidType) {
+        clearPendingVerification();
+        redirectToRegister("Verification link is missing required details.");
+        return;
+      }
+
+      savePendingVerification({ target, type });
+
+      try {
+        const res = await api.get("/auth/verification-status", {
+          params: { target, type },
+        });
+
+        if (!mounted) return;
+
+        if (!res.data?.data?.canVerify) {
+          clearPendingVerification();
+          redirectToRegister("This verification session is no longer valid. Please register or sign in again.");
+          return;
+        }
+
+        setIsCheckingContext(false);
+      } catch {
+        if (!mounted) return;
+
+        const pending = getPendingVerification();
+        if (
+          pending &&
+          pending.target === target &&
+          pending.type === type
+        ) {
+          setIsCheckingContext(false);
+          return;
+        }
+
+        clearPendingVerification();
+        redirectToRegister("Unable to validate your verification session. Please try again.");
+      }
+    };
+
+    void validateContext();
+
+    return () => {
+      mounted = false;
+    };
+  }, [rawType, router, target, type]);
 
   const handleChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
@@ -44,6 +113,8 @@ function VerifyForm() {
   };
 
   const submit = async () => {
+    if (isCheckingContext) return;
+
     const fullCode = code.join("");
     if (fullCode.length < 6) {
       toast.error("Please enter the full 6-digit code.");
@@ -60,6 +131,7 @@ function VerifyForm() {
         user: AuthUser;
       };
       setAuth(user, accessToken, refreshToken);
+      clearPendingVerification();
       toast.success("Account verified! Welcome to EchoID.");
       router.push("/chat");
     } catch (err: unknown) {
@@ -75,9 +147,54 @@ function VerifyForm() {
   };
 
   useEffect(() => {
-    if (code.every((c) => c !== "") && !isSubmitting) submit();
+    if (code.every((c) => c !== "") && !isSubmitting && !isCheckingContext) {
+      void submit();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code]);
+  }, [code, isCheckingContext, isSubmitting]);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+
+    const timer = window.setInterval(() => {
+      setResendCooldown((current) => {
+        if (current <= 1) {
+          window.clearInterval(timer);
+          return 0;
+        }
+        return current - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [resendCooldown]);
+
+  const handleResend = async () => {
+    if (isCheckingContext || isResending || resendCooldown > 0) return;
+
+    setIsResending(true);
+    try {
+      await api.post("/auth/resend-verification", { target, type });
+      setCode(["", "", "", "", "", ""]);
+      inputs.current[0]?.focus();
+      setResendCooldown(30);
+      toast.success(`A new verification code was sent to your ${targetLabel}.`, {
+        duration: 5000,
+      });
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { error?: { message?: string } } } })
+          ?.response?.data?.error?.message ??
+        "Unable to resend verification code right now.";
+      toast.error(msg, { duration: 5000 });
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  if (isCheckingContext) {
+    return <div className="glass rounded-2xl p-8 shadow-elevated animate-pulse h-64" />;
+  }
 
   return (
     <div className="glass rounded-2xl p-8 shadow-elevated">
@@ -112,7 +229,7 @@ function VerifyForm() {
 
       <button
         onClick={submit}
-        disabled={isSubmitting || code.some((c) => !c)}
+        disabled={isSubmitting || isCheckingContext || code.some((c) => !c)}
         className="w-full h-10 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2 transition-opacity disabled:opacity-60"
         style={{ background: "var(--echo-gradient)" }}
       >
@@ -125,8 +242,17 @@ function VerifyForm() {
 
       <p className="text-center text-sm text-muted-foreground mt-4">
         Didn&apos;t receive a code?{" "}
-        <button className="text-primary font-medium hover:underline">
-          Resend
+        <button
+          type="button"
+          onClick={handleResend}
+          disabled={isResending || isCheckingContext || resendCooldown > 0}
+          className="text-primary font-medium hover:underline disabled:no-underline disabled:opacity-60"
+        >
+          {isResending
+            ? "Sending..."
+            : resendCooldown > 0
+              ? `Resend in ${resendCooldown}s`
+              : "Resend"}
         </button>
       </p>
     </div>

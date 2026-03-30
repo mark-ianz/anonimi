@@ -35,6 +35,18 @@ interface LoginResult {
   };
 }
 
+interface VerificationStatusResult {
+  canVerify: boolean;
+  reason: "pending" | "not_found" | "already_verified" | "not_pending" | "no_code" | "code_expired";
+  type: "email" | "phone";
+  target: string;
+}
+
+interface ResendVerificationResult {
+  message: string;
+  verificationTarget: "email" | "phone";
+}
+
 const USERNAME_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
 
 const generateCryptoUsername = (): string => {
@@ -182,6 +194,112 @@ export const verifyPhone = async (
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
     },
+  };
+};
+
+export const getVerificationStatus = async (
+  type: "email" | "phone",
+  target: string
+): Promise<VerificationStatusResult> => {
+  const normalizedTarget = type === "email" ? target.trim().toLowerCase() : target.trim();
+  const user =
+    type === "email"
+      ? await User.findOne({ email: normalizedTarget })
+      : await User.findOne({ phone: normalizedTarget });
+
+  if (!user) {
+    return {
+      canVerify: false,
+      reason: "not_found",
+      type,
+      target: normalizedTarget,
+    };
+  }
+
+  const isVerified = type === "email" ? user.emailVerified : user.phoneVerified;
+  if (isVerified) {
+    return {
+      canVerify: false,
+      reason: "already_verified",
+      type,
+      target: normalizedTarget,
+    };
+  }
+
+  if (user.status !== UserStatus.PENDING) {
+    return {
+      canVerify: false,
+      reason: "not_pending",
+      type,
+      target: normalizedTarget,
+    };
+  }
+
+  if (!user.verificationCode) {
+    return {
+      canVerify: false,
+      reason: "no_code",
+      type,
+      target: normalizedTarget,
+    };
+  }
+
+  if (user.verificationCodeExpiresAt && user.verificationCodeExpiresAt < new Date()) {
+    return {
+      canVerify: false,
+      reason: "code_expired",
+      type,
+      target: normalizedTarget,
+    };
+  }
+
+  return {
+    canVerify: true,
+    reason: "pending",
+    type,
+    target: normalizedTarget,
+  };
+};
+
+export const resendVerificationCode = async (
+  type: "email" | "phone",
+  target: string
+): Promise<ResendVerificationResult> => {
+  const normalizedTarget = type === "email" ? target.trim().toLowerCase() : target.trim();
+  const user =
+    type === "email"
+      ? await User.findOne({ email: normalizedTarget })
+      : await User.findOne({ phone: normalizedTarget });
+
+  if (!user) {
+    throw new NotFoundError("Verification target not found");
+  }
+
+  const isVerified = type === "email" ? user.emailVerified : user.phoneVerified;
+  if (isVerified) {
+    throw new ConflictError("This account is already verified");
+  }
+
+  if (user.status !== UserStatus.PENDING) {
+    throw new ConflictError("This account is not pending verification");
+  }
+
+  const verificationCode = crypto.randomInt(100000, 999999).toString();
+  const verificationCodeExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+  user.verificationCode = verificationCode;
+  user.verificationCodeExpiresAt = verificationCodeExpiresAt;
+  await user.save();
+
+  if (type === "email") {
+    console.log(`Verification code for ${normalizedTarget}: ${verificationCode}`);
+  } else {
+    console.log(`Phone verification code for ${normalizedTarget}: ${verificationCode}`);
+  }
+
+  return {
+    message: "A new verification code has been sent.",
+    verificationTarget: type,
   };
 };
 

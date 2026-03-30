@@ -8,6 +8,8 @@ import {
   registerSchema,
   verifyEmailSchema,
   verifyPhoneSchema,
+  verificationStatusSchema,
+  resendVerificationSchema,
   loginSchema,
   refreshTokenSchema,
   forgotPasswordSchema,
@@ -23,6 +25,8 @@ const router = Router();
 router.post("/register", authLimiter, validate(registerSchema), authController.register);
 router.post("/verify-email", validate(verifyEmailSchema), authController.verifyEmail);
 router.post("/verify-phone", validate(verifyPhoneSchema), authController.verifyPhone);
+router.get("/verification-status", validate(verificationStatusSchema), authController.getVerificationStatus);
+router.post("/resend-verification", authLimiter, validate(resendVerificationSchema), authController.resendVerification);
 router.post("/login", authLimiter, validate(loginSchema), authController.login);
 router.post("/refresh-token", validate(refreshTokenSchema), authController.refreshToken);
 router.post("/forgot-password", authLimiter, validate(forgotPasswordSchema), authController.forgotPassword);

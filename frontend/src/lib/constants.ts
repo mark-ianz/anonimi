@@ -9,6 +9,7 @@ export const SOCKET_URL =
 
 export const ACCESS_TOKEN_KEY = "echo_access_token";
 export const REFRESH_TOKEN_KEY = "echo_refresh_token";
+export const PENDING_VERIFICATION_KEY = "echo_pending_verification";
 
 export const MESSAGES_PER_PAGE = 30;
 export const CONVERSATIONS_PER_PAGE = 20;

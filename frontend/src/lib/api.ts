@@ -26,6 +26,21 @@ let failedQueue: Array<{
   reject: (err: unknown) => void;
 }> = [];
 
+const NON_REFRESHABLE_AUTH_PATHS = [
+  "/auth/login",
+  "/auth/register",
+  "/auth/verify-email",
+  "/auth/verify-phone",
+  "/auth/forgot-password",
+  "/auth/reset-password",
+  "/auth/verification-status",
+];
+
+const isNonRefreshableAuthRequest = (url?: string) => {
+  if (!url) return false;
+  return NON_REFRESHABLE_AUTH_PATHS.some((path) => url.includes(path));
+};
+
 function processQueue(error: unknown, token: string | null) {
   failedQueue.forEach(({ resolve, reject }) => {
     if (error) reject(error);
@@ -41,7 +56,11 @@ api.interceptors.response.use(
       _retry?: boolean;
     };
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !isNonRefreshableAuthRequest(originalRequest.url)
+    ) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({
