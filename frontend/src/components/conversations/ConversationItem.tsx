@@ -277,7 +277,7 @@ export default function ConversationItem({
         createPortal(
           <div
             ref={menuRef}
-            className="fixed z-[120] min-w-40 rounded-xl border border-border/60 bg-card/95 py-1 shadow-elevated backdrop-blur-sm"
+            className="fixed z-120 min-w-40 overflow-hidden rounded-xl border border-border/60 bg-card/95 p-1 shadow-elevated backdrop-blur-sm"
             style={{ top: menuPosition.top, left: menuPosition.left }}
           >
             <button
@@ -288,7 +288,7 @@ export default function ConversationItem({
                 setMenuOpen(false);
                 toast.info("Mute is coming soon.");
               }}
-              className="flex w-full items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted/60"
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted/60"
             >
               <BellOff className="h-4 w-4 text-muted-foreground" />
               Mute
@@ -305,7 +305,7 @@ export default function ConversationItem({
                 }
               }}
               disabled={archiveMutation.isPending || unarchiveMutation.isPending}
-              className="flex w-full items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted/60 disabled:opacity-50"
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted/60 disabled:opacity-50"
             >
               <Archive className="h-4 w-4 text-muted-foreground" />
               {isArchived ? "Unarchive" : "Archive"}
