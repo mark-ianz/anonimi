@@ -53,6 +53,7 @@ export interface MessageReceivePayload {
   fileName: string | null;
   fileSize: number | null;
   timestamp: string;
+  suppressUnread?: boolean;
 }
 
 export interface MessageUnsentPayload {

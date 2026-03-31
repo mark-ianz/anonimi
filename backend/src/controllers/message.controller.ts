@@ -40,11 +40,13 @@ export const getConversations = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { limit, cursor } = req.query;
+    const { limit, cursor, filter } = req.query;
+    const listFilter = filter === "archived" ? "archived" : "active";
     const result = await chatService.getConversations(
       req.user!._id.toString(),
       limit ? parseInt(limit as string) : 20,
-      cursor as string
+      cursor as string,
+      listFilter
     );
     apiPaginated(res, result.conversations, {
       nextCursor: result.nextCursor,
@@ -163,6 +165,40 @@ export const markMessagesAsRead = async (
       req.user!._id.toString()
     );
     apiSuccess(res, { message: "Messages marked as read" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const archiveConversation = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const conversationId = req.params.conversationId as string;
+    const result = await chatService.archiveConversation(
+      conversationId,
+      req.user!._id.toString()
+    );
+    apiSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const unarchiveConversation = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const conversationId = req.params.conversationId as string;
+    const result = await chatService.unarchiveConversation(
+      conversationId,
+      req.user!._id.toString()
+    );
+    apiSuccess(res, result);
   } catch (error) {
     next(error);
   }

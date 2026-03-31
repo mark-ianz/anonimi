@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
 import Link from "next/link";
 import { Inbox } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useConversations } from "@/hooks/useConversations";
+import { useConversations, type ConversationListFilter } from "@/hooks/useConversations";
 import ConversationItem from "./ConversationItem";
 import LoadingSkeleton from "@/components/shared/LoadingSkeleton";
 import EmptyState from "@/components/shared/EmptyState";
@@ -15,13 +14,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 interface ConversationListProps {
   activeConversationId?: string;
   searchQuery?: string;
+  filter?: ConversationListFilter;
 }
 
 export default function ConversationList({
   activeConversationId,
   searchQuery = "",
+  filter = "active",
 }: ConversationListProps) {
-  const { conversations, isLoading, isFetchingMore, hasMore, fetchMore } = useConversations();
+  const { conversations, isLoading, isFetchingMore, hasMore, fetchMore } = useConversations(filter);
 
   const { data: messageRequests } = useQuery({
     queryKey: ["message-requests"],
@@ -43,7 +44,7 @@ export default function ConversationList({
       })
     : conversations;
 
-  const banner = requestCount > 0 && (
+  const banner = filter === "active" && requestCount > 0 && (
     <Link
       href="/message-requests"
       className="flex items-center justify-between px-4 py-2.5 bg-amber-500/10 border-b border-amber-500/20 hover:bg-amber-500/15 transition-colors shrink-0"
@@ -76,6 +77,8 @@ export default function ConversationList({
           description={
             searchQuery
               ? `No conversations matching "${searchQuery}"`
+              : filter === "archived"
+              ? "Archived conversations will appear here."
               : "Start a conversation with a contact."
           }
         />
@@ -93,6 +96,7 @@ export default function ConversationList({
               key={conv.id}
               conversation={conv}
               isActive={conv.id === activeConversationId}
+              hrefBase={filter === "archived" ? "/archive" : "/chat"}
               style={{ animationDelay: `${i * 30}ms` }}
             />
           ))}

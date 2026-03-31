@@ -7,6 +7,7 @@ import { GroupMember } from "../models/groupMember.model";
 import { Contact } from "../models/contact.model";
 import { MessageRequest } from "../models/messageRequest.model";
 import { Block } from "../models/block.model";
+import { ConversationArchive } from "../models/conversationArchive.model";
 import { NotFoundError, ForbiddenError, ConflictError } from "../utils/apiError";
 import { MessageType } from "../types/enums";
 import {
@@ -35,6 +36,8 @@ interface LastMessage {
   senderUsername?: string;
 }
 
+export type ConversationListFilter = "active" | "archived";
+
 const serializeReadByAt = (
   readByAt: unknown
 ): Record<string, string> => {
@@ -52,6 +55,32 @@ const serializeReadByAt = (
     acc[userId] = timestamp.toISOString();
     return acc;
   }, {});
+};
+
+const getArchivedRecipientIds = async (
+  conversationId: string,
+  recipientIds: string[]
+) => {
+  if (recipientIds.length === 0) return new Set<string>();
+
+  const archivedRows = await ConversationArchive.find({
+    conversationId: new Types.ObjectId(conversationId),
+    userId: { $in: recipientIds.map((id) => new Types.ObjectId(id)) },
+  })
+    .select("userId")
+    .lean();
+
+  return new Set(archivedRows.map((row: any) => row.userId.toString()));
+};
+
+const clearConversationArchiveForUser = async (
+  conversationId: string,
+  userId: string
+) => {
+  await ConversationArchive.findOneAndDelete({
+    conversationId: new Types.ObjectId(conversationId),
+    userId: new Types.ObjectId(userId),
+  });
 };
 
 export const createOrGetConversation = async (
@@ -143,9 +172,22 @@ export const getConversationRequests = async (userId: string) => {
 export const getConversations = async (
   userId: string,
   limit: number = 20,
-  cursor?: string
+  cursor?: string,
+  filter: ConversationListFilter = "active"
 ) => {
   const userObjectId = new Types.ObjectId(userId);
+  const archivedConvIds = await ConversationArchive.find({
+    userId: userObjectId,
+  }).distinct("conversationId");
+  const archivedConvIdSet = new Set(archivedConvIds.map((id: any) => id.toString()));
+
+  if (filter === "archived" && archivedConvIds.length === 0) {
+    return {
+      conversations: [],
+      nextCursor: undefined,
+    };
+  }
+
   // Include conversations where user is the sender of an outgoing pending request.
   // The base filter excludes all "pending" convs (receiver inbox), but the sender
   // should still see their own pending outgoing requests in their chat list.
@@ -157,6 +199,11 @@ export const getConversations = async (
   const query: Record<string, unknown> = {
     participants: userObjectId,
   };
+
+  query._id =
+    filter === "archived"
+      ? { $in: archivedConvIds }
+      : { $nin: archivedConvIds };
 
   if (outgoingPendingConvIds.length > 0) {
     query.$or = [
@@ -224,6 +271,7 @@ export const getConversations = async (
         return {
           id: conv._id.toString(),
           type: conv.type,
+          isArchived: archivedConvIdSet.has(conv._id.toString()),
           participant: {
             id: user?._id.toString(),
             echoId: user?.echoId,
@@ -288,6 +336,7 @@ export const getConversations = async (
         return {
           id: conv._id.toString(),
           type: conv.type,
+          isArchived: archivedConvIdSet.has(conv._id.toString()),
           group: {
             id: group?._id.toString(),
             name: group?.name,
@@ -365,10 +414,15 @@ export const getConversation = async (
     const messageRequest = await MessageRequest.findOne({
       conversationId: conversation._id,
     }).select("_id fromUserId toUserId status");
+    const archivedRow = await ConversationArchive.findOne({
+      conversationId: conversation._id,
+      userId: new Types.ObjectId(userId),
+    }).select("_id");
 
     return {
       id: conversation._id.toString(),
       type: conversation.type,
+      isArchived: !!archivedRow,
       participant: {
         id: user?._id.toString(),
         echoId: user?.echoId,
@@ -407,10 +461,15 @@ export const getConversation = async (
     const lastMessageSender = conversation.lastMessage?.senderId
       ? await User.findById(conversation.lastMessage.senderId).select("username").lean()
       : null;
+    const archivedRow = await ConversationArchive.findOne({
+      conversationId: conversation._id,
+      userId: new Types.ObjectId(userId),
+    }).select("_id");
 
     return {
       id: conversation._id.toString(),
       type: conversation.type,
+      isArchived: !!archivedRow,
       group: {
         id: group?._id.toString(),
         name: group?.name,
@@ -515,6 +574,9 @@ export const sendMessage = async (
   if (!isParticipant) {
     throw new ForbiddenError("Not a participant in this conversation");
   }
+
+  // Outgoing messages from archived threads auto-unarchive for the sender.
+  await clearConversationArchiveForUser(conversationId, senderId);
 
   if (conversation.type === "private") {
     const recipientId = conversation.participants.find(
@@ -667,8 +729,15 @@ export const sendMessage = async (
     const recipientIds = conversation.participants
       .map((participant) => participant.toString())
       .filter((participantId) => participantId !== senderId);
+    const archivedRecipientIds = await getArchivedRecipientIds(
+      conversation._id.toString(),
+      recipientIds
+    );
     const deliveredRecipientIds = isShadowDelivery ? [] : recipientIds;
-    const suppressedRecipients = new Set(options?.suppressNotificationUserIds ?? []);
+    const suppressedRecipients = new Set([
+      ...(options?.suppressNotificationUserIds ?? []),
+      ...Array.from(archivedRecipientIds),
+    ]);
 
     for (const recipientIdStr of deliveredRecipientIds) {
       if (suppressedRecipients.has(recipientIdStr)) continue;
@@ -708,6 +777,7 @@ export const sendMessage = async (
         profileImage: sender?.profileImage,
       },
       deliveredRecipientIds,
+      suppressedUnreadRecipientIds: Array.from(archivedRecipientIds),
     };
   }
 
@@ -743,7 +813,14 @@ export const sendMessage = async (
   const recipientIds = conversation.participants
     .map((participant) => participant.toString())
     .filter((participantId) => participantId !== senderId);
-  const suppressedRecipients = new Set(options?.suppressNotificationUserIds ?? []);
+  const archivedRecipientIds = await getArchivedRecipientIds(
+    conversation._id.toString(),
+    recipientIds
+  );
+  const suppressedRecipients = new Set([
+    ...(options?.suppressNotificationUserIds ?? []),
+    ...Array.from(archivedRecipientIds),
+  ]);
 
   for (const recipientIdStr of recipientIds) {
     if (suppressedRecipients.has(recipientIdStr)) continue;
@@ -783,6 +860,68 @@ export const sendMessage = async (
       profileImage: sender?.profileImage,
     },
     deliveredRecipientIds: recipientIds,
+    suppressedUnreadRecipientIds: Array.from(archivedRecipientIds),
+  };
+};
+
+export const archiveConversation = async (
+  conversationId: string,
+  userId: string
+) => {
+  const conversation = await Conversation.findById(conversationId).select("participants");
+  if (!conversation) {
+    throw new NotFoundError("Conversation not found");
+  }
+
+  const isParticipant = conversation.participants.some(
+    (participant) => participant.toString() === userId
+  );
+  if (!isParticipant) {
+    throw new ForbiddenError("Not a participant in this conversation");
+  }
+
+  const archived = await ConversationArchive.findOneAndUpdate(
+    {
+      conversationId: conversation._id,
+      userId: new Types.ObjectId(userId),
+    },
+    {
+      archivedAt: new Date(),
+    },
+    {
+      upsert: true,
+      new: true,
+      setDefaultsOnInsert: true,
+    }
+  );
+
+  return {
+    conversationId: conversation._id.toString(),
+    archivedAt: archived?.archivedAt,
+  };
+};
+
+export const unarchiveConversation = async (
+  conversationId: string,
+  userId: string
+) => {
+  const conversation = await Conversation.findById(conversationId).select("participants");
+  if (!conversation) {
+    throw new NotFoundError("Conversation not found");
+  }
+
+  const isParticipant = conversation.participants.some(
+    (participant) => participant.toString() === userId
+  );
+  if (!isParticipant) {
+    throw new ForbiddenError("Not a participant in this conversation");
+  }
+
+  await clearConversationArchiveForUser(conversationId, userId);
+
+  return {
+    conversationId: conversation._id.toString(),
+    unarchived: true,
   };
 };
 

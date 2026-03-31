@@ -1,18 +1,21 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Edit } from "lucide-react";
 import SearchInput from "@/components/shared/SearchInput";
 import ConversationList from "./ConversationList";
+import type { ConversationListFilter } from "@/hooks/useConversations";
 
 interface ConversationSearchProps {
   activeConversationId?: string;
   onNewChat?: () => void;
+  filter?: ConversationListFilter;
 }
 
 export default function ConversationSearch({
   activeConversationId,
   onNewChat,
+  filter = "active",
 }: ConversationSearchProps) {
   const [query, setQuery] = useState("");
 
@@ -22,11 +25,13 @@ export default function ConversationSearch({
         <div className="mb-3 flex items-start justify-between">
           <div>
             <p className="font-mono text-[0.66rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-              Workspace
+              {filter === "archived" ? "Archive" : "Workspace"}
             </p>
-            <h1 className="mt-1 text-2xl leading-tight font-semibold">Messages</h1>
+            <h1 className="mt-1 text-2xl leading-tight font-semibold">
+              {filter === "archived" ? "Archived" : "Messages"}
+            </h1>
           </div>
-          {onNewChat && (
+          {onNewChat && filter === "active" && (
             <button
               onClick={onNewChat}
               className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/70 bg-background text-foreground transition-colors hover:bg-muted"
@@ -37,7 +42,11 @@ export default function ConversationSearch({
           )}
         </div>
         <SearchInput
-          placeholder="Search conversations..."
+            placeholder={
+              filter === "archived"
+                ? "Search archived conversations..."
+                : "Search conversations..."
+            }
           value={query}
           onChange={setQuery}
         />
@@ -46,6 +55,7 @@ export default function ConversationSearch({
       <ConversationList
         activeConversationId={activeConversationId}
         searchQuery={query}
+        filter={filter}
       />
     </div>
   );

@@ -18,6 +18,7 @@ import {
   ShieldAlert,
   UserPlus2,
   MessagesSquare,
+  Archive,
   LifeBuoy,
   BellDot,
   Trash2,
@@ -42,6 +43,7 @@ const navItems = [
   { href: "/chat", icon: MessageCircle, label: "Chats" },
   { href: "/contacts", icon: Users, label: "Contacts" },
   { href: "/groups", icon: MessagesSquare, label: "Groups" },
+  { href: "/archive", icon: Archive, label: "Archive" },
   { href: "/profile", icon: UserCircle2, label: "Profile" },
   { href: "/settings", icon: Settings, label: "Settings" },
 ];

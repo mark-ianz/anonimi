@@ -15,12 +15,14 @@ interface MessageInputProps {
   conversationId: string;
   disabled?: boolean;
   placeholder?: string;
+  onMessageSent?: () => void;
 }
 
 export default function MessageInput({
   conversationId,
   disabled,
   placeholder = "Message...",
+  onMessageSent,
 }: MessageInputProps) {
   const { sendMessage } = useMessages(conversationId);
   const { onInputChange, onBlur } = useTyping(conversationId);
@@ -86,10 +88,12 @@ export default function MessageInput({
       fileSize,
     });
 
+    onMessageSent?.();
+
     setText("");
     onBlur();
     textareaRef.current?.focus();
-  }, [text, pendingFile, disabled, upload, sendMessage, conversationId, onBlur]);
+  }, [text, pendingFile, disabled, upload, sendMessage, conversationId, onBlur, onMessageSent]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -150,7 +154,7 @@ export default function MessageInput({
           placeholder={placeholder}
           rows={1}
           className={cn(
-            "flex-1 resize-none rounded-xl bg-muted/50 border-0 px-3 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all max-h-[120px] leading-relaxed",
+            "flex-1 resize-none rounded-xl bg-muted/50 border-0 px-3 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all max-h-30 leading-relaxed",
             disabled && "opacity-50 cursor-not-allowed"
           )}
         />

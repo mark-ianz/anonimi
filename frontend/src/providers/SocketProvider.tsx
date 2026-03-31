@@ -160,6 +160,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     // New message from another user
     socket.on("message:receive", (payload: MessageReceivePayload) => {
       const { conversations } = useChatStore.getState();
+      const suppressUnread = !!payload.suppressUnread;
       const msg: Message = {
         id: payload.messageId,
         conversationId: payload.conversationId,
@@ -186,6 +187,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       if (!conversations.some((conv) => conv.id === payload.conversationId)) {
         qc.invalidateQueries({ queryKey: ["conversations"] });
       }
+      qc.invalidateQueries({ queryKey: ["conversations", "archived"] });
 
       // Fallback sync: if message-request:new is missed, this ensures request list catches up.
       qc.invalidateQueries({ queryKey: ["message-requests"] });
@@ -197,14 +199,20 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         document.visibilityState === "visible" &&
         document.hasFocus();
 
-      if (!canAutoRead) {
+      if (!canAutoRead && !suppressUnread) {
         incrementUnread(payload.conversationId);
       } else {
         // Auto-mark as read
-        socket.emit("message:read", {
-          conversationId: payload.conversationId,
-          messageIds: [payload.messageId],
-        });
+        if (!suppressUnread) {
+          socket.emit("message:read", {
+            conversationId: payload.conversationId,
+            messageIds: [payload.messageId],
+          });
+        }
+      }
+
+      if (suppressUnread) {
+        qc.invalidateQueries({ queryKey: ["conversation", payload.conversationId] });
       }
 
       if (payload.type === "system") {
@@ -227,7 +235,37 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
           );
 
           qc.setQueryData(
-            ["conversations"],
+            ["conversations", "active"],
+            (old:
+              | {
+                  pages: Array<{ data: Conversation[] }>;
+                  pageParams: unknown[];
+                }
+              | undefined) => {
+              if (!old) return old;
+
+              return {
+                ...old,
+                pages: old.pages.map((page) => ({
+                  ...page,
+                  data: page.data.map((conv) => {
+                    if (conv.id !== payload.conversationId || !conv.group) return conv;
+                    const current = conv.group.memberCount ?? 0;
+                    return {
+                      ...conv,
+                      group: {
+                        ...conv.group,
+                        memberCount: Math.max(0, current + delta),
+                      },
+                    };
+                  }),
+                })),
+              };
+            }
+          );
+
+          qc.setQueryData(
+            ["conversations", "archived"],
             (old:
               | {
                   pages: Array<{ data: Conversation[] }>;

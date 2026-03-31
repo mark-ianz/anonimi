@@ -40,6 +40,15 @@ export interface IConversation extends Document {
   updatedAt: Date;
 }
 
+export interface IConversationArchive extends Document {
+  _id: Types.ObjectId;
+  conversationId: Types.ObjectId;
+  userId: Types.ObjectId;
+  archivedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface IMessage extends Document {
   _id: Types.ObjectId;
   conversationId: Types.ObjectId;

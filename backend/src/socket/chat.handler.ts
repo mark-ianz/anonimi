@@ -73,6 +73,9 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
       });
 
       const deliveredRecipientIds = result.deliveredRecipientIds ?? recipientIds;
+      const suppressedUnreadRecipientIds = new Set(
+        result.suppressedUnreadRecipientIds ?? []
+      );
 
       for (const recipientId of deliveredRecipientIds) {
         emitToUser(recipientId, "message:receive", {
@@ -87,6 +90,7 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
           fileName: result.message.fileName,
           fileSize: result.message.fileSize,
           timestamp: result.message.createdAt,
+          suppressUnread: suppressedUnreadRecipientIds.has(recipientId),
         });
       }
     } catch (error: any) {

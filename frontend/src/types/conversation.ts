@@ -35,6 +35,7 @@ export interface LastMessage {
 export interface Conversation {
   id: string;
   type: ConversationType;
+  isArchived?: boolean;
   participant?: ConversationParticipant;
   group?: ConversationGroup;
   lastMessage: LastMessage | null;

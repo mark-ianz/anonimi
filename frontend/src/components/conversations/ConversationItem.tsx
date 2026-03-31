@@ -14,6 +14,7 @@ interface ConversationItemProps {
   conversation: Conversation;
   isActive?: boolean;
   style?: React.CSSProperties;
+  hrefBase?: "/chat" | "/archive";
 }
 
 function getLastMessagePreview(conversation: Conversation): string {
@@ -31,6 +32,7 @@ export default function ConversationItem({
   conversation,
   isActive,
   style,
+  hrefBase = "/chat",
 }: ConversationItemProps) {
   const { user } = useAuthStore();
   const { unreadCounts } = useChatStore();
@@ -72,7 +74,7 @@ export default function ConversationItem({
 
   return (
     <Link
-      href={`/chat/${conversation.id}`}
+      href={`${hrefBase}/${conversation.id}`}
       style={style}
       className={cn(
         "flex items-center gap-3 px-4 py-3 transition-colors group cursor-pointer border-b border-border/20 animate-fade-in",

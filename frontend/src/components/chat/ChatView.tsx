@@ -1,9 +1,9 @@
 ﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, MoreVertical, Phone, Video, UserPlus, Check, X, Clock, User, ShieldBan, Flag, LogOut, Settings, Users } from "lucide-react";
+import { ArrowLeft, MoreVertical, Phone, Video, UserPlus, Check, X, Clock, User, ShieldBan, Flag, LogOut, Settings, Users, Archive } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -22,10 +22,12 @@ import UserAvatar from "@/components/shared/UserAvatar";
 
 interface ChatViewProps {
   conversation: Conversation;
+  backHref?: "/chat" | "/archive";
 }
 
-export default function ChatView({ conversation }: ChatViewProps) {
+export default function ChatView({ conversation, backHref = "/chat" }: ChatViewProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const qc = useQueryClient();
   const { setActiveConversation, clearUnread } = useChatStore();
   const { user: currentUser } = useAuthStore();
@@ -61,6 +63,7 @@ export default function ChatView({ conversation }: ChatViewProps) {
   const isSender = isPending && (conversation.requestFromUserId == null || conversation.requestFromUserId === currentUser?.id);
   const isRecipient = isPending && !isSender;
   const isBlockedByMe = !isGroup && !!conversation.participant?.blockedByMe;
+  const isArchived = !!conversation.isArchived;
   const myBlockId = conversation.participant?.blockId ?? null;
   // Recipient can't type until they accept; sender can always type
   const isInputDisabled = isRecipient || isBlockedByMe || isGroupDisbanded;
@@ -186,6 +189,58 @@ export default function ChatView({ conversation }: ChatViewProps) {
     onError: () => toast.error("Failed to leave group."),
   });
 
+  const archiveMutation = useMutation({
+    mutationFn: async () => {
+      await api.post(`/conversations/${conversation.id}/archive`);
+    },
+    onSuccess: () => {
+      qc.setQueryData(["conversation", conversation.id], (old: Conversation | undefined) =>
+        old ? { ...old, isArchived: true } : old
+      );
+      toast.success("Conversation archived.");
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+      qc.invalidateQueries({ queryKey: ["conversations", "active"] });
+      qc.invalidateQueries({ queryKey: ["conversations", "archived"] });
+      qc.invalidateQueries({ queryKey: ["conversation", conversation.id] });
+      router.push("/archive");
+    },
+    onError: () => toast.error("Failed to archive conversation."),
+  });
+
+  const unarchiveMutation = useMutation({
+    mutationFn: async () => {
+      await api.delete(`/conversations/${conversation.id}/archive`);
+    },
+    onSuccess: () => {
+      qc.setQueryData(["conversation", conversation.id], (old: Conversation | undefined) =>
+        old ? { ...old, isArchived: false } : old
+      );
+      toast.success("Conversation moved to Chats.");
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+      qc.invalidateQueries({ queryKey: ["conversations", "active"] });
+      qc.invalidateQueries({ queryKey: ["conversations", "archived"] });
+      qc.invalidateQueries({ queryKey: ["conversation", conversation.id] });
+      router.push(`/chat/${conversation.id}`);
+    },
+    onError: () => toast.error("Failed to unarchive conversation."),
+  });
+
+  const handleMessageSent = () => {
+    if (!isArchived) return;
+
+    qc.setQueryData(["conversation", conversation.id], (old: Conversation | undefined) =>
+      old ? { ...old, isArchived: false } : old
+    );
+    qc.invalidateQueries({ queryKey: ["conversations"] });
+    qc.invalidateQueries({ queryKey: ["conversations", "active"] });
+    qc.invalidateQueries({ queryKey: ["conversations", "archived"] });
+    qc.invalidateQueries({ queryKey: ["conversation", conversation.id] });
+
+    if (pathname?.startsWith("/archive")) {
+      router.push(`/chat/${conversation.id}`);
+    }
+  };
+
   // Close menu on outside click
   useEffect(() => {
     if (!menuOpen) return;
@@ -226,7 +281,7 @@ export default function ChatView({ conversation }: ChatViewProps) {
       <header className="flex items-center gap-3 px-4 h-14 border-b border-border/50 shrink-0">
         {/* Back (mobile) */}
         <button
-          onClick={() => router.push("/chat")}
+          onClick={() => router.push(backHref)}
           className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -321,6 +376,28 @@ export default function ChatView({ conversation }: ChatViewProps) {
                     View profile
                   </Link>
                 )}
+
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    if (isArchived) {
+                      unarchiveMutation.mutate();
+                    } else {
+                      archiveMutation.mutate();
+                    }
+                  }}
+                  disabled={archiveMutation.isPending || unarchiveMutation.isPending}
+                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors disabled:opacity-50"
+                >
+                  <Archive className="w-4 h-4 text-muted-foreground shrink-0" />
+                  {isArchived
+                    ? unarchiveMutation.isPending
+                      ? "Unarchiving..."
+                      : "Unarchive"
+                    : archiveMutation.isPending
+                    ? "Archiving..."
+                    : "Archive"}
+                </button>
 
                 {/* Private-only: block + report */}
                 {!isGroup && (
@@ -452,12 +529,11 @@ export default function ChatView({ conversation }: ChatViewProps) {
           </p>
           <div className="mt-3 flex items-center gap-2">
             <button
-              type="button"
-              disabled
-              title="Coming soon"
-              className="h-8 px-3 rounded-lg border border-border/50 text-xs font-medium text-muted-foreground cursor-not-allowed"
+              onClick={() => (isArchived ? unarchiveMutation.mutate() : archiveMutation.mutate())}
+              disabled={archiveMutation.isPending || unarchiveMutation.isPending}
+              className="h-8 px-3 rounded-lg border border-border/50 text-xs font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50"
             >
-              Archive (soon)
+              {isArchived ? "Unarchive" : "Archive"}
             </button>
             <button
               type="button"
@@ -508,11 +584,11 @@ export default function ChatView({ conversation }: ChatViewProps) {
               Report
             </button>
             <button
-              disabled
-              title="Archive coming soon"
-              className="h-8 px-3 rounded-lg border border-border/50 text-xs font-medium text-muted-foreground cursor-not-allowed"
+              onClick={() => (isArchived ? unarchiveMutation.mutate() : archiveMutation.mutate())}
+              disabled={archiveMutation.isPending || unarchiveMutation.isPending}
+              className="h-8 px-3 rounded-lg border border-border/50 text-xs font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50"
             >
-              Archive (soon)
+              {isArchived ? "Unarchive" : "Archive"}
             </button>
           </div>
         </div>
@@ -526,6 +602,7 @@ export default function ChatView({ conversation }: ChatViewProps) {
         <MessageInput
           conversationId={conversation.id}
           disabled={isInputDisabled}
+          onMessageSent={handleMessageSent}
           placeholder={
             isBlockedByMe
               ? "Unblock this user to send messages..."

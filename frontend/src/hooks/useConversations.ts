@@ -7,14 +7,17 @@ import { useChatStore } from "@/stores/chatStore";
 import type { Conversation } from "@/types/conversation";
 import { CONVERSATIONS_PER_PAGE } from "@/lib/constants";
 
-export function useConversations() {
+export type ConversationListFilter = "active" | "archived";
+
+export function useConversations(filter: ConversationListFilter = "active") {
   const { setConversations, conversations } = useChatStore();
 
   const query = useInfiniteQuery({
-    queryKey: ["conversations"],
+    queryKey: ["conversations", filter],
     queryFn: async ({ pageParam }) => {
       const params: Record<string, string | number> = {
         limit: CONVERSATIONS_PER_PAGE,
+        filter,
       };
       if (pageParam) params.cursor = pageParam as string;
       const res = await api.get("/conversations", { params });
@@ -30,14 +33,19 @@ export function useConversations() {
   });
 
   useEffect(() => {
-    if (query.data) {
+    if (query.data && filter === "active") {
       const all = query.data.pages.flatMap((p) => p.data);
       setConversations(all);
     }
-  }, [query.data, setConversations]);
+  }, [filter, query.data, setConversations]);
+
+  const resolvedConversations =
+    filter === "active"
+      ? conversations
+      : query.data?.pages.flatMap((p) => p.data) ?? [];
 
   return {
-    conversations,
+    conversations: resolvedConversations,
     isLoading: query.isLoading,
     isFetchingMore: query.isFetchingNextPage,
     hasMore: query.hasNextPage,

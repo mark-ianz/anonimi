@@ -10,6 +10,8 @@ const router = Router();
 router.get("/requests", authenticate, conversationController.getConversationRequests);
 router.post("/", authenticate, conversationController.createOrGetConversation);
 router.get("/", authenticate, conversationController.getConversations);
+router.post("/:conversationId/archive", authenticate, conversationController.archiveConversation);
+router.delete("/:conversationId/archive", authenticate, conversationController.unarchiveConversation);
 router.get("/:conversationId", authenticate, conversationController.getConversation);
 
 router.get("/messages", authenticate, validate(getMessagesSchema), conversationController.getMessages);

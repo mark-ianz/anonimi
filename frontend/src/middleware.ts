@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 const PUBLIC_ROUTES = ["/", "/about", "/features", "/contact", "/faq", "/privacy", "/terms"];
 const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/verify"];
-const APP_ROUTES = ["/chat", "/contacts", "/groups", "/message-requests", "/profile", "/settings", "/blocked", "/support", "/user"];
+const APP_ROUTES = ["/chat", "/contacts", "/groups", "/archive", "/message-requests", "/profile", "/settings", "/blocked", "/support", "/user"];
 
 function isPublicRoute(pathname: string): boolean {
   return PUBLIC_ROUTES.some(route =>
