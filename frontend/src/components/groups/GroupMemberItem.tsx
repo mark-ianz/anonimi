@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Shield, Crown, MoreVertical, UserMinus } from "lucide-react";
+import { Shield, Crown, MoreVertical, UserMinus, VolumeX, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { GroupMember, GroupRole } from "@/types/group";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
@@ -12,6 +12,9 @@ interface GroupMemberItemProps {
   currentUserId: string;
   onRemove?: (userId: string) => void;
   onChangeRole?: (userId: string, role: GroupRole) => void;
+  onMute?: (userId: string) => void;
+  onUnmute?: (userId: string) => void;
+  onTransferOwnership?: (userId: string) => void;
 }
 
 const roleLabels: Record<GroupRole, string> = {
@@ -32,21 +35,30 @@ export default function GroupMemberItem({
   currentUserId,
   onRemove,
   onChangeRole,
+  onMute,
+  onUnmute,
+  onTransferOwnership,
 }: GroupMemberItemProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
 
   const isSelf = member.userId === currentUserId;
+  const isOwner = currentUserRole === "owner";
+  const isMemberOwner = member.role === "owner";
   const canManage =
     !isSelf &&
     member.role !== "owner" &&
     (currentUserRole === "owner" || (currentUserRole === "admin" && member.role === "member"));
+  const canMute = canManage && !isMemberOwner;
+  const canTransfer = isOwner && !isSelf && member.role !== "owner";
+  
+  const isMuted = member.mutedUntil && new Date(member.mutedUntil) > new Date();
 
   return (
     <>
       <div className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors group border-b border-border/20">
         {/* Avatar */}
-        <div className="w-10 h-10 rounded-xl overflow-hidden bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-sm font-medium shrink-0">
+        <div className="w-10 h-10 rounded-xl overflow-hidden bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-sm font-medium shrink-0">
           {member.profileImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={member.profileImage} alt={member.username} className="w-full h-full object-cover" />
@@ -86,7 +98,7 @@ export default function GroupMemberItem({
               <MoreVertical className="w-3.5 h-3.5" />
             </button>
             {menuOpen && (
-              <div className="absolute right-0 z-10 top-full mt-1 glass rounded-xl shadow-elevated py-1 min-w-[160px] animate-fade-in">
+              <div className="absolute right-0 z-10 top-full mt-1 glass rounded-xl shadow-elevated py-1 min-w-40 animate-fade-in">
                 {currentUserRole === "owner" && (
                   <>
                     {member.role === "member" && (
@@ -104,6 +116,36 @@ export default function GroupMemberItem({
                         className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
                       >
                         Demote to member
+                      </button>
+                    )}
+                    {canTransfer && (
+                      <button
+                        onClick={() => { onTransferOwnership?.(member.userId); setMenuOpen(false); }}
+                        className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                      >
+                        <Crown className="w-4 h-4 text-yellow-500" />
+                        Transfer ownership
+                      </button>
+                    )}
+                  </>
+                )}
+                {canMute && (
+                  <>
+                    {isMuted ? (
+                      <button
+                        onClick={() => { onUnmute?.(member.userId); setMenuOpen(false); }}
+                        className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                      >
+                        <Volume2 className="w-4 h-4" />
+                        Unmute
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => { onMute?.(member.userId); setMenuOpen(false); }}
+                        className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                      >
+                        <VolumeX className="w-4 h-4" />
+                        Mute (1 hour)
                       </button>
                     )}
                   </>

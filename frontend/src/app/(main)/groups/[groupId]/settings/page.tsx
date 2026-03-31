@@ -4,14 +4,19 @@ import { useParams, useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import { useGroup } from "@/hooks/useGroups";
 import GroupSettings from "@/components/groups/GroupSettings";
+import GroupMemberList from "@/components/groups/GroupMemberList";
 import LoadingSkeleton from "@/components/shared/LoadingSkeleton";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Users } from "lucide-react";
+import { useState } from "react";
+
+type Tab = "settings" | "members";
 
 export default function GroupSettingsPage() {
   const params = useParams();
   const router = useRouter();
   const groupId = params.groupId as string;
-  const { group, isLoadingGroup } = useGroup(groupId);
+  const { group, isLoadingGroup, members } = useGroup(groupId);
+  const [tab, setTab] = useState<Tab>("settings");
 
   return (
     <ProtectedRoute>
@@ -20,13 +25,34 @@ export default function GroupSettingsPage() {
           <button onClick={() => router.back()} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <h1 className="font-display font-semibold">Group Settings</h1>
+          <h1 className="font-display font-semibold">{group?.name ?? "Group"}</h1>
         </div>
+
+        <div className="flex border-b border-border/30">
+          <button
+            onClick={() => setTab("settings")}
+            className={`flex-1 py-3 text-sm font-medium transition-colors ${tab === "settings" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            Settings
+          </button>
+          <button
+            onClick={() => setTab("members")}
+            className={`flex-1 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${tab === "members" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Users className="w-4 h-4" />
+            Members
+          </button>
+        </div>
+
         <div className="flex-1 overflow-y-auto">
           {isLoadingGroup ? (
             <LoadingSkeleton rows={4} className="p-6" />
           ) : group ? (
-            <GroupSettings group={group} />
+            tab === "settings" ? (
+              <GroupSettings group={group} />
+            ) : (
+              <GroupMemberList groupId={groupId} members={members} group={group} />
+            )
           ) : (
             <p className="text-center text-muted-foreground py-12">Group not found.</p>
           )}

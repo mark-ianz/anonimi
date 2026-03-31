@@ -34,9 +34,13 @@ export default function CreateGroupDialog({ open, onClose }: CreateGroupDialogPr
   }
 
   function handleCreate() {
-    if (!name.trim() || selectedIds.length === 0) return;
+    if (selectedIds.length === 0) return;
+    const trimmedName = name.trim();
     createGroup(
-      { name: name.trim(), memberEchoIds: selectedIds },
+      {
+        ...(trimmedName ? { name: trimmedName } : {}),
+        memberEchoIds: selectedIds,
+      },
       {
         onSuccess: () => {
           onClose();
@@ -71,6 +75,9 @@ export default function CreateGroupDialog({ open, onClose }: CreateGroupDialogPr
               maxLength={100}
               className="w-full h-10 px-3 rounded-xl bg-muted/50 border-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             />
+            <p className="text-[11px] text-muted-foreground">
+              Leave empty to auto-generate the group name.
+            </p>
           </div>
 
           {/* Selected preview */}
@@ -115,7 +122,7 @@ export default function CreateGroupDialog({ open, onClose }: CreateGroupDialogPr
                       isSelected ? "bg-primary/10" : "hover:bg-muted/50"
                     )}
                   >
-                    <div className="w-8 h-8 rounded-lg overflow-hidden bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-xs font-medium shrink-0">
+                    <div className="w-8 h-8 rounded-lg overflow-hidden bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-xs font-medium shrink-0">
                       {contact.profileImage ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={contact.profileImage} alt={contact.username} className="w-full h-full object-cover" />
@@ -146,7 +153,7 @@ export default function CreateGroupDialog({ open, onClose }: CreateGroupDialogPr
         <div className="p-4 border-t border-border/30">
           <button
             onClick={handleCreate}
-            disabled={!name.trim() || selectedIds.length === 0 || isCreating}
+            disabled={selectedIds.length === 0 || isCreating}
             className="w-full h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isCreating ? (

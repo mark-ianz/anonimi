@@ -3,15 +3,17 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import api from "@/lib/api";
-import type { Group, GroupMember, GroupJoinRequest } from "@/types/group";
+import type { Group, GroupMember, GroupJoinRequest, GroupInviteLink, GroupInfoByToken, JoinResult } from "@/types/group";
 
 export function useGroups() {
   const qc = useQueryClient();
 
   const createMutation = useMutation({
     mutationFn: async (payload: {
-      name: string;
+      name?: string;
+      description?: string;
       image?: string | null;
+      settings?: { joinRequestEnabled: boolean };
       memberEchoIds: string[];
     }) => {
       const res = await api.post("/groups", payload);
@@ -54,7 +56,7 @@ export function useGroup(groupId: string | null) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (patch: Partial<{ name: string; image: string | null; settings: { joinRequestEnabled: boolean } }>) => {
+    mutationFn: async (patch: Partial<{ name: string; description?: string; image: string | null; settings: { joinRequestEnabled: boolean } }>) => {
       const res = await api.patch(`/groups/${groupId}`, patch);
       return res.data.data as Group;
     },
@@ -72,6 +74,7 @@ export function useGroup(groupId: string | null) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["groups", groupId, "members"] });
+      qc.invalidateQueries({ queryKey: ["conversations"] });
       toast.success("Members added.");
     },
     onError: () => toast.error("Failed to add members."),
@@ -83,6 +86,7 @@ export function useGroup(groupId: string | null) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["groups", groupId, "members"] });
+      qc.invalidateQueries({ queryKey: ["conversations"] });
       toast.success("Member removed.");
     },
     onError: () => toast.error("Failed to remove member."),
@@ -94,8 +98,33 @@ export function useGroup(groupId: string | null) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["groups", groupId, "members"] });
+      toast.success("Role updated.");
     },
     onError: () => toast.error("Failed to change role."),
+  });
+
+  const muteMemberMutation = useMutation({
+    mutationFn: async ({ userId, durationMinutes = 60 }: { userId: string; durationMinutes?: number }) => {
+      const res = await api.post(`/groups/${groupId}/members/${userId}/mute`, { durationMinutes });
+      return res.data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["groups", groupId, "members"] });
+      toast.success("Member muted.");
+    },
+    onError: () => toast.error("Failed to mute member."),
+  });
+
+  const unmuteMemberMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await api.delete(`/groups/${groupId}/members/${userId}/mute`);
+      return res.data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["groups", groupId, "members"] });
+      toast.success("Member unmuted.");
+    },
+    onError: () => toast.error("Failed to unmute member."),
   });
 
   const leaveMutation = useMutation({
@@ -105,8 +134,90 @@ export function useGroup(groupId: string | null) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["conversations"] });
+      toast.success("You left the group.");
     },
     onError: () => toast.error("Failed to leave group."),
+  });
+
+  const disbandMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.delete(`/groups/${groupId}`);
+      return res.data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+      toast.success("Group disbanded.");
+    },
+    onError: () => toast.error("Failed to disband group."),
+  });
+
+  const transferOwnershipMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await api.patch(`/groups/${groupId}/transfer-owner`, { userId });
+      return res.data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["groups", groupId] });
+      qc.invalidateQueries({ queryKey: ["groups", groupId, "members"] });
+      toast.success("Ownership transferred.");
+    },
+    onError: () => toast.error("Failed to transfer ownership."),
+  });
+
+  const joinRequestsQuery = useQuery({
+    queryKey: ["groups", groupId, "join-requests"],
+    queryFn: async () => {
+      const res = await api.get(`/groups/${groupId}/join-requests`);
+      return res.data.data as GroupJoinRequest[];
+    },
+    enabled: !!groupId,
+    staleTime: 1000 * 20,
+  });
+
+  const decideJoinRequestMutation = useMutation({
+    mutationFn: async ({ requestId, action }: { requestId: string; action: "approve" | "reject" }) => {
+      const res = await api.patch(`/groups/${groupId}/join-requests/${requestId}`, { action });
+      return res.data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["groups", groupId, "join-requests"] });
+      qc.invalidateQueries({ queryKey: ["groups", groupId, "members"] });
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+    },
+    onError: () => toast.error("Failed to update join request."),
+  });
+
+  const inviteLinksQuery = useQuery({
+    queryKey: ["groups", groupId, "invite-links"],
+    queryFn: async () => {
+      const res = await api.get(`/groups/${groupId}/invite-links`);
+      return res.data.data as GroupInviteLink[];
+    },
+    enabled: !!groupId,
+    staleTime: 1000 * 20,
+  });
+
+  const createInviteLinkMutation = useMutation({
+    mutationFn: async (payload: { expiryMinutes: 30 | 60 | 360 | 1440 | 10080; maxUses?: number; description?: string }) => {
+      const res = await api.post(`/groups/${groupId}/invite-links`, payload);
+      return res.data.data as GroupInviteLink;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["groups", groupId, "invite-links"] });
+      toast.success("Invite link created.");
+    },
+    onError: () => toast.error("Failed to create invite link."),
+  });
+
+  const revokeInviteLinkMutation = useMutation({
+    mutationFn: async (inviteLinkId: string) => {
+      await api.delete(`/groups/${groupId}/invite-links/${inviteLinkId}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["groups", groupId, "invite-links"] });
+      toast.success("Invite link revoked.");
+    },
+    onError: () => toast.error("Failed to revoke invite link."),
   });
 
   return {
@@ -114,11 +225,58 @@ export function useGroup(groupId: string | null) {
     isLoadingGroup: groupQuery.isLoading,
     members: membersQuery.data ?? [],
     isLoadingMembers: membersQuery.isLoading,
+    joinRequests: joinRequestsQuery.data ?? [],
+    inviteLinks: inviteLinksQuery.data ?? [],
     updateGroup: updateMutation.mutate,
     addMembers: addMembersMutation.mutate,
     removeMember: removeMemberMutation.mutate,
     changeRole: changeRoleMutation.mutate,
+    muteMember: muteMemberMutation.mutate,
+    unmuteMember: unmuteMemberMutation.mutate,
+    decideJoinRequest: decideJoinRequestMutation.mutate,
+    createInviteLink: createInviteLinkMutation.mutate,
+    revokeInviteLink: revokeInviteLinkMutation.mutate,
     leaveGroup: leaveMutation.mutate,
     isLeaving: leaveMutation.isPending,
+    disbandGroup: disbandMutation.mutate,
+    transferOwnership: transferOwnershipMutation.mutate,
+    isDisbanding: disbandMutation.isPending,
+  };
+}
+
+export function useGroupJoinByToken(token: string | null) {
+  const qc = useQueryClient();
+
+  const groupInfoQuery = useQuery({
+    queryKey: ["groups", "join", token],
+    queryFn: async () => {
+      const res = await api.get(`/groups/join/${token}`);
+      return res.data.data as GroupInfoByToken;
+    },
+    enabled: !!token,
+    staleTime: 1000 * 60,
+  });
+
+  const joinMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.post(`/groups/join/${token}`);
+      return res.data.data as JoinResult;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+      if (data.status === "joined" || data.status === "already_member") {
+        toast.success("Joined group successfully.");
+      } else if (data.status === "pending_approval") {
+        toast.info("Join request submitted. Waiting for approval.");
+      }
+    },
+    onError: () => toast.error("Failed to join group."),
+  });
+
+  return {
+    groupInfo: groupInfoQuery.data,
+    isLoadingGroupInfo: groupInfoQuery.isLoading,
+    joinGroup: joinMutation.mutate,
+    isJoining: joinMutation.isPending,
   };
 }

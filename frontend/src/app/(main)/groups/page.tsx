@@ -1,17 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, ArrowRight } from "lucide-react";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
-import CreateGroupDialog from "@/components/groups/CreateGroupDialog";
 import { useConversations } from "@/hooks/useConversations";
 import ConversationItem from "@/components/conversations/ConversationItem";
 import LoadingSkeleton from "@/components/shared/LoadingSkeleton";
 import EmptyState from "@/components/shared/EmptyState";
 import SearchInput from "@/components/shared/SearchInput";
+import Link from "next/link";
 
 export default function GroupsPage() {
-  const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch] = useState("");
   const { conversations, isLoading } = useConversations();
 
@@ -31,12 +30,12 @@ export default function GroupsPage() {
               </p>
               <h1 className="mt-1 text-2xl leading-tight font-semibold">Groups</h1>
             </div>
-            <button
-              onClick={() => setShowCreate(true)}
+            <Link
+              href="/groups/create"
               className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/70 bg-background text-foreground transition-colors hover:bg-muted"
             >
               <Plus className="w-4 h-4" />
-            </button>
+            </Link>
           </div>
           <SearchInput placeholder="Search groups..." value={search} onChange={setSearch} />
         </div>
@@ -50,13 +49,13 @@ export default function GroupsPage() {
               title="No groups yet"
               description="Create a group to chat with multiple contacts at once."
               action={
-                <button
-                  onClick={() => setShowCreate(true)}
+                <Link
+                  href="/groups/create"
                   className="flex h-9 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   <Plus className="w-4 h-4" />
                   New Group
-                </button>
+                </Link>
               }
             />
           ) : (
@@ -66,8 +65,6 @@ export default function GroupsPage() {
           )}
         </div>
       </div>
-
-      <CreateGroupDialog open={showCreate} onClose={() => setShowCreate(false)} />
     </ProtectedRoute>
   );
 }

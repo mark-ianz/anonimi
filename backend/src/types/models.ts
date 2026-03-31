@@ -71,11 +71,13 @@ export interface IGroup extends Document {
   _id: Types.ObjectId;
   conversationId: Types.ObjectId;
   name: string;
+  description?: string;
   image?: string;
   ownerId: Types.ObjectId;
   settings: {
     joinRequestEnabled: boolean;
   };
+  disbandedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -88,6 +90,36 @@ export interface IGroupMember extends Document {
   nickname?: string;
   mutedUntil?: Date;
   joinedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IGroupJoinRequest extends Document {
+  _id: Types.ObjectId;
+  groupId: Types.ObjectId;
+  userId: Types.ObjectId;
+  inviterUserId?: Types.ObjectId;
+  source: "manual_add" | "invite_link" | "direct";
+  status: "pending" | "approved" | "rejected" | "cancelled";
+  inviteLinkId?: Types.ObjectId;
+  decisionBy?: Types.ObjectId;
+  decisionAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IGroupInviteLink extends Document {
+  _id: Types.ObjectId;
+  groupId: Types.ObjectId;
+  createdBy: Types.ObjectId;
+  token: string;
+  description?: string;
+  expiresAt: Date;
+  revokedAt?: Date;
+  revokedBy?: Types.ObjectId;
+  maxUses?: number;
+  usedCount: number;
+  lastUsedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

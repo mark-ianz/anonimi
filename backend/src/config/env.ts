@@ -12,6 +12,7 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default("http://localhost:3000"),
   UPLOAD_DIR: z.string().default("./uploads"),
   MAX_FILE_SIZE: z.string().default("10485760"),
+  FRONTEND_URL: z.string().default("http://localhost:3000"),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -24,3 +25,5 @@ if (!parsed.success) {
 }
 
 export const env = parsed.data;
+
+export const getFrontendUrl = () => env.FRONTEND_URL;
