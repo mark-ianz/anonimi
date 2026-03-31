@@ -4,11 +4,13 @@ import { Group } from "../models/group.model";
 import { GroupMember } from "../models/groupMember.model";
 import { User } from "../models/user.model";
 import { Contact } from "../models/contact.model";
+import { Message } from "../models/message.model";
 import { MessageRequest } from "../models/messageRequest.model";
 import { GroupJoinRequest } from "../models/groupJoinRequest.model";
 import { GroupInviteLink } from "../models/groupInviteLink.model";
+import { emitToConversation } from "./notification.service";
 import { NotFoundError, ForbiddenError, ConflictError } from "../utils/apiError";
-import { GroupRole } from "../types/enums";
+import { GroupRole, MessageType } from "../types/enums";
 import crypto from "crypto";
 import QRCode from "qrcode";
 import { getFrontendUrl } from "../config/env";
@@ -40,6 +42,53 @@ const getMembership = async (groupId: Types.ObjectId, userId: string) => {
   return GroupMember.findOne({
     groupId,
     userId: new Types.ObjectId(userId),
+  });
+};
+
+const createGroupSystemMessage = async (
+  conversationId: Types.ObjectId,
+  senderUserId: Types.ObjectId,
+  content: string
+) => {
+  const message = await Message.create({
+    conversationId,
+    senderId: senderUserId,
+    type: MessageType.SYSTEM,
+    content,
+    readBy: [senderUserId],
+    readByAt: { [senderUserId.toString()]: new Date() },
+    unsent: false,
+  });
+
+  await Conversation.updateOne(
+    { _id: conversationId },
+    {
+      $set: {
+        lastMessage: {
+          content,
+          senderId: senderUserId,
+          type: MessageType.SYSTEM,
+          timestamp: message.createdAt,
+        },
+        updatedAt: new Date(),
+      },
+    }
+  );
+
+  const sender = await User.findById(senderUserId).select("username profileImage").lean();
+
+  emitToConversation(conversationId.toString(), "message:receive", {
+    messageId: message._id.toString(),
+    conversationId: conversationId.toString(),
+    senderId: senderUserId.toString(),
+    senderUsername: sender?.username ?? "System",
+    senderProfileImage: sender?.profileImage ?? null,
+    type: MessageType.SYSTEM,
+    content,
+    mediaUrl: null,
+    fileName: null,
+    fileSize: null,
+    timestamp: message.createdAt.toISOString(),
   });
 };
 
@@ -395,6 +444,8 @@ export const addMembers = async (
 
   const canBypassApproval =
     membership.role === GroupRole.OWNER || membership.role === GroupRole.ADMIN;
+  const actor = await User.findById(userId).select("username").lean();
+  const actorName = actor?.username ?? "an admin";
 
   for (const user of newMembers) {
     const existingMember = await GroupMember.findOne({
@@ -442,6 +493,12 @@ export const addMembers = async (
       joinedVia: "manual_add",
       addedByUserId: new Types.ObjectId(userId),
     });
+
+    await createGroupSystemMessage(
+      group.conversationId,
+      new Types.ObjectId(userId),
+      `${user.username} was added by ${actorName} (manual add).`
+    );
 
     if (isContact) {
       added.push({ echoId: user.echoId, status: "joined" });
@@ -509,6 +566,24 @@ export const removeMember = async (
     { $pull: { participants: new Types.ObjectId(memberUserId) } }
   );
 
+  const [actorUser, targetUser] = await Promise.all([
+    User.findById(requestingUserId).select("username").lean(),
+    User.findById(memberUserId).select("username").lean(),
+  ]);
+
+  const actorName = actorUser?.username ?? "A member";
+  const targetName = targetUser?.username ?? "A member";
+  const content =
+    requestingUserId === memberUserId
+      ? `${targetName} left the group.`
+      : `${targetName} was removed by ${actorName}.`;
+
+  await createGroupSystemMessage(
+    group.conversationId,
+    new Types.ObjectId(requestingUserId),
+    content
+  );
+
   return { message: "Member removed" };
 };
 
@@ -564,6 +639,9 @@ export const leaveGroup = async (groupId: string, userId: string) => {
     throw new NotFoundError("Not a member of this group");
   }
 
+  const leavingUser = await User.findById(userId).select("username").lean();
+  const leavingName = leavingUser?.username ?? "A member";
+
   if (membership.role === GroupRole.OWNER) {
     const admins = await GroupMember.find({
       groupId: group._id,
@@ -573,6 +651,15 @@ export const leaveGroup = async (groupId: string, userId: string) => {
     if (admins.length > 0) {
       admins[0].role = GroupRole.OWNER;
       await admins[0].save();
+
+      const newOwner = await User.findById(admins[0].userId).select("username").lean();
+      const newOwnerName = newOwner?.username ?? "an admin";
+
+      await createGroupSystemMessage(
+        group.conversationId,
+        new Types.ObjectId(userId),
+        `${leavingName} left the group. Ownership was transferred to ${newOwnerName}.`
+      );
 
       await GroupMember.deleteOne({ _id: membership._id });
 
@@ -589,6 +676,12 @@ export const leaveGroup = async (groupId: string, userId: string) => {
   await Conversation.updateOne(
     { _id: group.conversationId },
     { $pull: { participants: new Types.ObjectId(userId) } }
+  );
+
+  await createGroupSystemMessage(
+    group.conversationId,
+    new Types.ObjectId(userId),
+    `${leavingName} left the group.`
   );
 
   return {
@@ -776,6 +869,31 @@ export const decideJoinRequest = async (
         joinedVia: request.source === "invite_link" ? "invite_link" : request.source === "direct" ? "direct_request" : "manual_add",
         addedByUserId: request.inviterUserId,
       });
+
+      const [joinedUser, reviewerUser, inviterUser] = await Promise.all([
+        User.findById(request.userId).select("username").lean(),
+        User.findById(reviewerUserId).select("username").lean(),
+        request.inviterUserId
+          ? User.findById(request.inviterUserId).select("username").lean()
+          : Promise.resolve(null),
+      ]);
+
+      const joinedName = joinedUser?.username ?? "A member";
+      const reviewerName = reviewerUser?.username ?? "an admin";
+      const inviterName = inviterUser?.username;
+
+      const approvalContent =
+        request.source === "invite_link"
+          ? `${joinedName} joined via invite link${inviterName ? ` by ${inviterName}` : ""} (approved by ${reviewerName}).`
+          : request.source === "manual_add"
+          ? `${joinedName} was added${inviterName ? ` by ${inviterName}` : ""} (approved by ${reviewerName}).`
+          : `${joinedName} joined via join request (approved by ${reviewerName}).`;
+
+      await createGroupSystemMessage(
+        group.conversationId,
+        new Types.ObjectId(reviewerUserId),
+        approvalContent
+      );
     }
   }
 
@@ -966,6 +1084,17 @@ export const joinByInviteToken = async (token: string, userId: string) => {
     joinedVia: "invite_link",
     addedByUserId: invite.createdBy,
   });
+
+  const [joinedUser, inviterUser] = await Promise.all([
+    User.findById(userId).select("username").lean(),
+    User.findById(invite.createdBy).select("username").lean(),
+  ]);
+
+  await createGroupSystemMessage(
+    group.conversationId,
+    new Types.ObjectId(userId),
+    `${joinedUser?.username ?? "A member"} joined via invite link${inviterUser?.username ? ` by ${inviterUser.username}` : ""}.`
+  );
 
   invite.usedCount += 1;
   invite.lastUsedAt = new Date();
