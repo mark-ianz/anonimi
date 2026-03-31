@@ -33,6 +33,8 @@ export interface PublicUser {
   lastSeen?: string;
   createdAt?: string;
   isContact?: boolean;
+  pendingOutgoingRequestId?: string | null;
+  pendingIncomingRequestId?: string | null;
   isBlocked?: boolean;
   contactNickname?: string | null;
 }

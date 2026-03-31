@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, MessageCircle, UserPlus, Ban, Flag, SendHorizontal, MoreHorizontal, X } from "lucide-react";
+import { ArrowLeft, MessageCircle, UserPlus, UserMinus, Ban, Flag, SendHorizontal, MoreHorizontal, X } from "lucide-react";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
@@ -45,6 +45,40 @@ export default function UserProfilePage() {
       const msg = (err as { response?: { data?: { error?: { message?: string } } } })
         ?.response?.data?.error?.message;
       toast.error(msg ?? "Failed to send request");
+    },
+  });
+
+  const cancelContactRequestMutation = useMutation({
+    mutationFn: async () => {
+      await api.post("/contacts/request/cancel", { targetEchoId: echoId });
+    },
+    onSuccess: () => {
+      toast.success("Contact request withdrawn");
+      queryClient.invalidateQueries({ queryKey: ["user-profile", echoId] });
+      queryClient.invalidateQueries({ queryKey: ["contacts", "requests"] });
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: { message?: string } } } })
+        ?.response?.data?.error?.message;
+      toast.error(msg ?? "Failed to withdraw request");
+    },
+  });
+
+  const removeContactMutation = useMutation({
+    mutationFn: async () => {
+      if (!profile?.id) throw new Error("Missing contact id");
+      await api.delete(`/contacts/${profile.id}`);
+    },
+    onSuccess: () => {
+      toast.success("Contact removed");
+      queryClient.invalidateQueries({ queryKey: ["user-profile", echoId] });
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
+      queryClient.invalidateQueries({ queryKey: ["contacts", "requests"] });
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: { message?: string } } } })
+        ?.response?.data?.error?.message;
+      toast.error(msg ?? "Failed to remove contact");
     },
   });
 
@@ -98,6 +132,36 @@ export default function UserProfilePage() {
 
   const profile = data;
   const isMe = profile?.id === me?.id;
+  const isContact = !!profile?.isContact;
+  const hasOutgoingRequest = !!profile?.pendingOutgoingRequestId;
+  const hasIncomingRequest = !!profile?.pendingIncomingRequestId;
+  const isContactActionPending =
+    addContactMutation.isPending ||
+    cancelContactRequestMutation.isPending ||
+    removeContactMutation.isPending;
+
+  const handleContactAction = () => {
+    if (!profile) return;
+
+    if (isContact) {
+      const confirmed = window.confirm(`Remove @${profile.echoId} from your contacts?`);
+      if (!confirmed) return;
+      removeContactMutation.mutate();
+      return;
+    }
+
+    if (hasOutgoingRequest) {
+      cancelContactRequestMutation.mutate();
+      return;
+    }
+
+    if (hasIncomingRequest) {
+      router.push("/contacts?tab=requests");
+      return;
+    }
+
+    addContactMutation.mutate();
+  };
 
   useEffect(() => {
     if (!menuOpen && !reportModalOpen) return;
@@ -250,16 +314,24 @@ export default function UserProfilePage() {
                   <div className="space-y-4 p-6 sm:p-8">
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <button
-                        onClick={() => addContactMutation.mutate()}
-                        disabled={addContactMutation.isPending || profile.isContact}
+                        onClick={handleContactAction}
+                        disabled={isContactActionPending}
                         className="flex h-11 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        {addContactMutation.isPending ? (
+                        {isContactActionPending ? (
                           <div className="h-4 w-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />
+                        ) : isContact ? (
+                          <UserMinus className="h-4 w-4" />
                         ) : (
                           <UserPlus className="h-4 w-4" />
                         )}
-                        {profile.isContact ? "Already a Contact" : "Add Contact"}
+                        {isContact
+                          ? "Remove Contact"
+                          : hasOutgoingRequest
+                          ? "Withdraw Request"
+                          : hasIncomingRequest
+                          ? "Respond to Request"
+                          : "Add Contact"}
                       </button>
 
                       <button

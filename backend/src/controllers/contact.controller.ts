@@ -88,6 +88,29 @@ export const sendContactRequest = async (
   }
 };
 
+export const cancelOutgoingContactRequest = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { targetEchoId } = req.body;
+
+    const result = await contactService.cancelOutgoingContactRequest(
+      req.user!._id.toString(),
+      targetEchoId
+    );
+
+    emitToUser(result.targetUserId, "contact:request-cancelled", {
+      fromUserId: req.user!._id.toString(),
+    });
+
+    apiSuccess(res, { message: result.message });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const acceptContactRequest = async (
   req: Request,
   res: Response,

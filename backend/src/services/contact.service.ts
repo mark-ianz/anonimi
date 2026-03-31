@@ -94,27 +94,53 @@ export const sendContactRequest = async (
     throw new ForbiddenError("Cannot send contact request");
   }
 
-  const existingContact = await Contact.findOne({
+  const fromObjectId = new Types.ObjectId(fromUserId);
+  const pairContacts = await Contact.find({
     $or: [
-      { userId: fromUserId, contactId: targetUser._id },
-      { userId: targetUser._id, contactId: fromUserId },
+      { userId: fromObjectId, contactId: targetUser._id },
+      { userId: targetUser._id, contactId: fromObjectId },
     ],
   });
 
-  if (existingContact) {
-    if (existingContact.status === "accepted") {
-      throw new ConflictError("Already contacts");
-    }
-    if (existingContact.status === "pending") {
-      throw new ConflictError("Request already pending");
-    }
+  const outgoing = pairContacts.find(
+    (contact) =>
+      contact.userId.toString() === fromUserId &&
+      contact.contactId.toString() === targetUser._id.toString()
+  );
+  const incomingPending = pairContacts.find(
+    (contact) =>
+      contact.userId.toString() === targetUser._id.toString() &&
+      contact.contactId.toString() === fromUserId &&
+      contact.status === "pending"
+  );
+  const hasAccepted = pairContacts.some((contact) => contact.status === "accepted");
+
+  if (hasAccepted) {
+    throw new ConflictError("Already contacts");
   }
 
-  const request = await Contact.create({
-    userId: new Types.ObjectId(fromUserId),
-    contactId: targetUser._id,
-    status: "pending",
-  });
+  if (incomingPending) {
+    throw new ConflictError("This user already sent you a request");
+  }
+
+  if (outgoing?.status === "pending") {
+    throw new ConflictError("Request already pending");
+  }
+
+  const request = await Contact.findOneAndUpdate(
+    {
+      userId: fromObjectId,
+      contactId: targetUser._id,
+    },
+    {
+      status: "pending",
+    },
+    {
+      new: true,
+      upsert: true,
+      setDefaultsOnInsert: true,
+    }
+  );
 
   return {
     requestId: request._id.toString(),
@@ -128,9 +154,10 @@ export const acceptContactRequest = async (
   userId: string,
   contactId: string
 ) => {
+  const userObjectId = new Types.ObjectId(userId);
   const contact = await Contact.findOne({
     _id: new Types.ObjectId(contactId),
-    contactId: new Types.ObjectId(userId),
+    contactId: userObjectId,
     status: "pending",
   });
 
@@ -141,11 +168,20 @@ export const acceptContactRequest = async (
   contact.status = "accepted";
   await contact.save();
 
-  await Contact.create({
-    userId: new Types.ObjectId(userId),
-    contactId: contact.userId,
-    status: "accepted",
-  });
+  await Contact.findOneAndUpdate(
+    {
+      userId: userObjectId,
+      contactId: contact.userId,
+    },
+    {
+      status: "accepted",
+    },
+    {
+      upsert: true,
+      new: true,
+      setDefaultsOnInsert: true,
+    }
+  );
 
   return {
     status: "accepted",
@@ -190,6 +226,33 @@ export const declineContactRequest = async (
   return {
     status: "declined",
     message: "Contact request declined.",
+  };
+};
+
+export const cancelOutgoingContactRequest = async (
+  userId: string,
+  targetEchoId: string
+) => {
+  const targetUser = await User.findOne({ echoId: targetEchoId }).select("_id");
+
+  if (!targetUser) {
+    throw new NotFoundError("User not found");
+  }
+
+  const request = await Contact.findOneAndDelete({
+    userId: new Types.ObjectId(userId),
+    contactId: targetUser._id,
+    status: "pending",
+  });
+
+  if (!request) {
+    throw new NotFoundError("Pending contact request not found");
+  }
+
+  return {
+    targetUserId: targetUser._id.toString(),
+    targetEchoId,
+    message: "Contact request withdrawn.",
   };
 };
 

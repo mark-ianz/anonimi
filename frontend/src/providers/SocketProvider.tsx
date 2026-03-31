@@ -21,6 +21,7 @@ import type {
   PresenceUpdatePayload,
   ContactRequestPayload,
   ContactAcceptedPayload,
+  ContactRequestCancelledPayload,
   ContactNicknameUpdatedPayload,
   MessageRequestNewPayload,
   MessageRequestAcceptedPayload,
@@ -389,11 +390,20 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     socket.on("contact:request", (_payload: ContactRequestPayload) => {
       setContactRequestUnread((value) => value + 1);
       qc.invalidateQueries({ queryKey: ["contacts", "requests"] });
+      qc.invalidateQueries({ queryKey: ["user-profile"] });
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+    });
+
+    socket.on("contact:request-cancelled", (_payload: ContactRequestCancelledPayload) => {
+      setContactRequestUnread((value) => (value > 0 ? value - 1 : 0));
+      qc.invalidateQueries({ queryKey: ["contacts", "requests"] });
+      qc.invalidateQueries({ queryKey: ["user-profile"] });
       qc.invalidateQueries({ queryKey: ["notifications"] });
     });
 
     socket.on("contact:accepted", (_payload: ContactAcceptedPayload) => {
       qc.invalidateQueries({ queryKey: ["contacts"] });
+      qc.invalidateQueries({ queryKey: ["user-profile"] });
       qc.invalidateQueries({ queryKey: ["notifications"] });
     });
 
@@ -465,6 +475,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       socket.off("typing:update");
       socket.off("presence:update");
       socket.off("contact:request");
+      socket.off("contact:request-cancelled");
       socket.off("contact:accepted");
       socket.off("contact:nickname-updated");
       socket.off("message-request:new");

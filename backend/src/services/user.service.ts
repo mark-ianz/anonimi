@@ -92,11 +92,38 @@ export const getUserByEchoId = async (
     throw new NotFoundError("User not found");
   }
 
-  const isContact = await Contact.findOne({
-    userId: currentUserId,
-    contactId: user._id,
-    status: "accepted",
-  });
+  const currentUserObjectId = new Types.ObjectId(currentUserId);
+  const relationshipContacts = await Contact.find({
+    $or: [
+      {
+        userId: currentUserObjectId,
+        contactId: user._id,
+      },
+      {
+        userId: user._id,
+        contactId: currentUserObjectId,
+      },
+    ],
+  })
+    .select("userId contactId status nickname")
+    .lean();
+
+  const directRelationship = relationshipContacts.find(
+    (contact) =>
+      contact.userId.toString() === currentUserId &&
+      contact.contactId.toString() === user._id.toString()
+  );
+  const reverseRelationship = relationshipContacts.find(
+    (contact) =>
+      contact.userId.toString() === user._id.toString() &&
+      contact.contactId.toString() === currentUserId
+  );
+
+  const isContact = directRelationship?.status === "accepted";
+  const pendingOutgoingRequestId =
+    directRelationship?.status === "pending" ? directRelationship._id.toString() : null;
+  const pendingIncomingRequestId =
+    reverseRelationship?.status === "pending" ? reverseRelationship._id.toString() : null;
 
   const isBlocked = await Block.findOne({
     blockerId: currentUserId,
@@ -118,9 +145,11 @@ export const getUserByEchoId = async (
     onlineStatus: user.onlineStatus,
     lastSeen: user.lastSeen,
     createdAt: user.createdAt,
-    isContact: !!isContact,
+    isContact,
+    pendingOutgoingRequestId,
+    pendingIncomingRequestId,
     isBlocked: !!isBlocked,
-    contactNickname: isContact?.nickname || null,
+    contactNickname: isContact ? directRelationship?.nickname || null : null,
     isBlockedBy: !!blockedBy,
   };
 };

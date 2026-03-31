@@ -97,6 +97,11 @@ export interface ContactAcceptedPayload {
   profileImage?: string;
 }
 
+export interface ContactRequestCancelledPayload {
+  fromUserId: string;
+  fromEchoId?: string;
+}
+
 export interface MessageRequestNewPayload {
   requestId: string;
   conversationId: string;

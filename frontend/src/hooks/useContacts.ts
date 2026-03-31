@@ -61,6 +61,24 @@ export function useContacts() {
     },
   });
 
+  const cancelRequestMutation = useMutation({
+    mutationFn: async (targetEchoId: string) => {
+      const res = await api.post("/contacts/request/cancel", { targetEchoId });
+      return res.data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["users", "search"] });
+      qc.invalidateQueries({ queryKey: ["contacts", "requests"] });
+      toast.success("Contact request withdrawn.");
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { error?: { message?: string } } } })
+          ?.response?.data?.error?.message ?? "Failed to withdraw request.";
+      toast.error(msg);
+    },
+  });
+
   const acceptMutation = useMutation({
     mutationFn: async (contactId: string) => {
       await api.patch(`/contacts/${contactId}/accept`);
@@ -116,6 +134,8 @@ export function useContacts() {
 
     sendRequest: sendRequestMutation.mutate,
     sendRequestAsync: sendRequestMutation.mutateAsync,
+    cancelRequest: cancelRequestMutation.mutate,
+    cancelRequestAsync: cancelRequestMutation.mutateAsync,
     acceptRequest: acceptMutation.mutate,
     declineRequest: declineMutation.mutate,
     removeContact: removeMutation.mutate,
