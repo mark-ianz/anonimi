@@ -7,6 +7,7 @@ import DateDisplay from "@/components/shared/DateDisplay";
 import MessageActions from "./MessageActions";
 import ReadReceipt from "./ReadReceipt";
 import MediaPreview from "./MediaPreview";
+import UserAvatar from "@/components/shared/UserAvatar";
 import { useState } from "react";
 
 interface MessageBubbleProps {
@@ -81,14 +82,13 @@ export default function MessageBubble({
       {/* Avatar */}
       <div className="w-8 shrink-0">
         {showAvatar && !isMine && (
-          <div className="w-8 h-8 rounded-full overflow-hidden bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xs font-medium">
-            {senderImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={senderImage} alt={senderName ?? ""} className="w-full h-full object-cover" />
-            ) : (
-              (senderName?.[0] ?? "?").toUpperCase()
-            )}
-          </div>
+          <UserAvatar
+            imageUrl={senderImage}
+            name={senderName}
+            alt={senderName ?? "Sender"}
+            className="w-8 h-8"
+            textClassName="text-xs"
+          />
         )}
       </div>
 

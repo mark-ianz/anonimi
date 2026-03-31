@@ -7,6 +7,7 @@ import { useChatStore } from "@/stores/chatStore";
 import { useAuthStore } from "@/stores/authStore";
 import type { Conversation } from "@/types/conversation";
 import DateDisplay from "@/components/shared/DateDisplay";
+import UserAvatar from "@/components/shared/UserAvatar";
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -78,21 +79,20 @@ export default function ConversationItem({
     >
       {/* Avatar */}
       <div className="relative shrink-0">
-        <div
-          className={cn(
-            "w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center text-white font-medium text-sm",
-            isGroup
-              ? "bg-linear-to-br from-violet-500 to-purple-600"
-              : "bg-linear-to-br from-cyan-500 to-blue-600"
-          )}
-        >
-          {displayImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={displayImage} alt={displayName} className="w-full h-full object-cover" />
-          ) : (
-            initials
-          )}
-        </div>
+        {isGroup ? (
+          <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center text-white font-medium text-sm bg-linear-to-br from-violet-500 to-purple-600">
+            {initials}
+          </div>
+        ) : (
+          <UserAvatar
+            imageUrl={displayImage}
+            name={displayName}
+            alt={displayName}
+            className="w-12 h-12"
+            roundedClassName="rounded-xl"
+            textClassName="text-sm"
+          />
+        )}
         {!isGroup && (
           <span
             className={cn(

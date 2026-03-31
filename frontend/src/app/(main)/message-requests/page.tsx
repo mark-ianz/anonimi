@@ -10,6 +10,7 @@ import { getChatSocket } from "@/lib/socket";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import LoadingSkeleton from "@/components/shared/LoadingSkeleton";
 import EmptyState from "@/components/shared/EmptyState";
+import UserAvatar from "@/components/shared/UserAvatar";
 import type { Conversation } from "@/types/conversation";
 
 export default function MessageRequestsPage() {
@@ -95,18 +96,13 @@ export default function MessageRequestsPage() {
                     onClick={() => router.push(`/chat/${conv.id}`)}
                     className="shrink-0"
                   >
-                    <div className="w-11 h-11 rounded-full overflow-hidden bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-sm font-medium">
-                      {conv.participant?.profileImage ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={conv.participant.profileImage}
-                          alt={name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        name[0].toUpperCase()
-                      )}
-                    </div>
+                    <UserAvatar
+                      imageUrl={conv.participant?.profileImage}
+                      name={name}
+                      alt={name}
+                      className="w-11 h-11"
+                      textClassName="text-sm"
+                    />
                   </button>
 
                   {/* Info */}

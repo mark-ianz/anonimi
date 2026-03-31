@@ -17,29 +17,10 @@ import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import ConnectionStatus from "@/components/shared/ConnectionStatus";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
+import UserAvatar from "@/components/shared/UserAvatar";
 
 interface ChatViewProps {
   conversation: Conversation;
-}
-
-function OnlineDot({ status }: { status: string }) {
-  const dotClass =
-    status === "online"
-      ? "bg-green-500"
-      : status === "away"
-      ? "bg-yellow-500"
-      : status === "dnd"
-      ? "bg-red-500"
-      : "bg-muted-foreground/40";
-
-  return (
-    <span
-      className={cn(
-        "inline-block w-2 h-2 rounded-full",
-        dotClass
-      )}
-    />
-  );
 }
 
 export default function ChatView({ conversation }: ChatViewProps) {
@@ -249,14 +230,19 @@ export default function ChatView({ conversation }: ChatViewProps) {
 
         {/* Avatar */}
         <div className="relative shrink-0">
-          <div className="w-9 h-9 rounded-full overflow-hidden bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-sm font-medium">
-            {displayImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={displayImage} alt={displayName} className="w-full h-full object-cover" />
-            ) : (
-              (displayName?.[0] ?? "?").toUpperCase()
-            )}
-          </div>
+          {isGroup ? (
+            <div className="w-9 h-9 rounded-full overflow-hidden bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-sm font-medium">
+              {(displayName?.[0] ?? "?").toUpperCase()}
+            </div>
+          ) : (
+            <UserAvatar
+              imageUrl={displayImage}
+              name={displayName}
+              alt={displayName}
+              className="w-9 h-9"
+              textClassName="text-sm"
+            />
+          )}
           {!isGroup && (
             <span
               className={cn(
