@@ -58,9 +58,12 @@ export default function ConversationItem({
     ? "You"
     : conversation.lastMessage?.senderUsername ?? "Member";
   const basePreview = getLastMessagePreview(conversation);
+  const isSystemMessage = conversation.lastMessage?.type === "system";
   const preview = isPending
     ? "Pending request..."
-    : isGroup && conversation.lastMessage && conversation.lastMessage.type !== "system"
+    : isSystemMessage
+    ? basePreview
+    : isGroup && conversation.lastMessage
     ? `${lastSenderLabel}: ${basePreview}`
     : lastSenderIsMe
     ? `You: ${basePreview}`

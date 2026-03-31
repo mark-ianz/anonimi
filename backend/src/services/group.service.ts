@@ -236,16 +236,39 @@ export const createGroup = async (
   if (memberUsers.length > 0) {
     const othersCount = Math.max(memberUsers.length - 1, 0);
     const firstMemberName = memberUsers[0]?.username ?? "a member";
-    const addedMessage =
+    const ownerAddedMessage =
       memberUsers.length === 1
         ? `You added ${firstMemberName} to the group chat.`
         : `You added ${firstMemberName} and ${othersCount} ${othersCount === 1 ? "other" : "others"} to the group chat.`;
+    const memberAddedMessage =
+      memberUsers.length === 1
+        ? `${ownerName} added you to the group chat.`
+        : `${ownerName} added you and ${othersCount} ${othersCount === 1 ? "other" : "others"} to the group chat.`;
 
-    await createGroupSystemMessage(
-      conversation._id,
-      new Types.ObjectId(actualOwnerId),
-      addedMessage
-    );
+    const ownerObjectId = new Types.ObjectId(actualOwnerId);
+    const memberObjectIds = memberUsers.map((member) => member._id);
+
+    await Message.create({
+      conversationId: conversation._id,
+      senderId: ownerObjectId,
+      type: MessageType.SYSTEM,
+      content: ownerAddedMessage,
+      readBy: [ownerObjectId],
+      readByAt: { [actualOwnerId]: new Date() },
+      deletedFor: memberObjectIds,
+      unsent: false,
+    });
+
+    await Message.create({
+      conversationId: conversation._id,
+      senderId: ownerObjectId,
+      type: MessageType.SYSTEM,
+      content: memberAddedMessage,
+      readBy: [ownerObjectId],
+      readByAt: { [actualOwnerId]: new Date() },
+      deletedFor: [ownerObjectId],
+      unsent: false,
+    });
   }
 
   return {

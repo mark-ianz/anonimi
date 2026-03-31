@@ -145,16 +145,17 @@ export const getConversations = async (
   limit: number = 20,
   cursor?: string
 ) => {
+  const userObjectId = new Types.ObjectId(userId);
   // Include conversations where user is the sender of an outgoing pending request.
   // The base filter excludes all "pending" convs (receiver inbox), but the sender
   // should still see their own pending outgoing requests in their chat list.
   const outgoingPendingConvIds = await MessageRequest.find({
-    fromUserId: new Types.ObjectId(userId),
+    fromUserId: userObjectId,
     status: "pending",
   }).distinct("conversationId");
 
   const query: Record<string, unknown> = {
-    participants: new Types.ObjectId(userId),
+    participants: userObjectId,
   };
 
   if (outgoingPendingConvIds.length > 0) {
@@ -204,12 +205,20 @@ export const getConversations = async (
 
         const unreadCount = await Message.countDocuments({
           conversationId: conv._id,
-          senderId: { $ne: new Types.ObjectId(userId) },
-          readBy: { $ne: new Types.ObjectId(userId) },
+          senderId: { $ne: userObjectId },
+          readBy: { $ne: userObjectId },
         });
 
-        const lastMessageSender = conv.lastMessage?.senderId
-          ? await User.findById(conv.lastMessage.senderId).select("username").lean()
+        const latestVisibleMessage = await Message.findOne({
+          conversationId: conv._id,
+          deletedFor: { $ne: userObjectId },
+        })
+          .sort({ createdAt: -1 })
+          .select("senderId type content createdAt")
+          .lean();
+
+        const lastMessageSender = latestVisibleMessage?.senderId
+          ? await User.findById(latestVisibleMessage.senderId).select("username").lean()
           : null;
 
         return {
@@ -226,9 +235,12 @@ export const getConversations = async (
             profileImage: user?.profileImage,
             onlineStatus: user?.onlineStatus,
           },
-          lastMessage: conv.lastMessage
+          lastMessage: latestVisibleMessage
             ? {
-                ...conv.lastMessage,
+                content: latestVisibleMessage.content,
+                senderId: latestVisibleMessage.senderId?.toString(),
+                type: latestVisibleMessage.type,
+                timestamp: latestVisibleMessage.createdAt,
                 senderUsername: lastMessageSender?.username,
               }
             : null,
@@ -254,12 +266,20 @@ export const getConversations = async (
 
         const unreadCount = await Message.countDocuments({
           conversationId: conv._id,
-          senderId: { $ne: new Types.ObjectId(userId) },
-          readBy: { $ne: new Types.ObjectId(userId) },
+          senderId: { $ne: userObjectId },
+          readBy: { $ne: userObjectId },
         });
 
-        const lastMessageSender = conv.lastMessage?.senderId
-          ? await User.findById(conv.lastMessage.senderId).select("username").lean()
+        const latestVisibleMessage = await Message.findOne({
+          conversationId: conv._id,
+          deletedFor: { $ne: userObjectId },
+        })
+          .sort({ createdAt: -1 })
+          .select("senderId type content createdAt")
+          .lean();
+
+        const lastMessageSender = latestVisibleMessage?.senderId
+          ? await User.findById(latestVisibleMessage.senderId).select("username").lean()
           : null;
 
         return {
@@ -272,9 +292,12 @@ export const getConversations = async (
             memberCount,
             fallbackProfileImages,
           },
-          lastMessage: conv.lastMessage
+          lastMessage: latestVisibleMessage
             ? {
-                ...conv.lastMessage,
+                content: latestVisibleMessage.content,
+                senderId: latestVisibleMessage.senderId?.toString(),
+                type: latestVisibleMessage.type,
+                timestamp: latestVisibleMessage.createdAt,
                 senderUsername: lastMessageSender?.username,
               }
             : null,
