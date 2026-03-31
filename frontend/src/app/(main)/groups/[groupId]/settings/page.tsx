@@ -39,7 +39,7 @@ export default function GroupSettingsPage() {
             <ArrowLeft className="w-4 h-4" />
           </button>
           <h1 className="font-display font-semibold flex-1 min-w-0 truncate">{group?.name ?? "Group"}</h1>
-          {group && (group.myRole === "owner" || group.myRole === "admin") && (
+          {group && tab !== "members" && (
             <button
               onClick={() => switchTab("members")}
               className="h-9 px-3 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors flex items-center gap-1.5"

@@ -33,7 +33,7 @@ export default function GroupMemberList({ groupId, members: initialMembers, grou
       )
     : displayMembers;
 
-  const canManage = group.myRole === "owner" || group.myRole === "admin";
+  const canAddMembers = !!group.myRole;
 
   const handleAddMembers = (echoIds: string[]) => {
     addMembers(echoIds);
@@ -79,7 +79,7 @@ export default function GroupMemberList({ groupId, members: initialMembers, grou
         />
       </div>
 
-      {canManage && (
+      {canAddMembers && (
         <button
           onClick={() => setShowAddModal(true)}
           className="flex items-center gap-2 w-full justify-center h-10 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"

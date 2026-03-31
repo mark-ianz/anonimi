@@ -432,10 +432,6 @@ export const addMembers = async (
     throw new ForbiddenError("Not authorized to add members");
   }
 
-  if (membership.role === GroupRole.MEMBER) {
-    throw new ForbiddenError("Only owner or admins can add members");
-  }
-
   const newMembers = await User.find({ echoId: { $in: memberEchoIds } });
 
   const added: { echoId: string; status: string }[] = [];
@@ -445,7 +441,7 @@ export const addMembers = async (
   const canBypassApproval =
     membership.role === GroupRole.OWNER || membership.role === GroupRole.ADMIN;
   const actor = await User.findById(userId).select("username").lean();
-  const actorName = actor?.username ?? "an admin";
+  const actorName = actor?.username ?? "a member";
 
   for (const user of newMembers) {
     const existingMember = await GroupMember.findOne({

@@ -346,6 +346,16 @@ export default function ChatView({ conversation }: ChatViewProps) {
                   <>
                     {conversation.group?.id && (
                       <Link
+                        href={`/groups/${conversation.group.id}/settings?tab=members`}
+                        className="flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        <UserPlus className="w-4 h-4 text-muted-foreground shrink-0" />
+                        Add member
+                      </Link>
+                    )}
+                    {conversation.group?.id && (
+                      <Link
                         href={`/groups/${conversation.group.id}/settings`}
                         className="flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
                         onClick={() => setMenuOpen(false)}
