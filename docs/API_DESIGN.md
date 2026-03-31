@@ -855,6 +855,10 @@ Fetch messages for a conversation with cursor-based pagination.
       "fileName": null,
       "fileSize": null,
       "readBy": ["60d5ecb54b24a1001c8e4b3a", "60d5ecb54b24a1001c8e4b3b"],
+      "readByAt": {
+        "60d5ecb54b24a1001c8e4b3a": "2026-03-08T11:40:02Z",
+        "60d5ecb54b24a1001c8e4b3b": "2026-03-08T11:41:10Z"
+      },
       "unsent": false,
       "createdAt": "2026-03-08T11:40:00Z"
     },
@@ -868,6 +872,9 @@ Fetch messages for a conversation with cursor-based pagination.
       "fileName": null,
       "fileSize": null,
       "readBy": ["60d5ecb54b24a1001c8e4b3b"],
+      "readByAt": {
+        "60d5ecb54b24a1001c8e4b3b": "2026-03-08T11:41:02Z"
+      },
       "unsent": false,
       "createdAt": "2026-03-08T11:41:00Z"
     }
@@ -884,6 +891,7 @@ Notes:
 - Messages are sorted newest-first in the response. Client reverses for display.
 - Unsent messages return `content: null` and `unsent: true`.
 - Messages in the user's `deletedFor` array are excluded.
+- `readByAt` maps `userId -> ISO timestamp` for when each user read the message.
 
 ---
 
@@ -911,6 +919,11 @@ Send a message via REST (alternative to WebSocket for reliability).
     "senderId": "60d5ecb54b24a1001c8e4b3a",
     "type": "text",
     "content": "Hello there!",
+    "readBy": ["60d5ecb54b24a1001c8e4b3a"],
+    "readByAt": {
+      "60d5ecb54b24a1001c8e4b3a": "2026-03-08T11:50:00Z"
+    },
+    "unsent": false,
     "createdAt": "2026-03-08T11:50:00Z"
   }
 }

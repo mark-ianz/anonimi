@@ -173,7 +173,21 @@ Mark messages as read.
 
 **Server Processing:**
 1. Add `userId` to `readBy` array of each specified message.
-2. Emit `message:read` to conversation room (so sender sees read receipts).
+2. Persist read timestamp to `readByAt.<userId>` for each message.
+3. Emit `message:read` to conversation room (so sender sees read receipts).
+
+**Emitted Payload (`message:read`):**
+```json
+{
+  "conversationId": "60d5ecb54b24a1001c8e4b3f",
+  "messageIds": ["60d5ecb54b24a1001c8e4b50"],
+  "readBy": {
+    "userId": "60d5ecb54b24a1001c8e4b3b",
+    "username": "alice",
+    "readAt": "2026-03-08T11:52:00Z"
+  }
+}
+```
 
 ---
 
