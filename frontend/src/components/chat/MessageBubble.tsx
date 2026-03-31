@@ -164,20 +164,20 @@ export default function MessageBubble({
           {message.failed && (
             <span className="text-xs text-destructive mt-1 block text-right">Failed</span>
           )}
-
-          {isMine && !message.pending && !message.failed && !message.unsent && showReadReceipt && (
-            <div className="group mt-1 flex justify-end">
-              <ReadReceipt
-                readBy={message.readBy}
-                readAt={latestReadAt}
-                participantCount={participantCount}
-                conversationType={conversationType}
-                currentUserId={user?.id}
-                className="opacity-70"
-              />
-            </div>
-          )}
         </div>
+
+        {isMine && !message.pending && !message.failed && !message.unsent && showReadReceipt && (
+          <div className="group mt-1 px-1 flex justify-end w-full">
+            <ReadReceipt
+              readBy={message.readBy}
+              readAt={latestReadAt}
+              participantCount={participantCount}
+              conversationType={conversationType}
+              currentUserId={user?.id}
+              className="opacity-70"
+            />
+          </div>
+        )}
       </div>
 
       {/* Actions */}

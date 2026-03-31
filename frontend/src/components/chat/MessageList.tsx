@@ -103,8 +103,19 @@ export default function MessageList({ conversation }: MessageListProps) {
       ? (conversation.group?.memberCount ?? 2)
       : 2;
 
-  const latestOutgoingIndex = messages.reduce((latest, msg, idx) => {
+  const latestReadOutgoingIndex = messages.reduce((latest, msg, idx) => {
     if (msg.senderId !== user?.id) return latest;
+    if (msg.pending || msg.failed || msg.unsent) return latest;
+    const isReadByOther = (msg.readBy ?? []).some((readerId) => readerId !== user?.id);
+    if (!isReadByOther) return latest;
+    return idx;
+  }, -1);
+
+  const latestSentOutgoingIndex = messages.reduce((latest, msg, idx) => {
+    if (msg.senderId !== user?.id) return latest;
+    if (msg.pending || msg.failed || msg.unsent) return latest;
+    const isReadByOther = (msg.readBy ?? []).some((readerId) => readerId !== user?.id);
+    if (isReadByOther) return latest;
     return idx;
   }, -1);
 
@@ -157,8 +168,12 @@ export default function MessageList({ conversation }: MessageListProps) {
         let showReadReceipt = true;
         if (message.senderId === user?.id) {
           if (conversation.type === "private") {
-            // Private chat: only the latest outgoing message should carry status.
-            showReadReceipt = index === latestOutgoingIndex;
+            // Private chat: show at most two status markers:
+            // 1) latest message read by the other person
+            // 2) latest message sent but not yet read
+            showReadReceipt =
+              index === latestReadOutgoingIndex ||
+              index === latestSentOutgoingIndex;
           } else {
           let nextMineIndex = -1;
           for (let i = index + 1; i < messages.length; i += 1) {

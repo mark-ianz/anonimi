@@ -28,13 +28,13 @@ export default function ReadReceipt({
 
   if (conversationType === "private") {
     return (
-      <span className={cn("text-[11px] font-medium text-primary-foreground/70", className)}>
+      <span className={cn("text-[11px] font-medium text-muted-foreground", className)}>
         {readBySome ? (
           <>
             Read
             {readAt && (
               <>
-                {" "}at <DateDisplay date={readAt} format="time" className="inline text-[11px] font-medium text-primary-foreground/70" />
+                {" "}at <DateDisplay date={readAt} format="time" className="inline text-[11px] font-medium text-muted-foreground" />
               </>
             )}
           </>
@@ -53,7 +53,7 @@ export default function ReadReceipt({
 
   return (
     <span className={cn("relative inline-flex items-center", className)}>
-      <span className="text-[11px] font-medium text-primary-foreground/70">{label}</span>
+      <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
 
       {readBySome && (
         <span className="pointer-events-none absolute -top-2 right-0 hidden w-max max-w-52 -translate-y-full rounded-md border border-border/60 bg-background/95 px-2 py-1 text-[10px] text-foreground shadow-soft group-hover:block">
