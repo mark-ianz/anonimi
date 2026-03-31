@@ -76,6 +76,7 @@ export interface IGroup extends Document {
   ownerId: Types.ObjectId;
   settings: {
     joinRequestEnabled: boolean;
+    nicknameEditPolicy: "admins_only" | "all_members";
   };
   disbandedAt?: Date;
   createdAt: Date;
@@ -89,6 +90,8 @@ export interface IGroupMember extends Document {
   role: "owner" | "admin" | "member";
   nickname?: string;
   mutedUntil?: Date;
+  joinedVia?: "group_create" | "manual_add" | "invite_link" | "direct_request";
+  addedByUserId?: Types.ObjectId;
   joinedAt: Date;
   createdAt: Date;
   updatedAt: Date;

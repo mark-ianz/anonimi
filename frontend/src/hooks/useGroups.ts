@@ -13,7 +13,7 @@ export function useGroups() {
       name?: string;
       description?: string;
       image?: string | null;
-      settings?: { joinRequestEnabled: boolean };
+      settings?: { joinRequestEnabled: boolean; nicknameEditPolicy?: "admins_only" | "all_members" };
       memberEchoIds: string[];
     }) => {
       const res = await api.post("/groups", payload);
@@ -56,7 +56,7 @@ export function useGroup(groupId: string | null) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (patch: Partial<{ name: string; description?: string; image: string | null; settings: { joinRequestEnabled: boolean } }>) => {
+    mutationFn: async (patch: Partial<{ name: string; description?: string; image: string | null; settings: { joinRequestEnabled: boolean; nicknameEditPolicy?: "admins_only" | "all_members" } }>) => {
       const res = await api.patch(`/groups/${groupId}`, patch);
       return res.data.data as Group;
     },
@@ -113,6 +113,19 @@ export function useGroup(groupId: string | null) {
       toast.success("Member muted.");
     },
     onError: () => toast.error("Failed to mute member."),
+  });
+
+  const setMemberNicknameMutation = useMutation({
+    mutationFn: async ({ userId, nickname }: { userId: string; nickname: string | null }) => {
+      const res = await api.patch(`/groups/${groupId}/members/${userId}/nickname`, { nickname });
+      return res.data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["groups", groupId, "members"] });
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+      toast.success("Nickname updated.");
+    },
+    onError: () => toast.error("Failed to update nickname."),
   });
 
   const unmuteMemberMutation = useMutation({
@@ -233,6 +246,7 @@ export function useGroup(groupId: string | null) {
     changeRole: changeRoleMutation.mutate,
     muteMember: muteMemberMutation.mutate,
     unmuteMember: unmuteMemberMutation.mutate,
+    setMemberNickname: setMemberNicknameMutation.mutate,
     decideJoinRequest: decideJoinRequestMutation.mutate,
     createInviteLink: createInviteLinkMutation.mutate,
     revokeInviteLink: revokeInviteLinkMutation.mutate,

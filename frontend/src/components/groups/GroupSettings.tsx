@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useGroup } from "@/hooks/useGroups";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
 import type { Group } from "@/types/group";
 import { cn } from "@/lib/utils";
-import { Camera, Save, Link as LinkIcon, QrCode, Copy, Check, X, AlertCircle } from "lucide-react";
+import { Camera, Save, Link as LinkIcon, QrCode, Copy, Check, X, AlertCircle, LogOut, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface GroupSettingsProps {
@@ -13,30 +14,50 @@ interface GroupSettingsProps {
 }
 
 export default function GroupSettings({ group }: GroupSettingsProps) {
-  const { updateGroup, inviteLinks, createInviteLink, revokeInviteLink, joinRequests, decideJoinRequest } = useGroup(group.id);
+  const router = useRouter();
+  const { updateGroup, inviteLinks, createInviteLink, revokeInviteLink, joinRequests, decideJoinRequest, leaveGroup, disbandGroup, isLeaving, isDisbanding } = useGroup(group.id);
   const { upload, isUploading } = useMediaUpload();
+  const canManageSettings = group.myRole === "owner" || group.myRole === "admin";
+  const isOwner = group.myRole === "owner";
 
   const [name, setName] = useState(group.name);
   const [description, setDescription] = useState(group.description ?? "");
   const [joinRequestEnabled, setJoinRequestEnabled] = useState(
     group.settings.joinRequestEnabled
   );
+  const [nicknameEditPolicy, setNicknameEditPolicy] = useState<"admins_only" | "all_members">(
+    group.settings.nicknameEditPolicy ?? "all_members"
+  );
 
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [selectedExpiry, setSelectedExpiry] = useState<30 | 60 | 360 | 1440 | 10080>(60);
-  const [maxUses, setMaxUses] = useState<string>("");
+  const [maxUses, setMaxUses] = useState<number>(0);
   const [inviteDescription, setInviteDescription] = useState("");
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
+  const expiryOptions: Array<{ value: 30 | 60 | 360 | 1440 | 10080; label: string }> = [
+    { value: 30, label: "30m" },
+    { value: 60, label: "1h" },
+    { value: 360, label: "6h" },
+    { value: 1440, label: "24h" },
+    { value: 10080, label: "7d" },
+  ];
+  const expiryIndex = expiryOptions.findIndex((o) => o.value === selectedExpiry);
+
   function handleSave() {
+    if (!canManageSettings) return;
     updateGroup({
       name: name.trim(),
       description: description.trim() || undefined,
-      settings: { joinRequestEnabled }
+      settings: {
+        joinRequestEnabled,
+        nicknameEditPolicy,
+      }
     });
   }
 
   async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!canManageSettings) return;
     const file = e.target.files?.[0];
     if (!file) return;
     const result = await upload(file, "group");
@@ -49,12 +70,12 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
   function handleCreateInvite() {
     createInviteLink({
       expiryMinutes: selectedExpiry,
-      maxUses: maxUses ? parseInt(maxUses) : undefined,
+      maxUses: maxUses > 0 ? maxUses : undefined,
       description: inviteDescription || undefined
     });
     setShowInviteModal(false);
     setInviteDescription("");
-    setMaxUses("");
+    setMaxUses(0);
   }
 
   function copyLink(url: string) {
@@ -70,8 +91,8 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
 
       {/* Avatar */}
       <div className="flex justify-center">
-        <label className="relative cursor-pointer group">
-          <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-2xl font-medium">
+        <label className={cn("relative group", canManageSettings ? "cursor-pointer" : "cursor-not-allowed opacity-60")}>
+          <div className="w-20 h-20 rounded-2xl overflow-hidden bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-2xl font-medium">
             {group.image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={group.image} alt={group.name} className="w-full h-full object-cover" />
@@ -86,7 +107,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
               <Camera className="w-5 h-5 text-white" />
             )}
           </div>
-          <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+          <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} disabled={!canManageSettings} />
         </label>
       </div>
 
@@ -96,8 +117,9 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
+          disabled={!canManageSettings}
           maxLength={100}
-          className="w-full h-10 px-3 rounded-xl bg-muted/50 border-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+          className="w-full h-10 px-3 rounded-xl bg-muted/50 border-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-60"
         />
       </div>
 
@@ -107,10 +129,11 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          disabled={!canManageSettings}
           maxLength={500}
           rows={3}
           placeholder="Add a description for this group..."
-          className="w-full px-3 py-2 rounded-xl bg-muted/50 border-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+          className="w-full px-3 py-2 rounded-xl bg-muted/50 border-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none disabled:opacity-60"
         />
       </div>
 
@@ -121,28 +144,64 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
           <p className="text-xs text-muted-foreground">New members need approval to join</p>
         </div>
         <button
+          type="button"
+          disabled={!canManageSettings}
           onClick={() => setJoinRequestEnabled((v) => !v)}
           className={cn(
-            "relative w-11 h-6 rounded-full transition-colors",
-            joinRequestEnabled ? "bg-primary" : "bg-muted-foreground/30"
+            "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
+            joinRequestEnabled ? "bg-emerald-500" : "bg-muted-foreground/30",
+            !canManageSettings && "opacity-60 cursor-not-allowed"
           )}
         >
           <span
             className={cn(
-              "absolute top-1 w-4 h-4 rounded-full bg-white transition-transform shadow-sm",
-              joinRequestEnabled ? "translate-x-6" : "translate-x-1"
+              "absolute left-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-200 shadow-sm",
+              joinRequestEnabled ? "translate-x-5" : "translate-x-0"
             )}
           />
         </button>
       </div>
 
-      <button
-        onClick={handleSave}
-        className="w-full h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors"
-      >
-        <Save className="w-4 h-4" />
-        Save changes
-      </button>
+      {canManageSettings && (
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">Who can edit member nicknames</label>
+          <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30">
+            <div>
+              <p className="text-sm font-medium">Admins-only nickname editing</p>
+              <p className="text-xs text-muted-foreground">Turn off to allow all members to edit nicknames</p>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                setNicknameEditPolicy((current) =>
+                  current === "admins_only" ? "all_members" : "admins_only"
+                )
+              }
+              className={cn(
+                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
+                nicknameEditPolicy === "admins_only" ? "bg-emerald-500" : "bg-muted-foreground/30"
+              )}
+            >
+              <span
+                className={cn(
+                  "absolute left-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-200 shadow-sm",
+                  nicknameEditPolicy === "admins_only" ? "translate-x-5" : "translate-x-0"
+                )}
+              />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {canManageSettings && (
+        <button
+          onClick={handleSave}
+          className="w-full h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors"
+        >
+          <Save className="w-4 h-4" />
+          Save changes
+        </button>
+      )}
 
       {/* Invite Links Section */}
       <div className="border-t border-border/30 pt-6 space-y-4">
@@ -170,6 +229,11 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
                       <span>Expires: {new Date(link.expiresAt).toLocaleDateString()}</span>
                       {link.maxUses && <span>• {link.usedCount}/{link.maxUses} uses</span>}
                     </div>
+                    {link.createdBy && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Created by {link.createdBy.username} (@{link.createdBy.echoId})
+                      </p>
+                    )}
                     {link.description && (
                       <p className="text-xs text-muted-foreground mt-1">{link.description}</p>
                     )}
@@ -226,7 +290,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
             {joinRequests.map((req) => (
               <div key={req.requestId} className="p-3 rounded-xl bg-muted/40 border border-border/30">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-sm font-medium">
+                  <div className="w-10 h-10 rounded-lg bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-sm font-medium">
                     {req.user.username[0].toUpperCase()}
                   </div>
                   <div className="flex-1">
@@ -254,6 +318,28 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
         </div>
       )}
 
+      <div className="border-t border-border/30 pt-6 space-y-2">
+        <h3 className="font-display font-semibold text-destructive">Danger Zone</h3>
+        <button
+          onClick={() => leaveGroup(undefined, { onSuccess: () => router.push("/chat") })}
+          disabled={isLeaving}
+          className="w-full h-10 rounded-xl bg-destructive/15 text-destructive text-sm font-medium hover:bg-destructive/25 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+        >
+          <LogOut className="w-4 h-4" />
+          {isLeaving ? "Leaving..." : "Leave Group"}
+        </button>
+        {isOwner && (
+          <button
+            onClick={() => disbandGroup(undefined, { onSuccess: () => router.push("/chat") })}
+            disabled={isDisbanding}
+            className="w-full h-10 rounded-xl bg-destructive/15 text-destructive text-sm font-medium hover:bg-destructive/25 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            <Trash2 className="w-4 h-4" />
+            {isDisbanding ? "Disbanding..." : "Disband Group"}
+          </button>
+        )}
+      </div>
+
       {/* Invite Modal */}
       {showInviteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -264,28 +350,40 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium block mb-1">Expires in</label>
-                <select
-                  value={selectedExpiry}
-                  onChange={(e) => setSelectedExpiry(Number(e.target.value) as 30 | 60 | 360 | 1440 | 10080)}
-                  className="w-full h-10 px-3 rounded-xl bg-muted/50 border-0 text-sm"
-                >
-                  <option value={30}>30 minutes</option>
-                  <option value={60}>1 hour</option>
-                  <option value={360}>6 hours</option>
-                  <option value={1440}>24 hours</option>
-                  <option value={10080}>7 days</option>
-                </select>
+                <div className="space-y-2">
+                  <input
+                    type="range"
+                    min={0}
+                    max={expiryOptions.length - 1}
+                    step={1}
+                    value={Math.max(expiryIndex, 0)}
+                    onChange={(e) => setSelectedExpiry(expiryOptions[Number(e.target.value)]!.value)}
+                    className="w-full"
+                  />
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                    {expiryOptions.map((option) => (
+                      <span key={option.value}>{option.label}</span>
+                    ))}
+                  </div>
+                </div>
               </div>
               
               <div>
                 <label className="text-sm font-medium block mb-1">Max uses (optional)</label>
-                <input
-                  type="number"
-                  value={maxUses}
-                  onChange={(e) => setMaxUses(e.target.value)}
-                  placeholder="Unlimited"
-                  className="w-full h-10 px-3 rounded-xl bg-muted/50 border-0 text-sm"
-                />
+                <div className="space-y-2">
+                  <input
+                    type="range"
+                    min={0}
+                    max={50}
+                    step={1}
+                    value={maxUses}
+                    onChange={(e) => setMaxUses(Number(e.target.value))}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {maxUses === 0 ? "Unlimited uses" : `${maxUses} uses`}
+                  </p>
+                </div>
               </div>
 
               <div>

@@ -149,14 +149,14 @@ export default function CreateGroupPage() {
             <button
               onClick={() => setJoinRequestEnabled((v) => !v)}
               className={cn(
-                "relative w-11 h-6 rounded-full transition-colors",
-                joinRequestEnabled ? "bg-primary" : "bg-muted-foreground/30"
+                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
+                joinRequestEnabled ? "bg-emerald-500" : "bg-muted-foreground/30"
               )}
             >
               <span
                 className={cn(
-                  "absolute top-1 w-4 h-4 rounded-full bg-white transition-transform shadow-sm",
-                  joinRequestEnabled ? "translate-x-6" : "translate-x-1"
+                  "absolute left-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-200 shadow-sm",
+                  joinRequestEnabled ? "translate-x-5" : "translate-x-0"
                 )}
               />
             </button>

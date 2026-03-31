@@ -10,6 +10,7 @@ export interface Group {
   ownerId: string;
   settings: {
     joinRequestEnabled: boolean;
+    nicknameEditPolicy?: "admins_only" | "all_members";
   };
   memberCount: number;
   myRole: GroupRole;
@@ -24,6 +25,12 @@ export interface GroupMember {
   profileImage: string | null;
   role: GroupRole;
   nickname: string | null;
+  joinedVia?: "group_create" | "manual_add" | "invite_link" | "direct_request";
+  addedBy?: {
+    id: string;
+    echoId: string;
+    username: string;
+  } | null;
   joinedAt: string;
   status?: GroupMemberStatus;
   mutedUntil?: string;
@@ -57,6 +64,11 @@ export interface GroupInviteLink {
   maxUses: number | null;
   usedCount: number;
   qrCode?: string;
+  createdBy?: {
+    id: string;
+    echoId: string;
+    username: string;
+  } | null;
   createdAt: string;
 }
 

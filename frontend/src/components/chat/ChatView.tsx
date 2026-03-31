@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, MoreVertical, Phone, Video, UserPlus, Check, X, Clock, User, Pencil, ShieldBan, Flag, LogOut } from "lucide-react";
+import { ArrowLeft, MoreVertical, Phone, Video, UserPlus, Check, X, Clock, User, ShieldBan, Flag, LogOut, Settings, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -33,9 +33,6 @@ export default function ChatView({ conversation }: ChatViewProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmBlock, setConfirmBlock] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
-  const [showNicknameForm, setShowNicknameForm] = useState(false);
-  const [nicknameValue, setNicknameValue] = useState("");
-  const [nicknameTarget, setNicknameTarget] = useState<"contact" | "self">("contact");
   const [showReportForm, setShowReportForm] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [reportDescription, setReportDescription] = useState("");
@@ -155,31 +152,6 @@ export default function ChatView({ conversation }: ChatViewProps) {
     onError: () => toast.error("Failed to unblock user."),
   });
 
-  const nicknameMutation = useMutation({
-    mutationFn: async (nickname: string | null) => {
-      if (isGroup) {
-        await api.patch(`/groups/${conversation.group?.id}/nickname`, { nickname });
-      } else if (nicknameTarget === "self") {
-        await api.patch(`/contacts/${conversation.participant!.contactId}/self-nickname`, { nickname });
-      } else {
-        await api.patch(`/contacts/${conversation.participant!.contactId}/nickname`, { nickname });
-      }
-    },
-    onSuccess: () => {
-      toast.success("Nickname updated.");
-      qc.invalidateQueries({ queryKey: ["contacts"] });
-      if (!isGroup && conversation.participant?.echoId) {
-        qc.invalidateQueries({ queryKey: ["user-profile", conversation.participant.echoId] });
-      }
-      qc.invalidateQueries({ queryKey: ["conversations"] });
-      qc.invalidateQueries({ queryKey: ["conversation", conversation.id] });
-      qc.invalidateQueries({ queryKey: ["conversations", conversation.id] });
-      qc.invalidateQueries({ queryKey: ["messages", conversation.id] });
-      setShowNicknameForm(false);
-    },
-    onError: () => toast.error("Failed to update nickname."),
-  });
-
   const reportMutation = useMutation({
     mutationFn: async () => {
       await api.post("/reports", {
@@ -253,42 +225,53 @@ export default function ChatView({ conversation }: ChatViewProps) {
           <ArrowLeft className="w-5 h-5" />
         </button>
 
-        {/* Avatar */}
-        <div className="relative shrink-0">
-          {isGroup ? (
-            <div className="w-9 h-9 rounded-full overflow-hidden bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-sm font-medium">
-              {(displayName?.[0] ?? "?").toUpperCase()}
+        {/* Avatar + name + status */}
+        {isGroup && conversation.group?.id ? (
+          <Link
+            href={`/groups/${conversation.group.id}/settings`}
+            className="flex items-center gap-3 min-w-0 flex-1 hover:opacity-90 transition-opacity"
+          >
+            <div className="relative shrink-0">
+              <div className="w-9 h-9 rounded-full overflow-hidden bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-sm font-medium">
+                {(displayName?.[0] ?? "?").toUpperCase()}
+              </div>
             </div>
-          ) : (
-            <UserAvatar
-              imageUrl={displayImage}
-              name={displayName}
-              alt={displayName}
-              className="w-9 h-9"
-              textClassName="text-sm"
-            />
-          )}
-          {!isGroup && (
-            <span
-              className={cn(
-                "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-background",
-                presenceStatus === "online"
-                  ? "bg-green-500"
-                  : presenceStatus === "away"
-                  ? "bg-yellow-500"
-                  : presenceStatus === "dnd"
-                  ? "bg-red-500"
-                  : "bg-muted-foreground/40"
+            <div className="min-w-0">
+              <p className="font-medium text-sm leading-tight truncate">{displayName}</p>
+              <p className="text-xs text-muted-foreground leading-tight">{getStatusText()}</p>
+            </div>
+          </Link>
+        ) : (
+          <>
+            <div className="relative shrink-0">
+              <UserAvatar
+                imageUrl={displayImage}
+                name={displayName}
+                alt={displayName}
+                className="w-9 h-9"
+                textClassName="text-sm"
+              />
+              {!isGroup && (
+                <span
+                  className={cn(
+                    "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-background",
+                    presenceStatus === "online"
+                      ? "bg-green-500"
+                      : presenceStatus === "away"
+                      ? "bg-yellow-500"
+                      : presenceStatus === "dnd"
+                      ? "bg-red-500"
+                      : "bg-muted-foreground/40"
+                  )}
+                />
               )}
-            />
-          )}
-        </div>
-
-        {/* Name + status */}
-        <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm leading-tight truncate">{displayName}</p>
-          <p className="text-xs text-muted-foreground leading-tight">{getStatusText()}</p>
-        </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-sm leading-tight truncate">{displayName}</p>
+              <p className="text-xs text-muted-foreground leading-tight">{getStatusText()}</p>
+            </div>
+          </>
+        )}
 
         <ConnectionStatus />
 
@@ -326,41 +309,6 @@ export default function ChatView({ conversation }: ChatViewProps) {
                   </Link>
                 )}
 
-                {/* Set Nickname — for contacts (private) or groups */}
-                {(!isGroup && conversation.participant?.contactId) || isGroup ? (
-                  <button
-                    onClick={() => {
-                      setNicknameTarget("contact");
-                      setNicknameValue(
-                        isGroup
-                          ? (conversation.group?.name ?? "")
-                          : (conversation.participant?.nickname ?? "")
-                      );
-                      setMenuOpen(false);
-                      setShowNicknameForm(true);
-                    }}
-                    className="flex items-center gap-2.5 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
-                  >
-                    <Pencil className="w-4 h-4 text-muted-foreground shrink-0" />
-                    Set nickname
-                  </button>
-                ) : null}
-
-                {!isGroup && conversation.participant?.contactId ? (
-                  <button
-                    onClick={() => {
-                      setNicknameTarget("self");
-                      setNicknameValue("");
-                      setMenuOpen(false);
-                      setShowNicknameForm(true);
-                    }}
-                    className="flex items-center gap-2.5 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
-                  >
-                    <Pencil className="w-4 h-4 text-muted-foreground shrink-0" />
-                    Set my nickname
-                  </button>
-                ) : null}
-
                 {/* Private-only: block + report */}
                 {!isGroup && (
                   <>
@@ -396,6 +344,26 @@ export default function ChatView({ conversation }: ChatViewProps) {
                 {/* Group-only: leave */}
                 {isGroup && (
                   <>
+                    {conversation.group?.id && (
+                      <Link
+                        href={`/groups/${conversation.group.id}/settings`}
+                        className="flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        <Settings className="w-4 h-4 text-muted-foreground shrink-0" />
+                        Group settings
+                      </Link>
+                    )}
+                    {conversation.group?.id && (
+                      <Link
+                        href={`/groups/${conversation.group.id}/settings?tab=members`}
+                        className="flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        <Users className="w-4 h-4 text-muted-foreground shrink-0" />
+                        View members
+                      </Link>
+                    )}
                     <div className="my-1 border-t border-border/30" />
                     <button
                       onClick={() => { setMenuOpen(false); setConfirmLeave(true); }}
@@ -541,58 +509,6 @@ export default function ChatView({ conversation }: ChatViewProps) {
         variant="destructive"
         loading={leaveGroupMutation.isPending}
       />
-
-      {/* Nickname modal */}
-      {showNicknameForm && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          onClick={(e) => { if (e.target === e.currentTarget) setShowNicknameForm(false); }}
-        >
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-          <div className="relative glass rounded-2xl p-6 w-full max-w-sm shadow-elevated animate-fade-in">
-            <h3 className="font-display font-semibold text-base mb-1">Set nickname</h3>
-            <p className="text-xs text-muted-foreground mb-4">
-              {nicknameTarget === "self"
-                ? "Visible to the other person in this chat. Leave empty to remove."
-                : "Only visible to you. Leave empty to remove."}
-            </p>
-            <input
-              autoFocus
-              value={nicknameValue}
-              onChange={(e) => setNicknameValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !nicknameMutation.isPending) {
-                  nicknameMutation.mutate(nicknameValue.trim() || null);
-                }
-                if (e.key === "Escape") setShowNicknameForm(false);
-              }}
-              maxLength={50}
-              className="w-full h-10 px-3 rounded-xl bg-muted/60 border border-border/50 text-sm focus:outline-none focus:ring-1 focus:ring-primary/40 mb-4"
-              placeholder={
-                nicknameTarget === "self"
-                  ? "Your nickname for them to see…"
-                  : `Nickname for ${displayName}…`
-              }
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowNicknameForm(false)}
-                disabled={nicknameMutation.isPending}
-                className="flex-1 h-10 rounded-xl border border-border/50 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => nicknameMutation.mutate(nicknameValue.trim() || null)}
-                disabled={nicknameMutation.isPending}
-                className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-              >
-                {nicknameMutation.isPending ? "Saving…" : "Save"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Report modal */}
       {showReportForm && (

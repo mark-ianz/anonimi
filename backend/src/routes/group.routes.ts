@@ -31,6 +31,7 @@ router.get("/:groupId/members", authenticate, validate(groupParamsSchema), group
 router.post("/:groupId/members", authenticate, validate(groupParamsSchema), validate(addMembersSchema), groupController.addMembers);
 router.delete("/:groupId/members/:userId", authenticate, validate(groupMemberParamsSchema), groupController.removeMember);
 router.patch("/:groupId/members/:userId/role", authenticate, validate(groupMemberParamsSchema), validate(changeRoleSchema), groupController.changeRole);
+router.patch("/:groupId/members/:userId/nickname", authenticate, validate(groupMemberParamsSchema), validate(setNicknameSchema), groupController.setMemberNickname);
 router.post("/:groupId/members/:userId/mute", authenticate, validate(groupMemberParamsSchema), validate(muteMemberSchema), groupController.muteMember);
 router.delete("/:groupId/members/:userId/mute", authenticate, validate(groupMemberParamsSchema), groupController.unmuteMember);
 router.post("/:groupId/leave", authenticate, validate(groupParamsSchema), groupController.leaveGroup);

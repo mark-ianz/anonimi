@@ -12,7 +12,7 @@ export default function GroupPage() {
   const params = useParams();
   const router = useRouter();
   const groupId = params.groupId as string;
-  const { group, isLoadingGroup } = useGroup(groupId);
+  const { group, members, isLoadingGroup } = useGroup(groupId);
 
   return (
     <ProtectedRoute>
@@ -29,7 +29,7 @@ export default function GroupPage() {
               <h1 className="font-display font-semibold truncate">{group?.name}</h1>
             )}
           </div>
-          {group && (group.myRole === "owner" || group.myRole === "admin") && (
+          {group && (
             <Link href={`/groups/${groupId}/settings`} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors">
               <Settings className="w-4 h-4" />
             </Link>
@@ -41,7 +41,7 @@ export default function GroupPage() {
           {isLoadingGroup ? (
             <LoadingSkeleton rows={5} variant="conversation" />
           ) : group ? (
-            <GroupMemberList groupId={groupId} currentUserRole={group.myRole} />
+            <GroupMemberList groupId={groupId} members={members} group={group} />
           ) : (
             <p className="text-center text-muted-foreground py-12">Group not found.</p>
           )}

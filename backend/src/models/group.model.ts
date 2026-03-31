@@ -10,6 +10,11 @@ const groupSchema = new Schema<IGroup>(
     ownerId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     settings: {
       joinRequestEnabled: { type: Boolean, default: false },
+      nicknameEditPolicy: {
+        type: String,
+        enum: ["admins_only", "all_members"],
+        default: "all_members",
+      },
     },
     disbandedAt: { type: Date },
   },

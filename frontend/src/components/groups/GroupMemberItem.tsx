@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Shield, Crown, MoreVertical, UserMinus, VolumeX, Volume2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { Shield, Crown, MoreVertical, UserMinus, VolumeX, Volume2, User, MessageCircle, Pencil, ShieldBan } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { GroupMember, GroupRole } from "@/types/group";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
@@ -15,6 +16,9 @@ interface GroupMemberItemProps {
   onMute?: (userId: string) => void;
   onUnmute?: (userId: string) => void;
   onTransferOwnership?: (userId: string) => void;
+  onSendMessage?: (echoId: string) => void;
+  onSetNickname?: (userId: string, nickname: string | null) => void;
+  onBlock?: (echoId: string) => void;
 }
 
 const roleLabels: Record<GroupRole, string> = {
@@ -29,6 +33,14 @@ const RoleIcon = ({ role }: { role: GroupRole }) => {
   return null;
 };
 
+const getJoinSourceLabel = (member: GroupMember) => {
+  const by = member.addedBy ? `${member.addedBy.username}` : null;
+  if (member.joinedVia === "group_create") return "Created this group";
+  if (member.joinedVia === "invite_link") return by ? `Joined via invite link from ${by}` : "Joined via invite link";
+  if (member.joinedVia === "direct_request") return by ? `Joined by approval from ${by}` : "Joined via request approval";
+  return by ? `Added by ${by}` : "Added by member";
+};
+
 export default function GroupMemberItem({
   member,
   currentUserRole,
@@ -38,9 +50,15 @@ export default function GroupMemberItem({
   onMute,
   onUnmute,
   onTransferOwnership,
+  onSendMessage,
+  onSetNickname,
+  onBlock,
 }: GroupMemberItemProps) {
+  const menuRef = useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [showNicknameForm, setShowNicknameForm] = useState(false);
+  const [nicknameValue, setNicknameValue] = useState(member.nickname ?? "");
 
   const isSelf = member.userId === currentUserId;
   const isOwner = currentUserRole === "owner";
@@ -51,8 +69,22 @@ export default function GroupMemberItem({
     (currentUserRole === "owner" || (currentUserRole === "admin" && member.role === "member"));
   const canMute = canManage && !isMemberOwner;
   const canTransfer = isOwner && !isSelf && member.role !== "owner";
+  const canShowAdminActions = canManage;
   
   const isMuted = member.mutedUntil && new Date(member.mutedUntil) > new Date();
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDocumentMouseDown = (event: MouseEvent) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", onDocumentMouseDown);
+    return () => document.removeEventListener("mousedown", onDocumentMouseDown);
+  }, [menuOpen]);
 
   return (
     <>
@@ -76,6 +108,7 @@ export default function GroupMemberItem({
             <RoleIcon role={member.role} />
           </div>
           <p className="text-xs text-muted-foreground truncate">@{member.echoId}</p>
+          <p className="text-[11px] text-muted-foreground/80 truncate mt-0.5">{getJoinSourceLabel(member)}</p>
         </div>
 
         {/* Role badge */}
@@ -89,8 +122,13 @@ export default function GroupMemberItem({
         </span>
 
         {/* Actions */}
-        {canManage && (
-          <div className="relative opacity-0 group-hover:opacity-100 transition-opacity">
+        <div
+          ref={menuRef}
+          className={cn(
+            "relative transition-opacity",
+            menuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          )}
+        >
             <button
               onClick={() => setMenuOpen((v) => !v)}
               className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
@@ -99,6 +137,54 @@ export default function GroupMemberItem({
             </button>
             {menuOpen && (
               <div className="absolute right-0 z-10 top-full mt-1 glass rounded-xl shadow-elevated py-1 min-w-40 animate-fade-in">
+                <Link
+                  href={`/user/${member.echoId}`}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <User className="w-4 h-4" />
+                  View profile
+                </Link>
+
+                {!isSelf && (
+                  <button
+                    onClick={() => { onSendMessage?.(member.echoId); setMenuOpen(false); }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Send message
+                  </button>
+                )}
+
+                <button
+                  onClick={() => {
+                    setNicknameValue(member.nickname ?? "");
+                    setMenuOpen(false);
+                    setShowNicknameForm(true);
+                  }}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                >
+                  <Pencil className="w-4 h-4" />
+                  Change nickname
+                </button>
+
+                {!isSelf && (
+                  <button
+                    onClick={() => { onBlock?.(member.echoId); setMenuOpen(false); }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                  >
+                    <ShieldBan className="w-4 h-4" />
+                    Block
+                  </button>
+                )}
+
+                {canShowAdminActions && (
+                  <>
+                    <div className="my-1 border-t border-border/30" />
+                    <p className="px-3 py-1 text-[11px] uppercase tracking-wide text-muted-foreground">Admin actions</p>
+                  </>
+                )}
+
                 {currentUserRole === "owner" && (
                   <>
                     {member.role === "member" && (
@@ -150,17 +236,18 @@ export default function GroupMemberItem({
                     )}
                   </>
                 )}
-                <button
-                  onClick={() => { setConfirmRemove(true); setMenuOpen(false); }}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-                >
-                  <UserMinus className="w-4 h-4" />
-                  Remove
-                </button>
+                {canShowAdminActions && (
+                  <button
+                    onClick={() => { setConfirmRemove(true); setMenuOpen(false); }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                  >
+                    <UserMinus className="w-4 h-4" />
+                    Remove
+                  </button>
+                )}
               </div>
             )}
-          </div>
-        )}
+        </div>
       </div>
 
       <ConfirmDialog
@@ -172,6 +259,48 @@ export default function GroupMemberItem({
         confirmLabel="Remove"
         variant="destructive"
       />
+
+      {showNicknameForm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowNicknameForm(false);
+            }
+          }}
+        >
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="relative glass rounded-2xl p-5 w-full max-w-sm shadow-elevated animate-fade-in">
+            <h3 className="font-display font-semibold text-base mb-1">Change nickname</h3>
+            <p className="text-xs text-muted-foreground mb-4">Set a custom name for this member in the group.</p>
+            <input
+              autoFocus
+              value={nicknameValue}
+              onChange={(e) => setNicknameValue(e.target.value)}
+              maxLength={50}
+              className="w-full h-10 px-3 rounded-xl bg-muted/60 border border-border/50 text-sm focus:outline-none focus:ring-1 focus:ring-primary/40 mb-4"
+              placeholder={`Nickname for ${member.username}...`}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowNicknameForm(false)}
+                className="flex-1 h-10 rounded-xl border border-border/50 text-sm font-medium hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  onSetNickname?.(member.userId, nicknameValue.trim() || null);
+                  setShowNicknameForm(false);
+                }}
+                className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

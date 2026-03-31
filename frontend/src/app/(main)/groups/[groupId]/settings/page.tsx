@@ -1,22 +1,35 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import { useGroup } from "@/hooks/useGroups";
 import GroupSettings from "@/components/groups/GroupSettings";
 import GroupMemberList from "@/components/groups/GroupMemberList";
 import LoadingSkeleton from "@/components/shared/LoadingSkeleton";
 import { ArrowLeft, Users } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Tab = "settings" | "members";
 
 export default function GroupSettingsPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const groupId = params.groupId as string;
   const { group, isLoadingGroup, members } = useGroup(groupId);
-  const [tab, setTab] = useState<Tab>("settings");
+  const [tab, setTab] = useState<Tab>(
+    searchParams.get("tab") === "members" ? "members" : "settings"
+  );
+
+  useEffect(() => {
+    const targetTab = searchParams.get("tab") === "members" ? "members" : "settings";
+    setTab(targetTab);
+  }, [searchParams]);
+
+  const switchTab = (nextTab: Tab) => {
+    setTab(nextTab);
+    router.replace(`/groups/${groupId}/settings?tab=${nextTab}`);
+  };
 
   return (
     <ProtectedRoute>
@@ -30,13 +43,13 @@ export default function GroupSettingsPage() {
 
         <div className="flex border-b border-border/30">
           <button
-            onClick={() => setTab("settings")}
+            onClick={() => switchTab("settings")}
             className={`flex-1 py-3 text-sm font-medium transition-colors ${tab === "settings" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
           >
             Settings
           </button>
           <button
-            onClick={() => setTab("members")}
+            onClick={() => switchTab("members")}
             className={`flex-1 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${tab === "members" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
           >
             <Users className="w-4 h-4" />

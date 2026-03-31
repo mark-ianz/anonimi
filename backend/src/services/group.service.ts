@@ -46,12 +46,18 @@ const getMembership = async (groupId: Types.ObjectId, userId: string) => {
 const addMemberToGroup = async (
   groupId: Types.ObjectId,
   conversationId: Types.ObjectId,
-  targetUserId: Types.ObjectId
+  targetUserId: Types.ObjectId,
+  options?: {
+    joinedVia?: "manual_add" | "invite_link" | "direct_request";
+    addedByUserId?: Types.ObjectId;
+  }
 ) => {
   await GroupMember.create({
     groupId,
     userId: targetUserId,
     role: GroupRole.MEMBER,
+    joinedVia: options?.joinedVia,
+    addedByUserId: options?.addedByUserId,
     joinedAt: new Date(),
   });
 
@@ -67,7 +73,7 @@ export const createGroup = async (
   memberEchoIds: string[],
   image?: string,
   description?: string,
-  settings?: { joinRequestEnabled: boolean }
+  settings?: { joinRequestEnabled: boolean; nicknameEditPolicy?: "admins_only" | "all_members" }
 ) => {
   const owner = await User.findById(ownerId).select("_id echoId username profileImage");
   const actualOwnerId = ownerId;
@@ -111,6 +117,7 @@ export const createGroup = async (
     ownerId: new Types.ObjectId(actualOwnerId),
     settings: {
       joinRequestEnabled: settings?.joinRequestEnabled ?? false,
+      nicknameEditPolicy: settings?.nicknameEditPolicy ?? "all_members",
     },
   });
 
@@ -118,6 +125,7 @@ export const createGroup = async (
     groupId: group._id,
     userId: new Types.ObjectId(actualOwnerId),
     role: GroupRole.OWNER,
+    joinedVia: "group_create",
     joinedAt: new Date(),
   });
 
@@ -142,6 +150,8 @@ export const createGroup = async (
       groupId: group._id,
       userId: user._id,
       role: GroupRole.MEMBER,
+      joinedVia: "manual_add",
+      addedByUserId: new Types.ObjectId(actualOwnerId),
       joinedAt: isContact ? new Date() : undefined,
     });
 
@@ -220,7 +230,15 @@ export const getGroup = async (groupId: string, userId: string) => {
 export const updateGroup = async (
   groupId: string,
   userId: string,
-  updates: { name?: string; description?: string; image?: string; settings?: { joinRequestEnabled: boolean } }
+  updates: {
+    name?: string;
+    description?: string;
+    image?: string;
+    settings?: {
+      joinRequestEnabled?: boolean;
+      nicknameEditPolicy?: "admins_only" | "all_members";
+    };
+  }
 ) => {
   const group = await Group.findById(groupId);
 
@@ -240,7 +258,12 @@ export const updateGroup = async (
   if (updates.name) group.name = updates.name;
   if (updates.description !== undefined) group.description = updates.description;
   if (updates.image) group.image = updates.image;
-  if (updates.settings) group.settings = updates.settings;
+  if (updates.settings) {
+    group.settings = {
+      ...group.settings,
+      ...updates.settings,
+    };
+  }
 
   await group.save();
 
@@ -269,10 +292,40 @@ export const getGroupMembers = async (groupId: string, userId: string) => {
 
   const members = await GroupMember.find({ groupId: group._id })
     .populate("userId", "echoId username profileImage")
+    .populate("addedByUserId", "echoId username")
     .sort({ role: 1, joinedAt: 1 })
     .lean();
 
+  const joinRequests = await GroupJoinRequest.find({
+    groupId: group._id,
+    status: { $in: ["approved", "pending"] },
+  })
+    .populate("inviterUserId", "echoId username")
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const requestByUserId = new Map<string, any>();
+  for (const req of joinRequests) {
+    const uid = req.userId?.toString?.();
+    if (!uid || requestByUserId.has(uid)) continue;
+    requestByUserId.set(uid, req);
+  }
+
   return members.map((m: any) => ({
+    joinedVia: m.joinedVia ?? requestByUserId.get(m.userId._id.toString())?.source ?? "manual_add",
+    addedBy: m.addedByUserId
+      ? {
+          id: m.addedByUserId._id.toString(),
+          echoId: m.addedByUserId.echoId,
+          username: m.addedByUserId.username,
+        }
+      : requestByUserId.get(m.userId._id.toString())?.inviterUserId
+      ? {
+          id: requestByUserId.get(m.userId._id.toString()).inviterUserId._id.toString(),
+          echoId: requestByUserId.get(m.userId._id.toString()).inviterUserId.echoId,
+          username: requestByUserId.get(m.userId._id.toString()).inviterUserId.username,
+        }
+      : null,
     userId: m.userId._id.toString(),
     echoId: m.userId.echoId,
     username: m.userId.username,
@@ -362,7 +415,10 @@ export const addMembers = async (
       continue;
     }
 
-    await addMemberToGroup(group._id, group.conversationId, user._id);
+    await addMemberToGroup(group._id, group.conversationId, user._id, {
+      joinedVia: "manual_add",
+      addedByUserId: new Types.ObjectId(userId),
+    });
 
     if (isContact) {
       added.push({ echoId: user.echoId, status: "joined" });
@@ -536,6 +592,51 @@ export const setNickname = async (
   return membership;
 };
 
+export const setMemberNickname = async (
+  groupId: string,
+  requestingUserId: string,
+  targetUserId: string,
+  nickname: string | null
+) => {
+  const group = await Group.findById(groupId);
+  if (!group) throw new NotFoundError("Group not found");
+  if (group.disbandedAt) throw new NotFoundError("Group not found");
+
+  const requester = await GroupMember.findOne({
+    groupId: group._id,
+    userId: new Types.ObjectId(requestingUserId),
+  });
+
+  if (!requester) {
+    throw new ForbiddenError("Not authorized to edit nicknames");
+  }
+
+  const target = await GroupMember.findOne({
+    groupId: group._id,
+    userId: new Types.ObjectId(targetUserId),
+  });
+
+  if (!target) {
+    throw new NotFoundError("Member not found");
+  }
+
+  const isSelf = requestingUserId === targetUserId;
+  const requesterIsAdmin = requester.role === GroupRole.OWNER || requester.role === GroupRole.ADMIN;
+  const canEditOthersByPolicy = group.settings?.nicknameEditPolicy === "all_members";
+
+  if (!isSelf && !requesterIsAdmin && !canEditOthersByPolicy) {
+    throw new ForbiddenError("Only admins can edit other members' nicknames");
+  }
+
+  target.nickname = nickname ?? undefined;
+  await target.save();
+
+  return {
+    userId: target.userId.toString(),
+    nickname: target.nickname ?? null,
+  };
+};
+
 export const createJoinRequest = async (
   groupId: string,
   userId: string
@@ -648,7 +749,10 @@ export const decideJoinRequest = async (
     });
 
     if (!existingMember) {
-      await addMemberToGroup(group._id, group.conversationId, request.userId);
+      await addMemberToGroup(group._id, group.conversationId, request.userId, {
+        joinedVia: request.source === "invite_link" ? "invite_link" : request.source === "direct" ? "direct_request" : "manual_add",
+        addedByUserId: request.inviterUserId,
+      });
     }
   }
 
@@ -686,6 +790,7 @@ export const createInviteLink = async (
 
   const joinUrl = `${getFrontendUrl()}/groups/join/${invite.token}`;
   const qrCode = await QRCode.toDataURL(joinUrl, { margin: 2, width: 256 });
+  const creator = await User.findById(userId).select("_id echoId username").lean();
 
   return {
     inviteLinkId: invite._id.toString(),
@@ -694,6 +799,13 @@ export const createInviteLink = async (
     maxUses: invite.maxUses ?? null,
     usedCount: invite.usedCount,
     description: invite.description ?? null,
+    createdBy: creator
+      ? {
+          id: creator._id.toString(),
+          echoId: creator.echoId,
+          username: creator.username,
+        }
+      : null,
     joinUrl,
     qrCode,
   };
@@ -708,6 +820,7 @@ export const listInviteLinks = async (groupId: string, userId: string) => {
   if (!membership) throw new ForbiddenError("Not a group member");
 
   const links = await GroupInviteLink.find({ groupId: group._id })
+    .populate("createdBy", "echoId username")
     .sort({ createdAt: -1 })
     .lean();
 
@@ -719,6 +832,13 @@ export const listInviteLinks = async (groupId: string, userId: string) => {
     maxUses: link.maxUses ?? null,
     usedCount: link.usedCount ?? 0,
     description: link.description ?? null,
+    createdBy: link.createdBy
+      ? {
+          id: link.createdBy._id.toString(),
+          echoId: link.createdBy.echoId,
+          username: link.createdBy.username,
+        }
+      : null,
     createdAt: link.createdAt,
     joinUrl: `${getFrontendUrl()}/groups/join/${link.token}`,
   }));
@@ -819,7 +939,10 @@ export const joinByInviteToken = async (token: string, userId: string) => {
     };
   }
 
-  await addMemberToGroup(group._id, group.conversationId, new Types.ObjectId(userId));
+  await addMemberToGroup(group._id, group.conversationId, new Types.ObjectId(userId), {
+    joinedVia: "invite_link",
+    addedByUserId: invite.createdBy,
+  });
 
   invite.usedCount += 1;
   invite.lastUsedAt = new Date();

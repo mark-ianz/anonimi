@@ -157,6 +157,26 @@ export const setNickname = async (
   }
 };
 
+export const setMemberNickname = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { groupId, userId: targetUserId } = req.params;
+    const { nickname } = req.body;
+    const result = await groupService.setMemberNickname(
+      groupId,
+      req.user!._id.toString(),
+      targetUserId,
+      nickname
+    );
+    apiSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const createJoinRequest = async (
   req: Request,
   res: Response,

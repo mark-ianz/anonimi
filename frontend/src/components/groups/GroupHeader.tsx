@@ -29,7 +29,7 @@ export default function GroupHeader({
     <>
       <div className="flex items-center justify-between p-4 border-b border-border/30">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl overflow-hidden bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-medium text-sm shrink-0">
+          <div className="w-12 h-12 rounded-xl overflow-hidden bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-medium text-sm shrink-0">
             {group.image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={group.image} alt={group.name} className="w-full h-full object-cover" />
@@ -52,7 +52,7 @@ export default function GroupHeader({
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 z-10 top-full mt-1 glass rounded-xl shadow-elevated py-1 min-w-[160px] animate-fade-in">
+            <div className="absolute right-0 z-10 top-full mt-1 glass rounded-xl shadow-elevated py-1 min-w-40 animate-fade-in">
               {canManage && (
                 <Link
                   href={`/groups/${group.id}/settings`}

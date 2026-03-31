@@ -4,10 +4,13 @@ import { useState } from "react";
 import { useGroup } from "@/hooks/useGroups";
 import { useContacts } from "@/hooks/useContacts";
 import { useAuthStore } from "@/stores/authStore";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import GroupMemberItem from "./GroupMemberItem";
 import LoadingSkeleton from "@/components/shared/LoadingSkeleton";
 import type { Group, GroupMember } from "@/types/group";
 import { Search, UserPlus } from "lucide-react";
+import api from "@/lib/api";
 
 interface GroupMemberListProps {
   groupId: string;
@@ -16,8 +19,9 @@ interface GroupMemberListProps {
 }
 
 export default function GroupMemberList({ groupId, members: initialMembers, group }: GroupMemberListProps) {
+  const router = useRouter();
   const { user } = useAuthStore();
-  const { members, isLoadingMembers, removeMember, changeRole, addMembers, muteMember, unmuteMember, leaveGroup, disbandGroup, transferOwnership, isLeaving, isDisbanding } = useGroup(groupId);
+  const { members, isLoadingMembers, removeMember, changeRole, addMembers, muteMember, unmuteMember, transferOwnership, setMemberNickname } = useGroup(groupId);
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -30,11 +34,33 @@ export default function GroupMemberList({ groupId, members: initialMembers, grou
     : displayMembers;
 
   const canManage = group.myRole === "owner" || group.myRole === "admin";
-  const isOwner = group.myRole === "owner";
 
   const handleAddMembers = (echoIds: string[]) => {
     addMembers(echoIds);
     setShowAddModal(false);
+  };
+
+  const handleSendMessage = async (echoId: string) => {
+    try {
+      const res = await api.post("/conversations", { participantEchoId: echoId });
+      const conversationId = res.data?.data?.conversationId as string | undefined;
+      if (!conversationId) {
+        toast.error("Could not open conversation.");
+        return;
+      }
+      router.push(`/chat/${conversationId}`);
+    } catch {
+      toast.error("Failed to open conversation.");
+    }
+  };
+
+  const handleBlock = async (echoId: string) => {
+    try {
+      await api.post("/blocks", { targetEchoId: echoId });
+      toast.success("User blocked.");
+    } catch {
+      toast.error("Failed to block user.");
+    }
   };
 
   if (isLoadingMembers) {
@@ -75,30 +101,12 @@ export default function GroupMemberList({ groupId, members: initialMembers, grou
             onMute={(userId) => muteMember({ userId, durationMinutes: 60 })}
             onUnmute={(userId) => unmuteMember(userId)}
             onTransferOwnership={(userId) => transferOwnership(userId)}
+            onSendMessage={handleSendMessage}
+            onSetNickname={(userId, nickname) => setMemberNickname({ userId, nickname })}
+            onBlock={handleBlock}
           />
         ))}
       </div>
-
-      {isOwner && (
-        <div className="pt-4 border-t border-border/30 space-y-2">
-          {displayMembers.length > 1 && (
-            <button
-              onClick={() => leaveGroup(undefined)}
-              disabled={isLeaving}
-              className="w-full h-10 rounded-xl bg-muted text-sm font-medium hover:bg-muted/80 transition-colors"
-            >
-              Leave Group
-            </button>
-          )}
-          <button
-            onClick={() => disbandGroup(undefined)}
-            disabled={isDisbanding}
-            className="w-full h-10 rounded-xl bg-destructive/10 text-destructive text-sm font-medium hover:bg-destructive/20 transition-colors"
-          >
-            Disband Group
-          </button>
-        </div>
-      )}
 
       {showAddModal && (
         <AddMembersModal
