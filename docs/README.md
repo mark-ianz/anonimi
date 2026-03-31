@@ -26,6 +26,7 @@ The backend is designed as a standalone REST + WebSocket API that can serve both
 | [API_DESIGN.md](./API_DESIGN.md) | Complete REST API specification organized by domain |
 | [SOCKET_EVENTS.md](./SOCKET_EVENTS.md) | All Socket.IO events with payload schemas and lifecycle |
 | [FEATURE_ROADMAP.md](./FEATURE_ROADMAP.md) | Phased implementation plan with dependencies and scope |
+| [ANONIMI_RENAME_PLAN.md](./ANONIMI_RENAME_PLAN.md) | Full EchoID -> anonimi rebrand and identifier migration plan |
 | [SECURITY_MODEL.md](./SECURITY_MODEL.md) | Authentication, authorization, rate limiting, input validation |
 | [ADMIN_SYSTEM.md](./ADMIN_SYSTEM.md) | Admin dashboard design, roles, permissions, workflows |
 | [FOLDER_STRUCTURE.md](./FOLDER_STRUCTURE.md) | Complete project folder layout and organization conventions |
