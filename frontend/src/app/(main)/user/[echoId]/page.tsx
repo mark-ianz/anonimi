@@ -155,7 +155,7 @@ export default function UserProfilePage() {
             </div>
           ) : (
             <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6">
-              <div className="overflow-visible rounded-3xl border border-border/70 bg-card/75 shadow-elevated">
+              <div className="overflow-hidden rounded-3xl border border-border/70 bg-card/75 shadow-elevated">
                 <div className="relative border-b border-border/60 bg-linear-to-br from-background via-card/80 to-muted/35 px-6 pb-6 pt-8 sm:px-8">
                   {!isMe && (
                     <div className="absolute right-4 top-4 z-10" ref={menuRef}>
