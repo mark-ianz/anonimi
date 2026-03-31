@@ -18,6 +18,7 @@ interface MessageBubbleProps {
   senderImage?: string | null;
   participantCount?: number;
   conversationType?: "private" | "group";
+  readByUsersById?: Record<string, { name: string; echoId: string }>;
   showReadReceipt?: boolean;
   timestampBubblePosition?: "single" | "first" | "middle" | "last";
 }
@@ -30,6 +31,7 @@ export default function MessageBubble({
   senderImage,
   participantCount = 2,
   conversationType = "private",
+  readByUsersById,
   showReadReceipt = true,
   timestampBubblePosition = "single",
 }: MessageBubbleProps) {
@@ -171,9 +173,11 @@ export default function MessageBubble({
             <ReadReceipt
               readBy={message.readBy}
               readAt={latestReadAt}
+              readByAt={message.readByAt}
               participantCount={participantCount}
               conversationType={conversationType}
               currentUserId={user?.id}
+              readByUsersById={readByUsersById}
               className="opacity-70"
             />
           </div>

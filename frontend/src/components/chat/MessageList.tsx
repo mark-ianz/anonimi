@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useMessages } from "@/hooks/useMessages";
 import { useTyping } from "@/hooks/useTyping";
 import { useAuthStore } from "@/stores/authStore";
 import { useChatStore } from "@/stores/chatStore";
 import { getChatSocket } from "@/lib/socket";
+import api from "@/lib/api";
 import type { Conversation } from "@/types/conversation";
+import type { GroupMember } from "@/types/group";
 import MessageBubble from "./MessageBubble";
 import TypingIndicator from "./TypingIndicator";
 import InfiniteScrollSentinel from "@/components/shared/InfiniteScroll";
@@ -52,6 +55,28 @@ export default function MessageList({ conversation }: MessageListProps) {
   const lastMessageIdRef = useRef<string | null>(null);
   const emittedReadIdsRef = useRef<Set<string>>(new Set());
   const [canMarkRead, setCanMarkRead] = useState(true);
+  const groupId = conversation.type === "group" ? conversation.group?.id ?? null : null;
+
+  const { data: groupMembers = [] } = useQuery({
+    queryKey: ["groups", groupId, "members"],
+    queryFn: async () => {
+      const res = await api.get(`/groups/${groupId}/members`);
+      return res.data.data as GroupMember[];
+    },
+    enabled: !!groupId,
+    staleTime: 1000 * 30,
+  });
+
+  const groupMemberMetaById = useMemo(() => {
+    const map: Record<string, { name: string; echoId: string }> = {};
+    groupMembers.forEach((member) => {
+      map[member.userId] = {
+        name: member.nickname?.trim() || member.username,
+        echoId: member.echoId,
+      };
+    });
+    return map;
+  }, [groupMembers]);
 
   useEffect(() => {
     const computeCanMarkRead = () =>
@@ -260,6 +285,7 @@ export default function MessageList({ conversation }: MessageListProps) {
                 senderImage={senderImage}
                 participantCount={participantCount}
                 conversationType={conversation.type}
+                readByUsersById={groupMemberMetaById}
                 showReadReceipt={showReadReceipt}
                 timestampBubblePosition={timestampBubblePosition}
               />
