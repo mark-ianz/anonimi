@@ -695,17 +695,7 @@ export const setNickname = async (
   userId: string,
   nickname: string | null
 ) => {
-  const membership = await GroupMember.findOneAndUpdate(
-    { groupId: new Types.ObjectId(groupId), userId: new Types.ObjectId(userId) },
-    { nickname },
-    { new: true }
-  );
-
-  if (!membership) {
-    throw new NotFoundError("Member not found");
-  }
-
-  return membership;
+  return setMemberNickname(groupId, userId, userId, nickname);
 };
 
 export const setMemberNickname = async (
@@ -744,8 +734,35 @@ export const setMemberNickname = async (
     throw new ForbiddenError("Only admins can edit other members' nicknames");
   }
 
-  target.nickname = nickname ?? undefined;
+  const previousNickname = target.nickname ?? null;
+  const nextNickname = nickname?.trim() ? nickname.trim() : null;
+
+  target.nickname = nextNickname ?? undefined;
   await target.save();
+
+  if (previousNickname !== nextNickname) {
+    const [actorUser, targetUser] = await Promise.all([
+      User.findById(requestingUserId).select("username").lean(),
+      User.findById(targetUserId).select("username").lean(),
+    ]);
+
+    const actorName = actorUser?.username ?? "A member";
+    const targetName = targetUser?.username ?? "a member";
+
+    const content = nextNickname
+      ? isSelf
+        ? `${actorName} changed their nickname to ${nextNickname}.`
+        : `${actorName} changed ${targetName}'s nickname to ${nextNickname}.`
+      : isSelf
+      ? `${actorName} cleared their nickname.`
+      : `${actorName} cleared ${targetName}'s nickname.`;
+
+    await createGroupSystemMessage(
+      group.conversationId,
+      new Types.ObjectId(requestingUserId),
+      content
+    );
+  }
 
   return {
     userId: target.userId.toString(),
