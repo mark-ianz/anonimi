@@ -156,7 +156,7 @@ export default function MessageList({ conversation }: MessageListProps) {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto overflow-x-visible flex flex-col">
+    <div className="message-scrollbar flex-1 overflow-y-auto overflow-x-visible flex flex-col">
       {/* Load more sentinel at top */}
       <InfiniteScrollSentinel
         onLoadMore={() => fetchMore()}

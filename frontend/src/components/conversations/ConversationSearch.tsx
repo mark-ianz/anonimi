@@ -17,7 +17,7 @@ export default function ConversationSearch({
   const [query, setQuery] = useState("");
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full min-h-0 flex-col">
       <div className="shrink-0 border-b border-border/60 bg-card/45 p-4">
         <div className="mb-3 flex items-start justify-between">
           <div>

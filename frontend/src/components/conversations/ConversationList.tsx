@@ -10,6 +10,7 @@ import LoadingSkeleton from "@/components/shared/LoadingSkeleton";
 import EmptyState from "@/components/shared/EmptyState";
 import InfiniteScrollSentinel from "@/components/shared/InfiniteScroll";
 import api from "@/lib/api";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ConversationListProps {
   activeConversationId?: string;
@@ -59,7 +60,7 @@ export default function ConversationList({
 
   if (isLoading) {
     return (
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {banner}
         <LoadingSkeleton variant="conversation" rows={8} />
       </div>
@@ -68,7 +69,7 @@ export default function ConversationList({
 
   if (filtered.length === 0) {
     return (
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {banner}
         <EmptyState
           variant={searchQuery ? "search" : "conversations"}
@@ -83,23 +84,25 @@ export default function ConversationList({
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {banner}
-      <div className="flex-1 overflow-y-auto">
-      {filtered.map((conv, i) => (
-        <ConversationItem
-          key={conv.id}
-          conversation={conv}
-          isActive={conv.id === activeConversationId}
-          style={{ animationDelay: `${i * 30}ms` }}
-        />
-      ))}
-      <InfiniteScrollSentinel
-        onLoadMore={() => fetchMore()}
-        hasMore={hasMore ?? false}
-        isLoading={isFetchingMore}
-      />
-      </div>
+      <ScrollArea className="h-full min-h-0 flex-1">
+        <div className="pr-1">
+          {filtered.map((conv, i) => (
+            <ConversationItem
+              key={conv.id}
+              conversation={conv}
+              isActive={conv.id === activeConversationId}
+              style={{ animationDelay: `${i * 30}ms` }}
+            />
+          ))}
+          <InfiniteScrollSentinel
+            onLoadMore={() => fetchMore()}
+            hasMore={hasMore ?? false}
+            isLoading={isFetchingMore}
+          />
+        </div>
+      </ScrollArea>
     </div>
   );
 }
