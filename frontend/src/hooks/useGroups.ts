@@ -73,8 +73,10 @@ export function useGroup(groupId: string | null) {
       const res = await api.patch(`/groups/${groupId}`, patch);
       return res.data.data as Group;
     },
-    onSuccess: () => {
+    onSuccess: (updatedGroup) => {
       qc.invalidateQueries({ queryKey: ["groups", groupId] });
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+      qc.invalidateQueries({ queryKey: ["conversation", updatedGroup.conversationId] });
       toast.success("Group updated.");
     },
     onError: () => toast.error("Failed to update group."),
