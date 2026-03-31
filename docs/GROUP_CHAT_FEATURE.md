@@ -12,6 +12,7 @@ The group chat feature allows users to create group conversations with:
 - Manual member addition or invite links
 - Join request approval workflow
 - Real-time updates via Socket.IO
+- Non-destructive group disbanding (history preserved, messaging locked)
 
 ---
 
@@ -224,12 +225,22 @@ Group creation and key membership actions are written as `system` messages in th
     "nicknameEditPolicy": "all_members",
     "groupProfileEditPolicy": "admins_only"
   },
+  "disbandedAt": null,
   "memberCount": 8,
   "photoFallbackUserIds": ["...", "...", "..."],
   "myRole": "owner",
   "createdAt": "2026-03-01T10:00:00Z"
 }
 ```
+
+#### DELETE /api/groups/:groupId
+
+Disband is non-destructive.
+
+- Sets `groups.disbandedAt`.
+- Keeps the conversation visible for existing members.
+- Blocks new messages to the group conversation.
+- Emits a group system message so all members see the disband state in real time.
 
 #### POST /api/groups/:groupId/invite-links
 
@@ -341,6 +352,7 @@ export interface Group {
   settings: {
     joinRequestEnabled: boolean;
   };
+  disbandedAt?: string | null;
   memberCount: number;
   myRole: GroupRole;
   photoFallbackUserIds?: string[];
@@ -470,7 +482,7 @@ Menu options (by role):
 | Code | HTTP | Description |
 |------|------|-------------|
 | GROUP_NOT_FOUND | 404 | Group doesn't exist |
-| GROUP_DISBANDED | 410 | Group was disbanded |
+| FORBIDDEN | 403 | Group is disbanded (new messages blocked) |
 | MEMBER_NOT_FOUND | 404 | User not in group |
 | ALREADY_MEMBER | 409 | User already in group |
 | NOT_AUTHORIZED | 403 | Insufficient permissions |

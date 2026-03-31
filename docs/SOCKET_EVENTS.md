@@ -178,7 +178,8 @@ Mark messages as read.
 **Server Processing:**
 1. Add `userId` to `readBy` array of each specified message.
 2. Persist read timestamp to `readByAt.<userId>` for each message.
-3. Emit `message:read` to conversation room (so sender sees read receipts).
+3. Emit `message:read` to the conversation room.
+4. Also emit `message:read` directly to each participant's `user:<userId>` room as a delivery fallback.
 
 **Emitted Payload (`message:read`):**
 ```json
@@ -436,6 +437,26 @@ A contact request was accepted.
 
 ---
 
+### `contact:request-cancelled`
+
+An outgoing contact request was withdrawn by its sender.
+
+**Target:** `user:<recipientUserId>` room.
+
+**Payload:**
+```json
+{
+  "requestId": "60d5ecb54b24a1001c8e4b3e",
+  "fromUserId": "60d5ecb54b24a1001c8e4b3a"
+}
+```
+
+**Client Handling:**
+- Remove the request from incoming contact requests if present.
+- Invalidate profile/contact relationship caches so action buttons update immediately.
+
+---
+
 ### `contact:nickname-updated`
 
 Nickname metadata changed for a private conversation.
@@ -586,6 +607,10 @@ Group settings or metadata changed.
   }
 }
 ```
+
+**Disband propagation note:**
+- Group disband currently propagates via a `system` `message:receive` event in the group conversation.
+- Clients should refresh conversation metadata when receiving that system message so disband banners/input lock states update without manual refresh.
 
 ---
 

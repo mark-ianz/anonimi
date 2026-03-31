@@ -414,12 +414,14 @@ Get a user's public profile.
     "createdAt": "2025-01-15T08:30:00Z",
     "isContact": true,
     "isBlocked": false,
-    "contactNickname": "Johnny"
+    "contactNickname": "Johnny",
+    "pendingOutgoingRequestId": null,
+    "pendingIncomingRequestId": "60d5ecb54b24a1001c8e4b3c"
   }
 }
 ```
 
-Note: `isContact`, `isBlocked`, and `contactNickname` are computed relative to the requesting user.
+Note: Relationship fields are computed relative to the requesting user. `pendingOutgoingRequestId` and `pendingIncomingRequestId` are included when a contact request is currently pending in either direction.
 
 ---
 
@@ -587,10 +589,39 @@ Send a contact request.
 }
 ```
 
+**Behavior Notes:**
+- The endpoint is idempotent for retry scenarios.
+- If a previous request record exists (for example after a decline), the server updates/reuses it instead of creating duplicate rows.
+
 **Errors:**
 - `404` — User not found
 - `409` — Already contacts or request pending
 - `403` — User is blocked or you are blocked
+
+---
+
+### POST /api/contacts/request/cancel
+
+Cancel (withdraw) an outgoing pending contact request.
+
+**Request Body:**
+```json
+{
+  "requestId": "60d5ecb54b24a1001c8e4b3e"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "requestId": "60d5ecb54b24a1001c8e4b3e",
+    "status": "cancelled",
+    "message": "Contact request cancelled."
+  }
+}
+```
 
 ---
 
@@ -1055,6 +1086,11 @@ Accept a message request. Optionally add the sender as a contact.
 }
 ```
 
+**Behavior Notes:**
+- `addToContacts: true` accepts the message request and establishes contact records.
+- `addToContacts: false` accepts the message request without auto-creating contacts.
+- If there is already a pending contact request between the same users, accepting with `addToContacts: false` does not clear that pending contact request.
+
 **Response (200):**
 ```json
 {
@@ -1136,6 +1172,7 @@ Get group details.
     "name": "Project Team",
     "image": null,
     "ownerId": "60d5ecb54b24a1001c8e4b3a",
+    "disbandedAt": null,
     "settings": {
       "joinRequestEnabled": false
     },
@@ -1264,6 +1301,27 @@ Leave a group.
 ```
 
 If the owner leaves, `ownershipTransferred: true` and `newOwnerId` is returned.
+
+---
+
+### DELETE /api/groups/:groupId
+
+Disband a group (owner only).
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Group disbanded."
+  }
+}
+```
+
+**Behavior Notes:**
+- This is a soft disband: group history is preserved.
+- Existing members still see the conversation in their chat list.
+- New messages are blocked after disband.
 
 ---
 

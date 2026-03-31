@@ -508,6 +508,15 @@ User A                         Server                      User B
   │◀─────────────────────────────│                           │
 ```
 
+Notes:
+- Contact request creation is resilient to retry paths: existing request rows are reused/updated rather than duplicated.
+- Outgoing pending requests can be withdrawn via `POST /api/contacts/request/cancel`, which emits realtime cancellation updates.
+
+### Message Request Acceptance Semantics
+
+- `accept(addToContacts: true)`: accept conversation and establish contacts.
+- `accept(addToContacts: false)`: accept conversation only; existing pending contact requests are preserved.
+
 ### Contact Nicknames
 
 - Each user can assign a private nickname to any contact.
@@ -606,7 +615,7 @@ Owner (1 per group)
   ├── Can do everything
   ├── Can promote/demote admins
   ├── Can transfer ownership
-  ├── Can delete group
+  ├── Can disband group (non-destructive lock)
   │
   ▼
 Admin (0+ per group)
@@ -632,7 +641,14 @@ If the owner leaves the group:
 
 1. If there are admins → ownership transfers to the **longest-serving admin** (earliest `joinedAt`).
 2. If no admins → ownership transfers to the **longest-serving member**.
-3. If no members remain → group is **automatically deleted** (soft-deleted, archived for admin).
+3. If no members remain → group remains archived as historical data (not hard-deleted).
+
+Disband behavior:
+
+1. `disbandedAt` is set on the group.
+2. Group conversation remains visible in members' conversation lists.
+3. Sending new messages to that group is blocked.
+4. A system message is emitted so all connected members see the disbanded state without refresh.
 
 The owner can also explicitly transfer ownership via:
 
@@ -760,7 +776,7 @@ Recipient opens conversation
   → Client identifies unread messages
   → Client emits: message:read { conversationId, messageIds: [...] }
   → Server updates messages: adds userId to readBy and sets readByAt.<userId>
-  → Server broadcasts to conversation room:
+  → Server emits to conversation room and participant user rooms:
       message:read { conversationId, messageIds, readBy: { userId, readAt } }
 
 Sender's client receives event
@@ -779,8 +795,9 @@ Private chat UI rule: show at most two status markers at once (latest read + lat
 ### Group Read Receipts
 
 In groups, `readBy` contains multiple user IDs. UI can show:
-- "Read by 5 of 12" 
-- Expandable list of who has read
+- "Read by everyone"
+- One or more "Read by some" markers (per relevant outgoing message)
+- Clickable "Read by some" opens a modal with reader names and per-user read timestamps
 
 ---
 

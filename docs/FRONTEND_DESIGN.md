@@ -495,9 +495,10 @@ The default view when entering the application.
 
 **Layout:**
 - Header: Contact name/avatar, online status, actions menu (profile, block, report)
-- Message area: Scrollable message list (infinite scroll upward for history)
+- Message area: Scrollable message list (infinite scroll upward for history) using `ScrollArea`
 - Non-contact notice banner (conditionally rendered — see below)
 - Input area: Text input, attachment buttons (image, file), send button
+- For disbanded groups: show a disband notice banner and disable message input/actions
 
 **Message bubble features:**
 - Sent vs. received styling (right-aligned vs. left-aligned)
@@ -507,6 +508,11 @@ The default view when entering the application.
    - Latest outgoing message read by the other user → `Read at HH:MM`
    - Latest outgoing message not yet read → `Sent`
 - Group status shows aggregated read state.
+- Group read states:
+   - "Read by everyone" appears at most once for the latest fully-read outgoing message.
+   - "Read by some" can appear on multiple outgoing messages.
+   - "Read by some" is clickable and opens a modal with member names and per-user read timestamps.
+   - Reader names link to user profiles (`/user/:echoId`).
 - Image/file preview inline
 - Context menu on messages: Copy, Delete for me, Unsend (if own message within time limit)
 - "This message was unsent" placeholder for unsent messages
@@ -524,6 +530,7 @@ The default view when entering the application.
 - Read marking is focus-aware: messages are auto-marked read only when the conversation is open **and** the browser tab is visible/focused.
 - If the conversation is open in a background tab, incoming messages stay unread until focus returns.
 - Returning focus to an open conversation clears its local unread badge and emits read receipts.
+- Read receipt modal is rendered via a portal to guarantee full-screen backdrop coverage.
 
 #### Non-Contact Notice Banner
 
@@ -581,6 +588,7 @@ Accepting a contact request within the chat immediately upgrades `requestStatus`
 - Group header: name, image, member count, settings gear icon
 - Multiple typing indicators ("Alice, Bob are typing...")
 - System messages for joins, leaves, role changes, nickname changes
+- If disbanded: show persistent disband notice, disable message input, and show disabled `Archive (soon)` / `Delete Chat (soon)` placeholders
 
 **Group settings** (`/app/groups/[groupId]/settings`):
 - Group name and image editing (admin/owner)
@@ -590,6 +598,8 @@ Accepting a contact request within the chat immediately upgrades `requestStatus`
 - Toggle join requests (admin/owner)
 - Leave group button
 - Transfer ownership (owner only)
+- Disband group (owner only) with strict typed confirmation (`DISBAND`)
+- After successful disband, owner is redirected to the same conversation route to see the locked state
 
 **Create group** (`/app/groups/create`):
 - Group name input
