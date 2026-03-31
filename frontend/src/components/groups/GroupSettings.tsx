@@ -39,6 +39,8 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
   const [maxUses, setMaxUses] = useState<number>(0);
   const [inviteDescription, setInviteDescription] = useState("");
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const [showDisbandConfirmModal, setShowDisbandConfirmModal] = useState(false);
+  const [disbandConfirmText, setDisbandConfirmText] = useState("");
 
   const expiryOptions: Array<{ value: 30 | 60 | 360 | 1440 | 10080; label: string }> = [
     { value: 30, label: "30m" },
@@ -377,7 +379,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
         </button>
         {isOwner && (
           <button
-            onClick={() => disbandGroup(undefined, { onSuccess: () => router.push("/chat") })}
+            onClick={() => setShowDisbandConfirmModal(true)}
             disabled={isDisbanding}
             className="w-full h-10 rounded-xl bg-destructive/15 text-destructive text-sm font-medium hover:bg-destructive/25 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
           >
@@ -386,6 +388,67 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
           </button>
         )}
       </div>
+
+      {showDisbandConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => {
+              if (isDisbanding) return;
+              setShowDisbandConfirmModal(false);
+              setDisbandConfirmText("");
+            }}
+          />
+          <div className="relative w-full max-w-sm rounded-2xl border border-border/70 bg-card p-5 shadow-elevated space-y-4">
+            <h3 className="font-display font-semibold text-base">Disband Group</h3>
+            <p className="text-sm text-muted-foreground">
+              This will lock the group permanently. Members keep chat history but can no longer send messages.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Type <span className="font-semibold text-foreground">DISBAND {group.name}</span> to confirm.
+            </p>
+
+            <input
+              value={disbandConfirmText}
+              onChange={(event) => setDisbandConfirmText(event.target.value)}
+              placeholder={`DISBAND ${group.name}`}
+              className="w-full h-10 px-3 rounded-xl border border-border/60 bg-background text-sm"
+              autoFocus
+              disabled={isDisbanding}
+            />
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDisbandConfirmModal(false);
+                  setDisbandConfirmText("");
+                }}
+                disabled={isDisbanding}
+                className="flex-1 h-10 rounded-xl border border-border/70 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  disbandGroup(undefined, {
+                    onSuccess: () => {
+                      setShowDisbandConfirmModal(false);
+                      setDisbandConfirmText("");
+                      router.push(`/chat/${group.conversationId}`);
+                    },
+                  })
+                }
+                disabled={isDisbanding || disbandConfirmText !== `DISBAND ${group.name}`}
+                className="flex-1 h-10 rounded-xl bg-destructive text-white text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-60"
+              >
+                {isDisbanding ? "Disbanding..." : "Disband"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Invite Modal */}
       {showInviteModal && (

@@ -174,6 +174,8 @@ export function useGroup(groupId: string | null) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["conversations"] });
+      qc.invalidateQueries({ queryKey: ["conversation"] });
+      qc.invalidateQueries({ queryKey: ["groups"] });
       toast.success("Group disbanded.");
     },
     onError: () => toast.error("Failed to disband group."),

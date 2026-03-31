@@ -1226,6 +1226,7 @@ export const transferOwnership = async (
 export const disbandGroup = async (groupId: string, userId: string) => {
   const group = await Group.findById(groupId);
   if (!group) throw new NotFoundError("Group not found");
+  if (group.disbandedAt) throw new ConflictError("Group already disbanded");
 
   const membership = await GroupMember.findOne({
     groupId: group._id,
@@ -1236,10 +1237,14 @@ export const disbandGroup = async (groupId: string, userId: string) => {
     throw new ForbiddenError("Only the owner can disband the group");
   }
 
+  const owner = await User.findById(userId).select("username").lean();
+  const disbandContent = `${owner?.username ?? "The owner"} disbanded the group. Messaging is now disabled.`;
+  await createGroupSystemMessage(group.conversationId, new Types.ObjectId(userId), disbandContent);
+
   group.disbandedAt = new Date();
   await group.save();
 
-  await GroupMember.deleteMany({ groupId: group._id });
+  await MessageRequest.deleteMany({ conversationId: group.conversationId });
   await GroupInviteLink.deleteMany({ groupId: group._id });
   await GroupJoinRequest.deleteMany({ groupId: group._id });
 

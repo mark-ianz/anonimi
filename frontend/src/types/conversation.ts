@@ -21,6 +21,7 @@ export interface ConversationGroup {
   image: string | null;
   memberCount: number;
   fallbackProfileImages?: Array<string | null>;
+  disbandedAt?: string | null;
 }
 
 export interface LastMessage {

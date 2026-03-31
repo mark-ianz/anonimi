@@ -250,6 +250,9 @@ export const getConversations = async (
         };
       } else {
         const group = await Group.findOne({ conversationId: conv._id });
+        if (!group) {
+          return null;
+        }
         const memberCount = await GroupMember.countDocuments({
           groupId: group?._id,
         });
@@ -291,6 +294,7 @@ export const getConversations = async (
             image: group?.image,
             memberCount,
             fallbackProfileImages,
+            disbandedAt: group?.disbandedAt ?? null,
           },
           lastMessage: latestVisibleMessage
             ? {
@@ -309,8 +313,13 @@ export const getConversations = async (
     })
   );
 
+  const visibleConversations = enriched.filter(
+    (conversation): conversation is NonNullable<typeof conversation> =>
+      Boolean(conversation)
+  );
+
   return {
-    conversations: enriched,
+    conversations: visibleConversations,
     nextCursor: hasMore ? data[data.length - 1].updatedAt.toISOString() : undefined,
   };
 };
@@ -378,6 +387,9 @@ export const getConversation = async (
     };
   } else {
     const group = await Group.findOne({ conversationId: conversation._id });
+    if (!group) {
+      throw new NotFoundError("Conversation not found");
+    }
     const memberCount = group
       ? await GroupMember.countDocuments({ groupId: group._id })
       : 0;
@@ -405,6 +417,7 @@ export const getConversation = async (
         image: group?.image,
         memberCount,
         fallbackProfileImages,
+        disbandedAt: group?.disbandedAt ?? null,
       },
       lastMessage: conversation.lastMessage
         ? {
@@ -696,6 +709,11 @@ export const sendMessage = async (
       },
       deliveredRecipientIds,
     };
+  }
+
+  const groupForConversation = await Group.findOne({ conversationId: conversation._id }).select("disbandedAt");
+  if (groupForConversation?.disbandedAt) {
+    throw new ForbiddenError("This group has been disbanded. Messaging is disabled.");
   }
 
   const message = await Message.create({

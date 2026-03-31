@@ -40,6 +40,7 @@ export default function ChatView({ conversation }: ChatViewProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isGroup = conversation.type === "group";
+  const isGroupDisbanded = isGroup && !!conversation.group?.disbandedAt;
   const participantId = conversation.participant?.id;
   const { status: presenceStatus, lastSeen } = usePresence(
     participantId,
@@ -62,7 +63,7 @@ export default function ChatView({ conversation }: ChatViewProps) {
   const isBlockedByMe = !isGroup && !!conversation.participant?.blockedByMe;
   const myBlockId = conversation.participant?.blockId ?? null;
   // Recipient can't type until they accept; sender can always type
-  const isInputDisabled = isRecipient || isBlockedByMe;
+  const isInputDisabled = isRecipient || isBlockedByMe || isGroupDisbanded;
 
   useEffect(() => {
     setActiveConversation(conversation.id);
@@ -198,7 +199,10 @@ export default function ChatView({ conversation }: ChatViewProps) {
   }, [menuOpen]);
 
   function getStatusText() {
-    if (isGroup) return `${conversation.group?.memberCount ?? 0} members`;
+    if (isGroup) {
+      if (isGroupDisbanded) return "Disbanded";
+      return `${conversation.group?.memberCount ?? 0} members`;
+    }
     if (presenceStatus === "online") return "Online";
     if (presenceStatus === "away") return "Away";
     if (presenceStatus === "dnd") return "Do Not Disturb";
@@ -353,7 +357,7 @@ export default function ChatView({ conversation }: ChatViewProps) {
                 {/* Group-only: leave */}
                 {isGroup && (
                   <>
-                    {conversation.group?.id && (
+                    {!isGroupDisbanded && conversation.group?.id && (
                       <Link
                         href={`/groups/${conversation.group.id}/settings?tab=members`}
                         className="flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
@@ -363,7 +367,7 @@ export default function ChatView({ conversation }: ChatViewProps) {
                         Add member
                       </Link>
                     )}
-                    {conversation.group?.id && (
+                    {!isGroupDisbanded && conversation.group?.id && (
                       <Link
                         href={`/groups/${conversation.group.id}/settings`}
                         className="flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
@@ -373,7 +377,7 @@ export default function ChatView({ conversation }: ChatViewProps) {
                         Group settings
                       </Link>
                     )}
-                    {conversation.group?.id && (
+                    {!isGroupDisbanded && conversation.group?.id && (
                       <Link
                         href={`/groups/${conversation.group.id}/settings?tab=members`}
                         className="flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
@@ -440,6 +444,33 @@ export default function ChatView({ conversation }: ChatViewProps) {
         </div>
       )}
 
+      {isGroupDisbanded && (
+        <div className="mx-4 mt-3 rounded-xl border border-destructive/35 bg-destructive/10 px-4 py-3 shrink-0">
+          <p className="text-sm font-medium text-foreground">This group has been disbanded.</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Chat history remains visible, but messaging is disabled.
+          </p>
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              type="button"
+              disabled
+              title="Coming soon"
+              className="h-8 px-3 rounded-lg border border-border/50 text-xs font-medium text-muted-foreground cursor-not-allowed"
+            >
+              Archive (soon)
+            </button>
+            <button
+              type="button"
+              disabled
+              title="Coming soon"
+              className="h-8 px-3 rounded-lg border border-border/50 text-xs font-medium text-muted-foreground cursor-not-allowed"
+            >
+              Delete Chat (soon)
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Non-contact notice banner — sender view */}
       {isSender && (
         <div className="mx-4 mt-3 px-4 py-3 rounded-xl bg-muted/60 border border-border/50 shrink-0">
@@ -498,6 +529,8 @@ export default function ChatView({ conversation }: ChatViewProps) {
           placeholder={
             isBlockedByMe
               ? "Unblock this user to send messages..."
+              : isGroupDisbanded
+              ? "This group has been disbanded..."
               : isRecipient
               ? "Accept the request to reply..."
               : "Message..."
