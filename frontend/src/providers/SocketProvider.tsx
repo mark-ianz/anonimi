@@ -156,6 +156,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     // New message from another user
     socket.on("message:receive", (payload: MessageReceivePayload) => {
+      const { conversations } = useChatStore.getState();
       const msg: Message = {
         id: payload.messageId,
         conversationId: payload.conversationId,
@@ -178,6 +179,11 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         type: payload.type,
         timestamp: payload.timestamp,
       });
+
+      if (!conversations.some((conv) => conv.id === payload.conversationId)) {
+        qc.invalidateQueries({ queryKey: ["conversations"] });
+      }
+
       const { activeConversationId: currentActiveConversationId } = useChatStore.getState();
       const canAutoRead =
         currentActiveConversationId === payload.conversationId &&

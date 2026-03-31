@@ -8,7 +8,7 @@ import { Message } from "../models/message.model";
 import { MessageRequest } from "../models/messageRequest.model";
 import { GroupJoinRequest } from "../models/groupJoinRequest.model";
 import { GroupInviteLink } from "../models/groupInviteLink.model";
-import { emitToConversation } from "./notification.service";
+import { emitToConversation, emitToUser } from "./notification.service";
 import { NotFoundError, ForbiddenError, ConflictError } from "../utils/apiError";
 import { GroupRole, MessageType } from "../types/enums";
 import crypto from "crypto";
@@ -75,9 +75,12 @@ const createGroupSystemMessage = async (
     }
   );
 
-  const sender = await User.findById(senderUserId).select("username profileImage").lean();
+  const [sender, conversation] = await Promise.all([
+    User.findById(senderUserId).select("username profileImage").lean(),
+    Conversation.findById(conversationId).select("participants").lean(),
+  ]);
 
-  emitToConversation(conversationId.toString(), "message:receive", {
+  const payload = {
     messageId: message._id.toString(),
     conversationId: conversationId.toString(),
     senderId: senderUserId.toString(),
@@ -89,7 +92,16 @@ const createGroupSystemMessage = async (
     fileName: null,
     fileSize: null,
     timestamp: message.createdAt.toISOString(),
-  });
+  };
+
+  if (conversation?.participants?.length) {
+    for (const participantId of conversation.participants) {
+      emitToUser(participantId.toString(), "message:receive", payload);
+    }
+    return;
+  }
+
+  emitToConversation(conversationId.toString(), "message:receive", payload);
 };
 
 const addMemberToGroup = async (
