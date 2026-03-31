@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import * as contactService from "../services/contact.service";
 import { apiSuccess, apiPaginated } from "../utils/apiResponse";
 import { User } from "../models/user.model";
-import { createAndEmitNotification } from "../services/notification.service";
+import { createAndEmitNotification, emitToUser } from "../services/notification.service";
 
 export const getContacts = async (
   req: Request,
@@ -47,13 +47,26 @@ export const sendContactRequest = async (
 ): Promise<void> => {
   try {
     const { targetEchoId } = req.body;
-    const sender = await User.findById(req.user!._id).select("username echoId");
+    const sender = await User.findById(req.user!._id).select("username echoId profileImage");
     const targetUser = await User.findOne({ echoId: targetEchoId }).select("_id");
 
     const result = await contactService.sendContactRequest(
       req.user!._id.toString(),
       targetEchoId
     );
+
+    if (targetUser && sender) {
+      emitToUser(targetUser._id.toString(), "contact:request", {
+        requestId: result.requestId,
+        from: {
+          id: req.user!._id.toString(),
+          echoId: sender.echoId,
+          username: sender.username,
+          profileImage: sender.profileImage ?? null,
+        },
+        createdAt: result.createdAt,
+      });
+    }
 
     if (targetUser) {
       await createAndEmitNotification({

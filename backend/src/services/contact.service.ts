@@ -110,13 +110,15 @@ export const sendContactRequest = async (
     }
   }
 
-  await Contact.create({
+  const request = await Contact.create({
     userId: new Types.ObjectId(fromUserId),
     contactId: targetUser._id,
     status: "pending",
   });
 
   return {
+    requestId: request._id.toString(),
+    createdAt: request.createdAt,
     status: "pending",
     message: "Contact request sent.",
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, createContext, useContext } from "react";
+import { useEffect, useRef, useState, createContext, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Socket } from "socket.io-client";
@@ -57,6 +57,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const socketRef = useRef<Socket | null>(null);
 
   const baseTitleRef = useRef("EchoID - Real-time Chat");
+  const [contactRequestUnread, setContactRequestUnread] = useState(0);
 
   const getMemberCountDeltaFromSystem = (content: string | null | undefined): number => {
     const text = (content ?? "").toLowerCase();
@@ -73,19 +74,20 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       baseTitleRef.current = "EchoID - Real-time Chat";
     }
 
-    const totalUnread = Object.values(unreadCounts).reduce(
+    const messageUnread = Object.values(unreadCounts).reduce(
       (sum, count) => sum + (Number.isFinite(count) ? count : 0),
       0
     );
+    const totalUnread = messageUnread + contactRequestUnread;
 
     document.title = totalUnread > 0
-      ? `(${totalUnread > 99 ? "99+" : totalUnread}) New message - ${baseTitleRef.current}`
+      ? `(${totalUnread > 99 ? "99+" : totalUnread}) New activity - ${baseTitleRef.current}`
       : baseTitleRef.current;
 
     return () => {
       document.title = baseTitleRef.current;
     };
-  }, [unreadCounts]);
+  }, [unreadCounts, contactRequestUnread]);
   const resolveNotificationHref = (data: Record<string, unknown>) => {
     const href = data.href;
     if (typeof href === "string") {
@@ -385,6 +387,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     // Notifications (contact request, message request, etc.)
     socket.on("contact:request", (_payload: ContactRequestPayload) => {
+      setContactRequestUnread((value) => value + 1);
       qc.invalidateQueries({ queryKey: ["contacts", "requests"] });
       qc.invalidateQueries({ queryKey: ["notifications"] });
     });
