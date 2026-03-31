@@ -325,6 +325,9 @@ export const getConversation = async (
     };
   } else {
     const group = await Group.findOne({ conversationId: conversation._id });
+    const memberCount = group
+      ? await GroupMember.countDocuments({ groupId: group._id })
+      : 0;
 
     return {
       id: conversation._id.toString(),
@@ -333,6 +336,7 @@ export const getConversation = async (
         id: group?._id.toString(),
         name: group?.name,
         image: group?.image,
+        memberCount,
       },
       requestStatus: conversation.requestStatus,
       createdAt: conversation.createdAt,

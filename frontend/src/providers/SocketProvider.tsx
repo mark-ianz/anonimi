@@ -27,6 +27,7 @@ import type {
   NotificationPayload,
 } from "@/types/socket";
 import type { Message } from "@/types/message";
+import type { Conversation } from "@/types/conversation";
 
 interface SocketContextValue {
   chatSocket: Socket | null;
@@ -56,6 +57,14 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const socketRef = useRef<Socket | null>(null);
 
   const baseTitleRef = useRef("EchoID - Real-time Chat");
+
+  const getMemberCountDeltaFromSystem = (content: string | null | undefined): number => {
+    const text = (content ?? "").toLowerCase();
+    if (!text) return 0;
+    if (text.includes(" left the group") || text.includes(" was removed by ")) return -1;
+    if (text.includes(" was added by ") || text.includes(" joined via ")) return 1;
+    return 0;
+  };
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -183,6 +192,77 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
           conversationId: payload.conversationId,
           messageIds: [payload.messageId],
         });
+      }
+
+      if (payload.type === "system") {
+        const delta = getMemberCountDeltaFromSystem(payload.content);
+
+        if (delta !== 0) {
+          qc.setQueryData(
+            ["conversation", payload.conversationId],
+            (old: Conversation | undefined) => {
+              if (!old?.group) return old;
+              const current = old.group.memberCount ?? 0;
+              return {
+                ...old,
+                group: {
+                  ...old.group,
+                  memberCount: Math.max(0, current + delta),
+                },
+              };
+            }
+          );
+
+          qc.setQueryData(
+            ["conversations"],
+            (old:
+              | {
+                  pages: Array<{ data: Conversation[] }>;
+                  pageParams: unknown[];
+                }
+              | undefined) => {
+              if (!old) return old;
+
+              return {
+                ...old,
+                pages: old.pages.map((page) => ({
+                  ...page,
+                  data: page.data.map((conv) => {
+                    if (conv.id !== payload.conversationId || !conv.group) return conv;
+                    const current = conv.group.memberCount ?? 0;
+                    return {
+                      ...conv,
+                      group: {
+                        ...conv.group,
+                        memberCount: Math.max(0, current + delta),
+                      },
+                    };
+                  }),
+                })),
+              };
+            }
+          );
+
+          useChatStore.setState((state) => ({
+            conversations: state.conversations.map((conv) => {
+              if (conv.id !== payload.conversationId || !conv.group) return conv;
+              const current = conv.group.memberCount ?? 0;
+              return {
+                ...conv,
+                group: {
+                  ...conv.group,
+                  memberCount: Math.max(0, current + delta),
+                },
+              };
+            }),
+          }));
+
+          // Keep group settings screens in sync (e.g. /groups/:id/settings?tab=members).
+          qc.invalidateQueries({ queryKey: ["groups"] });
+        }
+
+        qc.invalidateQueries({ queryKey: ["conversations"] });
+        qc.invalidateQueries({ queryKey: ["conversation", payload.conversationId] });
       }
     });
 
