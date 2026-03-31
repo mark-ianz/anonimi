@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMessages } from "@/hooks/useMessages";
 import { useTyping } from "@/hooks/useTyping";
 import { useAuthStore } from "@/stores/authStore";
+import { useChatStore } from "@/stores/chatStore";
 import { getChatSocket } from "@/lib/socket";
 import type { Conversation } from "@/types/conversation";
 import MessageBubble from "./MessageBubble";
@@ -42,12 +43,36 @@ function getTimeBucketKey(value: string): number {
 
 export default function MessageList({ conversation }: MessageListProps) {
   const { user } = useAuthStore();
+  const { clearUnread } = useChatStore();
   const { messages, isLoading, isFetchingMore, hasMore, fetchMore } = useMessages(conversation.id);
   const { typingUsers } = useTyping(conversation.id);
   const bottomRef = useRef<HTMLDivElement>(null);
   const isFirstLoad = useRef(true);
   const lastMessageIdRef = useRef<string | null>(null);
   const emittedReadIdsRef = useRef<Set<string>>(new Set());
+  const [canMarkRead, setCanMarkRead] = useState(true);
+
+  useEffect(() => {
+    const computeCanMarkRead = () =>
+      typeof document !== "undefined" &&
+      document.visibilityState === "visible" &&
+      document.hasFocus();
+
+    const syncCanMarkRead = () => {
+      setCanMarkRead(computeCanMarkRead());
+    };
+
+    syncCanMarkRead();
+    window.addEventListener("focus", syncCanMarkRead);
+    window.addEventListener("blur", syncCanMarkRead);
+    document.addEventListener("visibilitychange", syncCanMarkRead);
+
+    return () => {
+      window.removeEventListener("focus", syncCanMarkRead);
+      window.removeEventListener("blur", syncCanMarkRead);
+      document.removeEventListener("visibilitychange", syncCanMarkRead);
+    };
+  }, []);
 
   useEffect(() => {
     emittedReadIdsRef.current.clear();
@@ -75,7 +100,11 @@ export default function MessageList({ conversation }: MessageListProps) {
 
   // When opening a conversation, immediately mark all unread incoming messages as read.
   useEffect(() => {
-    if (!user?.id || !messages.length) return;
+    if (!user?.id || !messages.length || !canMarkRead) return;
+
+    // As soon as this visible, focused tab is viewing the conversation,
+    // clear its local unread badge in the left conversation list.
+    clearUnread(conversation.id);
 
     const unreadIncomingIds = messages
       .filter((message) => {
@@ -95,7 +124,7 @@ export default function MessageList({ conversation }: MessageListProps) {
       conversationId: conversation.id,
       messageIds: unreadIncomingIds,
     });
-  }, [messages, conversation.id, user?.id]);
+  }, [messages, conversation.id, user?.id, canMarkRead, clearUnread]);
 
   // Participant lookup for group conversations
   const participantCount =

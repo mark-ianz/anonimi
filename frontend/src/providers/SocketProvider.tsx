@@ -49,11 +49,34 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     updateMessage,
     updateConversationLastMessage,
     incrementUnread,
+    unreadCounts,
   } = useChatStore();
   const { setPresence } = usePresenceStore();
   const { setTyping } = useTypingStore();
   const socketRef = useRef<Socket | null>(null);
 
+  const baseTitleRef = useRef("EchoID - Real-time Chat");
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    if (!baseTitleRef.current || baseTitleRef.current.startsWith("(")) {
+      baseTitleRef.current = "EchoID - Real-time Chat";
+    }
+
+    const totalUnread = Object.values(unreadCounts).reduce(
+      (sum, count) => sum + (Number.isFinite(count) ? count : 0),
+      0
+    );
+
+    document.title = totalUnread > 0
+      ? `(${totalUnread > 99 ? "99+" : totalUnread}) New message - ${baseTitleRef.current}`
+      : baseTitleRef.current;
+
+    return () => {
+      document.title = baseTitleRef.current;
+    };
+  }, [unreadCounts]);
   const resolveNotificationHref = (data: Record<string, unknown>) => {
     const href = data.href;
     if (typeof href === "string") {
@@ -73,6 +96,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     if (!isAuthenticated) {
       disconnectSockets();
       setChatStatus("disconnected");
+      if (typeof document !== "undefined") {
+        document.title = baseTitleRef.current;
+      }
       return;
     }
 
@@ -143,7 +169,13 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         timestamp: payload.timestamp,
       });
       const { activeConversationId: currentActiveConversationId } = useChatStore.getState();
-      if (currentActiveConversationId !== payload.conversationId) {
+      const canAutoRead =
+        currentActiveConversationId === payload.conversationId &&
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible" &&
+        document.hasFocus();
+
+      if (!canAutoRead) {
         incrementUnread(payload.conversationId);
       } else {
         // Auto-mark as read
@@ -297,10 +329,15 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         typeof payload.data?.conversationId === "string"
           ? payload.data.conversationId
           : null;
+      const canAutoReadFromNotification =
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible" &&
+        document.hasFocus();
       const isActiveMessageNotification =
         payload.type === "message_received" &&
         !!payloadConversationId &&
-        payloadConversationId === useChatStore.getState().activeConversationId;
+        payloadConversationId === useChatStore.getState().activeConversationId &&
+        canAutoReadFromNotification;
 
       if (isActiveMessageNotification) {
         api.patch(`/notifications/${payload.id}/read`).catch(() => undefined);
