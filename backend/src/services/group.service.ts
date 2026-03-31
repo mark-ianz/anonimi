@@ -226,6 +226,28 @@ export const createGroup = async (
     }
   }
 
+  const ownerName = owner?.username ?? "Someone";
+  await createGroupSystemMessage(
+    conversation._id,
+    new Types.ObjectId(actualOwnerId),
+    `${ownerName} created the group chat.`
+  );
+
+  if (memberUsers.length > 0) {
+    const othersCount = Math.max(memberUsers.length - 1, 0);
+    const firstMemberName = memberUsers[0]?.username ?? "a member";
+    const addedMessage =
+      memberUsers.length === 1
+        ? `You added ${firstMemberName} to the group chat.`
+        : `You added ${firstMemberName} and ${othersCount} ${othersCount === 1 ? "other" : "others"} to the group chat.`;
+
+    await createGroupSystemMessage(
+      conversation._id,
+      new Types.ObjectId(actualOwnerId),
+      addedMessage
+    );
+  }
+
   return {
     groupId: group._id.toString(),
     conversationId: conversation._id.toString(),
