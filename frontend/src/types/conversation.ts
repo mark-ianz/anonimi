@@ -26,6 +26,7 @@ export interface ConversationGroup {
 export interface LastMessage {
   content: string | null;
   senderId: string;
+  senderUsername?: string;
   type: MessageType;
   timestamp: string;
 }

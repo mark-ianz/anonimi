@@ -174,6 +174,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       updateConversationLastMessage(payload.conversationId, {
         content: payload.content,
         senderId: payload.senderId,
+        senderUsername: payload.senderUsername,
         type: payload.type,
         timestamp: payload.timestamp,
       });

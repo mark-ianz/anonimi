@@ -32,6 +32,7 @@ interface LastMessage {
   senderId: string;
   type: string;
   timestamp: Date;
+  senderUsername?: string;
 }
 
 const serializeReadByAt = (
@@ -207,6 +208,10 @@ export const getConversations = async (
           readBy: { $ne: new Types.ObjectId(userId) },
         });
 
+        const lastMessageSender = conv.lastMessage?.senderId
+          ? await User.findById(conv.lastMessage.senderId).select("username").lean()
+          : null;
+
         return {
           id: conv._id.toString(),
           type: conv.type,
@@ -221,7 +226,12 @@ export const getConversations = async (
             profileImage: user?.profileImage,
             onlineStatus: user?.onlineStatus,
           },
-          lastMessage: conv.lastMessage,
+          lastMessage: conv.lastMessage
+            ? {
+                ...conv.lastMessage,
+                senderUsername: lastMessageSender?.username,
+              }
+            : null,
           unreadCount,
           requestStatus: conv.requestStatus ?? null,
           updatedAt: conv.updatedAt,
@@ -248,6 +258,10 @@ export const getConversations = async (
           readBy: { $ne: new Types.ObjectId(userId) },
         });
 
+        const lastMessageSender = conv.lastMessage?.senderId
+          ? await User.findById(conv.lastMessage.senderId).select("username").lean()
+          : null;
+
         return {
           id: conv._id.toString(),
           type: conv.type,
@@ -258,7 +272,12 @@ export const getConversations = async (
             memberCount,
             fallbackProfileImages,
           },
-          lastMessage: conv.lastMessage,
+          lastMessage: conv.lastMessage
+            ? {
+                ...conv.lastMessage,
+                senderUsername: lastMessageSender?.username,
+              }
+            : null,
           unreadCount,
           requestStatus: null,
           updatedAt: conv.updatedAt,
@@ -350,6 +369,10 @@ export const getConversation = async (
       (m: any) => m.userId?.profileImage ?? null
     );
 
+    const lastMessageSender = conversation.lastMessage?.senderId
+      ? await User.findById(conversation.lastMessage.senderId).select("username").lean()
+      : null;
+
     return {
       id: conversation._id.toString(),
       type: conversation.type,
@@ -360,6 +383,12 @@ export const getConversation = async (
         memberCount,
         fallbackProfileImages,
       },
+      lastMessage: conversation.lastMessage
+        ? {
+            ...conversation.lastMessage,
+            senderUsername: lastMessageSender?.username,
+          }
+        : null,
       requestStatus: conversation.requestStatus,
       createdAt: conversation.createdAt,
     };
