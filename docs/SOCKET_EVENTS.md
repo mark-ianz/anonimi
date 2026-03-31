@@ -127,12 +127,16 @@ Send a new message in a conversation.
 **Server Processing:**
 1. Validate payload (required fields, content length, valid type).
 2. Verify sender is participant in the conversation.
-3. Check block status (sender not blocked by any recipient).
-4. Check message request status (create request if non-contact and first message).
+3. Check block status:
+  - If sender has blocked recipient → reject (`403`).
+  - If recipient has blocked sender → persist as sender-only (hidden from recipient) for privacy.
+4. Check message request status (create request if non-contact and first message) when delivery is not sender-only.
 5. Persist message to MongoDB.
-6. Update conversation `lastMessage` and `updatedAt`.
+6. Update conversation `lastMessage` and `updatedAt` only when recipient delivery is allowed.
 7. Emit `message:ack` to sender.
-8. Emit `message:receive` to conversation room (excluding sender).
+8. Emit `message:receive` directly to deliverable recipients only (not a blind room broadcast).
+
+**Privacy Note:** If recipient has blocked sender, the sender still sees a successful send, but the recipient receives no realtime event and no notification.
 
 **`tempId` Purpose:** Client generates a temporary UUID for optimistic UI rendering. The server echoes it back in `message:ack` so the client can replace the temporary message with the confirmed one.
 

@@ -734,7 +734,7 @@ Open or create a private conversation with another user. If a conversation betwe
 **Errors:**
 - `404` — User with the given EchoID not found
 - `400` — Cannot create conversation with yourself
-- `403` — You are blocked by or have blocked this user
+- `403` — You have blocked this user
 
 ---
 
@@ -761,6 +761,9 @@ List the authenticated user's conversations.
         "echoId": "eid_b7G2mN48",
         "username": "jane_smith",
         "nickname": "Jane",
+        "contactId": "60d5ecb54b24a1001c8e4b88",
+        "blockId": null,
+        "blockedByMe": false,
         "profileImage": "/uploads/avatars/uuid2.jpg",
         "onlineStatus": "online"
       },
@@ -799,6 +802,8 @@ List the authenticated user's conversations.
 ```
 
 Note: `unreadCount` is computed as messages not in the user's `readBy` since their last read timestamp. `requestStatus` is included on all private conversations — `null` means full access, `"pending"` means gated, `"accepted"` means formerly-gated but now open, `"ignored"` means hidden.
+
+For private conversations, `participant.blockedByMe` and `participant.blockId` indicate whether the authenticated user currently blocks the other user (used by the client to disable input and show unblock actions).
 
 This endpoint returns only conversations the current user has access to in their **main chat inbox** — conversations with `requestStatus: "pending"` or `"ignored"` are **excluded** from this list (they appear under `GET /api/conversations/requests` instead).
 
@@ -962,6 +967,10 @@ Send a message via REST (alternative to WebSocket for reliability).
 ```
 
 Note: This endpoint also triggers Socket.IO event to the recipient. Prefer WebSocket for real-time messaging; use REST as a fallback.
+
+Block behavior in private chats:
+- If **you blocked** the other user, send is rejected (`403`).
+- If the **other user blocked** you, send is accepted for privacy: the message is persisted but hidden from the blocker and is not delivered or notified to them.
 
 ---
 
@@ -1391,7 +1400,6 @@ Block a user.
 
 **Errors:**
 - `409` — Already blocked
-- `429` — Cooldown period active (recently unblocked)
 
 ---
 
@@ -1404,13 +1412,12 @@ Unblock a user.
 {
   "success": true,
   "data": {
-    "message": "User unblocked.",
-    "cooldownExpiresAt": "2026-03-10T14:00:00Z"
+    "message": "User unblocked."
   }
 }
 ```
 
-Note: `cooldownExpiresAt` indicates when the user can re-block this person.
+Note: Re-blocking is allowed immediately after unblocking.
 
 ---
 

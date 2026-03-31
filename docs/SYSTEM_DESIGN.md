@@ -163,13 +163,14 @@ Sender Client              Server                    Recipient Client
 ```
 
 **Message Processing Rules:**
-1. If sender is blocked by recipient → reject with error, do not persist.
-2. If no existing conversation → create conversation document, then check contact status.
-3. If recipient is NOT in sender's contacts → route to message requests (see Section 5).
-4. Persist message to MongoDB with `createdAt` timestamp.
-5. Emit acknowledgment to sender (confirms delivery to server).
-6. Emit message event to recipient room.
-7. If recipient is offline, the message persists in DB and is fetched on next login.
+1. If sender has blocked recipient → reject with error.
+2. If recipient has blocked sender → accept and persist as sender-only (hidden from recipient), with no recipient notification/realtime delivery.
+3. If no existing conversation → create conversation document, then check contact status.
+4. If recipient is NOT in sender's contacts → route to message requests (see Section 5), except sender-only blocked flow.
+5. Persist message to MongoDB with `createdAt` timestamp.
+6. Emit acknowledgment to sender (confirms delivery to server).
+7. Emit message event only to recipients that are allowed to receive it.
+8. If recipient is offline and delivery is allowed, the message persists in DB and is fetched on next login.
 
 ### Supported Message Types
 
@@ -414,7 +415,8 @@ When a contact request is accepted within the chat:
 - Only the **first message** from a non-contact triggers a `MessageRequest` record. Subsequent messages from the same sender in the same conversation do not create additional requests.
 - The sender can continue sending messages at any time while `requestStatus` is `"pending"` — messages are stored and visible on the sender's side. The recipient sees them all upon accepting.
 - Ignored conversations can still be found and accepted later from the Message Requests view — they are hidden, not deleted.
-- If the sender is blocked, no message or message request is created — the send attempt is rejected silently.
+- If the sender has blocked the recipient, send is rejected.
+- If the recipient has blocked the sender, sender messages are accepted but kept sender-only for privacy and do not create recipient-visible request flow while blocked.
 - When a contact relationship is established (either via accept-with-contacts or a standalone contact request), `requestStatus` is set to `null`, removing all gating permanently.
 
 ---

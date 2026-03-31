@@ -521,6 +521,9 @@ The default view when entering the application.
 - New messages appear instantly at bottom
 - Auto-scroll to newest message
 - Optimistic message rendering (show immediately, confirm on ack)
+- Read marking is focus-aware: messages are auto-marked read only when the conversation is open **and** the browser tab is visible/focused.
+- If the conversation is open in a background tab, incoming messages stay unread until focus returns.
+- Returning focus to an open conversation clears its local unread badge and emits read receipts.
 
 #### Non-Contact Notice Banner
 
@@ -944,6 +947,7 @@ The `SocketProvider` wraps only the authenticated application layout. It:
 2. Joins user rooms and conversation rooms
 3. Handles reconnection with exponential backoff
 4. Exposes socket instance via context or Zustand store
+5. Updates browser tab title for unread chat messages (e.g., `(3) New message - EchoID - Real-time Chat`) and resets when unread returns to zero.
 
 ### Hooks
 
