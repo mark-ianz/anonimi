@@ -658,6 +658,38 @@ Set or update a contact nickname.
 }
 ```
 
+**Notes:**
+- This nickname is private to the authenticated user (how **you** see the other user).
+- On success, the server writes a `system` message in the private conversation for both users with personalized text.
+
+---
+
+### PATCH /api/contacts/:contactId/self-nickname
+
+Set or update your **own nickname** as seen by the other contact in this private chat.
+
+**Request Body:**
+```json
+{
+  "nickname": "friend"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "contactId": "60d5ecb54b24a1001c8e4b3b",
+    "nickname": "friend"
+  }
+}
+```
+
+**Notes:**
+- This updates the reciprocal contact record (how the other user sees your display name).
+- On success, the server writes `system` messages to both users' views of the conversation and emits realtime sync updates.
+
 ---
 
 ## 4. Conversations

@@ -296,6 +296,10 @@ A new message was received in a conversation.
 - Show notification if the conversation is not currently focused.
 - If focused, auto-emit `message:read`.
 
+**Nickname System Indicators:**
+- Nickname updates also arrive as `message:receive` events with `type: "system"`.
+- The server emits personalized content for each user (e.g., "You set the nickname..." vs "X set your nickname...").
+
 ---
 
 ### `message:unsent`
@@ -424,6 +428,26 @@ A contact request was accepted.
   "profileImage": "/uploads/avatars/uuid2.jpg"
 }
 ```
+
+---
+
+### `contact:nickname-updated`
+
+Nickname metadata changed for a private conversation.
+
+**Target:** `user:<userId>` room (both participants receive it).
+
+**Payload:**
+```json
+{
+  "conversationId": "60d5ecb54b24a1001c8e4b3f"
+}
+```
+
+**Client Handling:**
+- Re-fetch contacts list.
+- Re-fetch conversations list.
+- Re-fetch active conversation details (`GET /api/conversations/:conversationId`) so header name/status updates immediately.
 
 ---
 
