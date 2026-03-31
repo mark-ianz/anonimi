@@ -61,7 +61,10 @@ export default function ChatView({ conversation }: ChatViewProps) {
 
   const isGroup = conversation.type === "group";
   const participantId = conversation.participant?.id;
-  const { status: presenceStatus, lastSeen } = usePresence(participantId);
+  const { status: presenceStatus, lastSeen } = usePresence(
+    participantId,
+    conversation.participant?.onlineStatus ?? "offline"
+  );
 
   const displayName = isGroup
     ? conversation.group?.name

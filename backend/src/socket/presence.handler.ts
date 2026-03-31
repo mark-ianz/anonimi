@@ -48,7 +48,7 @@ export const setupPresenceHandler = (io: Server, socket: Socket): void => {
     });
 
     for (const conv of conversations) {
-      io.to(`conversation:${conv._id.toString()}`).emit("presence:update", {
+      io.of("/chat").to(`conversation:${conv._id.toString()}`).emit("presence:update", {
         userId,
         status: user.onlineStatus,
         lastSeen: user.onlineStatus === OnlineStatus.OFFLINE ? user.lastSeen?.toISOString() : undefined,
@@ -62,7 +62,7 @@ export const setupPresenceHandler = (io: Server, socket: Socket): void => {
     if (!userId) return;
 
     setTimeout(async () => {
-      const sockets = await io.in(`user:${userId}`).fetchSockets();
+      const sockets = await io.of("/chat").in(`user:${userId}`).fetchSockets();
 
       if (sockets.length === 0) {
         await User.findByIdAndUpdate(userId, {
@@ -75,7 +75,7 @@ export const setupPresenceHandler = (io: Server, socket: Socket): void => {
         });
 
         for (const conv of conversations) {
-          io.to(`conversation:${conv._id.toString()}`).emit("presence:update", {
+          io.of("/chat").to(`conversation:${conv._id.toString()}`).emit("presence:update", {
             userId,
             status: "offline",
             lastSeen: new Date().toISOString(),

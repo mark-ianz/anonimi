@@ -34,7 +34,10 @@ export default function ConversationItem({
   const { unreadCounts } = useChatStore();
   const isGroup = conversation.type === "group";
   const participantId = conversation.participant?.id;
-  const { status: presenceStatus } = usePresence(isGroup ? null : participantId);
+  const { status: presenceStatus } = usePresence(
+    isGroup ? null : participantId,
+    conversation.participant?.onlineStatus ?? "offline"
+  );
 
   const unread = unreadCounts[conversation.id] ?? conversation.unreadCount ?? 0;
   const hasUnread = unread > 0;
