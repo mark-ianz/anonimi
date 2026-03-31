@@ -9,6 +9,8 @@ export interface ConversationParticipant {
   username: string;
   nickname: string | null;
   contactId: string | null;
+  blockId?: string | null;
+  blockedByMe?: boolean;
   profileImage: string | null;
   onlineStatus: OnlineStatus;
 }

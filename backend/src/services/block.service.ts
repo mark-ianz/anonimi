@@ -3,8 +3,6 @@ import { User } from "../models/user.model";
 import { Block } from "../models/block.model";
 import { NotFoundError, ConflictError, ForbiddenError } from "../utils/apiError";
 
-const BLOCK_COOLDOWN_DAYS = 2;
-
 export const getBlocks = async (userId: string) => {
   const blocks = await Block.find({
     blockerId: new Types.ObjectId(userId),
@@ -39,32 +37,21 @@ export const blockUser = async (blockerId: string, targetEchoId: string) => {
   const existingBlock = await Block.findOne({
     blockerId: new Types.ObjectId(blockerId),
     blockedId: targetUser._id,
-    active: true,
   });
 
-  if (existingBlock) {
+  if (existingBlock?.active) {
     throw new ConflictError("User already blocked");
   }
 
-  const previousBlock = await Block.findOne({
-    blockerId: new Types.ObjectId(blockerId),
-    blockedId: targetUser._id,
-    active: false,
-  });
+  if (existingBlock && !existingBlock.active) {
+    existingBlock.active = true;
+    existingBlock.lastUnblockedAt = undefined;
+    await existingBlock.save();
 
-  if (previousBlock && previousBlock.lastUnblockedAt) {
-    const daysSinceUnblock = Math.floor(
-      (Date.now() - previousBlock.lastUnblockedAt.getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    if (daysSinceUnblock < BLOCK_COOLDOWN_DAYS) {
-      const cooldownExpires = new Date(previousBlock.lastUnblockedAt);
-      cooldownExpires.setDate(cooldownExpires.getDate() + BLOCK_COOLDOWN_DAYS);
-
-      throw new ForbiddenError(
-        `Cooldown active. You can re-block this user after ${cooldownExpires.toLocaleDateString()}`
-      );
-    }
+    return {
+      blockId: existingBlock._id.toString(),
+      message: "User blocked.",
+    };
   }
 
   const block = await Block.create({
@@ -94,11 +81,7 @@ export const unblockUser = async (blockerId: string, blockId: string) => {
   block.lastUnblockedAt = new Date();
   await block.save();
 
-  const cooldownExpires = new Date();
-  cooldownExpires.setDate(cooldownExpires.getDate() + BLOCK_COOLDOWN_DAYS);
-
   return {
     message: "User unblocked.",
-    cooldownExpiresAt: cooldownExpires.toISOString(),
   };
 };

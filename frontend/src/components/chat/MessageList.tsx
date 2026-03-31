@@ -116,6 +116,9 @@ export default function MessageList({ conversation }: MessageListProps) {
     if (msg.pending || msg.failed || msg.unsent) return latest;
     const isReadByOther = (msg.readBy ?? []).some((readerId) => readerId !== user?.id);
     if (isReadByOther) return latest;
+    // If we already have a newer read anchor, avoid showing an older unread "Sent"
+    // marker that can reveal hidden delivery windows (e.g. block period messages).
+    if (latestReadOutgoingIndex >= 0 && idx <= latestReadOutgoingIndex) return latest;
     return idx;
   }, -1);
 

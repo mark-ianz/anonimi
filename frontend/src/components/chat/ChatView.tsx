@@ -61,8 +61,10 @@ export default function ChatView({ conversation }: ChatViewProps) {
   const isPending = conversation.requestStatus === "pending";
   const isSender = isPending && (conversation.requestFromUserId == null || conversation.requestFromUserId === currentUser?.id);
   const isRecipient = isPending && !isSender;
+  const isBlockedByMe = !isGroup && !!conversation.participant?.blockedByMe;
+  const myBlockId = conversation.participant?.blockId ?? null;
   // Recipient can't type until they accept; sender can always type
-  const isInputDisabled = isRecipient;
+  const isInputDisabled = isRecipient || isBlockedByMe;
 
   useEffect(() => {
     setActiveConversation(conversation.id);
@@ -132,11 +134,25 @@ export default function ChatView({ conversation }: ChatViewProps) {
       await api.post("/blocks", { targetEchoId: conversation.participant?.echoId });
     },
     onSuccess: () => {
+      setConfirmBlock(false);
       toast.success(`${displayName} has been blocked.`);
       qc.invalidateQueries({ queryKey: ["conversations"] });
-      router.push("/chat");
+      qc.invalidateQueries({ queryKey: ["conversation", conversation.id] });
     },
     onError: () => toast.error("Failed to block user."),
+  });
+
+  const unblockMutation = useMutation({
+    mutationFn: async () => {
+      if (!myBlockId) throw new Error("Missing block id");
+      await api.delete(`/blocks/${myBlockId}`);
+    },
+    onSuccess: () => {
+      toast.success(`${displayName} has been unblocked.`);
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+      qc.invalidateQueries({ queryKey: ["conversation", conversation.id] });
+    },
+    onError: () => toast.error("Failed to unblock user."),
   });
 
   const nicknameMutation = useMutation({
@@ -349,13 +365,24 @@ export default function ChatView({ conversation }: ChatViewProps) {
                 {!isGroup && (
                   <>
                     <div className="my-1 border-t border-border/30" />
-                    <button
-                      onClick={() => { setMenuOpen(false); setConfirmBlock(true); }}
-                      className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-                    >
-                      <ShieldBan className="w-4 h-4 shrink-0" />
-                      Block user
-                    </button>
+                    {isBlockedByMe ? (
+                      <button
+                        onClick={() => { setMenuOpen(false); unblockMutation.mutate(); }}
+                        disabled={unblockMutation.isPending || !myBlockId}
+                        className="flex items-center gap-2.5 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors disabled:opacity-50"
+                      >
+                        <ShieldBan className="w-4 h-4 shrink-0 text-muted-foreground" />
+                        {unblockMutation.isPending ? "Unblocking..." : "Unblock user"}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => { setMenuOpen(false); setConfirmBlock(true); }}
+                        className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                      >
+                        <ShieldBan className="w-4 h-4 shrink-0" />
+                        Block user
+                      </button>
+                    )}
                     <button
                       onClick={() => { setMenuOpen(false); setShowReportForm(true); }}
                       className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
@@ -439,6 +466,40 @@ export default function ChatView({ conversation }: ChatViewProps) {
         </div>
       )}
 
+      {/* Blocked by you banner */}
+      {isBlockedByMe && (
+        <div className="mx-4 mt-3 px-4 py-3 rounded-xl bg-destructive/10 border border-destructive/30 shrink-0 space-y-3">
+          <p className="text-sm font-medium text-foreground">
+            You blocked {displayName}. You can&apos;t send messages in this conversation.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            They can still send messages, but you will not receive anything sent while this block is active.
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => unblockMutation.mutate()}
+              disabled={unblockMutation.isPending || !myBlockId}
+              className="h-8 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              {unblockMutation.isPending ? "Unblocking..." : "Unblock"}
+            </button>
+            <button
+              onClick={() => setShowReportForm(true)}
+              className="h-8 px-3 rounded-lg bg-muted text-foreground text-xs font-medium hover:bg-muted/80 transition-colors"
+            >
+              Report
+            </button>
+            <button
+              disabled
+              title="Archive coming soon"
+              className="h-8 px-3 rounded-lg border border-border/50 text-xs font-medium text-muted-foreground cursor-not-allowed"
+            >
+              Archive (soon)
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Message list */}
       <MessageList conversation={conversation} />
 
@@ -447,7 +508,13 @@ export default function ChatView({ conversation }: ChatViewProps) {
         <MessageInput
           conversationId={conversation.id}
           disabled={isInputDisabled}
-          placeholder={isInputDisabled ? "Accept the request to reply…" : "Message…"}
+          placeholder={
+            isBlockedByMe
+              ? "Unblock this user to send messages..."
+              : isRecipient
+              ? "Accept the request to reply..."
+              : "Message..."
+          }
         />
       </div>
 
@@ -457,7 +524,7 @@ export default function ChatView({ conversation }: ChatViewProps) {
         onClose={() => setConfirmBlock(false)}
         onConfirm={() => blockMutation.mutate()}
         title={`Block ${displayName}?`}
-        description="They won't be able to message you and you won't see their messages."
+        description="You won't receive their new messages while blocked, and you won't be able to send them messages until you unblock."
         confirmLabel="Block"
         variant="destructive"
         loading={blockMutation.isPending}

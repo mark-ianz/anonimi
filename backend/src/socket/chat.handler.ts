@@ -72,20 +72,23 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
         timestamp: result.message.createdAt,
       });
 
-      // Broadcast to all other participants in the conversation room
-      socket.to(`conversation:${conversationId}`).emit("message:receive", {
-        messageId: result.message.id,
-        conversationId: result.message.conversationId,
-        senderId: userId,
-        senderUsername: result.sender.username,
-        senderProfileImage: result.sender.profileImage,
-        type: result.message.type,
-        content: result.message.content,
-        mediaUrl: result.message.mediaUrl,
-        fileName: result.message.fileName,
-        fileSize: result.message.fileSize,
-        timestamp: result.message.createdAt,
-      });
+      const deliveredRecipientIds = result.deliveredRecipientIds ?? recipientIds;
+
+      for (const recipientId of deliveredRecipientIds) {
+        emitToUser(recipientId, "message:receive", {
+          messageId: result.message.id,
+          conversationId: result.message.conversationId,
+          senderId: userId,
+          senderUsername: result.sender.username,
+          senderProfileImage: result.sender.profileImage,
+          type: result.message.type,
+          content: result.message.content,
+          mediaUrl: result.message.mediaUrl,
+          fileName: result.message.fileName,
+          fileSize: result.message.fileSize,
+          timestamp: result.message.createdAt,
+        });
+      }
     } catch (error: any) {
       console.error("Error in message:send:", error);
       const code =

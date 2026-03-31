@@ -21,6 +21,8 @@ interface ConversationParticipant {
   echoId: string;
   username: string;
   nickname?: string;
+  blockId?: string | null;
+  blockedByMe?: boolean;
   profileImage: string | null;
   onlineStatus: string;
 }
@@ -64,13 +66,14 @@ export const createOrGetConversation = async (
     throw new ForbiddenError("Cannot create a conversation with yourself");
   }
 
-  const isBlocked = await Block.findOne({
-    $or: [
-      { blockerId: new Types.ObjectId(userId), blockedId: participant._id, active: true },
-      { blockerId: participant._id, blockedId: new Types.ObjectId(userId), active: true },
-    ],
+  const blockedByMe = await Block.findOne({
+    blockerId: new Types.ObjectId(userId),
+    blockedId: participant._id,
+    active: true,
   });
-  if (isBlocked) throw new ForbiddenError("Cannot create conversation with this user");
+  if (blockedByMe) {
+    throw new ForbiddenError("You blocked this user. Unblock to start or continue messaging.");
+  }
 
   const existing = await Conversation.findOne({
     type: "private",
@@ -192,6 +195,12 @@ export const getConversations = async (
           status: "accepted",
         });
 
+        const myBlock = await Block.findOne({
+          blockerId: new Types.ObjectId(userId),
+          blockedId: otherUserId,
+          active: true,
+        }).select("_id");
+
         const unreadCount = await Message.countDocuments({
           conversationId: conv._id,
           senderId: { $ne: new Types.ObjectId(userId) },
@@ -207,6 +216,8 @@ export const getConversations = async (
             username: user?.username,
             nickname: contact?.nickname,
             contactId: contact?._id.toString() ?? null,
+            blockId: myBlock?._id.toString() ?? null,
+            blockedByMe: !!myBlock,
             profileImage: user?.profileImage,
             onlineStatus: user?.onlineStatus,
           },
@@ -283,6 +294,12 @@ export const getConversation = async (
       status: "accepted",
     });
 
+    const myBlock = await Block.findOne({
+      blockerId: new Types.ObjectId(userId),
+      blockedId: otherParticipant,
+      active: true,
+    }).select("_id");
+
     const messageRequest = await MessageRequest.findOne({
       conversationId: conversation._id,
     }).select("_id fromUserId toUserId status");
@@ -296,6 +313,8 @@ export const getConversation = async (
         username: user?.username,
         nickname: contact?.nickname,
         contactId: contact?._id.toString() ?? null,
+        blockId: myBlock?._id.toString() ?? null,
+        blockedByMe: !!myBlock,
         profileImage: user?.profileImage,
         onlineStatus: user?.onlineStatus,
       },
@@ -411,25 +430,37 @@ export const sendMessage = async (
       (p) => p.toString() !== senderId
     );
 
-    const isBlocked = await Block.findOne({
-      $or: [
-        { blockerId: senderId, blockedId: recipientId, active: true },
-        { blockerId: recipientId, blockedId: senderId, active: true },
-      ],
-    });
-
-    if (isBlocked) {
-      throw new ForbiddenError("Cannot send message to this user");
+    if (!recipientId) {
+      throw new NotFoundError("Recipient not found");
     }
 
-    const isContact = await Contact.findOne({
-      $or: [
-        { userId: senderId, contactId: recipientId, status: "accepted" },
-        { userId: recipientId, contactId: senderId, status: "accepted" },
-      ],
-    });
+    const blockedBySender = await Block.findOne({
+      blockerId: new Types.ObjectId(senderId),
+      blockedId: recipientId,
+      active: true,
+    }).select("_id");
 
-    if (!isContact) {
+    if (blockedBySender) {
+      throw new ForbiddenError("You blocked this user. Unblock to send messages.");
+    }
+
+    const blockedByRecipient = await Block.findOne({
+      blockerId: recipientId,
+      blockedId: new Types.ObjectId(senderId),
+      active: true,
+    }).select("_id");
+
+    const isShadowDelivery = !!blockedByRecipient;
+
+    if (!isShadowDelivery) {
+      const isContact = await Contact.findOne({
+        $or: [
+          { userId: senderId, contactId: recipientId, status: "accepted" },
+          { userId: recipientId, contactId: senderId, status: "accepted" },
+        ],
+      });
+
+      if (!isContact) {
       const existingRequest = await MessageRequest.findOne({
         conversationId: conversation._id,
       });
@@ -513,7 +544,80 @@ export const sendMessage = async (
           },
         });
       }
+      }
     }
+
+    const message = await Message.create({
+      conversationId: conversation._id,
+      senderId: new Types.ObjectId(senderId),
+      type,
+      content,
+      mediaUrl,
+      fileName,
+      fileSize,
+      readBy: [new Types.ObjectId(senderId)],
+      readByAt: { [senderId]: new Date() },
+      deletedFor: isShadowDelivery ? [recipientId] : [],
+      unsent: false,
+    });
+
+    if (!isShadowDelivery) {
+      conversation.lastMessage = {
+        content: content || (mediaUrl ? "[Media]" : "[Message]"),
+        senderId: new Types.ObjectId(senderId),
+        type,
+        timestamp: message.createdAt,
+      };
+      conversation.updatedAt = new Date();
+      await conversation.save();
+    }
+    const sender = await User.findById(senderId).select("echoId username profileImage");
+
+    const recipientIds = conversation.participants
+      .map((participant) => participant.toString())
+      .filter((participantId) => participantId !== senderId);
+    const deliveredRecipientIds = isShadowDelivery ? [] : recipientIds;
+    const suppressedRecipients = new Set(options?.suppressNotificationUserIds ?? []);
+
+    for (const recipientIdStr of deliveredRecipientIds) {
+      if (suppressedRecipients.has(recipientIdStr)) continue;
+
+      await createAndEmitNotification({
+        userId: recipientIdStr,
+        type: "message_received",
+        title: `New message from ${sender?.username ?? "a contact"}`,
+        body: content?.trim() ? content.slice(0, 140) : "Sent you a message.",
+        data: {
+          conversationId: conversation._id.toString(),
+          senderId,
+          senderUsername: sender?.username ?? "Someone",
+          href: `/chat/${conversation._id.toString()}`,
+        },
+      });
+    }
+
+    return {
+      message: {
+        id: message._id.toString(),
+        conversationId: message.conversationId.toString(),
+        senderId: message.senderId?.toString(),
+        type: message.type,
+        content: message.content,
+        mediaUrl: message.mediaUrl,
+        fileName: message.fileName,
+        fileSize: message.fileSize,
+        readBy: message.readBy.map((r: Types.ObjectId) => r.toString()),
+        readByAt: serializeReadByAt(message.readByAt),
+        unsent: message.unsent,
+        unsentAt: message.unsent ? message.updatedAt : null,
+        createdAt: message.createdAt,
+      },
+      sender: {
+        username: sender?.username,
+        profileImage: sender?.profileImage,
+      },
+      deliveredRecipientIds,
+    };
   }
 
   const message = await Message.create({
@@ -545,11 +649,11 @@ export const sendMessage = async (
     .filter((participantId) => participantId !== senderId);
   const suppressedRecipients = new Set(options?.suppressNotificationUserIds ?? []);
 
-  for (const recipientId of recipientIds) {
-    if (suppressedRecipients.has(recipientId)) continue;
+  for (const recipientIdStr of recipientIds) {
+    if (suppressedRecipients.has(recipientIdStr)) continue;
 
     await createAndEmitNotification({
-      userId: recipientId,
+      userId: recipientIdStr,
       type: "message_received",
       title: `New message from ${sender?.username ?? "a contact"}`,
       body: content?.trim() ? content.slice(0, 140) : "Sent you a message.",
@@ -582,6 +686,7 @@ export const sendMessage = async (
       username: sender?.username,
       profileImage: sender?.profileImage,
     },
+    deliveredRecipientIds: recipientIds,
   };
 };
 
