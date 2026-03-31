@@ -35,6 +35,7 @@ export default function ChatView({ conversation }: ChatViewProps) {
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [showNicknameForm, setShowNicknameForm] = useState(false);
   const [nicknameValue, setNicknameValue] = useState("");
+  const [nicknameTarget, setNicknameTarget] = useState<"contact" | "self">("contact");
   const [showReportForm, setShowReportForm] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [reportDescription, setReportDescription] = useState("");
@@ -142,14 +143,22 @@ export default function ChatView({ conversation }: ChatViewProps) {
     mutationFn: async (nickname: string | null) => {
       if (isGroup) {
         await api.patch(`/groups/${conversation.group?.id}/nickname`, { nickname });
+      } else if (nicknameTarget === "self") {
+        await api.patch(`/contacts/${conversation.participant!.contactId}/self-nickname`, { nickname });
       } else {
         await api.patch(`/contacts/${conversation.participant!.contactId}/nickname`, { nickname });
       }
     },
     onSuccess: () => {
       toast.success("Nickname updated.");
+      qc.invalidateQueries({ queryKey: ["contacts"] });
+      if (!isGroup && conversation.participant?.echoId) {
+        qc.invalidateQueries({ queryKey: ["user-profile", conversation.participant.echoId] });
+      }
       qc.invalidateQueries({ queryKey: ["conversations"] });
+      qc.invalidateQueries({ queryKey: ["conversation", conversation.id] });
       qc.invalidateQueries({ queryKey: ["conversations", conversation.id] });
+      qc.invalidateQueries({ queryKey: ["messages", conversation.id] });
       setShowNicknameForm(false);
     },
     onError: () => toast.error("Failed to update nickname."),
@@ -305,6 +314,7 @@ export default function ChatView({ conversation }: ChatViewProps) {
                 {(!isGroup && conversation.participant?.contactId) || isGroup ? (
                   <button
                     onClick={() => {
+                      setNicknameTarget("contact");
                       setNicknameValue(
                         isGroup
                           ? (conversation.group?.name ?? "")
@@ -317,6 +327,21 @@ export default function ChatView({ conversation }: ChatViewProps) {
                   >
                     <Pencil className="w-4 h-4 text-muted-foreground shrink-0" />
                     Set nickname
+                  </button>
+                ) : null}
+
+                {!isGroup && conversation.participant?.contactId ? (
+                  <button
+                    onClick={() => {
+                      setNicknameTarget("self");
+                      setNicknameValue("");
+                      setMenuOpen(false);
+                      setShowNicknameForm(true);
+                    }}
+                    className="flex items-center gap-2.5 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                  >
+                    <Pencil className="w-4 h-4 text-muted-foreground shrink-0" />
+                    Set my nickname
                   </button>
                 ) : null}
 
@@ -460,7 +485,9 @@ export default function ChatView({ conversation }: ChatViewProps) {
           <div className="relative glass rounded-2xl p-6 w-full max-w-sm shadow-elevated animate-fade-in">
             <h3 className="font-display font-semibold text-base mb-1">Set nickname</h3>
             <p className="text-xs text-muted-foreground mb-4">
-              Only visible to you. Leave empty to remove.
+              {nicknameTarget === "self"
+                ? "Visible to the other person in this chat. Leave empty to remove."
+                : "Only visible to you. Leave empty to remove."}
             </p>
             <input
               autoFocus
@@ -474,7 +501,11 @@ export default function ChatView({ conversation }: ChatViewProps) {
               }}
               maxLength={50}
               className="w-full h-10 px-3 rounded-xl bg-muted/60 border border-border/50 text-sm focus:outline-none focus:ring-1 focus:ring-primary/40 mb-4"
-              placeholder={`Nickname for ${displayName}…`}
+              placeholder={
+                nicknameTarget === "self"
+                  ? "Your nickname for them to see…"
+                  : `Nickname for ${displayName}…`
+              }
             />
             <div className="flex gap-3">
               <button

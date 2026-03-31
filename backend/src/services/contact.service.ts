@@ -3,7 +3,10 @@ import { User } from "../models/user.model";
 import { Contact } from "../models/contact.model";
 import { Block } from "../models/block.model";
 import { Conversation } from "../models/conversation.model";
+import { Message } from "../models/message.model";
 import { NotFoundError, ConflictError, ForbiddenError } from "../utils/apiError";
+import { emitToUser } from "./notification.service";
+import { MessageType } from "../types/enums";
 
 export const getContacts = async (
   userId: string,
@@ -207,11 +210,17 @@ export const updateNickname = async (
   contactId: string,
   nickname: string | null
 ) => {
+  if (!Types.ObjectId.isValid(contactId)) {
+    throw new NotFoundError("Contact not found");
+  }
+
+  const contactObjectId = new Types.ObjectId(contactId);
+
   const contact = await Contact.findOneAndUpdate(
     {
       userId: new Types.ObjectId(userId),
-      contactId: new Types.ObjectId(contactId),
       status: "accepted",
+      $or: [{ _id: contactObjectId }, { contactId: contactObjectId }],
     },
     { nickname },
     { new: true }
@@ -221,8 +230,239 @@ export const updateNickname = async (
     throw new NotFoundError("Contact not found");
   }
 
+  const targetUserId = contact.contactId.toString();
+
+  const [actorUser, targetUser, privateConversation] = await Promise.all([
+    User.findById(userId).select("username profileImage"),
+    User.findById(targetUserId).select("username"),
+    Conversation.findOne({
+      type: "private",
+      participants: {
+        $all: [new Types.ObjectId(userId), new Types.ObjectId(targetUserId)],
+      },
+    }),
+  ]);
+
+  const reciprocalContact = await Contact.findOne({
+    userId: new Types.ObjectId(targetUserId),
+    contactId: new Types.ObjectId(userId),
+    status: "accepted",
+  }).select("nickname");
+
+  const actorName = actorUser?.username ?? "Someone";
+  const actorNameForTarget = reciprocalContact?.nickname?.trim() || actorName;
+  const targetName = targetUser?.username ?? "user";
+
+  if (privateConversation) {
+    const myContent = nickname
+      ? `You set the nickname for ${targetName} to ${nickname}.`
+      : `You cleared the nickname for ${targetName}.`;
+    const theirContent = nickname
+      ? `${actorNameForTarget} set your nickname to ${nickname}.`
+      : `${actorNameForTarget} cleared your nickname.`;
+
+    const [mySystemMessage, theirSystemMessage] = await Message.create([
+      {
+        conversationId: privateConversation._id,
+        senderId: new Types.ObjectId(userId),
+        type: MessageType.SYSTEM,
+        content: myContent,
+        readBy: [new Types.ObjectId(userId)],
+        readByAt: { [userId]: new Date() },
+        deletedFor: [new Types.ObjectId(targetUserId)],
+        unsent: false,
+      },
+      {
+        conversationId: privateConversation._id,
+        senderId: new Types.ObjectId(userId),
+        type: MessageType.SYSTEM,
+        content: theirContent,
+        readBy: [new Types.ObjectId(userId)],
+        readByAt: { [userId]: new Date() },
+        deletedFor: [new Types.ObjectId(userId)],
+        unsent: false,
+      },
+    ]);
+
+    privateConversation.lastMessage = {
+      content: "Nickname updated",
+      senderId: new Types.ObjectId(userId),
+      type: MessageType.SYSTEM,
+      timestamp: theirSystemMessage.createdAt,
+    };
+    privateConversation.updatedAt = new Date();
+    await privateConversation.save();
+
+    emitToUser(targetUserId, "message:receive", {
+      messageId: theirSystemMessage._id.toString(),
+      conversationId: privateConversation._id.toString(),
+      senderId: userId,
+      senderUsername: actorName,
+      senderProfileImage: actorUser?.profileImage ?? null,
+      type: MessageType.SYSTEM,
+      content: theirSystemMessage.content,
+      mediaUrl: null,
+      fileName: null,
+      fileSize: null,
+      timestamp: theirSystemMessage.createdAt.toISOString(),
+    });
+
+    emitToUser(userId, "message:receive", {
+      messageId: mySystemMessage._id.toString(),
+      conversationId: privateConversation._id.toString(),
+      senderId: userId,
+      senderUsername: actorName,
+      senderProfileImage: actorUser?.profileImage ?? null,
+      type: MessageType.SYSTEM,
+      content: mySystemMessage.content,
+      mediaUrl: null,
+      fileName: null,
+      fileSize: null,
+      timestamp: mySystemMessage.createdAt.toISOString(),
+    });
+
+    emitToUser(userId, "contact:nickname-updated", {
+      conversationId: privateConversation._id.toString(),
+    });
+    emitToUser(targetUserId, "contact:nickname-updated", {
+      conversationId: privateConversation._id.toString(),
+    });
+  }
+
   return {
     contactId: contact.contactId.toString(),
     nickname: contact.nickname,
+  };
+};
+
+export const updateOwnNickname = async (
+  userId: string,
+  contactId: string,
+  nickname: string | null
+) => {
+  if (!Types.ObjectId.isValid(contactId)) {
+    throw new NotFoundError("Contact not found");
+  }
+
+  const contactObjectId = new Types.ObjectId(contactId);
+
+  const myContact = await Contact.findOne({
+    userId: new Types.ObjectId(userId),
+    status: "accepted",
+    $or: [{ _id: contactObjectId }, { contactId: contactObjectId }],
+  });
+
+  if (!myContact) {
+    throw new NotFoundError("Contact not found");
+  }
+
+  const targetUserId = myContact.contactId.toString();
+
+  const reciprocalContact = await Contact.findOneAndUpdate(
+    {
+      userId: new Types.ObjectId(targetUserId),
+      contactId: new Types.ObjectId(userId),
+      status: "accepted",
+    },
+    { nickname },
+    { new: true }
+  );
+
+  if (!reciprocalContact) {
+    throw new NotFoundError("Contact not found");
+  }
+
+  const [actorUser, privateConversation] = await Promise.all([
+    User.findById(userId).select("username profileImage"),
+    Conversation.findOne({
+      type: "private",
+      participants: {
+        $all: [new Types.ObjectId(userId), new Types.ObjectId(targetUserId)],
+      },
+    }),
+  ]);
+
+  const actorName = actorUser?.username ?? "Someone";
+  const actorNameForTarget = reciprocalContact.nickname?.trim() || actorName;
+
+  if (privateConversation) {
+    const myContent = nickname
+      ? `You set your nickname to ${nickname}.`
+      : "You cleared your nickname.";
+    const theirContent = nickname
+      ? `${actorNameForTarget} set their nickname to ${nickname}.`
+      : `${actorNameForTarget} cleared their nickname.`;
+
+    const [mySystemMessage, theirSystemMessage] = await Message.create([
+      {
+        conversationId: privateConversation._id,
+        senderId: new Types.ObjectId(userId),
+        type: MessageType.SYSTEM,
+        content: myContent,
+        readBy: [new Types.ObjectId(userId)],
+        readByAt: { [userId]: new Date() },
+        deletedFor: [new Types.ObjectId(targetUserId)],
+        unsent: false,
+      },
+      {
+        conversationId: privateConversation._id,
+        senderId: new Types.ObjectId(userId),
+        type: MessageType.SYSTEM,
+        content: theirContent,
+        readBy: [new Types.ObjectId(userId)],
+        readByAt: { [userId]: new Date() },
+        deletedFor: [new Types.ObjectId(userId)],
+        unsent: false,
+      },
+    ]);
+
+    privateConversation.lastMessage = {
+      content: "Nickname updated",
+      senderId: new Types.ObjectId(userId),
+      type: MessageType.SYSTEM,
+      timestamp: theirSystemMessage.createdAt,
+    };
+    privateConversation.updatedAt = new Date();
+    await privateConversation.save();
+
+    emitToUser(targetUserId, "message:receive", {
+      messageId: theirSystemMessage._id.toString(),
+      conversationId: privateConversation._id.toString(),
+      senderId: userId,
+      senderUsername: actorName,
+      senderProfileImage: actorUser?.profileImage ?? null,
+      type: MessageType.SYSTEM,
+      content: theirSystemMessage.content,
+      mediaUrl: null,
+      fileName: null,
+      fileSize: null,
+      timestamp: theirSystemMessage.createdAt.toISOString(),
+    });
+
+    emitToUser(userId, "message:receive", {
+      messageId: mySystemMessage._id.toString(),
+      conversationId: privateConversation._id.toString(),
+      senderId: userId,
+      senderUsername: actorName,
+      senderProfileImage: actorUser?.profileImage ?? null,
+      type: MessageType.SYSTEM,
+      content: mySystemMessage.content,
+      mediaUrl: null,
+      fileName: null,
+      fileSize: null,
+      timestamp: mySystemMessage.createdAt.toISOString(),
+    });
+
+    emitToUser(userId, "contact:nickname-updated", {
+      conversationId: privateConversation._id.toString(),
+    });
+    emitToUser(targetUserId, "contact:nickname-updated", {
+      conversationId: privateConversation._id.toString(),
+    });
+  }
+
+  return {
+    contactId: targetUserId,
+    nickname: reciprocalContact.nickname,
   };
 };

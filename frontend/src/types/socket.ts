@@ -102,6 +102,10 @@ export interface ContactAcceptedPayload {
   profileImage: string | null;
 }
 
+export interface ContactNicknameUpdatedPayload {
+  conversationId: string;
+}
+
 export interface MessageRequestNewPayload {
   requestId: string;
   conversationId: string;

@@ -99,6 +99,7 @@ export function useContacts() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["contacts"] });
+      qc.invalidateQueries({ queryKey: ["conversations"] });
       toast.success("Nickname updated.");
     },
     onError: () => toast.error("Failed to set nickname."),

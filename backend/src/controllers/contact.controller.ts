@@ -162,3 +162,22 @@ export const updateNickname = async (
     next(error);
   }
 };
+
+export const updateOwnNickname = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { contactId } = req.params;
+    const { nickname } = req.body;
+    const result = await contactService.updateOwnNickname(
+      req.user!._id.toString(),
+      contactId,
+      nickname
+    );
+    apiSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};

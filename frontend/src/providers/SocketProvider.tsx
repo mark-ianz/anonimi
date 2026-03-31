@@ -21,6 +21,7 @@ import type {
   PresenceUpdatePayload,
   ContactRequestPayload,
   ContactAcceptedPayload,
+  ContactNicknameUpdatedPayload,
   MessageRequestNewPayload,
   MessageRequestAcceptedPayload,
   NotificationPayload,
@@ -274,6 +275,12 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       qc.invalidateQueries({ queryKey: ["notifications"] });
     });
 
+    socket.on("contact:nickname-updated", (payload: ContactNicknameUpdatedPayload) => {
+      qc.invalidateQueries({ queryKey: ["contacts"] });
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+      qc.invalidateQueries({ queryKey: ["conversation", payload.conversationId] });
+    });
+
     socket.on("message-request:new", (_payload: MessageRequestNewPayload) => {
       qc.invalidateQueries({ queryKey: ["message-requests"] });
       qc.invalidateQueries({ queryKey: ["conversations"] });
@@ -332,6 +339,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       socket.off("presence:update");
       socket.off("contact:request");
       socket.off("contact:accepted");
+      socket.off("contact:nickname-updated");
       socket.off("message-request:new");
       socket.off("message-request:accepted");
       socket.off("notification:new");

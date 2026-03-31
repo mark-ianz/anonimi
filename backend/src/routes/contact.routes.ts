@@ -17,5 +17,6 @@ router.patch("/:contactId/accept", authenticate, validate(contactParamsSchema), 
 router.patch("/:contactId/decline", authenticate, validate(contactParamsSchema), contactController.declineContactRequest);
 router.delete("/:contactId", authenticate, validate(contactParamsSchema), contactController.removeContact);
 router.patch("/:contactId/nickname", authenticate, validate(contactParamsSchema), validate(updateNicknameSchema), contactController.updateNickname);
+router.patch("/:contactId/self-nickname", authenticate, validate(contactParamsSchema), validate(updateNicknameSchema), contactController.updateOwnNickname);
 
 export default router;
