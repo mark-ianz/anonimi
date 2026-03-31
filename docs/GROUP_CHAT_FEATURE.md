@@ -47,7 +47,9 @@ Collection: groups
   image:            String | null,     // Group avatar URL/path
   ownerId:          ObjectId,          // ref: users — current group owner
   settings: {
-    joinRequestEnabled: Boolean        // Default: false
+    joinRequestEnabled: Boolean,       // Default: false
+    nicknameEditPolicy: String,        // "admins_only" | "all_members"
+    groupProfileEditPolicy: String     // "admins_only" | "all_members"
   },
   disbandedAt:       Date | null,       // Soft-delete timestamp
   createdAt:        Date,
@@ -67,6 +69,8 @@ Collection: groupMembers
   role:             String,            // "owner" | "admin" | "member"
   nickname:         String | null,     // Per-group display nickname
   mutedUntil:       Date | null,       // Null = not muted, Date = muted until
+  joinedVia:        String | null,     // "group_create" | "manual_add" | "invite_link" | "direct_request"
+  addedByUserId:    ObjectId | null,   // ref: users — who added/approved inviter
   joinedAt:         Date,              // When the user joined the group
   createdAt:        Date,
   updatedAt:        Date
@@ -131,10 +135,12 @@ Owner (1 per group)
 
 | Action | Owner | Admin | Member |
 |--------|-------|-------|--------|
-| Change group name/image | ✅ | ✅ | ❌ |
+| Change group name/image | ✅ | ✅ | ✅* |
 | Toggle join requests | ✅ | ✅ | ❌ |
-| Add members (contacts) | ✅ | ✅ | ❌ |
-| Add members (non-contacts) | ✅ | ✅* | ❌ |
+| Toggle nickname edit policy | ✅ | ✅ | ❌ |
+| Toggle group profile edit policy | ✅ | ✅ | ❌ |
+| Add members (contacts) | ✅ | ✅ | ✅ |
+| Add members (non-contacts) | ✅ | ✅ | ✅ |
 | Remove members | ✅ | ✅** | ❌ |
 | Promote to admin | ✅ | ❌ | ❌ |
 | Demote admin | ✅ | ❌ | ❌ |
@@ -144,7 +150,7 @@ Owner (1 per group)
 | Leave group | ✅ | ✅ | ✅ |
 | Disband group | ✅ | ❌ | ❌ |
 
-*Admin can add non-contacts without approval  
+*Member profile editing depends on `groupProfileEditPolicy`  
 **Admin cannot remove other admins or owner
 
 ### 4.3 Approval Bypass Rules
@@ -153,6 +159,17 @@ When adding members:
 - **If inviter is owner/admin**: Always bypass join request
 - **If inviter is member**: Bypass only if `joinRequestEnabled: false`
 - **If joining via link**: Bypass only if inviter (link creator) was owner/admin
+
+### 4.4 Group Announcements
+
+Group creation and key membership actions are written as `system` messages in the conversation timeline.
+
+- On create:
+  - Shared: `<owner> created the group chat.`
+  - Personalized for owner: `You added <member> and N others to the group chat.`
+  - Personalized for added members: `<owner> added you and N others to the group chat.`
+- On add/remove/leave/join approval/invite-join:
+  - Membership announcements are emitted as system messages and reflected in conversation list previews.
 
 ---
 
@@ -187,6 +204,8 @@ When adding members:
 | DELETE | `/api/groups/:groupId/members/:userId/mute` | Unmute member | Owner/Admin |
 | GET | `/api/groups/join/:token` | Get group info via invite link | Public |
 | POST | `/api/groups/join/:token` | Join via invite link | Auth |
+| PATCH | `/api/groups/:groupId/nickname` | Set own group nickname | Member+ |
+| PATCH | `/api/groups/:groupId/members/:userId/nickname` | Set member nickname (policy-controlled) | Member+ |
 
 ### 5.3 Response Updates
 
@@ -201,7 +220,9 @@ When adding members:
   "image": "/uploads/groups/uuid.jpg",
   "ownerId": "...",
   "settings": {
-    "joinRequestEnabled": false
+    "joinRequestEnabled": false,
+    "nicknameEditPolicy": "all_members",
+    "groupProfileEditPolicy": "admins_only"
   },
   "memberCount": 8,
   "photoFallbackUserIds": ["...", "...", "..."],
@@ -262,6 +283,13 @@ When adding members:
 - Encode the full join URL
 - Return as base64 PNG data URL
 - Display in invite link card
+
+---
+
+## 6.4 Realtime Visibility Notes
+
+- Users added at group creation receive direct per-user realtime events, so the new group appears in their chat list without manual refresh.
+- Conversation list previews use the latest message visible to the requesting user (respects personalized system messages and `deletedFor`).
 
 ---
 

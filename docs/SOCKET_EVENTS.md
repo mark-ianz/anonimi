@@ -95,7 +95,7 @@ When a user connects:
 ### Dynamic Room Management
 
 - When a user starts a new conversation → server joins both participants to `conversation:<newConversationId>`.
-- When a user is added to a group → server joins them to `conversation:<groupConversationId>`.
+- When a user is added to a group → server may deliver first events directly to `user:<userId>` even before room join is completed.
 - When a user leaves a group → server removes them from the conversation room.
 - When a user blocks another → server does NOT remove from room (filtering happens at event delivery).
 
@@ -299,6 +299,7 @@ A new message was received in a conversation.
 - Move conversation to top of list (if not already there).
 - Show notification if the conversation is not currently focused.
 - If focused, auto-emit `message:read`.
+- If `conversationId` is not yet in local list, invalidate/refetch conversation list so newly-created or newly-added group chats appear immediately.
 
 **Nickname System Indicators:**
 - Nickname updates also arrive as `message:receive` events with `type: "system"`.
