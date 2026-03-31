@@ -122,3 +122,57 @@ I tried logging in this: {
 }
 
 It was checked as pending and told shows the continue verification which is correct. But the problem when I clicked the "Continue Verification", it pops up an error toast with this message "This verification session is no longer valid. Please register or sign in again." and brings me back to register.
+
+--- Done
+Only one Read by everyone can exist in one chat duh.
+
+Example:
+
+x - whitespace
+
+We have 4 members in this group chat. This message was read by everyone.
+xxxxxxxxxxxxxxxxxxxxxxxxxxRead by everyone
+
+/ I will message again but my next message will be seen by only 2 members.
+
+This message was only seen by 2 members, meaning there's one more members who hasn't viewed it yet.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxRead by some
+
+The read by some is hoverable and underline tag will appear, if clicked a modal will show and display the members who read the message.
+
+-- Done
+
+When I request to Add Contact someone, the receiver have to manually refresh to get the notification.
+
+--
+
+On the tabs list on the left side:
+- Chats (12)
+- Contacts (3)
+- Groups
+- Profile
+- Settings
+
+On chats, there should be a notif on how many unread messages you have.
+Or contacts if someone requested you
+-- DONE
+Disbanding a group doesn't work.
+
+-- Done
+If it's a group chat and someone messaged. On the Message List it should be like this:
+Group Name
+member/You (if it's me): most recent message.
+
+-- Done
+When creating a group chat and defining the members there, after creating, the group chat won't appear to the members added unless they refresh. The only thing that is working is if the group was created and add them after the group was created, this way they will immediately gonna have the group chat on their message list.
+
+-- Done
+On group chat, the read by some has no hover popover content. When hovered, it should only display un underline on text. If it was clicked, a modal will pop up that shows the list of members who seen the message.
+
+There could be a multiple amount of Read by some since some members doesn't read the same amount of messages on the conversation but only one Read by everyone.
+
+-- Done
+When I message request someone, the request doesn't go to their request tab. tho the message appear and shows me an option to accept or accept and add.
+- Pressing accept, allows me to and doesn't add him on my contact yet which is correct. But the prompt for Accept or Accept & Add is still there and I still can't reply yet. Meaning I have to manually refresh.
+- When I only pressed accept, the contact request should still be on my /contacts?tab=requests
+- When I press Accept and Add, I should automatically accept his contact request and sync it with my contacts.
