@@ -137,34 +137,33 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
         />
       </div>
 
-      {/* Join request toggle */}
-      <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30">
-        <div>
-          <p className="text-sm font-medium">Require join requests</p>
-          <p className="text-xs text-muted-foreground">New members need approval to join</p>
-        </div>
-        <button
-          type="button"
-          disabled={!canManageSettings}
-          onClick={() => setJoinRequestEnabled((v) => !v)}
-          className={cn(
-            "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
-            joinRequestEnabled ? "bg-emerald-500" : "bg-muted-foreground/30",
-            !canManageSettings && "opacity-60 cursor-not-allowed"
-          )}
-        >
-          <span
+      {/* Policy toggles */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30">
+          <div>
+            <p className="text-sm font-medium">Require join requests</p>
+            <p className="text-xs text-muted-foreground">New members need approval to join</p>
+          </div>
+          <button
+            type="button"
+            disabled={!canManageSettings}
+            onClick={() => setJoinRequestEnabled((v) => !v)}
             className={cn(
-              "absolute left-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-200 shadow-sm",
-              joinRequestEnabled ? "translate-x-5" : "translate-x-0"
+              "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
+              joinRequestEnabled ? "bg-emerald-500" : "bg-muted-foreground/30",
+              !canManageSettings && "opacity-60 cursor-not-allowed"
             )}
-          />
-        </button>
-      </div>
+          >
+            <span
+              className={cn(
+                "absolute left-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-200 shadow-sm",
+                joinRequestEnabled ? "translate-x-5" : "translate-x-0"
+              )}
+            />
+          </button>
+        </div>
 
-      {canManageSettings && (
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">Who can edit member nicknames</label>
+        {canManageSettings && (
           <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30">
             <div>
               <p className="text-sm font-medium">Admins-only nickname editing</p>
@@ -190,8 +189,8 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
               />
             </button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {canManageSettings && (
         <button
