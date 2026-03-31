@@ -10,6 +10,7 @@ export interface Message {
   fileName: string | null;
   fileSize: number | null;
   readBy: string[];
+  readByAt?: Record<string, string>;
   unsent: boolean;
   unsentAt?: string | null;
   createdAt: string;

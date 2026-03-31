@@ -37,6 +37,18 @@ export default function MessageBubble({
   const isMine = message.senderId === user?.id;
   const [showActions, setShowActions] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const latestReadAt = (() => {
+    const readers = (message.readBy ?? []).filter((readerId) => readerId !== user?.id);
+    const readTimestamps = readers
+      .map((readerId) => message.readByAt?.[readerId])
+      .filter((value): value is string => Boolean(value));
+
+    if (readTimestamps.length === 0) return null;
+
+    return readTimestamps.sort(
+      (a, b) => new Date(b).getTime() - new Date(a).getTime()
+    )[0];
+  })();
 
   const bubbleShapeClass = isMine
     ? {
@@ -157,6 +169,7 @@ export default function MessageBubble({
             <div className="group mt-1 flex justify-end">
               <ReadReceipt
                 readBy={message.readBy}
+                readAt={latestReadAt}
                 participantCount={participantCount}
                 conversationType={conversationType}
                 currentUserId={user?.id}

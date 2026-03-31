@@ -103,6 +103,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
           fileName: null,
           fileSize: null,
           readBy: [],
+          readByAt: {},
           unsent: false,
         }),
         id: payload.messageId,
@@ -129,6 +130,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         fileName: payload.fileName,
         fileSize: payload.fileSize,
         readBy: [],
+        readByAt: {},
         unsent: false,
         createdAt: payload.timestamp,
       };
@@ -192,6 +194,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     // Read receipts
     socket.on("message:read", (payload: MessageReadReceiptPayload) => {
       const readerId = payload.readBy.userId;
+      const readAt = payload.readBy.readAt;
 
       qc.setQueryData(
         ["messages", payload.conversationId],
@@ -209,10 +212,14 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
               ...page,
               data: page.data.map((message) => {
                 if (!payload.messageIds.includes(message.id)) return message;
-                if (message.readBy.includes(readerId)) return message;
+                const alreadyRead = message.readBy.includes(readerId);
                 return {
                   ...message,
-                  readBy: [...message.readBy, readerId],
+                  readBy: alreadyRead ? message.readBy : [...message.readBy, readerId],
+                  readByAt: {
+                    ...(message.readByAt ?? {}),
+                    [readerId]: readAt,
+                  },
                 };
               }),
             })),
@@ -226,12 +233,17 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       payload.messageIds.forEach((msgId) => {
         const currentMessage = conversationMessages.find((msg) => msg.id === msgId);
         const existingReadBy = currentMessage?.readBy ?? [];
+        const existingReadByAt = currentMessage?.readByAt ?? {};
         const nextReadBy = existingReadBy.includes(readerId)
           ? existingReadBy
           : [...existingReadBy, readerId];
 
         updateMessage(payload.conversationId, msgId, {
           readBy: nextReadBy,
+          readByAt: {
+            ...existingReadByAt,
+            [readerId]: readAt,
+          },
         });
       });
     });

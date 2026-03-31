@@ -50,6 +50,7 @@ export interface IMessage extends Document {
   fileName?: string;
   fileSize?: number;
   readBy: Types.ObjectId[];
+  readByAt?: Map<string, Date>;
   deletedFor: Types.ObjectId[];
   unsent: boolean;
   createdAt: Date;

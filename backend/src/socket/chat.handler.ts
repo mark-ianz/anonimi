@@ -123,12 +123,17 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
 
       if (!userId) return;
 
+      const readAt = new Date();
+
       await Message.updateMany(
         {
           _id: { $in: messageIds.map((id) => new Types.ObjectId(id)) },
           conversationId: new Types.ObjectId(conversationId),
         },
-        { $addToSet: { readBy: new Types.ObjectId(userId) } }
+        {
+          $addToSet: { readBy: new Types.ObjectId(userId) },
+          $set: { [`readByAt.${userId}`]: readAt },
+        }
       );
 
       const user = await User.findById(userId).select("username");
@@ -139,7 +144,7 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
         readBy: {
           userId,
           username: user?.username,
-          readAt: new Date().toISOString(),
+          readAt: readAt.toISOString(),
         },
       });
     } catch (error) {

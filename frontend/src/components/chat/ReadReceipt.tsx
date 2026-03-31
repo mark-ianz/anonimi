@@ -1,9 +1,11 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import DateDisplay from "@/components/shared/DateDisplay";
 
 interface ReadReceiptProps {
   readBy: string[];
+  readAt?: string | null;
   participantCount: number;
   conversationType: "private" | "group";
   currentUserId?: string;
@@ -12,6 +14,7 @@ interface ReadReceiptProps {
 
 export default function ReadReceipt({
   readBy,
+  readAt,
   participantCount,
   conversationType,
   currentUserId,
@@ -26,7 +29,18 @@ export default function ReadReceipt({
   if (conversationType === "private") {
     return (
       <span className={cn("text-[11px] font-medium text-primary-foreground/70", className)}>
-        {readBySome ? "Read" : "Sent"}
+        {readBySome ? (
+          <>
+            Read
+            {readAt && (
+              <>
+                {" "}at <DateDisplay date={readAt} format="time" className="inline text-[11px] font-medium text-primary-foreground/70" />
+              </>
+            )}
+          </>
+        ) : (
+          "Sent"
+        )}
       </span>
     );
   }

@@ -78,6 +78,7 @@ export function useMessages(conversationId: string | null) {
         fileName: payload.fileName ?? null,
         fileSize: payload.fileSize ?? null,
         readBy: [],
+        readByAt: {},
         unsent: false,
         createdAt: new Date().toISOString(),
         tempId,

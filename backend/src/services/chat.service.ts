@@ -32,6 +32,25 @@ interface LastMessage {
   timestamp: Date;
 }
 
+const serializeReadByAt = (
+  readByAt: unknown
+): Record<string, string> => {
+  const sourceEntries: Array<[string, unknown]> =
+    readByAt instanceof Map
+      ? Array.from(readByAt.entries())
+      : Object.entries((readByAt ?? {}) as Record<string, unknown>);
+
+  return sourceEntries.reduce<Record<string, string>>((acc, [userId, rawValue]) => {
+    const timestamp = rawValue instanceof Date ? rawValue : new Date(rawValue as string);
+    if (Number.isNaN(timestamp.getTime())) {
+      return acc;
+    }
+
+    acc[userId] = timestamp.toISOString();
+    return acc;
+  }, {});
+};
+
 export const createOrGetConversation = async (
   userId: string,
   participantEchoId: string
@@ -350,6 +369,7 @@ export const getMessages = async (
       fileName: m.fileName,
       fileSize: m.fileSize,
       readBy: m.readBy.map((r: Types.ObjectId) => r.toString()),
+      readByAt: serializeReadByAt(m.readByAt),
       unsent: m.unsent,
       unsentAt: m.unsent ? m.updatedAt : null,
       createdAt: m.createdAt,
@@ -505,6 +525,7 @@ export const sendMessage = async (
     fileName,
     fileSize,
     readBy: [new Types.ObjectId(senderId)],
+    readByAt: { [senderId]: new Date() },
     unsent: false,
   });
 
@@ -549,6 +570,12 @@ export const sendMessage = async (
       type: message.type,
       content: message.content,
       mediaUrl: message.mediaUrl,
+      fileName: message.fileName,
+      fileSize: message.fileSize,
+      readBy: message.readBy.map((r: Types.ObjectId) => r.toString()),
+      readByAt: serializeReadByAt(message.readByAt),
+      unsent: message.unsent,
+      unsentAt: message.unsent ? message.updatedAt : null,
       createdAt: message.createdAt,
     },
     sender: {
@@ -624,11 +651,16 @@ export const markMessagesAsRead = async (
   messageIds: string[],
   userId: string
 ) => {
+  const readAt = new Date();
+
   await Message.updateMany(
     {
       _id: { $in: messageIds.map((id) => new Types.ObjectId(id)) },
       conversationId: new Types.ObjectId(conversationId),
     },
-    { $addToSet: { readBy: new Types.ObjectId(userId) } }
+    {
+      $addToSet: { readBy: new Types.ObjectId(userId) },
+      $set: { [`readByAt.${userId}`]: readAt },
+    }
   );
 };

@@ -12,6 +12,7 @@ const messageSchema = new Schema<IMessage>(
     fileName: { type: String },
     fileSize: { type: Number },
     readBy: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    readByAt: { type: Map, of: Date, default: {} },
     deletedFor: [{ type: Schema.Types.ObjectId, ref: "User" }],
     unsent: { type: Boolean, default: false },
   },
