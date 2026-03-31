@@ -512,9 +512,11 @@ User A                         Server                      User B
 - Nicknames are stored on the `contacts` document (per-user, per-contact).
 - Nicknames do not affect the contact's actual username.
 - API returns both the actual username and the nickname (if set).
-- Nickname changes **optionally** generate a system message in the conversation:
-  *"User A set your nickname to 'Best Friend'"*
-- This system message feature is configurable (opt-in per user in settings).
+- Two private-chat nickname actions are supported:
+  - `PATCH /api/contacts/:contactId/nickname` (set how **you** see them)
+  - `PATCH /api/contacts/:contactId/self-nickname` (set how **they** see you)
+- Nickname changes generate personalized `system` messages for both participants.
+- Recipient-facing system text prioritizes the recipient's saved nickname for the actor, then falls back to username.
 
 ### Contact Data Model (Bidirectional)
 
@@ -755,9 +757,9 @@ In group chats, multiple users can be typing simultaneously. The client maintain
 Recipient opens conversation
   → Client identifies unread messages
   → Client emits: message:read { conversationId, messageIds: [...] }
-  → Server updates messages: adds userId to readBy array
+  → Server updates messages: adds userId to readBy and sets readByAt.<userId>
   → Server broadcasts to conversation room:
-      message:read { conversationId, messageIds, readBy: userId }
+      message:read { conversationId, messageIds, readBy: { userId, readAt } }
 
 Sender's client receives event
   → Updates local message state to show read status
@@ -767,9 +769,10 @@ Sender's client receives event
 
 | Status | Condition |
 |--------|-----------|
-| Sent | Message persisted on server (acknowledged) |
-| Delivered | Recipient's client received the message event (online) |
-| Read | Recipient's userId is in message's `readBy` array |
+| Sent | Latest outgoing message not yet read by other user |
+| Read at HH:MM | Latest outgoing message read by other user (`readByAt`) |
+
+Private chat UI rule: show at most two status markers at once (latest read + latest sent), rendered below outgoing bubbles.
 
 ### Group Read Receipts
 

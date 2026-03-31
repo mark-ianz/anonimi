@@ -502,10 +502,19 @@ The default view when entering the application.
 **Message bubble features:**
 - Sent vs. received styling (right-aligned vs. left-aligned)
 - Timestamp display
-- Read receipt indicators (sent → delivered → read)
+- Private read receipt indicators are rendered **below** outgoing bubbles (outside the bubble).
+- Private status shows at most two markers at once:
+   - Latest outgoing message read by the other user → `Read at HH:MM`
+   - Latest outgoing message not yet read → `Sent`
+- Group status shows aggregated read state.
 - Image/file preview inline
 - Context menu on messages: Copy, Delete for me, Unsend (if own message within time limit)
 - "This message was unsent" placeholder for unsent messages
+
+**Nickname actions in chat header menu (private):**
+- `Set nickname` — sets how **you** see the other user.
+- `Set my nickname` — sets how the **other user** sees you.
+- Nickname changes generate personalized `system` messages in-thread for both sides.
 
 **Real-time features:**
 - Typing indicator ("User is typing...")
