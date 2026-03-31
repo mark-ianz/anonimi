@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, MoreVertical, Phone, Video, UserPlus, Check, X, Clock, User, ShieldBan, Flag, LogOut, Settings, Users, Archive } from "lucide-react";
+import { ArrowLeft, MoreVertical, Phone, Video, UserPlus, Check, X, Clock, User, ShieldBan, Flag, LogOut, Settings, Users, Archive, BellOff } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -397,6 +397,17 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
                     : archiveMutation.isPending
                     ? "Archiving..."
                     : "Archive"}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    toast.info("Mute is coming soon.");
+                  }}
+                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                >
+                  <BellOff className="w-4 h-4 text-muted-foreground shrink-0" />
+                  Mute
                 </button>
 
                 {/* Private-only: block + report */}

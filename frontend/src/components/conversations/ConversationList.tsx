@@ -90,7 +90,7 @@ export default function ConversationList({
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {banner}
       <ScrollArea className="h-full min-h-0 flex-1">
-        <div className="pr-1">
+        <div>
           {filtered.map((conv, i) => (
             <ConversationItem
               key={conv.id}
