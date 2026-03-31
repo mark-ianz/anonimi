@@ -6,7 +6,7 @@ import { useGroup } from "@/hooks/useGroups";
 import GroupSettings from "@/components/groups/GroupSettings";
 import GroupMemberList from "@/components/groups/GroupMemberList";
 import LoadingSkeleton from "@/components/shared/LoadingSkeleton";
-import { ArrowLeft, Users } from "lucide-react";
+import { ArrowLeft, Users, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 
 type Tab = "settings" | "members";
@@ -38,7 +38,16 @@ export default function GroupSettingsPage() {
           <button onClick={() => router.back()} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <h1 className="font-display font-semibold">{group?.name ?? "Group"}</h1>
+          <h1 className="font-display font-semibold flex-1 min-w-0 truncate">{group?.name ?? "Group"}</h1>
+          {group && (group.myRole === "owner" || group.myRole === "admin") && (
+            <button
+              onClick={() => switchTab("members")}
+              className="h-9 px-3 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors flex items-center gap-1.5"
+            >
+              <UserPlus className="w-4 h-4" />
+              Add Member
+            </button>
+          )}
         </div>
 
         <div className="flex border-b border-border/30">
