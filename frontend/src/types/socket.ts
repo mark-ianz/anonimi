@@ -159,7 +159,10 @@ export interface GroupUpdatedPayload {
   changes: {
     name?: string;
     image?: string | null;
-    settings?: { joinRequestEnabled?: boolean };
+    settings?: {
+      joinRequestEnabled?: boolean;
+      groupProfileEditPolicy?: "admins_only" | "all_members";
+    };
   };
   updatedBy: { userId: string; username: string };
 }

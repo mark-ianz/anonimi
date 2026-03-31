@@ -73,7 +73,11 @@ export const createGroup = async (
   memberEchoIds: string[],
   image?: string,
   description?: string,
-  settings?: { joinRequestEnabled: boolean; nicknameEditPolicy?: "admins_only" | "all_members" }
+  settings?: {
+    joinRequestEnabled: boolean;
+    nicknameEditPolicy?: "admins_only" | "all_members";
+    groupProfileEditPolicy?: "admins_only" | "all_members";
+  }
 ) => {
   const owner = await User.findById(ownerId).select("_id echoId username profileImage");
   const actualOwnerId = ownerId;
@@ -118,6 +122,7 @@ export const createGroup = async (
     settings: {
       joinRequestEnabled: settings?.joinRequestEnabled ?? false,
       nicknameEditPolicy: settings?.nicknameEditPolicy ?? "all_members",
+      groupProfileEditPolicy: settings?.groupProfileEditPolicy ?? "admins_only",
     },
   });
 
@@ -237,6 +242,7 @@ export const updateGroup = async (
     settings?: {
       joinRequestEnabled?: boolean;
       nicknameEditPolicy?: "admins_only" | "all_members";
+      groupProfileEditPolicy?: "admins_only" | "all_members";
     };
   }
 ) => {
@@ -251,13 +257,30 @@ export const updateGroup = async (
     userId: new Types.ObjectId(userId),
   });
 
-  if (!membership || (membership.role !== GroupRole.OWNER && membership.role !== GroupRole.ADMIN)) {
+  if (!membership) {
     throw new ForbiddenError("Not authorized to update group");
   }
 
-  if (updates.name) group.name = updates.name;
+  const isManager = membership.role === GroupRole.OWNER || membership.role === GroupRole.ADMIN;
+  const canEditGroupProfileByPolicy =
+    (group.settings?.groupProfileEditPolicy ?? "admins_only") === "all_members";
+  const canEditGroupProfile = isManager || canEditGroupProfileByPolicy;
+
+  const hasProfileUpdates =
+    updates.name !== undefined || updates.description !== undefined || updates.image !== undefined;
+  const hasSettingsUpdates = updates.settings !== undefined;
+
+  if (hasSettingsUpdates && !isManager) {
+    throw new ForbiddenError("Not authorized to update group settings");
+  }
+
+  if (hasProfileUpdates && !canEditGroupProfile) {
+    throw new ForbiddenError("Not authorized to edit group profile");
+  }
+
+  if (updates.name !== undefined) group.name = updates.name.trim();
   if (updates.description !== undefined) group.description = updates.description;
-  if (updates.image) group.image = updates.image;
+  if (updates.image !== undefined) group.image = updates.image;
   if (updates.settings) {
     group.settings = {
       ...group.settings,

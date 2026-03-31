@@ -13,7 +13,11 @@ export function useGroups() {
       name?: string;
       description?: string;
       image?: string | null;
-      settings?: { joinRequestEnabled: boolean; nicknameEditPolicy?: "admins_only" | "all_members" };
+      settings?: {
+        joinRequestEnabled: boolean;
+        nicknameEditPolicy?: "admins_only" | "all_members";
+        groupProfileEditPolicy?: "admins_only" | "all_members";
+      };
       memberEchoIds: string[];
     }) => {
       const res = await api.post("/groups", payload);
@@ -56,7 +60,16 @@ export function useGroup(groupId: string | null) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (patch: Partial<{ name: string; description?: string; image: string | null; settings: { joinRequestEnabled: boolean; nicknameEditPolicy?: "admins_only" | "all_members" } }>) => {
+    mutationFn: async (patch: Partial<{
+      name: string;
+      description?: string;
+      image: string | null;
+      settings: {
+        joinRequestEnabled?: boolean;
+        nicknameEditPolicy?: "admins_only" | "all_members";
+        groupProfileEditPolicy?: "admins_only" | "all_members";
+      };
+    }>) => {
       const res = await api.patch(`/groups/${groupId}`, patch);
       return res.data.data as Group;
     },

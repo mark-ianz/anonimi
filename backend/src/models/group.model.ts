@@ -15,6 +15,11 @@ const groupSchema = new Schema<IGroup>(
         enum: ["admins_only", "all_members"],
         default: "all_members",
       },
+      groupProfileEditPolicy: {
+        type: String,
+        enum: ["admins_only", "all_members"],
+        default: "admins_only",
+      },
     },
     disbandedAt: { type: Date },
   },

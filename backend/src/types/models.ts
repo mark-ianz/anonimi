@@ -77,6 +77,7 @@ export interface IGroup extends Document {
   settings: {
     joinRequestEnabled: boolean;
     nicknameEditPolicy: "admins_only" | "all_members";
+    groupProfileEditPolicy: "admins_only" | "all_members";
   };
   disbandedAt?: Date;
   createdAt: Date;

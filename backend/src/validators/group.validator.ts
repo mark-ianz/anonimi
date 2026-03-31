@@ -9,6 +9,7 @@ export const createGroupSchema = z.object({
       .object({
         joinRequestEnabled: z.boolean().optional(),
         nicknameEditPolicy: z.enum(["admins_only", "all_members"]).optional(),
+        groupProfileEditPolicy: z.enum(["admins_only", "all_members"]).optional(),
       })
       .optional(),
     memberEchoIds: z.array(z.string()).min(1, "At least one member is required"),
@@ -30,6 +31,7 @@ export const updateGroupSchema = z.object({
       .object({
         joinRequestEnabled: z.boolean().optional(),
         nicknameEditPolicy: z.enum(["admins_only", "all_members"]).optional(),
+        groupProfileEditPolicy: z.enum(["admins_only", "all_members"]).optional(),
       })
       .optional(),
   }),

@@ -81,7 +81,14 @@ export const notifyGroupMemberLeft = async (
 export const notifyGroupUpdated = async (
   io: Server,
   groupId: string,
-  changes: { name?: string; image?: string; settings?: { joinRequestEnabled: boolean } },
+  changes: {
+    name?: string;
+    image?: string;
+    settings?: {
+      joinRequestEnabled?: boolean;
+      groupProfileEditPolicy?: "admins_only" | "all_members";
+    };
+  },
   updatedBy: { userId: string; username: string }
 ) => {
   const group = await Group.findById(groupId);

@@ -11,6 +11,7 @@ export interface Group {
   settings: {
     joinRequestEnabled: boolean;
     nicknameEditPolicy?: "admins_only" | "all_members";
+    groupProfileEditPolicy?: "admins_only" | "all_members";
   };
   memberCount: number;
   myRole: GroupRole;

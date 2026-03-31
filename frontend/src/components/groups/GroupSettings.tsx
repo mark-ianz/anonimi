@@ -18,6 +18,8 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
   const { updateGroup, inviteLinks, createInviteLink, revokeInviteLink, joinRequests, decideJoinRequest, leaveGroup, disbandGroup, isLeaving, isDisbanding } = useGroup(group.id);
   const { upload, isUploading } = useMediaUpload();
   const canManageSettings = group.myRole === "owner" || group.myRole === "admin";
+  const canEditGroupProfile =
+    canManageSettings || (group.settings.groupProfileEditPolicy ?? "admins_only") === "all_members";
   const isOwner = group.myRole === "owner";
 
   const [name, setName] = useState(group.name);
@@ -27,6 +29,9 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
   );
   const [nicknameEditPolicy, setNicknameEditPolicy] = useState<"admins_only" | "all_members">(
     group.settings.nicknameEditPolicy ?? "all_members"
+  );
+  const [groupProfileEditPolicy, setGroupProfileEditPolicy] = useState<"admins_only" | "all_members">(
+    group.settings.groupProfileEditPolicy ?? "admins_only"
   );
 
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -45,19 +50,34 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
   const expiryIndex = expiryOptions.findIndex((o) => o.value === selectedExpiry);
 
   function handleSave() {
-    if (!canManageSettings) return;
-    updateGroup({
+    if (!canEditGroupProfile && !canManageSettings) return;
+
+    const payload: {
+      name?: string;
+      description?: string;
+      settings?: {
+        joinRequestEnabled?: boolean;
+        nicknameEditPolicy?: "admins_only" | "all_members";
+        groupProfileEditPolicy?: "admins_only" | "all_members";
+      };
+    } = {
       name: name.trim(),
       description: description.trim() || undefined,
-      settings: {
+    };
+
+    if (canManageSettings) {
+      payload.settings = {
         joinRequestEnabled,
         nicknameEditPolicy,
-      }
-    });
+        groupProfileEditPolicy,
+      };
+    }
+
+    updateGroup(payload);
   }
 
   async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (!canManageSettings) return;
+    if (!canEditGroupProfile) return;
     const file = e.target.files?.[0];
     if (!file) return;
     const result = await upload(file, "group");
@@ -91,7 +111,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
 
       {/* Avatar */}
       <div className="flex justify-center">
-        <label className={cn("relative group", canManageSettings ? "cursor-pointer" : "cursor-not-allowed opacity-60")}>
+        <label className={cn("relative group", canEditGroupProfile ? "cursor-pointer" : "cursor-not-allowed opacity-60")}>
           <div className="w-20 h-20 rounded-2xl overflow-hidden bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-2xl font-medium">
             {group.image ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -107,7 +127,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
               <Camera className="w-5 h-5 text-white" />
             )}
           </div>
-          <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} disabled={!canManageSettings} />
+          <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} disabled={!canEditGroupProfile} />
         </label>
       </div>
 
@@ -117,7 +137,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          disabled={!canManageSettings}
+          disabled={!canEditGroupProfile}
           maxLength={100}
           className="w-full h-10 px-3 rounded-xl bg-muted/50 border-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-60"
         />
@@ -129,7 +149,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          disabled={!canManageSettings}
+          disabled={!canEditGroupProfile}
           maxLength={500}
           rows={3}
           placeholder="Add a description for this group..."
@@ -166,6 +186,34 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
         {canManageSettings && (
           <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30">
             <div>
+              <p className="text-sm font-medium">Admins-only group profile editing</p>
+              <p className="text-xs text-muted-foreground">Turn off to let all members edit group photo, name, and description</p>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                setGroupProfileEditPolicy((current) =>
+                  current === "admins_only" ? "all_members" : "admins_only"
+                )
+              }
+              className={cn(
+                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
+                groupProfileEditPolicy === "admins_only" ? "bg-emerald-500" : "bg-muted-foreground/30"
+              )}
+            >
+              <span
+                className={cn(
+                  "absolute left-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-200 shadow-sm",
+                  groupProfileEditPolicy === "admins_only" ? "translate-x-5" : "translate-x-0"
+                )}
+              />
+            </button>
+          </div>
+        )}
+
+        {canManageSettings && (
+          <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30">
+            <div>
               <p className="text-sm font-medium">Admins-only nickname editing</p>
               <p className="text-xs text-muted-foreground">Turn off to allow all members to edit nicknames</p>
             </div>
@@ -192,7 +240,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
         )}
       </div>
 
-      {canManageSettings && (
+      {canEditGroupProfile && (
         <button
           onClick={handleSave}
           className="w-full h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors"
