@@ -91,7 +91,7 @@ export default function ChatView({ conversation }: ChatViewProps) {
     const socket = getChatSocket();
     const handleAccepted = (data: { conversationId: string; requestStatus: string }) => {
       if (data.conversationId === conversation.id) {
-        qc.invalidateQueries({ queryKey: ["conversations", conversation.id] });
+        qc.invalidateQueries({ queryKey: ["conversation", conversation.id] });
         qc.invalidateQueries({ queryKey: ["conversations"] });
       }
     };
@@ -108,8 +108,10 @@ export default function ChatView({ conversation }: ChatViewProps) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["conversations"] });
-      qc.invalidateQueries({ queryKey: ["conversations", conversation.id] });
+      qc.invalidateQueries({ queryKey: ["conversation", conversation.id] });
       qc.invalidateQueries({ queryKey: ["message-requests"] });
+      qc.invalidateQueries({ queryKey: ["contacts"] });
+      qc.invalidateQueries({ queryKey: ["contacts", "requests"] });
       toast.success("Message request accepted.");
     },
     onError: () => toast.error("Failed to accept request."),

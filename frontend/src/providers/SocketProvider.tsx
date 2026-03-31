@@ -187,6 +187,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         qc.invalidateQueries({ queryKey: ["conversations"] });
       }
 
+      // Fallback sync: if message-request:new is missed, this ensures request list catches up.
+      qc.invalidateQueries({ queryKey: ["message-requests"] });
+
       const { activeConversationId: currentActiveConversationId } = useChatStore.getState();
       const canAutoRead =
         currentActiveConversationId === payload.conversationId &&
@@ -419,8 +422,13 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       qc.invalidateQueries({ queryKey: ["notifications"] });
     });
 
-    socket.on("message-request:accepted", (_payload: MessageRequestAcceptedPayload) => {
+    socket.on("message-request:accepted", (payload: MessageRequestAcceptedPayload) => {
+      qc.invalidateQueries({ queryKey: ["message-requests"] });
+      qc.invalidateQueries({ queryKey: ["conversation", payload.conversationId] });
       qc.invalidateQueries({ queryKey: ["conversations"] });
+      qc.invalidateQueries({ queryKey: ["contacts"] });
+      qc.invalidateQueries({ queryKey: ["contacts", "requests"] });
+      qc.invalidateQueries({ queryKey: ["user-profile"] });
       qc.invalidateQueries({ queryKey: ["notifications"] });
     });
 
@@ -444,6 +452,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       }
 
       qc.invalidateQueries({ queryKey: ["notifications"] });
+      if (payload.type === "message_request") {
+        qc.invalidateQueries({ queryKey: ["message-requests"] });
+      }
       const unreadMessages = Number(payload.data?.unreadMessages);
       const isAggregatedMessageUpdate =
         payload.type === "message_received" &&

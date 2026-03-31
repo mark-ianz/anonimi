@@ -44,6 +44,9 @@ export default function MessageRequestsPage() {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["message-requests"] });
       qc.invalidateQueries({ queryKey: ["conversations"] });
+      qc.invalidateQueries({ queryKey: ["conversation", data.conversationId] });
+      qc.invalidateQueries({ queryKey: ["contacts"] });
+      qc.invalidateQueries({ queryKey: ["contacts", "requests"] });
       toast.success("Request accepted.");
       router.push(`/chat/${data.conversationId}`);
     },

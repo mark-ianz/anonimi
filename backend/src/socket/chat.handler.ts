@@ -141,7 +141,7 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
 
       const user = await User.findById(userId).select("username");
 
-      socket.to(`conversation:${conversationId}`).emit("message:read", {
+      const readPayload = {
         conversationId,
         messageIds,
         readBy: {
@@ -149,7 +149,22 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
           username: user?.username,
           readAt: readAt.toISOString(),
         },
-      });
+      };
+
+      // Primary broadcast for sockets that joined the conversation room.
+      socket.to(`conversation:${conversationId}`).emit("message:read", readPayload);
+
+      // Fallback direct delivery for participants that may not have joined the room yet.
+      const conversation = await Conversation.findById(conversationId).select("participants");
+      if (conversation) {
+        const participantIds = conversation.participants
+          .map((participant) => participant.toString())
+          .filter((participantId) => participantId !== userId);
+
+        participantIds.forEach((participantId) => {
+          emitToUser(participantId, "message:read", readPayload);
+        });
+      }
     } catch (error) {
       console.error("Error in message:read:", error);
     }

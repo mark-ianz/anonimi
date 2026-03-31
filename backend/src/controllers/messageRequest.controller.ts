@@ -68,7 +68,7 @@ export const acceptMessageRequest = async (
 ): Promise<void> => {
   try {
     const { requestId } = req.params;
-    const { addToContacts } = req.body;
+    const addToContacts = req.body?.addToContacts === true;
 
     const request = await MessageRequest.findOne({
       _id: requestId,
@@ -84,17 +84,51 @@ export const acceptMessageRequest = async (
     await request.save();
 
     if (addToContacts) {
-      await Contact.create({
-        userId: req.user!._id,
-        contactId: request.fromUserId,
-        status: "accepted",
-      });
+      await Contact.findOneAndUpdate(
+        {
+          userId: request.fromUserId,
+          contactId: req.user!._id,
+        },
+        {
+          status: "accepted",
+        },
+        {
+          upsert: true,
+          new: true,
+          setDefaultsOnInsert: true,
+        }
+      );
 
-      await Contact.create({
-        userId: request.fromUserId,
-        contactId: req.user!._id,
-        status: "accepted",
-      });
+      await Contact.findOneAndUpdate(
+        {
+          userId: req.user!._id,
+          contactId: request.fromUserId,
+        },
+        {
+          status: "accepted",
+        },
+        {
+          upsert: true,
+          new: true,
+          setDefaultsOnInsert: true,
+        }
+      );
+    } else {
+      // Keep a pending contact request so recipient can decide contact action later.
+      await Contact.findOneAndUpdate(
+        {
+          userId: request.fromUserId,
+          contactId: req.user!._id,
+        },
+        {
+          status: "pending",
+        },
+        {
+          upsert: true,
+          new: true,
+          setDefaultsOnInsert: true,
+        }
+      );
     }
 
     const newRequestStatus = addToContacts ? null : "accepted";
