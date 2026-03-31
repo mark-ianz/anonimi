@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { 
@@ -35,6 +35,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { getChatSocket } from "@/lib/socket";
 import type { AppearanceStatus, OnlineStatus } from "@/types/user";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useContacts } from "@/hooks/useContacts";
+import { useChatStore } from "@/stores/chatStore";
 
 const navItems = [
   { href: "/chat", icon: MessageCircle, label: "Chats" },
@@ -71,6 +73,8 @@ export default function MainLayout({ children }: SidebarProps) {
   const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
   const [sidebarSearch, setSidebarSearch] = useState("");
   const { user } = useAuthStore();
+  const { conversations, unreadCounts } = useChatStore();
+  const { requests } = useContacts();
   const { updateProfile, isUpdatingProfile } = useAuth();
   const {
     notifications,
@@ -83,6 +87,15 @@ export default function MainLayout({ children }: SidebarProps) {
   } = useNotifications();
   const statusMenuRef = useRef<HTMLDivElement>(null);
   const notificationMenuRef = useRef<HTMLDivElement>(null);
+
+  const unreadChatCount = useMemo(() => {
+    return conversations.reduce((total, conversation) => {
+      const unread = unreadCounts[conversation.id] ?? conversation.unreadCount ?? 0;
+      return total + unread;
+    }, 0);
+  }, [conversations, unreadCounts]);
+
+  const contactRequestCount = requests.length;
 
   const currentStatus = (user?.onlineStatus ?? "offline") as OnlineStatus;
   const currentAppearance = (user?.appearanceStatus ?? "online") as AppearanceStatus;
@@ -244,6 +257,13 @@ export default function MainLayout({ children }: SidebarProps) {
           {navItems.map((item) => {
             const isActive = pathname === item.href || 
               (item.href !== "/chat" && pathname.startsWith(item.href));
+            const badgeCount =
+              item.href === "/chat"
+                ? unreadChatCount
+                : item.href === "/contacts"
+                ? contactRequestCount
+                : 0;
+            const showBadge = badgeCount > 0;
             
             return (
               <Tooltip key={item.href}>
@@ -254,6 +274,7 @@ export default function MainLayout({ children }: SidebarProps) {
                 aria-label={item.label}
                 className={cn(
                   "group relative flex items-center gap-3 overflow-hidden rounded-lg px-3 py-2.5 transition-all duration-200",
+                  !isCollapsed && showBadge && "pr-2",
                   isActive 
                     ? "bg-primary/12 text-foreground" 
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -266,8 +287,18 @@ export default function MainLayout({ children }: SidebarProps) {
                   "h-5 w-5 shrink-0 transition-transform",
                   !isActive && "group-hover:scale-110"
                 )} />
+                {isCollapsed && showBadge && (
+                  <span className="absolute right-1.5 top-1.5 min-w-4 rounded-full bg-primary px-1 py-0.5 text-center text-[10px] font-semibold leading-none text-primary-foreground">
+                    {badgeCount > 99 ? "99+" : badgeCount}
+                  </span>
+                )}
                 {!isCollapsed && (
                   <span className="truncate whitespace-nowrap text-sm font-medium">{item.label}</span>
+                )}
+                {!isCollapsed && showBadge && (
+                  <span className="ml-auto min-w-5 rounded-full bg-primary px-1.5 py-0.5 text-center text-[10px] font-semibold leading-none text-primary-foreground">
+                    {badgeCount > 99 ? "99+" : badgeCount}
+                  </span>
                 )}
               </Link>
                 </TooltipTrigger>
