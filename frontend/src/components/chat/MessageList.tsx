@@ -12,6 +12,7 @@ import TypingIndicator from "./TypingIndicator";
 import InfiniteScrollSentinel from "@/components/shared/InfiniteScroll";
 import LoadingSkeleton from "@/components/shared/LoadingSkeleton";
 import DateDisplay from "@/components/shared/DateDisplay";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type TimestampBubblePosition = "single" | "first" | "middle" | "last";
 
@@ -156,19 +157,20 @@ export default function MessageList({ conversation }: MessageListProps) {
   }
 
   return (
-    <div className="message-scrollbar flex-1 overflow-y-auto overflow-x-visible flex flex-col">
-      {/* Load more sentinel at top */}
-      <InfiniteScrollSentinel
-        onLoadMore={() => fetchMore()}
-        hasMore={hasMore ?? false}
-        isLoading={isFetchingMore}
-        className="pt-2"
-      />
+    <ScrollArea className="flex-1 min-h-0">
+      <div className="flex min-h-full flex-col overflow-x-visible pr-1">
+        {/* Load more sentinel at top */}
+        <InfiniteScrollSentinel
+          onLoadMore={() => fetchMore()}
+          hasMore={hasMore ?? false}
+          isLoading={isFetchingMore}
+          className="pt-2"
+        />
 
-      <div className="flex-1" />
+        <div className="flex-1" />
 
-      {/* Messages */}
-      {messages.map((message, index) => {
+        {/* Messages */}
+        {messages.map((message, index) => {
         const prev = messages[index - 1];
         const next = messages[index + 1];
         const showDivider = shouldShowDateDivider(prev?.createdAt, message.createdAt);
@@ -197,78 +199,79 @@ export default function MessageList({ conversation }: MessageListProps) {
           timestampBubblePosition = "last";
         }
 
-        let showReadReceipt = true;
-        if (message.senderId === user?.id) {
-          if (conversation.type === "private") {
-            // Private chat: show at most two status markers:
-            // 1) latest message read by the other person
-            // 2) latest message sent but not yet read
-            showReadReceipt =
-              index === latestReadOutgoingIndex ||
-              index === latestSentOutgoingIndex;
-          } else {
-          let nextMineIndex = -1;
-          for (let i = index + 1; i < messages.length; i += 1) {
-            const candidate = messages[i];
-            if (candidate.senderId !== user?.id) continue;
-            if (getTimeBucketKey(candidate.createdAt) !== bucketKey) continue;
-            nextMineIndex = i;
-            break;
+          let showReadReceipt = true;
+          if (message.senderId === user?.id) {
+            if (conversation.type === "private") {
+              // Private chat: show at most two status markers:
+              // 1) latest message read by the other person
+              // 2) latest message sent but not yet read
+              showReadReceipt =
+                index === latestReadOutgoingIndex ||
+                index === latestSentOutgoingIndex;
+            } else {
+              let nextMineIndex = -1;
+              for (let i = index + 1; i < messages.length; i += 1) {
+                const candidate = messages[i];
+                if (candidate.senderId !== user?.id) continue;
+                if (getTimeBucketKey(candidate.createdAt) !== bucketKey) continue;
+                nextMineIndex = i;
+                break;
+              }
+
+              if (nextMineIndex !== -1) {
+                // Group chat: one status per 15-minute timestamp cluster.
+                showReadReceipt = false;
+              }
+            }
           }
 
-          if (nextMineIndex !== -1) {
-            // Group chat: one status per 15-minute timestamp cluster.
-            showReadReceipt = false;
+          // Find sender info for group
+          let senderName: string | undefined;
+          const senderImage: string | null = null;
+
+          if (conversation.type === "group") {
+            // We don't have individual member info here; show senderId shortened
+            senderName = message.senderId === user?.id ? undefined : "User";
           }
-          }
-        }
 
-        // Find sender info for group
-        let senderName: string | undefined;
-        const senderImage: string | null = null;
-
-        if (conversation.type === "group") {
-          // We don't have individual member info here; show senderId shortened
-          senderName = message.senderId === user?.id ? undefined : `User`;
-        }
-
-        return (
-          <div key={message.id}>
-            {showDivider && (
-              <div className="flex items-center justify-center py-3">
-                <div className="px-3 py-1 rounded-full bg-muted/60 text-xs text-muted-foreground">
-                  <DateDisplay date={message.createdAt} format="date" className="text-xs text-muted-foreground" />
+          return (
+            <div key={message.id}>
+              {showDivider && (
+                <div className="flex items-center justify-center py-3">
+                  <div className="px-3 py-1 rounded-full bg-muted/60 text-xs text-muted-foreground">
+                    <DateDisplay date={message.createdAt} format="date" className="text-xs text-muted-foreground" />
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {showTimeCluster && (
-              <div className="flex items-center justify-center py-1.5">
-                <div className="rounded-full border border-border/50 bg-background/75 px-2.5 py-0.5 text-[11px] text-muted-foreground">
-                  <DateDisplay date={message.createdAt} format="time" className="text-[11px] text-muted-foreground" />
+              {showTimeCluster && (
+                <div className="flex items-center justify-center py-1.5">
+                  <div className="rounded-full border border-border/50 bg-background/75 px-2.5 py-0.5 text-[11px] text-muted-foreground">
+                    <DateDisplay date={message.createdAt} format="time" className="text-[11px] text-muted-foreground" />
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            <MessageBubble
-              message={message}
-              isFirst={isFirst}
-              showAvatar={showAvatar}
-              senderName={senderName}
-              senderImage={senderImage}
-              participantCount={participantCount}
-              conversationType={conversation.type}
-              showReadReceipt={showReadReceipt}
-              timestampBubblePosition={timestampBubblePosition}
-            />
-          </div>
-        );
-      })}
+              <MessageBubble
+                message={message}
+                isFirst={isFirst}
+                showAvatar={showAvatar}
+                senderName={senderName}
+                senderImage={senderImage}
+                participantCount={participantCount}
+                conversationType={conversation.type}
+                showReadReceipt={showReadReceipt}
+                timestampBubblePosition={timestampBubblePosition}
+              />
+            </div>
+          );
+        })}
 
-      {/* Typing indicator */}
-      <TypingIndicator users={typingUsers} />
+        {/* Typing indicator */}
+        <TypingIndicator users={typingUsers} />
 
-      <div ref={bottomRef} className="h-1" />
-    </div>
+        <div ref={bottomRef} className="h-1" />
+      </div>
+    </ScrollArea>
   );
 }
