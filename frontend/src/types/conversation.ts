@@ -20,6 +20,7 @@ export interface ConversationGroup {
   name: string;
   image: string | null;
   memberCount: number;
+  fallbackProfileImages?: Array<string | null>;
 }
 
 export interface LastMessage {

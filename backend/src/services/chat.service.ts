@@ -231,6 +231,16 @@ export const getConversations = async (
         const memberCount = await GroupMember.countDocuments({
           groupId: group?._id,
         });
+        const fallbackMembers = group
+          ? await GroupMember.find({ groupId: group._id })
+              .sort({ joinedAt: 1 })
+              .limit(3)
+              .populate("userId", "profileImage")
+              .lean()
+          : [];
+        const fallbackProfileImages = fallbackMembers.map(
+          (m: any) => m.userId?.profileImage ?? null
+        );
 
         const unreadCount = await Message.countDocuments({
           conversationId: conv._id,
@@ -246,6 +256,7 @@ export const getConversations = async (
             name: group?.name,
             image: group?.image,
             memberCount,
+            fallbackProfileImages,
           },
           lastMessage: conv.lastMessage,
           unreadCount,
@@ -328,6 +339,16 @@ export const getConversation = async (
     const memberCount = group
       ? await GroupMember.countDocuments({ groupId: group._id })
       : 0;
+    const fallbackMembers = group
+      ? await GroupMember.find({ groupId: group._id })
+          .sort({ joinedAt: 1 })
+          .limit(3)
+          .populate("userId", "profileImage")
+          .lean()
+      : [];
+    const fallbackProfileImages = fallbackMembers.map(
+      (m: any) => m.userId?.profileImage ?? null
+    );
 
     return {
       id: conversation._id.toString(),
@@ -337,6 +358,7 @@ export const getConversation = async (
         name: group?.name,
         image: group?.image,
         memberCount,
+        fallbackProfileImages,
       },
       requestStatus: conversation.requestStatus,
       createdAt: conversation.createdAt,

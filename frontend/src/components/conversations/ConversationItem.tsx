@@ -7,6 +7,7 @@ import { useChatStore } from "@/stores/chatStore";
 import { useAuthStore } from "@/stores/authStore";
 import type { Conversation } from "@/types/conversation";
 import DateDisplay from "@/components/shared/DateDisplay";
+import GroupAvatar from "@/components/shared/GroupAvatar";
 import UserAvatar from "@/components/shared/UserAvatar";
 
 interface ConversationItemProps {
@@ -51,13 +52,6 @@ export default function ConversationItem({
     ? conversation.group?.image
     : conversation.participant?.profileImage;
 
-  const initials = displayName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-
   const isPending = conversation.requestStatus === "pending";
   const lastSenderIsMe = conversation.lastMessage?.senderId === user?.id;
   const basePreview = getLastMessagePreview(conversation);
@@ -80,9 +74,15 @@ export default function ConversationItem({
       {/* Avatar */}
       <div className="relative shrink-0">
         {isGroup ? (
-          <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center text-white font-medium text-sm bg-linear-to-br from-violet-500 to-purple-600">
-            {initials}
-          </div>
+          <GroupAvatar
+            imageUrl={displayImage}
+            fallbackProfileImages={conversation.group?.fallbackProfileImages}
+            name={displayName}
+            alt={displayName}
+            className="w-12 h-12"
+            roundedClassName="rounded-xl"
+            textClassName="text-sm"
+          />
         ) : (
           <UserAvatar
             imageUrl={displayImage}

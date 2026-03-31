@@ -17,6 +17,7 @@ import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import ConnectionStatus from "@/components/shared/ConnectionStatus";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
+import GroupAvatar from "@/components/shared/GroupAvatar";
 import UserAvatar from "@/components/shared/UserAvatar";
 
 interface ChatViewProps {
@@ -232,9 +233,15 @@ export default function ChatView({ conversation }: ChatViewProps) {
             className="flex items-center gap-3 min-w-0 flex-1 hover:opacity-90 transition-opacity"
           >
             <div className="relative shrink-0">
-              <div className="w-9 h-9 rounded-full overflow-hidden bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-sm font-medium">
-                {(displayName?.[0] ?? "?").toUpperCase()}
-              </div>
+              <GroupAvatar
+                imageUrl={displayImage}
+                fallbackProfileImages={conversation.group?.fallbackProfileImages}
+                name={displayName}
+                alt={displayName}
+                className="w-9 h-9"
+                roundedClassName="rounded-full"
+                textClassName="text-sm"
+              />
             </div>
             <div className="min-w-0">
               <p className="font-medium text-sm leading-tight truncate">{displayName}</p>
