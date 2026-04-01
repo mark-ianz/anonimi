@@ -10,9 +10,24 @@ import { Camera, Save, Link as LinkIcon, QrCode, Copy, Check, X, AlertCircle, Lo
 import { toast } from "sonner";
 import GroupAvatar from "@/components/shared/GroupAvatar";
 import { UploadSource, validateUploadFile } from "@/lib/uploadPolicy";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 
 interface GroupSettingsProps {
   group: Group;
+}
+
+interface GroupSavePlan {
+  payload: {
+    name?: string;
+    description?: string;
+    image?: string | null;
+    settings?: {
+      joinRequestEnabled?: boolean;
+      nicknameEditPolicy?: "admins_only" | "all_members";
+      groupProfileEditPolicy?: "admins_only" | "all_members";
+    };
+  };
+  changesSummary: string;
 }
 
 export default function GroupSettings({ group }: GroupSettingsProps) {
@@ -49,6 +64,8 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
   const [pendingGroupImage, setPendingGroupImage] = useState<{ file: File; source: UploadSource } | null>(null);
   const [pendingGroupImageRemoval, setPendingGroupImageRemoval] = useState(false);
   const [groupImagePreviewUrl, setGroupImagePreviewUrl] = useState<string | null>(null);
+  const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
+  const [savePlan, setSavePlan] = useState<GroupSavePlan | null>(null);
 
   const expiryOptions: Array<{ value: 30 | 60 | 360 | 1440 | 10080; label: string }> = [
     { value: 30, label: "30m" },
@@ -94,8 +111,8 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
     };
   }, [avatarPopoverOpen]);
 
-  async function handleSave() {
-    if (!canEditGroupProfile && !canManageSettings) return;
+  function buildSavePlan(): GroupSavePlan | null {
+    if (!canEditGroupProfile && !canManageSettings) return null;
 
     const payload: {
       name?: string;
@@ -111,13 +128,75 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
       description: description.trim() || undefined,
     };
 
+    const changes: string[] = [];
+
+    const originalName = group.name.trim();
+    const nextName = name.trim();
+    if (nextName !== originalName) {
+      changes.push(`Name: ${originalName} -> ${nextName || "(empty)"}`);
+    }
+
+    const originalDescription = (group.description ?? "").trim();
+    const nextDescription = description.trim();
+    if (nextDescription !== originalDescription) {
+      changes.push(
+        `Description: ${originalDescription || "(empty)"} -> ${nextDescription || "(empty)"}`
+      );
+    }
+
     if (canManageSettings) {
       payload.settings = {
         joinRequestEnabled,
         nicknameEditPolicy,
         groupProfileEditPolicy,
       };
+
+      if (joinRequestEnabled !== group.settings.joinRequestEnabled) {
+        changes.push(`Join requests: ${joinRequestEnabled ? "Required" : "Not required"}`);
+      }
+
+      if (nicknameEditPolicy !== (group.settings.nicknameEditPolicy ?? "all_members")) {
+        changes.push(
+          `Nickname editing: ${nicknameEditPolicy === "admins_only" ? "Admins only" : "All members"}`
+        );
+      }
+
+      if (groupProfileEditPolicy !== (group.settings.groupProfileEditPolicy ?? "admins_only")) {
+        changes.push(
+          `Group profile editing: ${groupProfileEditPolicy === "admins_only" ? "Admins only" : "All members"}`
+        );
+      }
     }
+
+    if (pendingGroupImage) {
+      changes.push(`Group photo: ${pendingGroupImage.file.name}`);
+    } else if (pendingGroupImageRemoval) {
+      changes.push("Group photo: Remove current photo");
+    }
+
+    if (changes.length === 0) {
+      toast.info("No changes to save.");
+      return null;
+    }
+
+    return {
+      payload,
+      changesSummary: changes.join("; "),
+    };
+  }
+
+  function handleSave() {
+    const plan = buildSavePlan();
+    if (!plan) return;
+
+    setSavePlan(plan);
+    setSaveConfirmOpen(true);
+  }
+
+  async function handleConfirmSave() {
+    if (!savePlan) return;
+
+    const payload = { ...savePlan.payload };
 
     if (pendingGroupImage) {
       const result = await upload(pendingGroupImage.file, "group", { source: pendingGroupImage.source });
@@ -135,6 +214,8 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
         if (previousUrl) URL.revokeObjectURL(previousUrl);
         return null;
       });
+      setSaveConfirmOpen(false);
+      setSavePlan(null);
     } catch {
       // Error toast is already handled by the mutation hook.
     }
@@ -660,6 +741,21 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={saveConfirmOpen}
+        onClose={() => {
+          if (isUploading) return;
+          setSaveConfirmOpen(false);
+          setSavePlan(null);
+        }}
+        onConfirm={handleConfirmSave}
+        title="Confirm group changes"
+        description={savePlan?.changesSummary}
+        confirmLabel="Save changes"
+        cancelLabel="Review again"
+        loading={isUploading}
+      />
     </div>
   );
 }
