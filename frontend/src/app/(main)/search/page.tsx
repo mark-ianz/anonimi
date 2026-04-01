@@ -113,7 +113,15 @@ export default function SearchPage() {
     return list;
   }, [requestsQuery.data, query]);
 
-  const people = useMemo(() => (peopleQuery.data ?? []).slice(0, 12), [peopleQuery.data]);
+  const contactAnonimiIds = useMemo(() => {
+    return new Set((contactsQuery.data ?? []).map((contact) => contact.anonimiId));
+  }, [contactsQuery.data]);
+
+  const people = useMemo(() => {
+    return (peopleQuery.data ?? [])
+      .filter((person) => !contactAnonimiIds.has(person.anonimiId))
+      .slice(0, 12);
+  }, [peopleQuery.data, contactAnonimiIds]);
 
   const messages = useMemo(() => {
     const list = (conversationsQuery.data ?? [])
@@ -187,28 +195,6 @@ export default function SearchPage() {
             </div>
           ) : (
             <div className="mt-4 space-y-4">
-              <section className="rounded-2xl border border-border/70 bg-card/70 p-4 sm:p-5">
-                <div className="mb-2 flex items-center gap-2">
-                  <Compass className="h-4 w-4 text-muted-foreground" />
-                  <h2 className="text-sm font-semibold">Suggested Shortcuts</h2>
-                </div>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {suggestions.map((item) => (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      className="group flex items-center justify-between rounded-lg border border-border/60 bg-background/80 px-3 py-2.5 text-sm transition-colors hover:bg-muted"
-                    >
-                      <span className="flex items-center gap-2 text-foreground">
-                        <item.icon className="h-4 w-4 text-muted-foreground" />
-                        {item.label}
-                      </span>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-                    </Link>
-                  ))}
-                </div>
-              </section>
-
               <section className="rounded-2xl border border-border/70 bg-card/70 p-4 sm:p-5">
                 <h2 className="mb-2 text-sm font-semibold">My Contacts</h2>
                 {contacts.length === 0 ? (
@@ -308,6 +294,28 @@ export default function SearchPage() {
                   </p>
                 </div>
               )}
+
+              <section className="rounded-2xl border border-border/70 bg-card/70 p-4 sm:p-5">
+                <div className="mb-2 flex items-center gap-2">
+                  <Compass className="h-4 w-4 text-muted-foreground" />
+                  <h2 className="text-sm font-semibold">Suggested Shortcuts</h2>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {suggestions.map((item) => (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className="group flex items-center justify-between rounded-lg border border-border/60 bg-background/80 px-3 py-2.5 text-sm transition-colors hover:bg-muted"
+                    >
+                      <span className="flex items-center gap-2 text-foreground">
+                        <item.icon className="h-4 w-4 text-muted-foreground" />
+                        {item.label}
+                      </span>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  ))}
+                </div>
+              </section>
             </div>
           )}
         </div>
