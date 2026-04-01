@@ -1,10 +1,24 @@
 import { Request, Response, NextFunction } from "express";
+import path from "path";
 import { apiSuccess } from "../utils/apiResponse";
+import { env } from "../config/env";
 
 const resolveFolder = (category: unknown): "avatars" | "groups" | "messages" => {
   if (category === "avatar") return "avatars";
   if (category === "group") return "groups";
   return "messages";
+};
+
+const resolveFolderFromSavedFile = (filePath: string): "avatars" | "groups" | "messages" | null => {
+  const relativePath = path.relative(path.resolve(env.UPLOAD_DIR), filePath);
+  if (!relativePath || relativePath.startsWith("..")) return null;
+
+  const [folder] = relativePath.split(path.sep);
+  if (folder === "avatars" || folder === "groups" || folder === "messages") {
+    return folder;
+  }
+
+  return null;
 };
 
 export const uploadMedia = async (
@@ -20,7 +34,7 @@ export const uploadMedia = async (
       });
     }
 
-    const folder = resolveFolder(req.body.category);
+    const folder = resolveFolderFromSavedFile(req.file.path) ?? resolveFolder(req.body.category);
     const url = `/uploads/${folder}/${req.file.filename}`;
 
     apiSuccess(

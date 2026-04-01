@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { Settings, LogOut, MoreVertical } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 import type { Group } from "@/types/group";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
+import UserAvatar from "@/components/shared/UserAvatar";
 
 interface GroupHeaderProps {
   group: Group;
@@ -16,7 +16,6 @@ interface GroupHeaderProps {
 
 export default function GroupHeader({
   group,
-  conversationId,
   onLeave,
   isLeaving,
 }: GroupHeaderProps) {
@@ -29,14 +28,14 @@ export default function GroupHeader({
     <>
       <div className="flex items-center justify-between p-4 border-b border-border/30">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl overflow-hidden bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-medium text-sm shrink-0">
-            {group.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={group.image} alt={group.name} className="w-full h-full object-cover" />
-            ) : (
-              group.name.slice(0, 2).toUpperCase()
-            )}
-          </div>
+          <UserAvatar
+            imageUrl={group.image}
+            name={group.name}
+            alt={group.name}
+            className="w-12 h-12 shrink-0"
+            roundedClassName="rounded-xl"
+            textClassName="text-sm"
+          />
           <div>
             <h2 className="font-display font-semibold">{group.name}</h2>
             <p className="text-xs text-muted-foreground">{group.memberCount} members</p>

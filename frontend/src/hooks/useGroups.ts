@@ -258,6 +258,7 @@ export function useGroup(groupId: string | null) {
     joinRequests: joinRequestsQuery.data ?? [],
     inviteLinks: inviteLinksQuery.data ?? [],
     updateGroup: updateMutation.mutate,
+    updateGroupAsync: (patch: Parameters<typeof updateMutation.mutateAsync>[0]) => updateMutation.mutateAsync(patch),
     addMembers: addMembersMutation.mutate,
     removeMember: removeMemberMutation.mutate,
     changeRole: changeRoleMutation.mutate,

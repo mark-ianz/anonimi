@@ -34,9 +34,9 @@ export function useMediaUpload() {
       }
 
       const form = new FormData();
-      form.append("file", file);
       form.append("category", category);
       form.append("source", source);
+      form.append("file", file);
 
       abortRef.current = new AbortController();
       setIsUploading(true);

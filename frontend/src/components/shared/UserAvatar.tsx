@@ -30,13 +30,13 @@ export default function UserAvatar({
   roundedClassName = "rounded-full",
   alt,
 }: UserAvatarProps) {
-  const [imageError, setImageError] = useState(false);
+  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
   const [svgError, setSvgError] = useState(false);
   const gradientId = useId().replace(/:/g, "");
 
   const initial = useMemo(() => getInitial(name), [name]);
-  const showImage = Boolean(imageUrl) && !imageError;
   const resolvedImageUrl = resolveMediaUrl(imageUrl);
+  const showImage = Boolean(imageUrl) && resolvedImageUrl !== failedImageUrl;
 
   return (
     <div
@@ -52,7 +52,7 @@ export default function UserAvatar({
           src={resolvedImageUrl}
           alt={alt ?? name ?? "User"}
           className="w-full h-full object-cover"
-          onError={() => setImageError(true)}
+          onError={() => setFailedImageUrl(resolvedImageUrl)}
         />
       ) : (
         !svgError ? (

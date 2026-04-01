@@ -17,7 +17,7 @@ interface GroupSettingsProps {
 
 export default function GroupSettings({ group }: GroupSettingsProps) {
   const router = useRouter();
-  const { updateGroup, inviteLinks, createInviteLink, revokeInviteLink, joinRequests, decideJoinRequest, leaveGroup, disbandGroup, isLeaving, isDisbanding, members } = useGroup(group.id);
+  const { updateGroupAsync, inviteLinks, createInviteLink, revokeInviteLink, joinRequests, decideJoinRequest, leaveGroup, disbandGroup, isLeaving, isDisbanding, members } = useGroup(group.id);
   const { upload, isUploading } = useMediaUpload();
   const canManageSettings = group.myRole === "owner" || group.myRole === "admin";
   const canEditGroupProfile =
@@ -127,13 +127,17 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
       payload.image = null;
     }
 
-    updateGroup(payload);
-    setPendingGroupImage(null);
-    setPendingGroupImageRemoval(false);
-    setGroupImagePreviewUrl((previousUrl) => {
-      if (previousUrl) URL.revokeObjectURL(previousUrl);
-      return null;
-    });
+    try {
+      await updateGroupAsync(payload);
+      setPendingGroupImage(null);
+      setPendingGroupImageRemoval(false);
+      setGroupImagePreviewUrl((previousUrl) => {
+        if (previousUrl) URL.revokeObjectURL(previousUrl);
+        return null;
+      });
+    } catch {
+      // Error toast is already handled by the mutation hook.
+    }
   }
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>, source: UploadSource = "file") {

@@ -287,6 +287,7 @@ export const createGroup = async (
     groupId: group._id.toString(),
     conversationId: conversation._id.toString(),
     name: groupName,
+    image: group.image ?? null,
     ownerId: actualOwnerId,
     members: memberData,
     photoFallbackUserIds: memberUsers.slice(0, 3).map((m) => m._id.toString()),
