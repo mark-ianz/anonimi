@@ -144,6 +144,21 @@ export default function SearchPage() {
     return list;
   }, [conversationsQuery.data, query]);
 
+  const groups = useMemo(() => {
+    const list = (conversationsQuery.data ?? [])
+      .filter((conversation) => conversation.type === "group")
+      .map((conversation) => {
+        const name = conversation.group?.name ?? "Group";
+        const score = rankScore(name, query);
+        return { conversation, name, score };
+      })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 12);
+
+    return list;
+  }, [conversationsQuery.data, query]);
+
   const suggestions = useMemo(
     () => [
       { label: "Open My Contacts", href: "/contacts", icon: Users },
@@ -164,6 +179,7 @@ export default function SearchPage() {
     contacts.length > 0 ||
     requests.length > 0 ||
     people.length > 0 ||
+    groups.length > 0 ||
     messages.length > 0;
 
   return (
@@ -252,6 +268,28 @@ export default function SearchPage() {
                           <span className="truncate text-foreground">{person.username}</span>
                         </span>
                         <span className="ml-2 shrink-0 text-xs text-muted-foreground">{person.anonimiId}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className="rounded-2xl border border-border/70 bg-card/70 p-4 sm:p-5">
+                <h2 className="mb-2 text-sm font-semibold">Groups</h2>
+                {groups.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No matching groups.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {groups.map((item) => (
+                      <Link
+                        key={item.conversation.id}
+                        href={`/chat/${item.conversation.id}`}
+                        className="flex items-center justify-between rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-sm transition-colors hover:bg-muted"
+                      >
+                        <span className="truncate text-foreground">{item.name}</span>
+                        <span className="ml-2 shrink-0 text-xs text-muted-foreground">
+                          Group
+                        </span>
                       </Link>
                     ))}
                   </div>
