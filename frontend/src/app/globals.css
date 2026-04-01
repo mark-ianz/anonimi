@@ -210,6 +210,16 @@
   100% { box-shadow: 0 0 0 0 rgba(30, 88, 140, 0); transform: scale(1); }
 }
 
+@keyframes typing-ellipsis {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 .animate-fade-in {
   animation: fade-in 0.3s ease-out forwards;
 }
@@ -224,6 +234,12 @@
 
 .animate-message-highlight {
   animation: message-highlight 4s ease-out;
+}
+
+.typing-ellipsis {
+  display: inline-block;
+  margin-left: 2px;
+  animation: typing-ellipsis 1.4s ease-in-out infinite;
 }
 
 .animate-reveal-up {

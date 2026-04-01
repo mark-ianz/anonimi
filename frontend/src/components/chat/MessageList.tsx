@@ -132,17 +132,21 @@ export default function MessageList({ conversation, onEditStart }: MessageListPr
 
     return sorted.map((typingUser) => {
       let name = typingUser.username;
+      let profileImage: string | null = null;
 
       if (conversation.type === "private" && typingUser.userId === conversation.participant?.id) {
         name = conversation.participant.nickname ?? conversation.participant.username ?? name;
+        profileImage = conversation.participant.profileImage ?? null;
       } else if (conversation.type === "group") {
         const meta = groupMemberMetaById[typingUser.userId];
         name = meta?.name ?? name;
+        profileImage = meta?.profileImage ?? null;
       }
 
       return {
         userId: typingUser.userId,
         username: name?.trim() || "User",
+        profileImage,
       };
     });
   }, [typingUsers, user?.id, conversation, groupMemberMetaById]);
