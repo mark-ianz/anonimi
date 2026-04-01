@@ -42,7 +42,8 @@ export default function ConversationSearch({
       params.set("tab", nextTab);
     }
     const queryString = params.toString();
-    router.replace(queryString ? `${pathname}?${queryString}` : pathname);
+    const targetPath = activeConversationId ? "/chat" : pathname;
+    router.replace(queryString ? `${targetPath}?${queryString}` : targetPath);
   };
 
   return (
