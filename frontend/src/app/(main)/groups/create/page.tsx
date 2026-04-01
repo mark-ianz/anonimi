@@ -256,20 +256,23 @@ export default function CreateGroupPage() {
 
           {/* Permission Settings */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30">
+            <button
+              type="button"
+              onClick={() => setJoinRequestEnabled((v) => !v)}
+              className="flex w-full items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30 text-left"
+            >
               <div>
                 <p className="text-sm font-medium">Require join requests</p>
                 <p className="text-xs text-muted-foreground">
                   New members need approval to join
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setJoinRequestEnabled((v) => !v)}
+              <span
                 className={cn(
                   "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
                   joinRequestEnabled ? "bg-emerald-500" : "bg-muted-foreground/30"
                 )}
+                aria-hidden="true"
               >
                 <span
                   className={cn(
@@ -277,27 +280,30 @@ export default function CreateGroupPage() {
                     joinRequestEnabled ? "translate-x-5" : "translate-x-0"
                   )}
                 />
-              </button>
-            </div>
+              </span>
+            </button>
 
-            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30">
+            <button
+              type="button"
+              onClick={() =>
+                setGroupProfileEditPolicy((current) =>
+                  current === "admins_only" ? "all_members" : "admins_only"
+                )
+              }
+              className="flex w-full items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30 text-left"
+            >
               <div>
                 <p className="text-sm font-medium">Admins-only group profile editing</p>
                 <p className="text-xs text-muted-foreground">
                   Turn off to let all members edit group photo, name, and description
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() =>
-                  setGroupProfileEditPolicy((current) =>
-                    current === "admins_only" ? "all_members" : "admins_only"
-                  )
-                }
+              <span
                 className={cn(
                   "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
                   groupProfileEditPolicy === "admins_only" ? "bg-emerald-500" : "bg-muted-foreground/30"
                 )}
+                aria-hidden="true"
               >
                 <span
                   className={cn(
@@ -305,27 +311,30 @@ export default function CreateGroupPage() {
                     groupProfileEditPolicy === "admins_only" ? "translate-x-5" : "translate-x-0"
                   )}
                 />
-              </button>
-            </div>
+              </span>
+            </button>
 
-            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30">
+            <button
+              type="button"
+              onClick={() =>
+                setNicknameEditPolicy((current) =>
+                  current === "admins_only" ? "all_members" : "admins_only"
+                )
+              }
+              className="flex w-full items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30 text-left"
+            >
               <div>
                 <p className="text-sm font-medium">Admins-only nickname editing</p>
                 <p className="text-xs text-muted-foreground">
                   Turn off to allow all members to edit nicknames
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() =>
-                  setNicknameEditPolicy((current) =>
-                    current === "admins_only" ? "all_members" : "admins_only"
-                  )
-                }
+              <span
                 className={cn(
                   "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
                   nicknameEditPolicy === "admins_only" ? "bg-emerald-500" : "bg-muted-foreground/30"
                 )}
+                aria-hidden="true"
               >
                 <span
                   className={cn(
@@ -333,8 +342,8 @@ export default function CreateGroupPage() {
                     nicknameEditPolicy === "admins_only" ? "translate-x-5" : "translate-x-0"
                   )}
                 />
-              </button>
-            </div>
+              </span>
+            </button>
           </div>
 
           {/* Selected Members */}

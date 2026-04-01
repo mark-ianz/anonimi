@@ -176,3 +176,6 @@ When I message request someone, the request doesn't go to their request tab. tho
 - Pressing accept, allows me to and doesn't add him on my contact yet which is correct. But the prompt for Accept or Accept & Add is still there and I still can't reply yet. Meaning I have to manually refresh.
 - When I only pressed accept, the contact request should still be on my /contacts?tab=requests
 - When I press Accept and Add, I should automatically accept his contact request and sync it with my contacts.
+
+--
+When creating a group chat, the members avatar when adding members initially are empty.
