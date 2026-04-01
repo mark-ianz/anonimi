@@ -248,3 +248,19 @@ export interface INotification extends Document {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface IPushSubscription extends Document {
+  _id: Types.ObjectId;
+  userId: Types.ObjectId;
+  endpoint: string;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+  expirationTime?: number;
+  userAgent?: string;
+  revokedAt?: Date;
+  lastUsedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}

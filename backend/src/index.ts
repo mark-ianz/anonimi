@@ -8,6 +8,15 @@ import { logger } from "./utils/logger";
 
 const startServer = async (): Promise<void> => {
   try {
+    logger.info(
+      {
+        vapidPublicKey: env.VAPID_PUBLIC_KEY ? "set" : "missing",
+        vapidPrivateKey: env.VAPID_PRIVATE_KEY ? "set" : "missing",
+        vapidSubject: env.VAPID_SUBJECT ? env.VAPID_SUBJECT : "missing",
+      },
+      "Push env status"
+    );
+
     await connectDB();
 
     const app = createApp();

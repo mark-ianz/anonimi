@@ -18,3 +18,23 @@ export const conversationNotificationParamsSchema = z.object({
     conversationId: z.string().min(1, "Conversation id is required"),
   }),
 });
+
+export const pushSubscribeSchema = z.object({
+  body: z.object({
+    endpoint: z.string().min(1),
+    keys: z.object({
+      p256dh: z.string().min(1),
+      auth: z.string().min(1),
+    }),
+    expirationTime: z.number().nullable().optional(),
+    userAgent: z.string().optional(),
+  }),
+});
+
+export const pushUnsubscribeSchema = z.object({
+  body: z
+    .object({
+      endpoint: z.string().min(1).optional(),
+    })
+    .optional(),
+});

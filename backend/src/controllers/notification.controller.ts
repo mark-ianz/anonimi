@@ -7,6 +7,13 @@ import {
   markMessageNotificationsReadByConversation,
   markNotificationRead,
 } from "../services/notification.service";
+import {
+  getVapidPublicKey,
+  hasActivePushSubscriptions,
+  removePushSubscription,
+  sendPushToUser,
+  upsertPushSubscription,
+} from "../services/push.service";
 
 export const getNotifications = async (
   req: Request,
@@ -76,6 +83,85 @@ export const removeNotification = async (
     const { notificationId } = req.params;
     const result = await deleteNotification(req.user!._id.toString(), notificationId);
     apiSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPushStatus = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const enabled = await hasActivePushSubscriptions(req.user!._id.toString());
+    apiSuccess(res, { enabled });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPushPublicKey = async (
+  _req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    apiSuccess(res, { publicKey: getVapidPublicKey() });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const subscribePush = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { endpoint, keys, expirationTime, userAgent } = req.body;
+    await upsertPushSubscription({
+      userId: req.user!._id.toString(),
+      endpoint,
+      keys,
+      expirationTime,
+      userAgent: userAgent ?? req.get("user-agent") ?? undefined,
+    });
+    apiSuccess(res, { enabled: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const unsubscribePush = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { endpoint } = req.body ?? {};
+    await removePushSubscription({
+      userId: req.user!._id.toString(),
+      endpoint,
+    });
+    apiSuccess(res, { enabled: false });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const testPush = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    await sendPushToUser(req.user!._id.toString(), {
+      title: "EchoID Test",
+      body: "This is a test push notification.",
+      data: { href: "/chat" },
+    });
+    apiSuccess(res, { sent: true });
   } catch (error) {
     next(error);
   }

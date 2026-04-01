@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import { Moon, Sun, Monitor, Bell, Shield, Lock } from "lucide-react";
@@ -8,6 +8,13 @@ import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/uiStore";
 import { useAuth } from "@/hooks/useAuth";
 import { useSocketContext } from "@/providers/SocketProvider";
+import api from "@/lib/api";
+import { toast } from "sonner";
+import {
+  isPushSupported,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from "@/lib/pushNotifications";
 import type { AppearanceStatus } from "@/types/user";
 
 type Theme = "light" | "dark" | "system";
@@ -52,7 +59,9 @@ const appearanceOptions: {
 
 export default function SettingsPage() {
   const { theme, setTheme } = useUIStore();
-  const [notifications, setNotifications] = useState(true);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [isPushLoading, setIsPushLoading] = useState(true);
+  const [isPushToggling, setIsPushToggling] = useState(false);
   const { user, updateProfile, isUpdatingProfile } = useAuth();
   const { chatSocket } = useSocketContext();
 
@@ -63,6 +72,77 @@ export default function SettingsPage() {
 
     updateProfile({ appearanceStatus: status });
     chatSocket?.emit("presence:set-status", { status });
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadStatus = async () => {
+      try {
+        const res = await api.get("/notifications/push/status");
+        if (!isMounted) return;
+        setPushEnabled(!!res.data?.data?.enabled);
+      } catch {
+        if (isMounted) {
+          setPushEnabled(false);
+        }
+      } finally {
+        if (isMounted) setIsPushLoading(false);
+      }
+    };
+
+    loadStatus();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handlePushToggle = async () => {
+    if (isPushToggling || isPushLoading) return;
+    if (!isPushSupported()) {
+      toast.error("Push notifications are not supported in this browser.");
+      return;
+    }
+
+    setIsPushToggling(true);
+
+    try {
+      if (!pushEnabled) {
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") {
+          toast.error("Permission denied for notifications.");
+          return;
+        }
+
+        const keyRes = await api.get("/notifications/push/public-key");
+        const publicKey = keyRes.data?.data?.publicKey as string | undefined;
+        if (!publicKey) {
+          toast.error("Push notifications are not configured.");
+          return;
+        }
+
+        const subscription = await subscribeToPush(publicKey);
+        const payload = subscription.toJSON();
+        await api.post("/notifications/push/subscribe", {
+          endpoint: payload.endpoint,
+          keys: payload.keys,
+          expirationTime: payload.expirationTime ?? null,
+          userAgent: navigator.userAgent,
+        });
+        setPushEnabled(true);
+        toast.success("Push notifications enabled.");
+      } else {
+        const endpoint = await unsubscribeFromPush();
+        await api.post("/notifications/push/unsubscribe", endpoint ? { endpoint } : {});
+        setPushEnabled(false);
+        toast.success("Push notifications disabled.");
+      }
+    } catch {
+      toast.error("Failed to update push notifications.");
+    } finally {
+      setIsPushToggling(false);
+    }
   };
 
   return (
@@ -150,16 +230,18 @@ export default function SettingsPage() {
                 </div>
               </div>
               <button
-                onClick={() => setNotifications((v) => !v)}
+                onClick={handlePushToggle}
+                disabled={isPushLoading || isPushToggling}
                 className={cn(
                   "relative h-6 w-11 rounded-full transition-colors",
-                  notifications ? "bg-primary" : "bg-muted-foreground/35"
+                  pushEnabled ? "bg-primary" : "bg-muted-foreground/35",
+                  (isPushLoading || isPushToggling) && "opacity-60 cursor-not-allowed"
                 )}
               >
                 <span
                   className={cn(
                     "absolute top-1 h-4 w-4 rounded-full bg-white transition-transform shadow-sm",
-                    notifications ? "translate-x-6" : "translate-x-1"
+                    pushEnabled ? "translate-x-6" : "translate-x-1"
                   )}
                 />
               </button>

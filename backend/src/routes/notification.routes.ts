@@ -6,11 +6,28 @@ import {
   conversationNotificationParamsSchema,
   listNotificationsSchema,
   notificationParamsSchema,
+  pushSubscribeSchema,
+  pushUnsubscribeSchema,
 } from "../validators/notification.validator";
 
 const router = Router();
 
 router.get("/", authenticate, validate(listNotificationsSchema), notificationController.getNotifications);
+router.get("/push/status", authenticate, notificationController.getPushStatus);
+router.get("/push/public-key", authenticate, notificationController.getPushPublicKey);
+router.post("/push/test", authenticate, notificationController.testPush);
+router.post(
+  "/push/subscribe",
+  authenticate,
+  validate(pushSubscribeSchema),
+  notificationController.subscribePush
+);
+router.post(
+  "/push/unsubscribe",
+  authenticate,
+  validate(pushUnsubscribeSchema),
+  notificationController.unsubscribePush
+);
 router.patch(
   "/messages/read-by-conversation/:conversationId",
   authenticate,

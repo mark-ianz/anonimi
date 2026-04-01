@@ -2,6 +2,7 @@ import { Server } from "socket.io";
 import { Types } from "mongoose";
 import { Notification } from "../models/notification.model";
 import { NotFoundError } from "../utils/apiError";
+import { sendPushToUser } from "./push.service";
 
 let io: Server;
 
@@ -157,6 +158,16 @@ export const createAndEmitNotification = async (
   const payload = toPayload(notification);
 
   emitToUser(input.userId, "notification:new", payload);
+
+  try {
+    await sendPushToUser(input.userId, {
+      title: payload.title,
+      body: payload.body,
+      data: payload.data,
+    });
+  } catch {
+    // Push failures should not break in-app notifications.
+  }
 
   return payload;
 };
