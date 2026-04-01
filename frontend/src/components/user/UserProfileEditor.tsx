@@ -15,6 +15,7 @@ interface PendingAvatar {
 
 interface UserProfileEditorProps {
   pendingAvatar?: PendingAvatar | null;
+  pendingAvatarRemoval?: boolean;
   onAvatarSaved?: () => void;
 }
 
@@ -23,11 +24,12 @@ interface SavePlan {
   changesSummary: string;
 }
 
-export default function UserProfileEditor({ pendingAvatar, onAvatarSaved }: UserProfileEditorProps) {
+export default function UserProfileEditor({ pendingAvatar, pendingAvatarRemoval, onAvatarSaved }: UserProfileEditorProps) {
   const {
     user,
     updateProfileAsync,
     updateAvatarAsync,
+    removeAvatarAsync,
     isUpdatingProfile,
     isUpdatingAvatar,
   } = useAuth();
@@ -44,7 +46,8 @@ export default function UserProfileEditor({ pendingAvatar, onAvatarSaved }: User
   const hasChanges =
     (trimmedUsername && trimmedUsername !== (user?.username ?? "")) ||
     trimmedPhone !== (user?.phone ?? "") ||
-    !!pendingAvatar;
+    !!pendingAvatar ||
+    !!pendingAvatarRemoval;
   const canSave = hasChanges && !isSaving;
 
   function buildSavePlan(): SavePlan | null {
@@ -78,7 +81,11 @@ export default function UserProfileEditor({ pendingAvatar, onAvatarSaved }: User
       changes.push(`Profile photo: ${pendingAvatar.file.name}`);
     }
 
-    if (Object.keys(patch).length === 0 && !pendingAvatar) {
+    if (pendingAvatarRemoval) {
+      changes.push("Profile photo: Remove current photo");
+    }
+
+    if (Object.keys(patch).length === 0 && !pendingAvatar && !pendingAvatarRemoval) {
       toast.info("No changes to save.");
       return null;
     }
@@ -122,6 +129,16 @@ export default function UserProfileEditor({ pendingAvatar, onAvatarSaved }: User
       }
     }
 
+    if (pendingAvatarRemoval) {
+      try {
+        await removeAvatarAsync();
+        savedAvatar = true;
+        onAvatarSaved?.();
+      } catch {
+        // Error toast is handled in hook.
+      }
+    }
+
     if (!savedProfile && !savedAvatar) {
       return;
     }
@@ -130,7 +147,7 @@ export default function UserProfileEditor({ pendingAvatar, onAvatarSaved }: User
     setSavePlan(null);
 
     if (savedAvatar && !savedProfile) {
-      toast.success("Profile photo updated.");
+      toast.success(pendingAvatarRemoval ? "Profile photo removed." : "Profile photo updated.");
       return;
     }
 

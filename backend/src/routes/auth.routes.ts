@@ -36,5 +36,6 @@ router.post("/logout", authenticate, validate(logoutSchema), authController.logo
 router.get("/me", authenticate, authController.getProfile);
 router.patch("/me", authenticate, validate(updateProfileSchema), authController.updateProfile);
 router.post("/me/avatar", authenticate, uploadSingle("avatar", "avatar"), authController.updateAvatar);
+router.delete("/me/avatar", authenticate, authController.removeAvatar);
 
 export default router;

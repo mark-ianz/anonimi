@@ -13,9 +13,14 @@ interface PendingAvatar {
   source: UploadSource;
 }
 
+type PendingAvatarChange =
+  | { type: "upload"; file: File; source: UploadSource }
+  | { type: "remove" }
+  | null;
+
 export default function ProfilePage() {
   const { user, logout, isUpdatingAvatar, isUpdatingProfile } = useAuth();
-  const [pendingAvatar, setPendingAvatar] = useState<PendingAvatar | null>(null);
+  const [pendingAvatarChange, setPendingAvatarChange] = useState<PendingAvatarChange>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -27,7 +32,7 @@ export default function ProfilePage() {
   }, [avatarPreviewUrl]);
 
   const handleAvatarSelect = (file: File, source: UploadSource) => {
-    setPendingAvatar({ file, source });
+    setPendingAvatarChange({ type: "upload", file, source });
     setAvatarPreviewUrl((previousUrl) => {
       if (previousUrl) {
         URL.revokeObjectURL(previousUrl);
@@ -36,8 +41,18 @@ export default function ProfilePage() {
     });
   };
 
+  const handleAvatarRemove = () => {
+    setPendingAvatarChange({ type: "remove" });
+    setAvatarPreviewUrl((previousUrl) => {
+      if (previousUrl) {
+        URL.revokeObjectURL(previousUrl);
+      }
+      return null;
+    });
+  };
+
   const handleAvatarSaved = () => {
-    setPendingAvatar(null);
+    setPendingAvatarChange(null);
     setAvatarPreviewUrl((previousUrl) => {
       if (previousUrl) {
         URL.revokeObjectURL(previousUrl);
@@ -59,7 +74,9 @@ export default function ProfilePage() {
             <AvatarUpload
               size="lg"
               previewUrl={avatarPreviewUrl}
+              pendingRemoval={pendingAvatarChange?.type === "remove"}
               onSelectAvatar={handleAvatarSelect}
+              onRemoveAvatar={handleAvatarRemove}
               isSaving={isSaving}
             />
           </div>
@@ -72,7 +89,12 @@ export default function ProfilePage() {
 
           {/* Edit form */}
           <UserProfileEditor
-            pendingAvatar={pendingAvatar}
+            pendingAvatar={
+              pendingAvatarChange?.type === "upload"
+                ? { file: pendingAvatarChange.file, source: pendingAvatarChange.source }
+                : null
+            }
+            pendingAvatarRemoval={pendingAvatarChange?.type === "remove"}
             onAvatarSaved={handleAvatarSaved}
           />
 

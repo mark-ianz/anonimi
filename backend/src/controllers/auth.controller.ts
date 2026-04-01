@@ -232,3 +232,16 @@ export const updateAvatar = async (
     next(error);
   }
 };
+
+export const removeAvatar = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const result = await authService.removeAvatar(req.user!._id.toString());
+    apiSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};

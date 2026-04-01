@@ -11,6 +11,7 @@ const envSchema = z.object({
   JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),
   CORS_ORIGIN: z.string().default("http://localhost:3000"),
   UPLOAD_DIR: z.string().default("./uploads"),
+  DELETE_AVATAR_FILE_ON_REMOVE: z.coerce.boolean().default(false),
   MAX_FILE_SIZE: z.string().default("10485760"),
   FRONTEND_URL: z.string().default("http://localhost:3000"),
 });

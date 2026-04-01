@@ -1,4 +1,6 @@
 import crypto from "crypto";
+import fs from "fs";
+import path from "path";
 import { Types } from "mongoose";
 import { User } from "../models/user.model";
 import { RefreshToken } from "../models/refreshToken.model";
@@ -12,6 +14,7 @@ import {
 import { ConflictError, UnauthorizedError, NotFoundError } from "../utils/apiError";
 import { AppearanceStatus, OnlineStatus, UserRole, UserStatus } from "../types/enums";
 import { createAdminLog } from "./admin.service";
+import { env } from "../config/env";
 
 interface RegisterResult {
   message: string;
@@ -517,6 +520,37 @@ export const updateAvatar = async (
 
   if (!user) {
     throw new NotFoundError("User not found");
+  }
+
+  return { profileImage: user.profileImage };
+};
+
+export const removeAvatar = async (userId: string) => {
+  const user = await User.findById(userId).select("profileImage");
+
+  if (!user) {
+    throw new NotFoundError("User not found");
+  }
+
+  const previousProfileImage = user.profileImage;
+
+  user.profileImage = null;
+  await user.save();
+
+  if (env.DELETE_AVATAR_FILE_ON_REMOVE && previousProfileImage?.startsWith("/uploads/")) {
+    const uploadRoot = path.resolve(env.UPLOAD_DIR);
+    const relativeUploadPath = previousProfileImage.replace(/^\/uploads\//, "");
+    const absoluteUploadPath = path.resolve(uploadRoot, relativeUploadPath);
+
+    if (absoluteUploadPath === uploadRoot || !absoluteUploadPath.startsWith(uploadRoot + path.sep)) {
+      return { profileImage: user.profileImage };
+    }
+
+    try {
+      await fs.promises.unlink(absoluteUploadPath);
+    } catch {
+      // Ignore missing files and keep profile update successful.
+    }
   }
 
   return { profileImage: user.profileImage };

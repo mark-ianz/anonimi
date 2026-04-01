@@ -67,6 +67,18 @@ export function useAuth() {
     onError: () => toast.error("Failed to update avatar."),
   });
 
+  const removeAvatarMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.delete("/auth/me/avatar");
+      return res.data.data as { profileImage: string | null };
+    },
+    onSuccess: (data) => {
+      if (user) setUser({ ...user, profileImage: data.profileImage });
+      qc.invalidateQueries({ queryKey: ["auth", "me"] });
+    },
+    onError: () => toast.error("Failed to remove profile photo."),
+  });
+
   const updateProfileMutation = useMutation({
     mutationFn: async (patch: Partial<Pick<AuthUser, "username" | "phone" | "appearanceStatus">>) => {
       const res = await api.patch("/auth/me", patch);
@@ -104,10 +116,11 @@ export function useAuth() {
     logout,
     updateAvatar: (file: File, source?: UploadSource) => updateAvatarMutation.mutate({ file, source }),
     updateAvatarAsync: (file: File, source?: UploadSource) => updateAvatarMutation.mutateAsync({ file, source }),
+    removeAvatarAsync: () => removeAvatarMutation.mutateAsync(),
     updateProfile: updateProfileMutation.mutate,
     updateProfileAsync: (patch: Partial<Pick<AuthUser, "username" | "phone" | "appearanceStatus">>) =>
       updateProfileMutation.mutateAsync(patch),
-    isUpdatingAvatar: updateAvatarMutation.isPending,
+    isUpdatingAvatar: updateAvatarMutation.isPending || removeAvatarMutation.isPending,
     isUpdatingProfile: updateProfileMutation.isPending,
   };
 }
