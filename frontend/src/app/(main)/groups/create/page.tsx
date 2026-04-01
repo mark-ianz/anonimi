@@ -20,7 +20,9 @@ export default function CreateGroupPage() {
   const [description, setDescription] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [joinRequestEnabled, setJoinRequestEnabled] = useState(false);
+  const [joinRequestEnabled, setJoinRequestEnabled] = useState(true);
+  const [groupProfileEditPolicy, setGroupProfileEditPolicy] = useState<"admins_only" | "all_members">("all_members");
+  const [nicknameEditPolicy, setNicknameEditPolicy] = useState<"admins_only" | "all_members">("all_members");
   const [pendingGroupImage, setPendingGroupImage] = useState<{ file: File; source: UploadSource } | null>(null);
   const [groupImagePreviewUrl, setGroupImagePreviewUrl] = useState<string | null>(null);
   const [avatarPopoverOpen, setAvatarPopoverOpen] = useState(false);
@@ -92,7 +94,11 @@ export default function CreateGroupPage() {
         name: name.trim() || undefined,
         description: description.trim() || undefined,
         image,
-        settings: { joinRequestEnabled },
+        settings: {
+          joinRequestEnabled,
+          groupProfileEditPolicy,
+          nicknameEditPolicy,
+        },
         memberEchoIds: selectedIds,
       },
       {
@@ -243,28 +249,87 @@ export default function CreateGroupPage() {
             />
           </div>
 
-          {/* Join Request Toggle */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30">
-            <div>
-              <p className="text-sm font-medium">Require join requests</p>
-              <p className="text-xs text-muted-foreground">
-                New members need approval to join
-              </p>
-            </div>
-            <button
-              onClick={() => setJoinRequestEnabled((v) => !v)}
-              className={cn(
-                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
-                joinRequestEnabled ? "bg-emerald-500" : "bg-muted-foreground/30"
-              )}
-            >
-              <span
+          {/* Permission Settings */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30">
+              <div>
+                <p className="text-sm font-medium">Require join requests</p>
+                <p className="text-xs text-muted-foreground">
+                  New members need approval to join
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setJoinRequestEnabled((v) => !v)}
                 className={cn(
-                  "absolute left-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-200 shadow-sm",
-                  joinRequestEnabled ? "translate-x-5" : "translate-x-0"
+                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
+                  joinRequestEnabled ? "bg-emerald-500" : "bg-muted-foreground/30"
                 )}
-              />
-            </button>
+              >
+                <span
+                  className={cn(
+                    "absolute left-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-200 shadow-sm",
+                    joinRequestEnabled ? "translate-x-5" : "translate-x-0"
+                  )}
+                />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30">
+              <div>
+                <p className="text-sm font-medium">Admins-only group profile editing</p>
+                <p className="text-xs text-muted-foreground">
+                  Turn off to let all members edit group photo, name, and description
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setGroupProfileEditPolicy((current) =>
+                    current === "admins_only" ? "all_members" : "admins_only"
+                  )
+                }
+                className={cn(
+                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
+                  groupProfileEditPolicy === "admins_only" ? "bg-emerald-500" : "bg-muted-foreground/30"
+                )}
+              >
+                <span
+                  className={cn(
+                    "absolute left-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-200 shadow-sm",
+                    groupProfileEditPolicy === "admins_only" ? "translate-x-5" : "translate-x-0"
+                  )}
+                />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30">
+              <div>
+                <p className="text-sm font-medium">Admins-only nickname editing</p>
+                <p className="text-xs text-muted-foreground">
+                  Turn off to allow all members to edit nicknames
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setNicknameEditPolicy((current) =>
+                    current === "admins_only" ? "all_members" : "admins_only"
+                  )
+                }
+                className={cn(
+                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
+                  nicknameEditPolicy === "admins_only" ? "bg-emerald-500" : "bg-muted-foreground/30"
+                )}
+              >
+                <span
+                  className={cn(
+                    "absolute left-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-200 shadow-sm",
+                    nicknameEditPolicy === "admins_only" ? "translate-x-5" : "translate-x-0"
+                  )}
+                />
+              </button>
+            </div>
           </div>
 
           {/* Selected Members */}
