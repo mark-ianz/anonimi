@@ -10,19 +10,23 @@ import EmptyState from "@/components/shared/EmptyState";
 import InfiniteScrollSentinel from "@/components/shared/InfiniteScroll";
 import api from "@/lib/api";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useChatStore } from "@/stores/chatStore";
 
 interface ConversationListProps {
   activeConversationId?: string;
   searchQuery?: string;
   filter?: ConversationListFilter;
+  conversationType?: "all" | "unread" | "private" | "groups";
 }
 
 export default function ConversationList({
   activeConversationId,
   searchQuery = "",
   filter = "active",
+  conversationType = "all",
 }: ConversationListProps) {
   const { conversations, isLoading, isFetchingMore, hasMore, fetchMore } = useConversations(filter);
+  const { unreadCounts } = useChatStore();
 
   const { data: messageRequests } = useQuery({
     queryKey: ["message-requests"],
@@ -34,17 +38,31 @@ export default function ConversationList({
   });
   const requestCount = messageRequests?.length ?? 0;
 
+  const typeFiltered =
+    conversationType === "all"
+      ? conversations
+      : conversationType === "unread"
+      ? conversations.filter(
+          (c) => (unreadCounts[c.id] ?? c.unreadCount ?? 0) > 0
+        )
+      : conversations.filter((c) =>
+          conversationType === "groups" ? c.type === "group" : c.type === "private"
+        );
+
   const filtered = searchQuery
-    ? conversations.filter((c) => {
+    ? typeFiltered.filter((c) => {
         const name =
           c.type === "group"
             ? c.group?.name ?? ""
             : c.participant?.nickname ?? c.participant?.username ?? "";
         return name.toLowerCase().includes(searchQuery.toLowerCase());
       })
-    : conversations;
+    : typeFiltered;
 
-  const banner = filter === "active" && requestCount > 0 && (
+  const showRequestBanner =
+    filter === "active" && requestCount > 0 && conversationType !== "groups";
+
+  const banner = showRequestBanner && (
     <Link
       href="/message-requests"
       className="flex items-center justify-between px-4 py-2.5 bg-amber-500/10 border-b border-amber-500/20 hover:bg-amber-500/15 transition-colors shrink-0"
@@ -79,6 +97,12 @@ export default function ConversationList({
               ? `No conversations matching "${searchQuery}"`
               : filter === "archived"
               ? "Archived conversations will appear here."
+              : conversationType === "groups"
+              ? "Create a group to chat with multiple contacts at once."
+              : conversationType === "private"
+              ? "Start a private conversation with a contact."
+              : conversationType === "unread"
+              ? "Unread conversations will appear here."
               : "Start a conversation with a contact."
           }
         />
