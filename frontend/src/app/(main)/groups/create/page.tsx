@@ -102,8 +102,12 @@ export default function CreateGroupPage() {
         memberEchoIds: selectedIds,
       },
       {
-        onSuccess: () => {
-          router.push("/groups");
+        onSuccess: (createdGroup) => {
+          if (createdGroup?.conversationId) {
+            router.push(`/chat/${createdGroup.conversationId}`);
+            return;
+          }
+          router.push("/chat");
         },
       }
     );

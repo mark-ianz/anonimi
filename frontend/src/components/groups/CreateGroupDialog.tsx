@@ -43,8 +43,12 @@ export default function CreateGroupDialog({ open, onClose }: CreateGroupDialogPr
         memberEchoIds: selectedIds,
       },
       {
-        onSuccess: () => {
+        onSuccess: (createdGroup) => {
           onClose();
+          if (createdGroup?.conversationId) {
+            router.push(`/chat/${createdGroup.conversationId}`);
+            return;
+          }
           router.push("/chat");
         },
       }
