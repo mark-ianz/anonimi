@@ -45,6 +45,20 @@ export const verifyPhone = async (
   }
 };
 
+export const verifyEmailLink = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { token } = req.query as { token: string };
+    const result = await authService.verifyEmailLink(token);
+    apiSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getVerificationStatus = async (
   req: Request,
   res: Response,

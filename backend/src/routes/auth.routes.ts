@@ -8,6 +8,7 @@ import {
   registerSchema,
   verifyEmailSchema,
   verifyPhoneSchema,
+  verifyEmailLinkSchema,
   verificationStatusSchema,
   resendVerificationSchema,
   loginSchema,
@@ -25,6 +26,7 @@ const router = Router();
 router.post("/register", authLimiter, validate(registerSchema), authController.register);
 router.post("/verify-email", validate(verifyEmailSchema), authController.verifyEmail);
 router.post("/verify-phone", validate(verifyPhoneSchema), authController.verifyPhone);
+router.get("/verify-email-link", validate(verifyEmailLinkSchema), authController.verifyEmailLink);
 router.get("/verification-status", validate(verificationStatusSchema), authController.getVerificationStatus);
 router.post("/resend-verification", authLimiter, validate(resendVerificationSchema), authController.resendVerification);
 router.post("/login", authLimiter, validate(loginSchema), authController.login);

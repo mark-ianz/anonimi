@@ -18,6 +18,14 @@ const envSchema = z.object({
   VAPID_PUBLIC_KEY: z.string().default(""),
   VAPID_PRIVATE_KEY: z.string().default(""),
   VAPID_SUBJECT: z.string().default(""),
+  SMTP_HOST: z.string().default("smtp.gmail.com"),
+  SMTP_PORT: z.string().default("465"),
+  SMTP_SECURE: z.string().default("true"),
+  SMTP_USER: z.string().default(""),
+  SMTP_PASS: z.string().default(""),
+  SMTP_FROM_NAME: z.string().default("EchoID"),
+  SMTP_FROM_EMAIL: z.string().default(""),
+  EMAIL_VERIFY_URL: z.string().default("http://localhost:3000/verify-link"),
 });
 
 export type Env = z.infer<typeof envSchema>;

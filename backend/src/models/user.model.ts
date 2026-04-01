@@ -19,6 +19,8 @@ const userSchema = new Schema<IUser>(
     phoneVerified: { type: Boolean, default: false },
     verificationCode: { type: String },
     verificationCodeExpiresAt: { type: Date },
+    emailVerificationTokenHash: { type: String },
+    emailVerificationTokenExpiresAt: { type: Date },
     passwordResetToken: { type: String },
     passwordResetExpiresAt: { type: Date },
     usernameChangedAt: { type: Date },

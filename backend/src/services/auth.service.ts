@@ -15,6 +15,7 @@ import { ConflictError, UnauthorizedError, NotFoundError } from "../utils/apiErr
 import { AppearanceStatus, OnlineStatus, UserRole, UserStatus } from "../types/enums";
 import { createAdminLog } from "./admin.service";
 import { env } from "../config/env";
+import { sendVerificationEmail } from "./email.service";
 
 interface RegisterResult {
   message: string;
@@ -51,6 +52,7 @@ interface ResendVerificationResult {
 }
 
 const USERNAME_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
+const EMAIL_VERIFICATION_TTL_MS = 15 * 60 * 1000;
 
 const generateCryptoUsername = (): string => {
   const bytes = crypto.randomBytes(6);
@@ -84,6 +86,31 @@ const resolveUniqueUsername = async (preferredUsername?: string): Promise<string
   throw new ConflictError("Unable to generate unique username. Please try again.");
 };
 
+const hashEmailToken = (token: string): string => {
+  return crypto.createHash("sha256").update(token).digest("hex");
+};
+
+const createEmailVerificationPayload = () => {
+  const code = crypto.randomInt(100000, 999999).toString();
+  const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS);
+  const token = crypto.randomBytes(32).toString("hex");
+
+  return {
+    code,
+    expiresAt,
+    token,
+    tokenHash: hashEmailToken(token),
+  };
+};
+
+const buildEmailVerificationLink = (token: string, email: string): string => {
+  const baseUrl = env.EMAIL_VERIFY_URL || `${env.FRONTEND_URL}/verify-link`;
+  const url = new URL(baseUrl);
+  url.searchParams.set("token", token);
+  url.searchParams.set("email", email);
+  return url.toString();
+};
+
 export const register = async (
   email: string,
   username: string | undefined,
@@ -98,8 +125,7 @@ export const register = async (
 
   const resolvedUsername = await resolveUniqueUsername(username);
 
-  const verificationCode = crypto.randomInt(100000, 999999).toString();
-  const verificationCodeExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+  const emailVerification = createEmailVerificationPayload();
 
   const passwordHash = await hashPassword(password);
 
@@ -108,13 +134,24 @@ export const register = async (
     email: normalizedEmail,
     username: resolvedUsername,
     passwordHash,
-    verificationCode,
-    verificationCodeExpiresAt,
+    verificationCode: emailVerification.code,
+    verificationCodeExpiresAt: emailVerification.expiresAt,
+    emailVerificationTokenHash: emailVerification.tokenHash,
+    emailVerificationTokenExpiresAt: emailVerification.expiresAt,
     role: UserRole.USER,
     status: UserStatus.PENDING,
   });
 
-  console.log(`Verification code for ${normalizedEmail}: ${verificationCode}`);
+  const verificationLink = buildEmailVerificationLink(
+    emailVerification.token,
+    normalizedEmail
+  );
+
+  await sendVerificationEmail({
+    to: normalizedEmail,
+    code: emailVerification.code,
+    link: verificationLink,
+  });
 
   return {
     message: "Verification code sent. Please verify your account.",
@@ -139,6 +176,58 @@ export const verifyEmail = async (
   user.emailVerified = true;
   user.verificationCode = undefined;
   user.verificationCodeExpiresAt = undefined;
+  user.emailVerificationTokenHash = undefined;
+  user.emailVerificationTokenExpiresAt = undefined;
+  user.status = UserStatus.ACTIVE;
+  await user.save();
+
+  const tokens = await generateTokens(user._id.toString(), user.echoId, user.role);
+
+  return {
+    ...tokens,
+    user: {
+      id: user._id.toString(),
+      echoId: user.echoId,
+      username: user.username,
+      profileImage: user.profileImage,
+      role: user.role,
+      status: user.status,
+      usernameCanEdit: !user.usernameChangedAt,
+      appearanceStatus: user.appearanceStatus,
+      onlineStatus: user.onlineStatus,
+      lastSeen: user.lastSeen,
+    },
+  };
+};
+
+export const verifyEmailLink = async (token: string): Promise<LoginResult> => {
+  const tokenHash = hashEmailToken(token);
+  const user = await User.findOne({ emailVerificationTokenHash: tokenHash });
+
+  if (!user) {
+    throw new UnauthorizedError("Invalid verification link");
+  }
+
+  if (user.emailVerified) {
+    throw new ConflictError("Account already verified");
+  }
+
+  if (user.status !== UserStatus.PENDING) {
+    throw new ConflictError("Account is not pending verification");
+  }
+
+  if (
+    user.emailVerificationTokenExpiresAt &&
+    user.emailVerificationTokenExpiresAt < new Date()
+  ) {
+    throw new UnauthorizedError("Verification link expired");
+  }
+
+  user.emailVerified = true;
+  user.verificationCode = undefined;
+  user.verificationCodeExpiresAt = undefined;
+  user.emailVerificationTokenHash = undefined;
+  user.emailVerificationTokenExpiresAt = undefined;
   user.status = UserStatus.ACTIVE;
   await user.save();
 
@@ -287,15 +376,31 @@ export const resendVerificationCode = async (
     throw new ConflictError("This account is not pending verification");
   }
 
-  const verificationCode = crypto.randomInt(100000, 999999).toString();
-  const verificationCodeExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+  const emailVerification = createEmailVerificationPayload();
+  const verificationCode =
+    type === "email" ? emailVerification.code : crypto.randomInt(100000, 999999).toString();
+  const verificationCodeExpiresAt =
+    type === "email" ? emailVerification.expiresAt : new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS);
 
   user.verificationCode = verificationCode;
   user.verificationCodeExpiresAt = verificationCodeExpiresAt;
+  if (type === "email") {
+    user.emailVerificationTokenHash = emailVerification.tokenHash;
+    user.emailVerificationTokenExpiresAt = emailVerification.expiresAt;
+  }
   await user.save();
 
   if (type === "email") {
-    console.log(`Verification code for ${normalizedTarget}: ${verificationCode}`);
+    const verificationLink = buildEmailVerificationLink(
+      emailVerification.token,
+      normalizedTarget
+    );
+
+    await sendVerificationEmail({
+      to: normalizedTarget,
+      code: verificationCode,
+      link: verificationLink,
+    });
   } else {
     console.log(`Phone verification code for ${normalizedTarget}: ${verificationCode}`);
   }

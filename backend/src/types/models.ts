@@ -18,6 +18,8 @@ export interface IUser extends Document {
   phoneVerified: boolean;
   verificationCode?: string;
   verificationCodeExpiresAt?: Date;
+  emailVerificationTokenHash?: string;
+  emailVerificationTokenExpiresAt?: Date;
   passwordResetToken?: string;
   passwordResetExpiresAt?: Date;
   usernameChangedAt?: Date;
