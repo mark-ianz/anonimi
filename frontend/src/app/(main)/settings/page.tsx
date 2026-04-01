@@ -62,6 +62,7 @@ export default function SettingsPage() {
   const [pushEnabled, setPushEnabled] = useState(false);
   const [isPushLoading, setIsPushLoading] = useState(true);
   const [isPushToggling, setIsPushToggling] = useState(false);
+  const [isBrave, setIsBrave] = useState(false);
   const { user, updateProfile, isUpdatingProfile } = useAuth();
   const { chatSocket } = useSocketContext();
 
@@ -92,6 +93,33 @@ export default function SettingsPage() {
     };
 
     loadStatus();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const detectBrave = async () => {
+      if (typeof navigator === "undefined") return;
+      const braveApi = (navigator as { brave?: { isBrave?: () => Promise<boolean> } }).brave;
+      if (braveApi?.isBrave) {
+        try {
+          const result = await braveApi.isBrave();
+          if (isMounted) setIsBrave(result);
+          return;
+        } catch {
+          // Fall back to UA check.
+        }
+      }
+
+      const ua = navigator.userAgent || "";
+      if (isMounted) setIsBrave(ua.includes("Brave"));
+    };
+
+    void detectBrave();
 
     return () => {
       isMounted = false;
@@ -142,6 +170,18 @@ export default function SettingsPage() {
       toast.error("Failed to update push notifications.");
     } finally {
       setIsPushToggling(false);
+    }
+  };
+
+  const handleOpenBraveSettings = async () => {
+    const opened = window.open("brave://settings/privacy", "_blank");
+    if (opened) return;
+
+    try {
+      await navigator.clipboard.writeText("brave://settings/privacy");
+      toast.info("Brave settings link copied. Paste it in the address bar.");
+    } catch {
+      toast.info("Open brave://settings/privacy in the address bar.");
     }
   };
 
@@ -227,6 +267,18 @@ export default function SettingsPage() {
                 <div>
                   <p className="text-sm font-medium">Push notifications</p>
                   <p className="text-xs text-muted-foreground">Receive message notifications</p>
+                  {isBrave && (
+                    <p className="text-xs text-amber-600">
+                      Brave requires enabling "Use Google services for push messaging" in Settings.{" "}
+                      <button
+                        type="button"
+                        onClick={handleOpenBraveSettings}
+                        className="underline hover:text-amber-700 cursor-pointer"
+                      >
+                        Open Brave Settings
+                      </button>
+                    </p>
+                  )}
                 </div>
               </div>
               <button
