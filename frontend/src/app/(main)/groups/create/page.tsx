@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, X, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Check, X, Camera, ChevronDown, Upload, Trash2 } from "lucide-react";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import { useGroups } from "@/hooks/useGroups";
 import { useContacts } from "@/hooks/useContacts";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
 import { cn } from "@/lib/utils";
+import { UploadSource, validateUploadFile } from "@/lib/uploadPolicy";
 
 export default function CreateGroupPage() {
   const router = useRouter();
@@ -20,7 +21,11 @@ export default function CreateGroupPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [joinRequestEnabled, setJoinRequestEnabled] = useState(false);
-  const [image, setImage] = useState<string | null>(null);
+  const [pendingGroupImage, setPendingGroupImage] = useState<{ file: File; source: UploadSource } | null>(null);
+  const [groupImagePreviewUrl, setGroupImagePreviewUrl] = useState<string | null>(null);
+  const [avatarPopoverOpen, setAvatarPopoverOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   const filtered = contacts.filter((c) => {
     const n = c.nickname ?? c.username;
@@ -38,14 +43,55 @@ export default function CreateGroupPage() {
     );
   }
 
-  function handleCreate() {
+  useEffect(() => {
+    return () => {
+      if (groupImagePreviewUrl) {
+        URL.revokeObjectURL(groupImagePreviewUrl);
+      }
+    };
+  }, [groupImagePreviewUrl]);
+
+  useEffect(() => {
+    if (!avatarPopoverOpen) return;
+
+    const handleOutside = (event: MouseEvent) => {
+      if (!popoverRef.current) return;
+      if (!popoverRef.current.contains(event.target as Node)) {
+        setAvatarPopoverOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setAvatarPopoverOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [avatarPopoverOpen]);
+
+  async function handleCreate() {
     if (selectedIds.length === 0) return;
+
+    let image: string | undefined;
+
+    if (pendingGroupImage) {
+      const result = await upload(pendingGroupImage.file, "group", { source: pendingGroupImage.source });
+      if (!result) return;
+      image = result.url;
+    }
     
     createGroup(
       {
         name: name.trim() || undefined,
         description: description.trim() || undefined,
-        image: image ?? undefined,
+        image,
         settings: { joinRequestEnabled },
         memberEchoIds: selectedIds,
       },
@@ -57,14 +103,32 @@ export default function CreateGroupPage() {
     );
   }
 
-  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>, source: UploadSource = "file") {
     const file = e.target.files?.[0];
     if (!file) return;
-    const result = await upload(file, "group");
-    if (result) {
-      setImage(result.url);
+
+    const validation = validateUploadFile(file, { category: "group", source });
+    if (!validation.ok) {
+      e.target.value = "";
+      return;
     }
+
+    setPendingGroupImage({ file, source });
+    setGroupImagePreviewUrl((previousUrl) => {
+      if (previousUrl) URL.revokeObjectURL(previousUrl);
+      return URL.createObjectURL(file);
+    });
+    setAvatarPopoverOpen(false);
     e.target.value = "";
+  }
+
+  function handleRemoveImage() {
+    setPendingGroupImage(null);
+    setGroupImagePreviewUrl((previousUrl) => {
+      if (previousUrl) URL.revokeObjectURL(previousUrl);
+      return null;
+    });
+    setAvatarPopoverOpen(false);
   }
 
   return (
@@ -83,11 +147,22 @@ export default function CreateGroupPage() {
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {/* Group Avatar */}
           <div className="flex justify-center">
-            <label className="relative cursor-pointer group">
+            <div className="relative" ref={popoverRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (isUploading || isCreating) return;
+                  setAvatarPopoverOpen((prev) => !prev);
+                }}
+                className="relative cursor-pointer group block"
+                aria-haspopup="menu"
+                aria-expanded={avatarPopoverOpen}
+                aria-label="Group photo options"
+              >
               <div className="w-24 h-24 rounded-2xl overflow-hidden bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-3xl font-medium">
-                {image ? (
+                {groupImagePreviewUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={image} alt="Group" className="w-full h-full object-cover" />
+                  <img src={groupImagePreviewUrl} alt="Group" className="w-full h-full object-cover" />
                 ) : name ? (
                   name.slice(0, 2).toUpperCase()
                 ) : (
@@ -98,16 +173,46 @@ export default function CreateGroupPage() {
                 {isUploading ? (
                   <span className="w-6 h-6 rounded-full border-2 border-white border-t-transparent animate-spin" />
                 ) : (
-                  <ImageIcon className="w-6 h-6 text-white" />
+                  <div className="flex items-center gap-1 text-white">
+                    <Camera className="w-5 h-5" />
+                    <ChevronDown className="w-4 h-4" />
+                  </div>
                 )}
               </div>
+              </button>
+
+              {avatarPopoverOpen && (
+                <div className="absolute left-1/2 top-full z-30 mt-2 w-52 -translate-x-1/2 rounded-xl border border-border/60 bg-card/95 p-1 shadow-elevated backdrop-blur-sm animate-fade-in">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      fileInputRef.current?.click();
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/70"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Select photo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    disabled={!groupImagePreviewUrl || isUploading || isCreating}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Remove photo
+                  </button>
+                </div>
+              )}
+
               <input
+                ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/png,image/jpeg,image/jpg,image/gif"
                 className="hidden"
-                onChange={handleImageChange}
+                onChange={(event) => handleImageChange(event, "file")}
               />
-            </label>
+            </div>
           </div>
 
           {/* Group Name */}
@@ -251,10 +356,10 @@ export default function CreateGroupPage() {
         <div className="p-4 border-t border-border/30">
           <button
             onClick={handleCreate}
-            disabled={selectedIds.length === 0 || isCreating}
+            disabled={selectedIds.length === 0 || isCreating || isUploading}
             className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {isCreating ? (
+            {isCreating || isUploading ? (
               <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
             ) : null}
             Create Group ({selectedIds.length} members)
