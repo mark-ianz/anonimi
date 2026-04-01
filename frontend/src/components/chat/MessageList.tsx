@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useMessages } from "@/hooks/useMessages";
@@ -54,6 +54,8 @@ export default function MessageList({ conversation, onEditStart }: MessageListPr
   const { messages, isLoading, isFetchingMore, hasMore, fetchMore } = useMessages(conversation.id);
   const { typingUsers } = useTyping(conversation.id);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const scrollIdleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchParams = useSearchParams();
   const targetMessageId = searchParams.get("messageId");
   const isFirstLoad = useRef(true);
@@ -61,8 +63,12 @@ export default function MessageList({ conversation, onEditStart }: MessageListPr
   const emittedReadIdsRef = useRef<Set<string>>(new Set());
   const [canMarkRead, setCanMarkRead] = useState(true);
   const [highlightMessageId, setHighlightMessageId] = useState<string | null>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [newMessageCount, setNewMessageCount] = useState(0);
   const scrollTargetHandledRef = useRef<string | null>(null);
   const groupId = conversation.type === "group" ? conversation.group?.id ?? null : null;
+  const bottomThreshold = 24;
 
   const { data: groupMembers = [] } = useQuery({
     queryKey: ["groups", groupId, "members"],
@@ -141,6 +147,24 @@ export default function MessageList({ conversation, onEditStart }: MessageListPr
     });
   }, [typingUsers, user?.id, conversation, groupMemberMetaById]);
 
+  const computeIsAtBottom = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return true;
+    return node.scrollTop + node.clientHeight >= node.scrollHeight - bottomThreshold;
+  }, [bottomThreshold]);
+
+  const handleViewportScroll = useCallback(() => {
+    const node = viewportRef.current;
+    if (!node) return;
+    setIsAtBottom(computeIsAtBottom(node));
+    setIsUserScrolling(true);
+    if (scrollIdleTimeoutRef.current) {
+      window.clearTimeout(scrollIdleTimeoutRef.current);
+    }
+    scrollIdleTimeoutRef.current = window.setTimeout(() => {
+      setIsUserScrolling(false);
+    }, 250);
+  }, [computeIsAtBottom]);
+
   useEffect(() => {
     const computeCanMarkRead = () =>
       typeof document !== "undefined" &&
@@ -170,12 +194,24 @@ export default function MessageList({ conversation, onEditStart }: MessageListPr
   useEffect(() => {
     setHighlightMessageId(null);
     scrollTargetHandledRef.current = null;
+    setNewMessageCount(0);
+    setIsAtBottom(true);
+    setIsUserScrolling(false);
   }, [conversation.id, targetMessageId]);
+
+  useEffect(() => {
+    return () => {
+      if (scrollIdleTimeoutRef.current) {
+        window.clearTimeout(scrollIdleTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Scroll to bottom on first load and when new messages arrive from me
   useEffect(() => {
     if (!isLoading && isFirstLoad.current && !targetMessageId) {
       bottomRef.current?.scrollIntoView({ behavior: "instant" });
+      setIsAtBottom(true);
       isFirstLoad.current = false;
     }
   }, [isLoading, targetMessageId]);
@@ -187,10 +223,35 @@ export default function MessageList({ conversation, onEditStart }: MessageListPr
     lastMessageIdRef.current = last.id;
 
     // Older history pages are prepended and should never pull viewport to bottom.
-    if (!isFetchingMore && newestChanged && last.senderId === user?.id) {
+    if (!isFetchingMore && newestChanged) {
+      const isIncoming = user?.id ? last.senderId !== user.id : false;
+
+      if (isIncoming) {
+        if (isAtBottom) {
+          bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+          setNewMessageCount(0);
+        } else {
+          setNewMessageCount((count) => count + 1);
+        }
+      } else {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+        setNewMessageCount(0);
+      }
+    }
+  }, [messages, user?.id, isFetchingMore, isAtBottom, isUserScrolling]);
+
+  useEffect(() => {
+    if (!displayTypingUsers.length) return;
+    if (isAtBottom) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, user?.id, isFetchingMore]);
+  }, [displayTypingUsers.length, isAtBottom]);
+
+  useEffect(() => {
+    if (isAtBottom) {
+      setNewMessageCount(0);
+    }
+  }, [isAtBottom]);
 
   useEffect(() => {
     if (!targetMessageId) return;
@@ -287,21 +348,33 @@ export default function MessageList({ conversation, onEditStart }: MessageListPr
     return <LoadingSkeleton variant="message" rows={8} className="flex-1" />;
   }
 
+  const handleJumpToBottom = () => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    setNewMessageCount(0);
+    setIsUserScrolling(false);
+    setIsAtBottom(true);
+  };
+
   return (
-    <ScrollArea className="flex-1 min-h-0">
-      <div className="flex min-h-full flex-col overflow-x-visible pr-1">
-        {/* Load more sentinel at top */}
-        <InfiniteScrollSentinel
-          onLoadMore={() => fetchMore()}
-          hasMore={hasMore ?? false}
-          isLoading={isFetchingMore}
-          className="pt-2"
-        />
+    <div className="relative flex-1 min-h-0">
+      <ScrollArea
+        className="h-full"
+        viewportRef={viewportRef}
+        onViewportScroll={handleViewportScroll}
+      >
+        <div className="flex min-h-full flex-col overflow-x-visible pr-1">
+          {/* Load more sentinel at top */}
+          <InfiniteScrollSentinel
+            onLoadMore={() => fetchMore()}
+            hasMore={hasMore ?? false}
+            isLoading={isFetchingMore}
+            className="pt-2"
+          />
 
-        <div className="flex-1" />
+          <div className="flex-1" />
 
-        {/* Messages */}
-        {messages.map((message, index) => {
+          {/* Messages */}
+          {messages.map((message, index) => {
         const prev = messages[index - 1];
         const next = messages[index + 1];
         const showDivider = shouldShowDateDivider(prev?.createdAt, message.createdAt);
@@ -411,11 +484,22 @@ export default function MessageList({ conversation, onEditStart }: MessageListPr
           );
         })}
 
-        {/* Typing indicator */}
-        <TypingIndicator users={displayTypingUsers} />
+          {/* Typing indicator */}
+          <TypingIndicator users={displayTypingUsers} />
 
-        <div ref={bottomRef} className="h-1" />
-      </div>
-    </ScrollArea>
+          <div ref={bottomRef} className="h-1" />
+        </div>
+      </ScrollArea>
+
+      {newMessageCount > 0 && (
+        <button
+          type="button"
+          onClick={handleJumpToBottom}
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-border/60 bg-background/95 px-4 py-2 text-xs font-medium text-foreground shadow-elevated hover:bg-background"
+        >
+          New messages ({newMessageCount})
+        </button>
+      )}
+    </div>
   );
 }
