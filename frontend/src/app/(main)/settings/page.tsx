@@ -285,15 +285,15 @@ export default function SettingsPage() {
                 onClick={handlePushToggle}
                 disabled={isPushLoading || isPushToggling}
                 className={cn(
-                  "relative h-6 w-11 rounded-full transition-colors",
+                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
                   pushEnabled ? "bg-primary" : "bg-muted-foreground/35",
                   (isPushLoading || isPushToggling) && "opacity-60 cursor-not-allowed"
                 )}
               >
                 <span
                   className={cn(
-                    "absolute top-1 h-4 w-4 rounded-full bg-white transition-transform shadow-sm",
-                    pushEnabled ? "translate-x-6" : "translate-x-1"
+                    "absolute left-0.5 h-5 w-5 rounded-full bg-white transition-transform shadow-sm",
+                    pushEnabled ? "translate-x-5" : "translate-x-0"
                   )}
                 />
               </button>
