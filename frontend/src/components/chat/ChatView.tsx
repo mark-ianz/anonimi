@@ -1,7 +1,8 @@
 ﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, MoreVertical, Phone, Video, UserPlus, Check, X, Clock, User, ShieldBan, Flag, LogOut, Settings, Users, Archive, BellOff } from "lucide-react";
+import { createPortal } from "react-dom";
+import { ArrowLeft, MoreVertical, Phone, Video, UserPlus, Check, X, Clock, User, ShieldBan, Flag, LogOut, Settings, Users, Archive, BellOff, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -29,13 +30,15 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
   const router = useRouter();
   const pathname = usePathname();
   const qc = useQueryClient();
-  const { setActiveConversation, clearUnread } = useChatStore();
+  const { setActiveConversation, clearUnread, conversations, setConversations, setMessages } = useChatStore();
   const { user: currentUser } = useAuthStore();
 
   // Header menu state
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmBlock, setConfirmBlock] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [showReportForm, setShowReportForm] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [reportDescription, setReportDescription] = useState("");
@@ -225,6 +228,32 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
     onError: () => toast.error("Failed to unarchive conversation."),
   });
 
+  const deleteConversationMutation = useMutation({
+    mutationFn: async () => {
+      await api.delete(`/conversations/${conversation.id}`);
+    },
+    onSuccess: () => {
+      // Optimistic local cleanup for instant UI update
+      setConversations(conversations.filter((c) => c.id !== conversation.id));
+      setMessages(conversation.id, []);
+      clearUnread(conversation.id);
+
+      qc.removeQueries({ queryKey: ["messages", conversation.id] });
+      qc.removeQueries({ queryKey: ["conversation", conversation.id] });
+
+      toast.success("Conversation deleted.");
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+      qc.invalidateQueries({ queryKey: ["conversations", "active"] });
+      qc.invalidateQueries({ queryKey: ["conversations", "archived"] });
+
+      setConfirmDelete(false);
+      setDeleteConfirmText("");
+      setMenuOpen(false);
+      router.push("/chat");
+    },
+    onError: () => toast.error("Failed to delete conversation."),
+  });
+
   const handleMessageSent = () => {
     if (!isArchived) return;
 
@@ -410,6 +439,24 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
                   Mute
                 </button>
 
+                {!isGroup && (
+                  <>
+                    <div className="my-1 border-t border-border/30" />
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setConfirmDelete(true);
+                        setDeleteConfirmText("");
+                      }}
+                      disabled={deleteConversationMutation.isPending}
+                      className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                    >
+                      <Trash2 className="w-4 h-4 shrink-0" />
+                      {deleteConversationMutation.isPending ? "Deleting..." : "Delete Conversation"}
+                    </button>
+                  </>
+                )}
+
                 {/* Private-only: block + report */}
                 {!isGroup && (
                   <>
@@ -476,6 +523,18 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
                       </Link>
                     )}
                     <div className="my-1 border-t border-border/30" />
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setConfirmDelete(true);
+                        setDeleteConfirmText("");
+                      }}
+                      disabled={deleteConversationMutation.isPending}
+                      className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                    >
+                      <Trash2 className="w-4 h-4 shrink-0" />
+                      {deleteConversationMutation.isPending ? "Deleting..." : "Delete Conversation"}
+                    </button>
                     <button
                       onClick={() => { setMenuOpen(false); setConfirmLeave(true); }}
                       className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
@@ -548,11 +607,15 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
             </button>
             <button
               type="button"
-              disabled
-              title="Coming soon"
-              className="h-8 px-3 rounded-lg border border-border/50 text-xs font-medium text-muted-foreground cursor-not-allowed"
+              onClick={() => {
+                setConfirmDelete(true);
+                setDeleteConfirmText("");
+              }}
+              disabled={deleteConversationMutation.isPending}
+              className="inline-flex h-8 items-center gap-1.5 px-3 rounded-lg border border-destructive/40 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
             >
-              Delete Chat (soon)
+              <Trash2 className="h-3.5 w-3.5" />
+              {deleteConversationMutation.isPending ? "Deleting..." : "Delete Conversation"}
             </button>
           </div>
         </div>
@@ -600,6 +663,14 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
               className="h-8 px-3 rounded-lg border border-border/50 text-xs font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50"
             >
               {isArchived ? "Unarchive" : "Archive"}
+            </button>
+            <button
+              onClick={() => setConfirmDelete(true)}
+              disabled={deleteConversationMutation.isPending}
+              className="inline-flex h-8 items-center gap-1.5 px-3 rounded-lg border border-destructive/40 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {deleteConversationMutation.isPending ? "Deleting..." : "Delete Chat"}
             </button>
           </div>
         </div>
@@ -649,6 +720,62 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
         variant="destructive"
         loading={leaveGroupMutation.isPending}
       />
+
+      {confirmDelete && typeof document !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => {
+                if (deleteConversationMutation.isPending) return;
+                setConfirmDelete(false);
+                setDeleteConfirmText("");
+              }}
+            />
+
+            <div className="relative w-full max-w-sm rounded-2xl border border-border/70 bg-card p-5 shadow-elevated space-y-4">
+              <h3 className="font-display font-semibold text-base text-destructive">Delete Conversation</h3>
+              <p className="text-sm text-muted-foreground">
+                This clears your existing messages in this conversation. New messages can make it appear again.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Type <span className="font-semibold text-foreground">DELETE</span> to confirm.
+              </p>
+
+              <input
+                value={deleteConfirmText}
+                onChange={(event) => setDeleteConfirmText(event.target.value)}
+                placeholder="DELETE"
+                className="w-full h-10 px-3 rounded-xl border border-border/60 bg-background text-sm"
+                autoFocus
+                disabled={deleteConversationMutation.isPending}
+              />
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfirmDelete(false);
+                    setDeleteConfirmText("");
+                  }}
+                  disabled={deleteConversationMutation.isPending}
+                  className="flex-1 h-10 rounded-xl border border-border/70 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => deleteConversationMutation.mutate()}
+                  disabled={deleteConversationMutation.isPending || deleteConfirmText !== "DELETE"}
+                  className="flex-1 h-10 rounded-xl bg-destructive text-white text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-60"
+                >
+                  {deleteConversationMutation.isPending ? "Deleting..." : "Delete Conversation"}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
 
       {/* Report modal */}
       {showReportForm && (

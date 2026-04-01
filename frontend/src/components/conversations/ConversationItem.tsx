@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { BellOff, MoreVertical, Archive } from "lucide-react";
+import { BellOff, MoreVertical, Archive, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,11 @@ interface ConversationItemProps {
   style?: React.CSSProperties;
   hrefBase?: "/chat" | "/archive";
 }
+
+type ConversationsInfiniteCache = {
+  pages: Array<{ data: Conversation[] }>;
+  pageParams: unknown[];
+};
 
 function getLastMessagePreview(conversation: Conversation): string {
   const lm = conversation.lastMessage;
@@ -51,9 +56,11 @@ export default function ConversationItem({
   const pathname = usePathname();
   const qc = useQueryClient();
   const { user } = useAuthStore();
-  const { unreadCounts } = useChatStore();
+  const { unreadCounts, conversations, setConversations, setMessages, clearUnread } = useChatStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const isGroup = conversation.type === "group";
@@ -94,6 +101,23 @@ export default function ConversationItem({
   const previewText = clampPreview(preview);
   const timestamp = conversation.lastMessage?.timestamp ?? conversation.updatedAt;
 
+  const pruneConversationFromCache = (queryKey: readonly unknown[]) => {
+    qc.setQueryData(
+      queryKey,
+      (old: ConversationsInfiniteCache | undefined): ConversationsInfiniteCache | undefined => {
+        if (!old) return old;
+
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            data: page.data.filter((conv) => conv.id !== conversation.id),
+          })),
+        };
+      }
+    );
+  };
+
   const archiveMutation = useMutation({
     mutationFn: async () => {
       await api.post(`/conversations/${conversation.id}/archive`);
@@ -128,6 +152,38 @@ export default function ConversationItem({
       setMenuOpen(false);
     },
     onError: () => toast.error("Failed to unarchive conversation."),
+  });
+
+  const deleteConversationMutation = useMutation({
+    mutationFn: async () => {
+      await api.delete(`/conversations/${conversation.id}`);
+    },
+    onSuccess: () => {
+      setConversations(conversations.filter((c) => c.id !== conversation.id));
+      setMessages(conversation.id, []);
+      clearUnread(conversation.id);
+
+      qc.removeQueries({ queryKey: ["messages", conversation.id] });
+      qc.removeQueries({ queryKey: ["conversation", conversation.id] });
+      pruneConversationFromCache(["conversations", "active"]);
+      pruneConversationFromCache(["conversations", "archived"]);
+
+      toast.success("Conversation deleted.");
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+      qc.invalidateQueries({ queryKey: ["conversations", "active"] });
+      qc.invalidateQueries({ queryKey: ["conversations", "archived"] });
+      qc.invalidateQueries({ queryKey: ["conversation", conversation.id] });
+
+      if (isActive) {
+        const fallback = pathname?.startsWith("/archive") ? "/archive" : "/chat";
+        router.push(fallback);
+      }
+
+      setShowDeleteConfirmModal(false);
+      setDeleteConfirmText("");
+      setMenuOpen(false);
+    },
+    onError: () => toast.error("Failed to delete conversation."),
   });
 
   useEffect(() => {
@@ -317,6 +373,75 @@ export default function ConversationItem({
               <Archive className="h-4 w-4 text-muted-foreground" />
               {isArchived ? "Unarchive" : "Archive"}
             </button>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setMenuOpen(false);
+                setShowDeleteConfirmModal(true);
+              }}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete conversation
+            </button>
+          </div>,
+          document.body
+        )}
+
+      {showDeleteConfirmModal && typeof document !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 z-130 flex items-center justify-center p-4">
+            <div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => {
+                if (deleteConversationMutation.isPending) return;
+                setShowDeleteConfirmModal(false);
+                setDeleteConfirmText("");
+              }}
+            />
+
+            <div className="relative w-full max-w-sm rounded-2xl border border-border/70 bg-card p-5 shadow-elevated space-y-4">
+              <h3 className="font-display font-semibold text-base text-destructive">Delete Conversation</h3>
+              <p className="text-sm text-muted-foreground">
+                This clears your existing messages in this chat. New messages can make this conversation appear again.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Type <span className="font-semibold text-foreground">DELETE</span> to confirm.
+              </p>
+
+              <input
+                value={deleteConfirmText}
+                onChange={(event) => setDeleteConfirmText(event.target.value)}
+                placeholder="DELETE"
+                className="w-full h-10 px-3 rounded-xl border border-border/60 bg-background text-sm"
+                autoFocus
+                disabled={deleteConversationMutation.isPending}
+              />
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteConfirmModal(false);
+                    setDeleteConfirmText("");
+                  }}
+                  disabled={deleteConversationMutation.isPending}
+                  className="flex-1 h-10 rounded-xl border border-border/70 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => deleteConversationMutation.mutate()}
+                  disabled={deleteConversationMutation.isPending || deleteConfirmText !== "DELETE"}
+                  className="flex-1 h-10 rounded-xl bg-destructive text-white text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-60"
+                >
+                  {deleteConversationMutation.isPending ? "Deleting..." : "Delete"}
+                </button>
+              </div>
+            </div>
           </div>,
           document.body
         )}

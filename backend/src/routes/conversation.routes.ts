@@ -12,6 +12,7 @@ router.post("/", authenticate, conversationController.createOrGetConversation);
 router.get("/", authenticate, conversationController.getConversations);
 router.post("/:conversationId/archive", authenticate, conversationController.archiveConversation);
 router.delete("/:conversationId/archive", authenticate, conversationController.unarchiveConversation);
+router.delete("/:conversationId", authenticate, conversationController.deleteConversationForMe);
 router.get("/:conversationId", authenticate, conversationController.getConversation);
 
 router.get("/messages", authenticate, validate(getMessagesSchema), conversationController.getMessages);

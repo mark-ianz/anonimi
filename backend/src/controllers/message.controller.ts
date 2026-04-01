@@ -203,3 +203,20 @@ export const unarchiveConversation = async (
     next(error);
   }
 };
+
+export const deleteConversationForMe = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const conversationId = req.params.conversationId as string;
+    const result = await chatService.deleteConversationForMe(
+      conversationId,
+      req.user!._id.toString()
+    );
+    apiSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};

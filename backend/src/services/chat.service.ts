@@ -111,6 +111,7 @@ export const createOrGetConversation = async (
   });
 
   if (existing) {
+    await clearConversationArchiveForUser(existing._id.toString(), userId);
     return {
       conversationId: existing._id.toString(),
       created: false,
@@ -176,9 +177,15 @@ export const getConversations = async (
   filter: ConversationListFilter = "active"
 ) => {
   const userObjectId = new Types.ObjectId(userId);
-  const archivedConvIds = await ConversationArchive.find({
+  const archivedRows = await ConversationArchive.find({
     userId: userObjectId,
-  }).distinct("conversationId");
+  })
+    .select("conversationId deletedAt")
+    .lean();
+
+  const archivedConvIds = archivedRows
+    .filter((row: any) => !row.deletedAt)
+    .map((row: any) => row.conversationId);
   const archivedConvIdSet = new Set(archivedConvIds.map((id: any) => id.toString()));
 
   if (filter === "archived" && archivedConvIds.length === 0) {
@@ -254,6 +261,7 @@ export const getConversations = async (
           conversationId: conv._id,
           senderId: { $ne: userObjectId },
           readBy: { $ne: userObjectId },
+          deletedFor: { $ne: userObjectId },
         });
 
         const latestVisibleMessage = await Message.findOne({
@@ -319,6 +327,7 @@ export const getConversations = async (
           conversationId: conv._id,
           senderId: { $ne: userObjectId },
           readBy: { $ne: userObjectId },
+          deletedFor: { $ne: userObjectId },
         });
 
         const latestVisibleMessage = await Message.findOne({
@@ -364,7 +373,7 @@ export const getConversations = async (
 
   const visibleConversations = enriched.filter(
     (conversation): conversation is NonNullable<typeof conversation> =>
-      Boolean(conversation)
+      Boolean(conversation) && (filter !== "active" || conversation.lastMessage !== null)
   );
 
   return {
@@ -733,7 +742,9 @@ export const sendMessage = async (
       conversation._id.toString(),
       recipientIds
     );
-    const deliveredRecipientIds = isShadowDelivery ? [] : recipientIds;
+    const deliveredRecipientIds = isShadowDelivery
+      ? []
+      : recipientIds;
     const suppressedRecipients = new Set([
       ...(options?.suppressNotificationUserIds ?? []),
       ...Array.from(archivedRecipientIds),
@@ -886,7 +897,8 @@ export const archiveConversation = async (
       userId: new Types.ObjectId(userId),
     },
     {
-      archivedAt: new Date(),
+      $set: { archivedAt: new Date() },
+      $unset: { deletedAt: "" },
     },
     {
       upsert: true,
@@ -941,6 +953,39 @@ export const deleteMessageForMe = async (
   }
 
   return { message: "Message deleted for you." };
+};
+
+export const deleteConversationForMe = async (
+  conversationId: string,
+  userId: string
+) => {
+  const conversation = await Conversation.findById(conversationId).select("participants");
+  if (!conversation) {
+    throw new NotFoundError("Conversation not found");
+  }
+
+  const isParticipant = conversation.participants.some(
+    (participant) => participant.toString() === userId
+  );
+  if (!isParticipant) {
+    throw new ForbiddenError("Not a participant in this conversation");
+  }
+
+  const userObjectId = new Types.ObjectId(userId);
+
+  await Message.updateMany(
+    { conversationId: conversation._id },
+    { $addToSet: { deletedFor: userObjectId } }
+  );
+
+  // Keep delete-for-me scoped to message history only; do not persist
+  // conversation-level hidden state so new activity can re-surface naturally.
+  await clearConversationArchiveForUser(conversationId, userId);
+
+  return {
+    conversationId: conversation._id.toString(),
+    deletedAt: new Date(),
+  };
 };
 
 export const unsendMessage = async (

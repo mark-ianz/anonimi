@@ -45,6 +45,7 @@ export interface IConversationArchive extends Document {
   conversationId: Types.ObjectId;
   userId: Types.ObjectId;
   archivedAt: Date;
+  deletedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

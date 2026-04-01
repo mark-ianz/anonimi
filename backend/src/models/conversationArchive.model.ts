@@ -6,6 +6,7 @@ const conversationArchiveSchema = new Schema<IConversationArchive>(
     conversationId: { type: Schema.Types.ObjectId, ref: "Conversation", required: true },
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     archivedAt: { type: Date, default: Date.now },
+    deletedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

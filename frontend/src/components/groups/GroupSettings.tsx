@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
 import { useGroup } from "@/hooks/useGroups";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
 import type { Group } from "@/types/group";
 import { cn } from "@/lib/utils";
+import api from "@/lib/api";
 import { Camera, Save, Link as LinkIcon, QrCode, Copy, Check, X, AlertCircle, LogOut, Trash2, ChevronDown, Upload } from "lucide-react";
 import { toast } from "sonner";
 import GroupAvatar from "@/components/shared/GroupAvatar";
@@ -58,6 +60,8 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const [showDisbandConfirmModal, setShowDisbandConfirmModal] = useState(false);
   const [disbandConfirmText, setDisbandConfirmText] = useState("");
+  const [showDeleteChatConfirmModal, setShowDeleteChatConfirmModal] = useState(false);
+  const [deleteConversationConfirmText, setDeleteConversationConfirmText] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const [avatarPopoverOpen, setAvatarPopoverOpen] = useState(false);
@@ -88,6 +92,18 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
       nicknameEditPolicy !== (group.settings.nicknameEditPolicy ?? "all_members") ||
       groupProfileEditPolicy !== (group.settings.groupProfileEditPolicy ?? "admins_only"));
   const hasUnsavedChanges = hasGroupProfileChanges || hasGroupSettingsChanges;
+
+  const deleteChatMutation = useMutation({
+    mutationFn: async () => {
+      await api.delete(`/conversations/${group.conversationId}`);
+    },
+    onSuccess: () => {
+      toast.success("Chat deleted.");
+      setShowDeleteChatConfirmModal(false);
+      router.push("/chat");
+    },
+    onError: () => toast.error("Failed to delete chat."),
+  });
 
   useEffect(() => {
     return () => {
@@ -603,6 +619,17 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
       <div className="border-t border-border/30 pt-6 space-y-2">
         <h3 className="font-display font-semibold text-destructive">Danger Zone</h3>
         <button
+          onClick={() => {
+            setShowDeleteChatConfirmModal(true);
+            setDeleteConversationConfirmText("");
+          }}
+          disabled={deleteChatMutation.isPending}
+          className="w-full h-10 rounded-xl bg-destructive/15 text-destructive text-sm font-medium hover:bg-destructive/25 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+        >
+          <Trash2 className="w-4 h-4" />
+          {deleteChatMutation.isPending ? "Deleting..." : "Delete Conversation"}
+        </button>
+        <button
           onClick={() => leaveGroup(undefined, { onSuccess: () => router.push("/chat") })}
           disabled={isLeaving}
           className="w-full h-10 rounded-xl bg-destructive/15 text-destructive text-sm font-medium hover:bg-destructive/25 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
@@ -677,6 +704,59 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
                 className="flex-1 h-10 rounded-xl bg-destructive text-white text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-60"
               >
                 {isDisbanding ? "Disbanding..." : "Disband"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteChatConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => {
+              if (deleteChatMutation.isPending) return;
+              setShowDeleteChatConfirmModal(false);
+              setDeleteConversationConfirmText("");
+            }}
+          />
+          <div className="relative w-full max-w-sm rounded-2xl border border-border/70 bg-card p-5 shadow-elevated space-y-4">
+            <h3 className="font-display font-semibold text-base text-destructive">Delete Conversation</h3>
+            <p className="text-sm text-muted-foreground">
+              This clears your existing messages in this conversation. New messages can make it appear again.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Type <span className="font-semibold text-foreground">DELETE</span> to confirm.
+            </p>
+
+            <input
+              value={deleteConversationConfirmText}
+              onChange={(event) => setDeleteConversationConfirmText(event.target.value)}
+              placeholder="DELETE"
+              className="w-full h-10 px-3 rounded-xl border border-border/60 bg-background text-sm"
+              autoFocus
+              disabled={deleteChatMutation.isPending}
+            />
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteChatConfirmModal(false);
+                  setDeleteConversationConfirmText("");
+                }}
+                disabled={deleteChatMutation.isPending}
+                className="flex-1 h-10 rounded-xl border border-border/70 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => deleteChatMutation.mutate()}
+                disabled={deleteChatMutation.isPending || deleteConversationConfirmText !== "DELETE"}
+                className="flex-1 h-10 rounded-xl bg-destructive text-white text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-60"
+              >
+                {deleteChatMutation.isPending ? "Deleting..." : "Delete Conversation"}
               </button>
             </div>
           </div>
