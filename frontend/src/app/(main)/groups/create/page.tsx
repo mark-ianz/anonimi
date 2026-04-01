@@ -8,6 +8,7 @@ import { useGroups } from "@/hooks/useGroups";
 import { useContacts } from "@/hooks/useContacts";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
 import { cn } from "@/lib/utils";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 import { UploadSource, validateUploadFile } from "@/lib/uploadPolicy";
 
 export default function CreateGroupPage() {
@@ -388,7 +389,7 @@ export default function CreateGroupPage() {
                       {contact.profileImage ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={contact.profileImage}
+                          src={resolveMediaUrl(contact.profileImage)}
                           alt={contact.username}
                           className="w-full h-full object-cover"
                         />
