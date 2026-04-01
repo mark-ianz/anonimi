@@ -197,7 +197,7 @@ export default function UserProfileEditor({ pendingAvatar, onAvatarSaved }: User
         className={
           "w-full h-10 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors " +
           (canSave
-            ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
+            ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 cursor-pointer"
             : "bg-muted text-muted-foreground cursor-not-allowed")
         }
       >
@@ -208,10 +208,6 @@ export default function UserProfileEditor({ pendingAvatar, onAvatarSaved }: User
         )}
         {isSaving ? "Saving..." : "Save profile"}
       </button>
-
-      {!isSaving && !!pendingAvatar && (
-        <p className="text-xs text-primary text-center">New profile photo selected. Click Save profile to apply.</p>
-      )}
 
       <ConfirmDialog
         open={confirmOpen}
