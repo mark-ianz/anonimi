@@ -537,6 +537,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     // Typing
     socket.on("typing:update", (payload: TypingUpdatePayload) => {
+      if (process.env.NODE_ENV !== "production") {
+        console.debug("[typing] update", payload);
+      }
       setTyping(
         payload.conversationId,
         payload.userId,

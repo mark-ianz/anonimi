@@ -15,12 +15,14 @@ interface TypingIndicatorProps {
 export default function TypingIndicator({ users, className }: TypingIndicatorProps) {
   if (users.length === 0) return null;
 
+  const safeName = (value: string) => value?.trim() || "Someone";
+
   const label =
     users.length === 1
-      ? `${users[0].username} is typing`
+      ? `${safeName(users[0].username)} is typing...`
       : users.length === 2
-      ? `${users[0].username} and ${users[1].username} are typing`
-      : `${users.length} people are typing`;
+      ? `${safeName(users[0].username)} and ${safeName(users[1].username)} are typing...`
+      : `${safeName(users[0].username)} and ${users.length - 1} others are typing...`;
 
   return (
     <div className={cn("flex items-center gap-2 px-4 py-1 animate-fade-in", className)}>

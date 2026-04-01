@@ -88,6 +88,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
     setActiveConversation(conversation.id);
     clearUnread(conversation.id);
     const socket = getChatSocket();
+    socket.emit("conversation:join", { conversationId: conversation.id });
     socket.emit("conversation:active", { conversationId: conversation.id });
 
     if ("serviceWorker" in navigator) {
@@ -112,6 +113,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
 
     return () => {
       setActiveConversation(null);
+      socket.emit("conversation:leave", { conversationId: conversation.id });
       socket.emit("conversation:active", { conversationId: null });
     };
   }, [conversation.id, setActiveConversation, clearUnread, qc]);

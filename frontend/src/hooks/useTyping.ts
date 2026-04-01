@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { getChatSocket } from "@/lib/socket";
 import { useAuthStore } from "@/stores/authStore";
 import { useTypingStore } from "@/stores/typingStore";
@@ -8,7 +8,9 @@ import { TYPING_DEBOUNCE_MS, TYPING_TIMEOUT_MS } from "@/lib/constants";
 
 export function useTyping(conversationId: string | null) {
   const { isAuthenticated } = useAuthStore();
-  const { getTypingUsers } = useTypingStore();
+  const typingUsersRaw = useTypingStore((state) =>
+    conversationId ? state.typing[conversationId] ?? [] : []
+  );
   const isTypingRef = useRef(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -16,8 +18,19 @@ export function useTyping(conversationId: string | null) {
     (isTyping: boolean) => {
       if (!conversationId || !isAuthenticated) return;
       const socket = getChatSocket();
-      if (!socket.connected) return;
+      if (!socket.connected) {
+        if (process.env.NODE_ENV !== "production") {
+          console.debug("[typing] skip emit (socket disconnected)", {
+            conversationId,
+            isTyping,
+          });
+        }
+        return;
+      }
       socket.emit("message:typing", { conversationId, isTyping });
+      if (process.env.NODE_ENV !== "production") {
+        console.debug("[typing] emit", { conversationId, isTyping });
+      }
       isTypingRef.current = isTyping;
     },
     [conversationId, isAuthenticated]
@@ -45,7 +58,10 @@ export function useTyping(conversationId: string | null) {
     };
   }, [emitTyping, conversationId]);
 
-  const typingUsers = conversationId ? getTypingUsers(conversationId) : [];
+  const typingUsers = useMemo(() => {
+    const now = Date.now();
+    return typingUsersRaw.filter((user) => user.expiresAt > now);
+  }, [typingUsersRaw]);
 
   return { onInputChange, onBlur, typingUsers };
 }

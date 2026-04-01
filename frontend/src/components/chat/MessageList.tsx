@@ -118,6 +118,29 @@ export default function MessageList({ conversation, onEditStart }: MessageListPr
     return map;
   }, [user?.id, user?.username, user?.anonimiId, user?.profileImage, conversation, groupMemberMetaById]);
 
+  const displayTypingUsers = useMemo(() => {
+    const filtered = typingUsers.filter((typingUser) => typingUser.userId !== user?.id);
+    const sorted = [...filtered].sort(
+      (a, b) => (b.expiresAt ?? 0) - (a.expiresAt ?? 0)
+    );
+
+    return sorted.map((typingUser) => {
+      let name = typingUser.username;
+
+      if (conversation.type === "private" && typingUser.userId === conversation.participant?.id) {
+        name = conversation.participant.nickname ?? conversation.participant.username ?? name;
+      } else if (conversation.type === "group") {
+        const meta = groupMemberMetaById[typingUser.userId];
+        name = meta?.name ?? name;
+      }
+
+      return {
+        userId: typingUser.userId,
+        username: name?.trim() || "User",
+      };
+    });
+  }, [typingUsers, user?.id, conversation, groupMemberMetaById]);
+
   useEffect(() => {
     const computeCanMarkRead = () =>
       typeof document !== "undefined" &&
@@ -389,7 +412,7 @@ export default function MessageList({ conversation, onEditStart }: MessageListPr
         })}
 
         {/* Typing indicator */}
-        <TypingIndicator users={typingUsers} />
+        <TypingIndicator users={displayTypingUsers} />
 
         <div ref={bottomRef} className="h-1" />
       </div>
