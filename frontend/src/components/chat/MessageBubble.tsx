@@ -15,7 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import api from "@/lib/api";
-import { MessageCircle, Pencil, User, X } from "lucide-react";
+import { EyeOff, MessageCircle, Pencil, User, X } from "lucide-react";
 
 interface MessageBubbleProps {
   message: Message;
@@ -51,6 +51,8 @@ export default function MessageBubble({
   const { user } = useAuthStore();
   const router = useRouter();
   const isMine = message.senderId === user?.id;
+  const isStealth = !!message.isStealth;
+  const [now, setNow] = useState(() => Date.now());
   const [showActions, setShowActions] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
@@ -77,10 +79,32 @@ export default function MessageBubble({
     !message.unsent &&
     !message.pending &&
     !message.failed &&
+    !isStealth &&
     message.type === "text" &&
     (Date.now() - new Date(message.createdAt).getTime()) / (1000 * 60 * 60) <= 24;
 
   const isEdited = Boolean(message.editedAt || (message.editHistory?.length ?? 0) > 0);
+
+  const stealthExpiresAt = message.stealthExpiresAt ? new Date(message.stealthExpiresAt).getTime() : null;
+  const stealthExpired =
+    isStealth &&
+    (!!message.stealthExpiredAt || (stealthExpiresAt ? stealthExpiresAt <= now : true));
+  const remainingMs = stealthExpiresAt ? Math.max(stealthExpiresAt - now, 0) : 0;
+  const stealthPlaceholderLength = Math.max(
+    3,
+    Math.min(message.stealthContentLength ?? 0, 240)
+  );
+
+  const formatRemaining = (ms: number) => {
+    const totalSeconds = Math.max(Math.floor(ms / 1000), 0);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (hours > 0) {
+      return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    }
+    return `${minutes}:${String(seconds).padStart(2, "0")}`;
+  };
 
 
   const bubbleShapeClass = isMine
@@ -128,6 +152,14 @@ export default function MessageBubble({
 
     setAvatarMenuPosition({ top, left });
   }, []);
+
+  useEffect(() => {
+    if (!isStealth || stealthExpired || !stealthExpiresAt) return;
+    const timer = window.setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [isStealth, stealthExpired, stealthExpiresAt]);
 
   useEffect(() => {
     if (!avatarMenuOpen) return;
@@ -291,12 +323,28 @@ export default function MessageBubble({
           </button>
         )}
 
+        {isStealth && !stealthExpired && (
+          <div
+            className={cn(
+              "mb-1 flex items-center gap-1 text-[11px] font-medium text-amber-700/70 dark:text-amber-200/70",
+              isMine ? "self-end" : "self-start"
+            )}
+          >
+            <EyeOff className="h-3 w-3" />
+            {formatRemaining(remainingMs)}
+          </div>
+        )}
+
         {/* Bubble */}
         <div
           className={cn(
             "group/bubble relative px-3 py-2 text-sm leading-relaxed transition-colors duration-700",
             bubbleShapeClass,
-            isMine
+            isStealth
+              ? (stealthExpired
+                ? "bg-amber-50/40 border border-amber-200/40 text-foreground dark:bg-amber-400/5 dark:border-amber-300/20"
+                : "bg-amber-50/70 border border-amber-200/50 text-foreground dark:bg-amber-400/10 dark:border-amber-300/30")
+              : isMine
               ? "bg-primary text-primary-foreground"
               : "bg-card border border-border/50 text-foreground",
             message.pending && "opacity-70",
@@ -340,6 +388,10 @@ export default function MessageBubble({
           {/* Text content */}
           {message.unsent ? (
             <p className="italic text-current">Message was unsent</p>
+          ) : isStealth && stealthExpired ? (
+            <p className="whitespace-pre-wrap wrap-break-word text-transparent select-none">
+              {"█".repeat(stealthPlaceholderLength)}
+            </p>
           ) : message.content ? (
             <p className="whitespace-pre-wrap wrap-break-word">{message.content}</p>
           ) : null}

@@ -5,6 +5,7 @@ import { createSocketServer } from "./config/socket";
 import { setupSocket } from "./socket/index";
 import { env } from "./config/env";
 import { logger } from "./utils/logger";
+import { startStealthExpiryJob } from "./services/stealth.service";
 
 const startServer = async (): Promise<void> => {
   try {
@@ -15,6 +16,7 @@ const startServer = async (): Promise<void> => {
 
     const io = createSocketServer(server);
     setupSocket(io);
+    startStealthExpiryJob();
 
     server.listen(env.PORT, () => {
       logger.info(`Server running on port ${env.PORT}`);

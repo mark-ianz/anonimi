@@ -127,13 +127,16 @@ export const sendMessage = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { conversationId, type, content, mediaUrl } = req.body;
+    const { conversationId, type, content, mediaUrl, stealthDuration } = req.body;
     const result = await chatService.sendMessage(
       req.user!._id.toString(),
       conversationId,
       type,
       content,
-      mediaUrl
+      mediaUrl,
+      undefined,
+      undefined,
+      { stealthDuration }
     );
     apiSuccess(res, result.message, 201);
   } catch (error) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Send, Paperclip, X } from "lucide-react";
+import { Send, Paperclip, X, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMessages } from "@/hooks/useMessages";
 import { useTyping } from "@/hooks/useTyping";
@@ -11,6 +11,19 @@ import { ALLOWED_IMAGE_TYPES } from "@/lib/constants";
 import { FilePreview } from "@/components/shared/FileUpload";
 import type { MessageType } from "@/types/message";
 import type { UploadSource } from "@/lib/uploadPolicy";
+
+const STEALTH_DURATIONS = [
+  "1m",
+  "5m",
+  "15m",
+  "30m",
+  "1h",
+  "3h",
+  "6h",
+  "12h",
+  "24h",
+] as const;
+type StealthDuration = (typeof STEALTH_DURATIONS)[number];
 
 interface MessageInputProps {
   conversationId: string;
@@ -45,12 +58,16 @@ export default function MessageInput({
   const [text, setText] = useState(draftMessages[conversationId] ?? "");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pendingSource, setPendingSource] = useState<UploadSource>("file");
+  const [stealthEnabled, setStealthEnabled] = useState(false);
+  const [stealthDuration, setStealthDuration] = useState<StealthDuration>("5m");
 
   useEffect(() => {
     if (!editMessageId) {
       lastEditIdRef.current = null;
       return;
     }
+
+    setStealthEnabled(false);
 
     if (lastEditIdRef.current === editMessageId) return;
     lastEditIdRef.current = editMessageId;
@@ -149,6 +166,7 @@ export default function MessageInput({
       mediaUrl,
       fileName,
       fileSize,
+      stealthDuration: stealthEnabled ? stealthDuration : undefined,
     });
 
     onMessageSent?.();
@@ -217,15 +235,61 @@ export default function MessageInput({
         </div>
       )}
 
+      {stealthEnabled && (
+        <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Stealth duration</span>
+          <select
+            value={stealthDuration}
+            onChange={(event) => setStealthDuration(event.target.value as StealthDuration)}
+            className="rounded-lg border border-border/60 bg-background px-2 py-1 text-xs text-foreground"
+          >
+            {STEALTH_DURATIONS.map((duration) => (
+              <option key={duration} value={duration}>
+                {duration}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div className="flex items-end gap-2">
         {/* Attach */}
         <button
           type="button"
-          disabled={disabled || isUploading || !!editMessageId}
+          disabled={disabled || isUploading || !!editMessageId || stealthEnabled}
           onClick={() => fileInputRef.current?.click()}
           className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50 mb-0.5"
         >
           <Paperclip className="w-5 h-5" />
+        </button>
+        <button
+          type="button"
+          disabled={disabled || !!editMessageId || pendingFile !== null}
+          onClick={() => {
+            if (stealthEnabled) {
+              setStealthEnabled(false);
+              return;
+            }
+            setPendingFile(null);
+            setPendingSource("file");
+            cancel();
+            setStealthEnabled(true);
+          }}
+          className={cn(
+            "shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-colors mb-0.5",
+            stealthEnabled
+              ? "bg-amber-100/60 text-amber-700/80 dark:bg-amber-400/10 dark:text-amber-200/80"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            (disabled || !!editMessageId || pendingFile !== null) && "opacity-50"
+          )}
+          aria-pressed={stealthEnabled}
+          aria-label="Toggle stealth mode"
+        >
+          {stealthEnabled ? (
+            <EyeOff className="w-4 h-4" />
+          ) : (
+            <Eye className="w-4 h-4" />
+          )}
         </button>
         <input
           ref={fileInputRef}

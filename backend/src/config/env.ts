@@ -7,6 +7,7 @@ const envSchema = z.object({
   MONGODB_URI: z.string().default("mongodb://localhost:27017/anonimi"),
   JWT_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
+  STEALTH_SECRET: z.string().min(32),
   JWT_EXPIRES_IN: z.string().default("15m"),
   JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),
   CORS_ORIGIN: z.string().default("http://localhost:3000"),

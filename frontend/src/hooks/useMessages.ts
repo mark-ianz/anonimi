@@ -20,6 +20,25 @@ import type {
 } from "@/types/message";
 import { MESSAGES_PER_PAGE } from "@/lib/constants";
 
+const STEALTH_DURATIONS_MS: Record<string, number> = {
+  "1m": 60 * 1000,
+  "5m": 5 * 60 * 1000,
+  "15m": 15 * 60 * 1000,
+  "30m": 30 * 60 * 1000,
+  "1h": 60 * 60 * 1000,
+  "3h": 3 * 60 * 60 * 1000,
+  "6h": 6 * 60 * 60 * 1000,
+  "12h": 12 * 60 * 60 * 1000,
+  "24h": 24 * 60 * 60 * 1000,
+};
+
+const getStealthExpiresAt = (duration?: string | null) => {
+  if (!duration) return null;
+  const ms = STEALTH_DURATIONS_MS[duration];
+  if (!ms) return null;
+  return new Date(Date.now() + ms).toISOString();
+};
+
 export function useMessages(conversationId: string | null) {
   const qc = useQueryClient();
   const { user } = useAuthStore();
@@ -122,12 +141,18 @@ export function useMessages(conversationId: string | null) {
     (payload: Omit<SendMessagePayload, "tempId">) => {
       if (!user) return;
       const tempId = uuidv4();
+      const isStealth = !!payload.stealthDuration;
+      const stealthExpiresAt = getStealthExpiresAt(payload.stealthDuration);
       const optimistic: Message = {
         id: tempId,
         conversationId: payload.conversationId,
         senderId: user.id,
         type: payload.type,
         content: payload.content,
+        isStealth,
+        stealthExpiresAt,
+        stealthExpiredAt: null,
+        stealthContentLength: isStealth ? (payload.content ?? "").length : null,
         mediaUrl: payload.mediaUrl ?? null,
         fileName: payload.fileName ?? null,
         fileSize: payload.fileSize ?? null,
@@ -142,7 +167,7 @@ export function useMessages(conversationId: string | null) {
 
       addMessage(payload.conversationId, optimistic);
       updateConversationLastMessage(payload.conversationId, {
-        content: payload.content,
+        content: isStealth ? "[Stealth]" : payload.content,
         senderId: user.id,
         type: payload.type,
         timestamp: optimistic.createdAt,

@@ -20,6 +20,7 @@ import type {
   MessageReactionRemovedPayload,
   MessageUnsentPayload,
   MessageEditedPayload,
+  MessageStealthExpiredPayload,
   TypingUpdatePayload,
   PresenceUpdatePayload,
   ContactRequestPayload,
@@ -209,6 +210,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         senderId: payload.senderId,
         type: payload.type,
         content: payload.content,
+        isStealth: payload.isStealth ?? false,
+        stealthExpiresAt: payload.stealthExpiresAt ?? null,
+        stealthExpiredAt: payload.stealthExpiredAt ?? null,
+        stealthContentLength: payload.stealthContentLength ?? null,
         mediaUrl: payload.mediaUrl,
         fileName: payload.fileName,
         fileSize: payload.fileSize,
@@ -220,7 +225,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       };
       addMessage(payload.conversationId, msg);
       updateConversationLastMessage(payload.conversationId, {
-        content: payload.content,
+        content: payload.isStealth ? "[Stealth]" : payload.content,
         senderId: payload.senderId,
         senderUsername: payload.senderUsername,
         type: payload.type,
@@ -462,6 +467,45 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       qc.invalidateQueries({ queryKey: ["conversations"] });
     });
 
+    socket.on("message:stealth:expired", (payload: MessageStealthExpiredPayload) => {
+      qc.setQueryData(
+        ["messages", payload.conversationId],
+        (old:
+          | {
+              pages: Array<{ data: Message[] }>;
+              pageParams: unknown[];
+            }
+          | undefined) => {
+          if (!old) return old;
+
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              data: page.data.map((message) =>
+                message.id === payload.messageId
+                  ? {
+                      ...message,
+                      content: null,
+                      isStealth: true,
+                      stealthExpiredAt: payload.stealthExpiredAt,
+                      stealthContentLength: payload.stealthContentLength,
+                    }
+                  : message
+              ),
+            })),
+          };
+        }
+      );
+
+      updateMessage(payload.conversationId, payload.messageId, {
+        content: null,
+        isStealth: true,
+        stealthExpiredAt: payload.stealthExpiredAt,
+        stealthContentLength: payload.stealthContentLength,
+      });
+    });
+
     const applyReactionUpdate = (
       conversationId: string,
       messageId: string,
@@ -691,6 +735,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       socket.off("message:receive");
       socket.off("message:unsent");
       socket.off("message:edited");
+      socket.off("message:stealth:expired");
       socket.off("message:reaction:add");
       socket.off("message:reaction:remove");
       socket.off("message:read");

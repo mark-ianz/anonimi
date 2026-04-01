@@ -58,6 +58,13 @@ export interface IMessage extends Document {
   senderId: Types.ObjectId;
   type: "text" | "image" | "file" | "system";
   content?: string;
+  isStealth?: boolean;
+  stealthExpiresAt?: Date;
+  stealthExpiredAt?: Date | null;
+  stealthContentCipher?: string;
+  stealthContentIv?: string;
+  stealthContentTag?: string;
+  stealthContentLength?: number;
   mediaUrl?: string;
   fileName?: string;
   fileSize?: number;

@@ -84,7 +84,7 @@ export default function MessageActions({
               <Trash2 className="w-4 h-4" />
               Delete for me
             </button>
-            {isMine && !message.unsent && (
+            {isMine && !message.unsent && !message.isStealth && (
               <button
                 onClick={() => {
                   setOpen(false);

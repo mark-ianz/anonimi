@@ -14,6 +14,7 @@ interface MessageSendPayload {
   mediaUrl?: string;
   fileName?: string;
   fileSize?: number;
+  stealthDuration?: "1m" | "5m" | "15m" | "30m" | "1h" | "3h" | "6h" | "12h" | "24h";
   tempId: string;
 }
 
@@ -22,7 +23,7 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
 
   socket.on("message:send", async (payload: MessageSendPayload) => {
     try {
-      const { conversationId, type, content, mediaUrl, fileName, fileSize, tempId } = payload;
+      const { conversationId, type, content, mediaUrl, fileName, fileSize, stealthDuration, tempId } = payload;
       const userId = socket.data.user?.userId;
 
       if (!userId) {
@@ -61,7 +62,7 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
         mediaUrl,
         fileName,
         fileSize,
-        { suppressNotificationUserIds }
+        { suppressNotificationUserIds, stealthDuration }
       );
 
       // Acknowledge to sender
@@ -86,6 +87,10 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
           senderProfileImage: result.sender.profileImage,
           type: result.message.type,
           content: result.message.content,
+          isStealth: result.message.isStealth,
+          stealthExpiresAt: result.message.stealthExpiresAt,
+          stealthExpiredAt: result.message.stealthExpiredAt,
+          stealthContentLength: result.message.stealthContentLength,
           mediaUrl: result.message.mediaUrl,
           fileName: result.message.fileName,
           fileSize: result.message.fileSize,

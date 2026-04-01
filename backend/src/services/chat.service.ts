@@ -17,6 +17,7 @@ import {
   createAndEmitNotification,
   decrementMessageNotificationOnUnsend,
 } from "./notification.service";
+import { decryptStealthContent, encryptStealthContent } from "../utils/stealthCrypto";
 
 interface ConversationParticipant {
   id: string;
@@ -78,6 +79,69 @@ const serializeEditHistory = (
     editedAt: entry.editedAt,
     editedBy: entry.editedBy?.toString(),
   }));
+
+const STEALTH_DURATION_MS: Record<string, number> = {
+  "1m": 60 * 1000,
+  "5m": 5 * 60 * 1000,
+  "15m": 15 * 60 * 1000,
+  "30m": 30 * 60 * 1000,
+  "1h": 60 * 60 * 1000,
+  "3h": 3 * 60 * 60 * 1000,
+  "6h": 6 * 60 * 60 * 1000,
+  "12h": 12 * 60 * 60 * 1000,
+  "24h": 24 * 60 * 60 * 1000,
+};
+
+const getStealthDurationMs = (value?: string) => {
+  if (!value) return null;
+  return STEALTH_DURATION_MS[value] ?? null;
+};
+
+const serializeStealth = (message: any) => {
+  if (!message.isStealth) {
+    return {
+      isStealth: false,
+      content: message.unsent ? null : message.content,
+      stealthExpiresAt: null,
+      stealthExpiredAt: null,
+      stealthContentLength: null,
+    };
+  }
+
+  const expiresAt = message.stealthExpiresAt ? new Date(message.stealthExpiresAt) : null;
+  const expired = !!message.stealthExpiredAt || (expiresAt ? expiresAt.getTime() <= Date.now() : true);
+
+  if (expired) {
+    return {
+      isStealth: true,
+      content: null,
+      stealthExpiresAt: expiresAt,
+      stealthExpiredAt: message.stealthExpiredAt ?? expiresAt,
+      stealthContentLength: message.stealthContentLength ?? 0,
+    };
+  }
+
+  let content: string | null = null;
+  try {
+    if (message.stealthContentCipher && message.stealthContentIv && message.stealthContentTag) {
+      content = decryptStealthContent(
+        message.stealthContentCipher,
+        message.stealthContentIv,
+        message.stealthContentTag
+      );
+    }
+  } catch {
+    content = null;
+  }
+
+  return {
+    isStealth: true,
+    content,
+    stealthExpiresAt: expiresAt,
+    stealthExpiredAt: message.stealthExpiredAt ?? null,
+    stealthContentLength: message.stealthContentLength ?? (content ? content.length : 0),
+  };
+};
 
 const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -561,25 +625,32 @@ export const getMessages = async (
   const data = hasMore ? messages.slice(0, limit) : messages;
 
   return {
-    messages: data.map((m: any) => ({
-      id: m._id.toString(),
-      conversationId: m.conversationId.toString(),
-      senderId: m.senderId?.toString(),
-      type: m.type,
-      content: m.unsent ? null : m.content,
-      mediaUrl: m.mediaUrl,
-      fileName: m.fileName,
-      fileSize: m.fileSize,
-      readBy: m.readBy.map((r: Types.ObjectId) => r.toString()),
-      readByAt: serializeReadByAt(m.readByAt),
-      reactions: serializeReactions(m.reactions, m.unsent),
-      editHistory: serializeEditHistory(m.editHistory),
-      editedAt: m.editedAt ?? null,
-      editedBy: m.editedBy?.toString() ?? null,
-      unsent: m.unsent,
-      unsentAt: m.unsent ? m.updatedAt : null,
-      createdAt: m.createdAt,
-    })),
+    messages: data.map((m: any) => {
+      const stealth = serializeStealth(m);
+      return {
+        id: m._id.toString(),
+        conversationId: m.conversationId.toString(),
+        senderId: m.senderId?.toString(),
+        type: m.type,
+        content: stealth.content,
+        isStealth: stealth.isStealth,
+        stealthExpiresAt: stealth.stealthExpiresAt,
+        stealthExpiredAt: stealth.stealthExpiredAt,
+        stealthContentLength: stealth.stealthContentLength,
+        mediaUrl: m.mediaUrl,
+        fileName: m.fileName,
+        fileSize: m.fileSize,
+        readBy: m.readBy.map((r: Types.ObjectId) => r.toString()),
+        readByAt: serializeReadByAt(m.readByAt),
+        reactions: serializeReactions(m.reactions, m.unsent),
+        editHistory: serializeEditHistory(m.editHistory),
+        editedAt: m.editedAt ?? null,
+        editedBy: m.editedBy?.toString() ?? null,
+        unsent: m.unsent,
+        unsentAt: m.unsent ? m.updatedAt : null,
+        createdAt: m.createdAt,
+      };
+    }),
     nextCursor: hasMore ? data[data.length - 1]._id.toString() : undefined,
     hasMore,
     limit,
@@ -624,6 +695,7 @@ export const searchMessages = async (
     conversationId: { $in: conversationIds },
     deletedFor: { $ne: userObjectId },
     unsent: false,
+    isStealth: { $ne: true },
     type: "text",
     content: { $regex: queryRegex },
   };
@@ -806,6 +878,7 @@ export const sendMessage = async (
   fileSize?: number,
   options?: {
     suppressNotificationUserIds?: string[];
+    stealthDuration?: string;
   }
 ) => {
   const conversation = await Conversation.findById(conversationId);
@@ -824,6 +897,24 @@ export const sendMessage = async (
 
   // Outgoing messages from archived threads auto-unarchive for the sender.
   await clearConversationArchiveForUser(conversationId, senderId);
+
+  const stealthDurationMs = getStealthDurationMs(options?.stealthDuration);
+  const isStealth = !!stealthDurationMs;
+  const trimmedContent = (content ?? "").trim();
+
+  if (isStealth) {
+    if (type !== "text") {
+      throw new ForbiddenError("Stealth mode is only supported for text messages");
+    }
+    if (!trimmedContent) {
+      throw new ForbiddenError("Stealth messages require text content");
+    }
+    if (mediaUrl || fileName || fileSize) {
+      throw new ForbiddenError("Stealth messages cannot include attachments");
+    }
+  }
+
+  const previewContent = isStealth ? "[Stealth]" : content;
 
   if (conversation.type === "private") {
     const recipientId = conversation.participants.find(
@@ -892,7 +983,7 @@ export const sendMessage = async (
             profileImage: senderForNotif?.profileImage ?? null,
           },
           preview: {
-            content,
+            content: previewContent,
             type,
             timestamp: new Date().toISOString(),
           },
@@ -947,11 +1038,20 @@ export const sendMessage = async (
       }
     }
 
+    const stealthExpiresAt = isStealth ? new Date(Date.now() + stealthDurationMs!) : undefined;
+    const stealthPayload = isStealth ? encryptStealthContent(trimmedContent) : null;
+
     const message = await Message.create({
       conversationId: conversation._id,
       senderId: new Types.ObjectId(senderId),
       type,
-      content,
+      content: isStealth ? undefined : content,
+      isStealth,
+      stealthExpiresAt,
+      stealthContentCipher: stealthPayload?.cipherText,
+      stealthContentIv: stealthPayload?.iv,
+      stealthContentTag: stealthPayload?.tag,
+      stealthContentLength: isStealth ? trimmedContent.length : undefined,
       mediaUrl,
       fileName,
       fileSize,
@@ -963,7 +1063,7 @@ export const sendMessage = async (
 
     if (!isShadowDelivery) {
       conversation.lastMessage = {
-        content: content || (mediaUrl ? "[Media]" : "[Message]"),
+        content: isStealth ? "[Stealth]" : (content || (mediaUrl ? "[Media]" : "[Message]")),
         senderId: new Types.ObjectId(senderId),
         type,
         timestamp: message.createdAt,
@@ -995,7 +1095,7 @@ export const sendMessage = async (
         userId: recipientIdStr,
         type: "message_received",
         title: `New message from ${sender?.username ?? "a contact"}`,
-        body: content?.trim() ? content.slice(0, 140) : "Sent you a message.",
+        body: previewContent?.trim() ? previewContent.slice(0, 140) : "Sent you a message.",
         data: {
           conversationId: conversation._id.toString(),
           senderId,
@@ -1006,13 +1106,19 @@ export const sendMessage = async (
       });
     }
 
+    const responseContent = isStealth ? trimmedContent : content;
+
     return {
       message: {
         id: message._id.toString(),
         conversationId: message.conversationId.toString(),
         senderId: message.senderId?.toString(),
         type: message.type,
-        content: message.content,
+        content: responseContent,
+        isStealth,
+        stealthExpiresAt: stealthExpiresAt ?? null,
+        stealthExpiredAt: null,
+        stealthContentLength: isStealth ? trimmedContent.length : null,
         mediaUrl: message.mediaUrl,
         fileName: message.fileName,
         fileSize: message.fileSize,
@@ -1042,11 +1148,20 @@ export const sendMessage = async (
     throw new ForbiddenError("This group has been disbanded. Messaging is disabled.");
   }
 
+  const stealthExpiresAt = isStealth ? new Date(Date.now() + stealthDurationMs!) : undefined;
+  const stealthPayload = isStealth ? encryptStealthContent(trimmedContent) : null;
+
   const message = await Message.create({
     conversationId: conversation._id,
     senderId: new Types.ObjectId(senderId),
     type,
-    content,
+    content: isStealth ? undefined : content,
+    isStealth,
+    stealthExpiresAt,
+    stealthContentCipher: stealthPayload?.cipherText,
+    stealthContentIv: stealthPayload?.iv,
+    stealthContentTag: stealthPayload?.tag,
+    stealthContentLength: isStealth ? trimmedContent.length : undefined,
     mediaUrl,
     fileName,
     fileSize,
@@ -1056,7 +1171,7 @@ export const sendMessage = async (
   });
 
   conversation.lastMessage = {
-    content: content || (mediaUrl ? "[Media]" : "[Message]"),
+    content: isStealth ? "[Stealth]" : (content || (mediaUrl ? "[Media]" : "[Message]")),
     senderId: new Types.ObjectId(senderId),
     type,
     timestamp: message.createdAt,
@@ -1085,7 +1200,7 @@ export const sendMessage = async (
       userId: recipientIdStr,
       type: "message_received",
       title: `New message from ${sender?.username ?? "a contact"}`,
-      body: content?.trim() ? content.slice(0, 140) : "Sent you a message.",
+      body: previewContent?.trim() ? previewContent.slice(0, 140) : "Sent you a message.",
       data: {
         conversationId: conversation._id.toString(),
         senderId,
@@ -1098,13 +1213,19 @@ export const sendMessage = async (
     });
   }
 
+  const responseContent = isStealth ? trimmedContent : content;
+
   return {
     message: {
       id: message._id.toString(),
       conversationId: message.conversationId.toString(),
       senderId: message.senderId?.toString(),
       type: message.type,
-      content: message.content,
+      content: responseContent,
+      isStealth,
+      stealthExpiresAt: stealthExpiresAt ?? null,
+      stealthExpiredAt: null,
+      stealthContentLength: isStealth ? trimmedContent.length : null,
       mediaUrl: message.mediaUrl,
       fileName: message.fileName,
       fileSize: message.fileSize,
@@ -1125,6 +1246,7 @@ export const sendMessage = async (
     deliveredRecipientIds: recipientIds,
     suppressedUnreadRecipientIds: Array.from(archivedRecipientIds),
   };
+
 };
 
 export const archiveConversation = async (
@@ -1367,6 +1489,10 @@ export const unsendMessage = async (
     throw new ForbiddenError("Not the sender of this message");
   }
 
+  if (message.isStealth) {
+    throw new ForbiddenError("Cannot unsend a stealth message");
+  }
+
   const hoursSinceSent = (Date.now() - message.createdAt.getTime()) / (1000 * 60 * 60);
   if (hoursSinceSent > 24) {
     throw new ForbiddenError("Unsend time window expired (24 hours)");
@@ -1410,6 +1536,10 @@ export const editMessage = async (
 
   if (message.senderId?.toString() !== editorId) {
     throw new ForbiddenError("Not the sender of this message");
+  }
+
+  if (message.isStealth) {
+    throw new ForbiddenError("Cannot edit a stealth message");
   }
 
   if (message.unsent) {

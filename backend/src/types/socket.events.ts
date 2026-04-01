@@ -5,6 +5,7 @@ export interface MessageSendPayload {
   mediaUrl?: string;
   fileName?: string;
   fileSize?: number;
+  stealthDuration?: "1m" | "5m" | "15m" | "30m" | "1h" | "3h" | "6h" | "12h" | "24h";
   tempId: string;
 }
 
@@ -41,10 +42,21 @@ export interface MessageReceivePayload {
   senderProfileImage?: string;
   type: string;
   content?: string;
+  isStealth?: boolean;
+  stealthExpiresAt?: string;
+  stealthExpiredAt?: string | null;
+  stealthContentLength?: number;
   mediaUrl?: string;
   fileName?: string;
   fileSize?: number;
   timestamp: string;
+}
+
+export interface MessageStealthExpiredPayload {
+  messageId: string;
+  conversationId: string;
+  stealthExpiredAt: string;
+  stealthContentLength: number;
 }
 
 export interface MessageUnsentPayload {

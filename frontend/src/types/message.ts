@@ -23,6 +23,10 @@ export interface Message {
   senderId: string;
   type: MessageType;
   content: string | null;
+  isStealth?: boolean;
+  stealthExpiresAt?: string | null;
+  stealthExpiredAt?: string | null;
+  stealthContentLength?: number | null;
   mediaUrl: string | null;
   fileName: string | null;
   fileSize: number | null;
@@ -48,6 +52,7 @@ export interface SendMessagePayload {
   mediaUrl?: string | null;
   fileName?: string | null;
   fileSize?: number | null;
+  stealthDuration?: "1m" | "5m" | "15m" | "30m" | "1h" | "3h" | "6h" | "12h" | "24h";
   tempId: string;
 }
 

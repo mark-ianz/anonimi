@@ -23,6 +23,9 @@ export const sendMessageSchema = z.object({
     type: z.enum(["text", "image", "file"]),
     content: z.string().optional(),
     mediaUrl: z.string().optional(),
+    stealthDuration: z
+      .enum(["1m", "5m", "15m", "30m", "1h", "3h", "6h", "12h", "24h"])
+      .optional(),
   }),
 });
 
