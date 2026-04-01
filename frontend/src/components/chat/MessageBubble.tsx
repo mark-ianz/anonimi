@@ -15,7 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import api from "@/lib/api";
-import { MessageCircle, User } from "lucide-react";
+import { MessageCircle, Pencil, User, X } from "lucide-react";
 
 interface MessageBubbleProps {
   message: Message;
@@ -30,6 +30,7 @@ interface MessageBubbleProps {
   showReadReceipt?: boolean;
   timestampBubblePosition?: "single" | "first" | "middle" | "last";
   isHighlighted?: boolean;
+  onEditStart?: (message: Message) => void;
 }
 
 export default function MessageBubble({
@@ -45,6 +46,7 @@ export default function MessageBubble({
   showReadReceipt = true,
   timestampBubblePosition = "single",
   isHighlighted = false,
+  onEditStart,
 }: MessageBubbleProps) {
   const { user } = useAuthStore();
   const router = useRouter();
@@ -52,6 +54,7 @@ export default function MessageBubble({
   const [showActions, setShowActions] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [avatarMenuPosition, setAvatarMenuPosition] = useState({ top: 0, left: 0 });
   const avatarMenuRef = useRef<HTMLDivElement>(null);
   const avatarTriggerRef = useRef<HTMLButtonElement>(null);
@@ -68,6 +71,17 @@ export default function MessageBubble({
       (a, b) => new Date(b).getTime() - new Date(a).getTime()
     )[0];
   })();
+
+  const canEdit =
+    isMine &&
+    !message.unsent &&
+    !message.pending &&
+    !message.failed &&
+    message.type === "text" &&
+    (Date.now() - new Date(message.createdAt).getTime()) / (1000 * 60 * 60) <= 24;
+
+  const isEdited = Boolean(message.editedAt || (message.editHistory?.length ?? 0) > 0);
+
 
   const bubbleShapeClass = isMine
     ? {
@@ -184,14 +198,15 @@ export default function MessageBubble({
   }
 
   return (
-    <div
-      className={cn(
-        "group/message relative flex items-end gap-2 px-4 py-0.5 animate-message-appear hover:z-30",
-        isMine && "flex-row-reverse"
-      )}
-      onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => { if (!dialogOpen) setShowActions(false); }}
-    >
+    <>
+      <div
+        className={cn(
+          "group/message relative flex items-end gap-2 px-4 py-0.5 animate-message-appear hover:z-30",
+          isMine && "flex-row-reverse"
+        )}
+        onMouseEnter={() => setShowActions(true)}
+        onMouseLeave={() => { if (!dialogOpen) setShowActions(false); }}
+      >
       {/* Avatar */}
       <div className="w-8 shrink-0">
         {showAvatar && !isMine && (
@@ -260,6 +275,20 @@ export default function MessageBubble({
         {/* Sender name for groups */}
         {isFirst && !isMine && senderName && (
           <span className="text-xs text-muted-foreground mb-1 ml-1">{senderName}</span>
+        )}
+
+        {isEdited && (
+          <button
+            type="button"
+            onClick={() => setHistoryOpen(true)}
+            className={cn(
+              "mb-1 flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors",
+              isMine ? "self-end" : "self-start"
+            )}
+          >
+            <Pencil className="h-3 w-3" />
+            Edited
+          </button>
         )}
 
         {/* Bubble */}
@@ -362,8 +391,83 @@ export default function MessageBubble({
           showOnHover
           hasReactions={(message.reactions ?? []).length > 0}
         />
-        <MessageActions message={message} isMine={isMine} onDialogOpenChange={setDialogOpen} />
+        <MessageActions
+          message={message}
+          isMine={isMine}
+          onDialogOpenChange={setDialogOpen}
+          canEdit={canEdit}
+          onEdit={() => onEditStart?.(message)}
+        />
       </div>
     </div>
+
+    {historyOpen && typeof document !== "undefined" && createPortal(
+      <div
+        className="fixed inset-0 z-120 flex items-center justify-center p-4"
+        onClick={() => setHistoryOpen(false)}
+      >
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+        <div
+          className="relative w-full max-w-md rounded-2xl border border-border/70 bg-card p-5 shadow-elevated"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-semibold">Edit history</h3>
+              <p className="text-xs text-muted-foreground">
+                {message.editHistory?.length ?? 0} previous version(s)
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setHistoryOpen(false)}
+              className="rounded-full p-2 text-muted-foreground hover:bg-muted/60"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="mt-4 max-h-[60vh] space-y-2 overflow-y-auto pr-1">
+            {(message.editHistory ?? [])
+              .slice()
+              .sort((a, b) => new Date(b.editedAt).getTime() - new Date(a.editedAt).getTime())
+              .map((entry, index) => {
+                const isEditor = entry.editedBy === user?.id;
+                const editorName = isEditor
+                  ? "You"
+                  : readByUsersById?.[entry.editedBy]?.name ?? "User";
+
+                return (
+                  <div
+                    key={`${entry.editedAt}-${index}`}
+                    className="rounded-xl border border-border/50 bg-background/70 p-3"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {editorName}
+                      </span>
+                      <DateDisplay
+                        date={entry.editedAt}
+                        format="time"
+                        className="text-[11px] text-muted-foreground"
+                      />
+                    </div>
+                    <p className="mt-2 whitespace-pre-wrap wrap-break-word text-sm text-foreground">
+                      {entry.content}
+                    </p>
+                  </div>
+                );
+              })}
+            {!message.editHistory?.length && (
+              <div className="rounded-xl border border-border/50 bg-background/70 p-3 text-sm text-muted-foreground">
+                No previous versions available.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>,
+      document.body
+    )}
+    </>
   );
 }

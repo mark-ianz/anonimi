@@ -17,6 +17,10 @@ interface MessageInputProps {
   disabled?: boolean;
   placeholder?: string;
   onMessageSent?: () => void;
+  editMessageId?: string | null;
+  editContent?: string;
+  onCancelEdit?: () => void;
+  onEditSaved?: () => void;
 }
 
 export default function MessageInput({
@@ -24,17 +28,46 @@ export default function MessageInput({
   disabled,
   placeholder = "Message...",
   onMessageSent,
+  editMessageId = null,
+  editContent = "",
+  onCancelEdit,
+  onEditSaved,
 }: MessageInputProps) {
-  const { sendMessage } = useMessages(conversationId);
+  const { sendMessage, editMessageAsync, isEditingMessage } = useMessages(conversationId);
   const { onInputChange, onBlur } = useTyping(conversationId);
   const { upload, isUploading, progress, cancel } = useMediaUpload();
   const { draftMessages, setDraft } = useChatStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const prevDraftRef = useRef<string>("");
+  const lastEditIdRef = useRef<string | null>(null);
 
   const [text, setText] = useState(draftMessages[conversationId] ?? "");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pendingSource, setPendingSource] = useState<UploadSource>("file");
+
+  useEffect(() => {
+    if (!editMessageId) {
+      lastEditIdRef.current = null;
+      return;
+    }
+
+    if (lastEditIdRef.current === editMessageId) return;
+    lastEditIdRef.current = editMessageId;
+
+    prevDraftRef.current = draftMessages[conversationId] ?? text;
+    setText(editContent);
+    setPendingFile(null);
+    setPendingSource("file");
+    const frame = window.requestAnimationFrame(() => {
+      const ta = textareaRef.current;
+      if (!ta) return;
+      ta.focus({ preventScroll: true });
+      const len = ta.value.length;
+      ta.setSelectionRange(len, len);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [editMessageId, editContent, conversationId, draftMessages, text]);
 
   // Persist draft
   useEffect(() => {
@@ -77,6 +110,15 @@ export default function MessageInput({
     const trimmed = text.trim();
     if (!trimmed && !pendingFile) return;
     if (disabled) return;
+
+    if (editMessageId) {
+      await editMessageAsync({ messageId: editMessageId, content: trimmed });
+      setText("");
+      onBlur();
+      onEditSaved?.();
+      textareaRef.current?.focus();
+      return;
+    }
 
     let mediaUrl: string | undefined;
     let fileName: string | undefined;
@@ -124,6 +166,9 @@ export default function MessageInput({
     conversationId,
     onBlur,
     onMessageSent,
+    editMessageId,
+    editMessageAsync,
+    onEditSaved,
   ]);
 
   const handleKeyDown = useCallback(
@@ -136,10 +181,27 @@ export default function MessageInput({
     [handleSend]
   );
 
-  const canSend = (text.trim().length > 0 || pendingFile !== null) && !disabled;
+  const canSend = (text.trim().length > 0 || pendingFile !== null) && !disabled && !isEditingMessage;
 
   return (
     <div className="border-t border-border/50 p-3 bg-background">
+      {editMessageId && (
+        <div className="mb-2 flex items-center justify-between rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          <span>Editing message</span>
+          <button
+            type="button"
+            onClick={() => {
+              setText(prevDraftRef.current);
+              onCancelEdit?.();
+            }}
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-foreground hover:bg-muted"
+          >
+            <X className="h-3 w-3" />
+            Cancel
+          </button>
+        </div>
+      )}
+
       {/* File preview */}
       {pendingFile && (
         <div className="mb-2 px-1">
@@ -159,7 +221,7 @@ export default function MessageInput({
         {/* Attach */}
         <button
           type="button"
-          disabled={disabled || isUploading}
+          disabled={disabled || isUploading || !!editMessageId}
           onClick={() => fileInputRef.current?.click()}
           className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50 mb-0.5"
         >

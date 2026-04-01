@@ -20,6 +20,15 @@ const messageSchema = new Schema<IMessage>(
         createdAt: { type: Date, default: Date.now },
       },
     ],
+    editHistory: [
+      {
+        content: { type: String, required: true },
+        editedAt: { type: Date, default: Date.now },
+        editedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+      },
+    ],
+    editedAt: { type: Date },
+    editedBy: { type: Schema.Types.ObjectId, ref: "User" },
     deletedFor: [{ type: Schema.Types.ObjectId, ref: "User" }],
     unsent: { type: Boolean, default: false },
   },

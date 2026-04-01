@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Trash2, RotateCcw, MoreHorizontal } from "lucide-react";
+import { Trash2, RotateCcw, MoreHorizontal, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMessages } from "@/hooks/useMessages";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
@@ -11,9 +11,17 @@ interface MessageActionsProps {
   message: Message;
   isMine: boolean;
   onDialogOpenChange?: (open: boolean) => void;
+  canEdit?: boolean;
+  onEdit?: () => void;
 }
 
-export default function MessageActions({ message, isMine, onDialogOpenChange }: MessageActionsProps) {
+export default function MessageActions({
+  message,
+  isMine,
+  onDialogOpenChange,
+  canEdit = false,
+  onEdit,
+}: MessageActionsProps) {
   const [open, setOpen] = useState(false);
   const [confirmUnsend, setConfirmUnsend] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -50,10 +58,22 @@ export default function MessageActions({ message, isMine, onDialogOpenChange }: 
         {open && (
           <div
             className={cn(
-              "absolute z-10 bottom-full mb-1 glass rounded-xl shadow-elevated py-1 min-w-[140px] animate-fade-in",
+              "absolute z-10 bottom-full mb-1 glass rounded-xl shadow-elevated py-1 min-w-35 animate-fade-in",
               isMine ? "right-0" : "left-0"
             )}
           >
+            {canEdit && (
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  onEdit?.();
+                }}
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+              >
+                <Pencil className="w-4 h-4" />
+                Edit
+              </button>
+            )}
             <button
               onClick={() => {
                 setOpen(false);

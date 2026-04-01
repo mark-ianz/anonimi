@@ -70,6 +70,15 @@ const serializeReactions = (
   isUnsent: boolean
 ) => (isUnsent ? [] : (reactions ?? []).map(serializeReaction));
 
+const serializeEditHistory = (
+  history: Array<{ content: string; editedAt: Date; editedBy: Types.ObjectId }> | undefined
+) =>
+  (history ?? []).map((entry) => ({
+    content: entry.content,
+    editedAt: entry.editedAt,
+    editedBy: entry.editedBy?.toString(),
+  }));
+
 const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const getArchivedRecipientIds = async (
@@ -564,6 +573,9 @@ export const getMessages = async (
       readBy: m.readBy.map((r: Types.ObjectId) => r.toString()),
       readByAt: serializeReadByAt(m.readByAt),
       reactions: serializeReactions(m.reactions, m.unsent),
+      editHistory: serializeEditHistory(m.editHistory),
+      editedAt: m.editedAt ?? null,
+      editedBy: m.editedBy?.toString() ?? null,
       unsent: m.unsent,
       unsentAt: m.unsent ? m.updatedAt : null,
       createdAt: m.createdAt,
@@ -1007,6 +1019,9 @@ export const sendMessage = async (
         readBy: message.readBy.map((r: Types.ObjectId) => r.toString()),
         readByAt: serializeReadByAt(message.readByAt),
         reactions: serializeReactions(message.reactions, message.unsent),
+        editHistory: serializeEditHistory(message.editHistory),
+        editedAt: message.editedAt ?? null,
+        editedBy: message.editedBy?.toString() ?? null,
         unsent: message.unsent,
         unsentAt: message.unsent ? message.updatedAt : null,
         createdAt: message.createdAt,
@@ -1096,6 +1111,9 @@ export const sendMessage = async (
       readBy: message.readBy.map((r: Types.ObjectId) => r.toString()),
       readByAt: serializeReadByAt(message.readByAt),
       reactions: serializeReactions(message.reactions, message.unsent),
+      editHistory: serializeEditHistory(message.editHistory),
+      editedAt: message.editedAt ?? null,
+      editedBy: message.editedBy?.toString() ?? null,
       unsent: message.unsent,
       unsentAt: message.unsent ? message.updatedAt : null,
       createdAt: message.createdAt,
@@ -1377,6 +1395,114 @@ export const unsendMessage = async (
   }
 
   return { message: "Message unsent." };
+};
+
+export const editMessage = async (
+  messageId: string,
+  editorId: string,
+  content: string
+) => {
+  const message = await Message.findById(messageId);
+
+  if (!message) {
+    throw new NotFoundError("Message not found");
+  }
+
+  if (message.senderId?.toString() !== editorId) {
+    throw new ForbiddenError("Not the sender of this message");
+  }
+
+  if (message.unsent) {
+    throw new ForbiddenError("Cannot edit an unsent message");
+  }
+
+  if (message.type !== "text") {
+    throw new ForbiddenError("Only text messages can be edited");
+  }
+
+  const hoursSinceSent = (Date.now() - message.createdAt.getTime()) / (1000 * 60 * 60);
+  if (hoursSinceSent > 24) {
+    throw new ForbiddenError("Edit time window expired (24 hours)");
+  }
+
+  const trimmed = content.trim();
+  if (trimmed === (message.content ?? "")) {
+    return {
+      id: message._id.toString(),
+      conversationId: message.conversationId.toString(),
+      senderId: message.senderId?.toString(),
+      type: message.type,
+      content: message.content,
+      mediaUrl: message.mediaUrl,
+      fileName: message.fileName,
+      fileSize: message.fileSize,
+      readBy: message.readBy.map((r: Types.ObjectId) => r.toString()),
+      readByAt: serializeReadByAt(message.readByAt),
+      reactions: serializeReactions(message.reactions, message.unsent),
+      editHistory: serializeEditHistory(message.editHistory),
+      editedAt: message.editedAt ?? null,
+      editedBy: message.editedBy?.toString() ?? null,
+      unsent: message.unsent,
+      unsentAt: message.unsent ? message.updatedAt : null,
+      createdAt: message.createdAt,
+    };
+  }
+
+  const editedAt = new Date();
+  const historyEntry = {
+    content: message.content ?? "",
+    editedAt,
+    editedBy: new Types.ObjectId(editorId),
+  };
+
+  message.editHistory = [...(message.editHistory ?? []), historyEntry];
+  message.content = trimmed;
+  message.editedAt = editedAt;
+  message.editedBy = new Types.ObjectId(editorId);
+  await message.save();
+
+  await Conversation.collection.updateOne(
+    {
+      _id: message.conversationId,
+      "lastMessage.senderId": message.senderId,
+      "lastMessage.timestamp": message.createdAt,
+    },
+    {
+      $set: {
+        "lastMessage.content": trimmed,
+      },
+    }
+  );
+
+  emitToConversation(message.conversationId.toString(), "message:edited", {
+    messageId: message._id.toString(),
+    conversationId: message.conversationId.toString(),
+    content: trimmed,
+    editedAt: editedAt.toISOString(),
+    editedBy: editorId,
+    editHistory: serializeEditHistory(message.editHistory),
+    createdAt: message.createdAt.toISOString(),
+  });
+
+  return {
+    id: message._id.toString(),
+    conversationId: message.conversationId.toString(),
+    senderId: message.senderId?.toString(),
+    type: message.type,
+    content: message.content,
+    mediaUrl: message.mediaUrl,
+    fileName: message.fileName,
+    fileSize: message.fileSize,
+    readBy: message.readBy.map((r: Types.ObjectId) => r.toString()),
+    readByAt: serializeReadByAt(message.readByAt),
+    reactions: serializeReactions(message.reactions, message.unsent),
+    editHistory: serializeEditHistory(message.editHistory),
+    editedAt: message.editedAt ?? null,
+    editedBy: message.editedBy?.toString() ?? null,
+    unsent: message.unsent,
+    unsentAt: message.unsent ? message.updatedAt : null,
+    createdAt: message.createdAt,
+  };
 };
 
 export const markMessagesAsRead = async (

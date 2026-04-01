@@ -32,6 +32,15 @@ export const messageParamsSchema = z.object({
   }),
 });
 
+export const editMessageSchema = z.object({
+  params: z.object({
+    messageId: z.string(),
+  }),
+  body: z.object({
+    content: z.string().trim().min(1).max(2000),
+  }),
+});
+
 export const addReactionSchema = z.object({
   params: z.object({
     messageId: z.string(),

@@ -11,6 +11,12 @@ export interface MessageReaction {
   createdAt: string;
 }
 
+export interface MessageEditHistoryEntry {
+  content: string;
+  editedAt: string;
+  editedBy: string;
+}
+
 export interface Message {
   id: string;
   conversationId: string;
@@ -23,6 +29,9 @@ export interface Message {
   readBy: string[];
   readByAt?: Record<string, string>;
   reactions: MessageReaction[];
+  editHistory?: MessageEditHistoryEntry[];
+  editedAt?: string | null;
+  editedBy?: string | null;
   unsent: boolean;
   unsentAt?: string | null;
   createdAt: string;

@@ -69,6 +69,13 @@ export interface IMessage extends Document {
     emoji: string;
     createdAt: Date;
   }>;
+  editHistory?: Array<{
+    content: string;
+    editedAt: Date;
+    editedBy: Types.ObjectId;
+  }>;
+  editedAt?: Date;
+  editedBy?: Types.ObjectId;
   deletedFor: Types.ObjectId[];
   unsent: boolean;
   createdAt: Date;

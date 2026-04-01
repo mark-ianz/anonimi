@@ -13,7 +13,7 @@ interface ReadReceiptProps {
   participantCount: number;
   conversationType: "private" | "group";
   currentUserId?: string;
-  readByUsersById?: Record<string, { name: string; anonimiId: string }>;
+  readByUsersById?: Record<string, { name?: string; anonimiId?: string }>;
   className?: string;
 }
 

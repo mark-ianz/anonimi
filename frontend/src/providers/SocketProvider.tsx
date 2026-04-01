@@ -15,23 +15,24 @@ import { useTypingStore } from "@/stores/typingStore";
 import type {
   MessageAckPayload,
   MessageReceivePayload,
-  MessageUnsentPayload,
+  MessageReadEventPayload,
   MessageReactionAddedPayload,
   MessageReactionRemovedPayload,
-  MessageReadReceiptPayload,
+  MessageUnsentPayload,
+  MessageEditedPayload,
   TypingUpdatePayload,
   PresenceUpdatePayload,
   ContactRequestPayload,
-  ContactAcceptedPayload,
   ContactRequestCancelledPayload,
-  ContactNicknameUpdatedPayload,
+  ContactAcceptedPayload,
   MessageRequestNewPayload,
   MessageRequestAcceptedPayload,
   NotificationPayload,
+  GroupMemberJoinedPayload,
+  GroupMemberLeftPayload,
+  GroupUpdatedPayload,
+  GroupRoleChangedPayload,
 } from "@/types/socket";
-import type { Message } from "@/types/message";
-import type { Conversation } from "@/types/conversation";
-
 interface SocketContextValue {
   chatSocket: Socket | null;
 }
@@ -367,6 +368,62 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       qc.invalidateQueries({ queryKey: ["conversations"] });
     });
 
+    socket.on("message:edited", (payload: MessageEditedPayload) => {
+      qc.setQueryData(
+        ["messages", payload.conversationId],
+        (old:
+          | {
+              pages: Array<{ data: Message[] }>;
+              pageParams: unknown[];
+            }
+          | undefined) => {
+          if (!old) return old;
+
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              data: page.data.map((message) =>
+                message.id === payload.messageId
+                  ? {
+                      ...message,
+                      content: payload.content,
+                      editedAt: payload.editedAt,
+                      editedBy: payload.editedBy,
+                      editHistory: payload.editHistory,
+                    }
+                  : message
+              ),
+            })),
+          };
+        }
+      );
+
+      updateMessage(payload.conversationId, payload.messageId, {
+        content: payload.content,
+        editedAt: payload.editedAt,
+        editedBy: payload.editedBy,
+        editHistory: payload.editHistory,
+      });
+
+      const { conversations } = useChatStore.getState();
+      const conv = conversations.find((c) => c.id === payload.conversationId);
+      if (
+        conv?.lastMessage &&
+        conv.lastMessage.senderId === payload.editedBy &&
+        conv.lastMessage.timestamp === payload.createdAt
+      ) {
+        updateConversationLastMessage(payload.conversationId, {
+          content: payload.content,
+          senderId: conv.lastMessage.senderId,
+          type: conv.lastMessage.type,
+          timestamp: conv.lastMessage.timestamp,
+        });
+      }
+
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+    });
+
     const applyReactionUpdate = (
       conversationId: string,
       messageId: string,
@@ -586,6 +643,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       socket.off("message:ack");
       socket.off("message:receive");
       socket.off("message:unsent");
+      socket.off("message:edited");
       socket.off("message:reaction:add");
       socket.off("message:reaction:remove");
       socket.off("message:read");

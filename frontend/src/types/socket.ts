@@ -62,6 +62,20 @@ export interface MessageUnsentPayload {
   unsentAt?: string;
 }
 
+export interface MessageEditedPayload {
+  messageId: string;
+  conversationId: string;
+  content: string;
+  editedAt: string;
+  editedBy: string;
+  createdAt: string;
+  editHistory: Array<{
+    content: string;
+    editedAt: string;
+    editedBy: string;
+  }>;
+}
+
 export interface MessageReactionAddedPayload {
   conversationId: string;
   messageId: string;

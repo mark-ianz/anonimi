@@ -12,7 +12,12 @@ import api from "@/lib/api";
 import { getChatSocket } from "@/lib/socket";
 import { useChatStore } from "@/stores/chatStore";
 import { useAuthStore } from "@/stores/authStore";
-import type { Message, SendMessagePayload, ReactionEmoji, MessageReaction } from "@/types/message";
+import type {
+  Message,
+  SendMessagePayload,
+  ReactionEmoji,
+  MessageReaction,
+} from "@/types/message";
 import { MESSAGES_PER_PAGE } from "@/lib/constants";
 
 export function useMessages(conversationId: string | null) {
@@ -26,6 +31,19 @@ export function useMessages(conversationId: string | null) {
     updateMessage,
     updateConversationLastMessage,
   } = useChatStore();
+
+  const shouldUpdateLastMessage = useCallback(
+    (message: Pick<Message, "conversationId" | "senderId" | "createdAt">) => {
+      const { conversations } = useChatStore.getState();
+      const conv = conversations.find((c) => c.id === message.conversationId);
+      if (!conv?.lastMessage) return false;
+      return (
+        conv.lastMessage.senderId === message.senderId &&
+        conv.lastMessage.timestamp === message.createdAt
+      );
+    },
+    []
+  );
 
   const applyReactionUpdate = useCallback(
     (
@@ -228,6 +246,48 @@ export function useMessages(conversationId: string | null) {
     },
   });
 
+  const editMessageMutation = useMutation({
+    mutationFn: async (payload: { messageId: string; content: string }) => {
+      const res = await api.patch(`/messages/${payload.messageId}/edit`, {
+        content: payload.content,
+      });
+      return res.data.data as Message;
+    },
+    onSuccess: (updated) => {
+      if (!conversationId) return;
+      qc.setQueryData(
+        ["messages", conversationId],
+        (old: { pages: { data: Message[] }[] } | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((p) => ({
+              ...p,
+              data: p.data.map((m) => (m.id === updated.id ? updated : m)),
+            })),
+          };
+        }
+      );
+
+      updateMessage(conversationId, updated.id, updated);
+
+      if (shouldUpdateLastMessage(updated)) {
+        updateConversationLastMessage(conversationId, {
+          content: updated.content,
+          senderId: updated.senderId,
+          type: updated.type,
+          timestamp: updated.createdAt,
+        });
+      }
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { error?: { message?: string } } } })
+          ?.response?.data?.error?.message ?? "Failed to edit message.";
+      toast.error(msg);
+    },
+  });
+
   const addReactionMutation = useMutation({
     mutationFn: async (payload: { messageId: string; emoji: ReactionEmoji }) => {
       const res = await api.post(`/messages/${payload.messageId}/reactions`, {
@@ -292,6 +352,9 @@ export function useMessages(conversationId: string | null) {
     sendMessage,
     deleteForMe: deleteForMeMutation.mutate,
     unsend: unsendMutation.mutate,
+    editMessage: editMessageMutation.mutate,
+    editMessageAsync: editMessageMutation.mutateAsync,
+    isEditingMessage: editMessageMutation.isPending,
     addReaction: addReactionMutation.mutate,
     removeReaction: removeReactionMutation.mutate,
   };

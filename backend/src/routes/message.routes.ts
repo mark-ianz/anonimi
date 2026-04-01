@@ -7,6 +7,7 @@ import {
 	searchMessagesSchema,
 	sendMessageSchema,
 	messageParamsSchema,
+	editMessageSchema,
 	addReactionSchema,
 	removeReactionSchema,
 } from "../validators/message.validator";
@@ -21,6 +22,12 @@ router.get(
 );
 router.get("/", authenticate, validate(getMessagesSchema), messageController.getMessages);
 router.post("/", authenticate, validate(sendMessageSchema), messageController.sendMessage);
+router.patch(
+	"/:messageId/edit",
+	authenticate,
+	validate(editMessageSchema),
+	messageController.editMessage
+);
 router.delete("/:messageId/for-me", authenticate, validate(messageParamsSchema), messageController.deleteMessageForMe);
 router.post("/:messageId/unsend", authenticate, validate(messageParamsSchema), messageController.unsendMessage);
 router.post(

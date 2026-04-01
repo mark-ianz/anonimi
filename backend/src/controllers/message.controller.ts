@@ -141,6 +141,25 @@ export const sendMessage = async (
   }
 };
 
+export const editMessage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const messageId = req.params.messageId as string;
+    const { content } = req.body;
+    const result = await chatService.editMessage(
+      messageId,
+      req.user!._id.toString(),
+      content
+    );
+    apiSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const deleteMessageForMe = async (
   req: Request,
   res: Response,
@@ -250,7 +269,7 @@ export const addMessageReaction = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { messageId } = req.params;
+    const messageId = req.params.messageId as string;
     const { emoji } = req.body;
     const result = await chatService.addMessageReaction(
       messageId,
@@ -269,7 +288,8 @@ export const removeMessageReaction = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { messageId, reactionId } = req.params;
+    const messageId = req.params.messageId as string;
+    const reactionId = req.params.reactionId as string;
     const result = await chatService.removeMessageReaction(
       messageId,
       reactionId,

@@ -43,6 +43,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
   const [reportReason, setReportReason] = useState("");
   const [reportDescription, setReportDescription] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
+  const [editTarget, setEditTarget] = useState<{ id: string; content: string } | null>(null);
 
   const isGroup = conversation.type === "group";
   const isGroupDisbanded = isGroup && !!conversation.group?.disbandedAt;
@@ -70,6 +71,18 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
   const myBlockId = conversation.participant?.blockId ?? null;
   // Recipient can't type until they accept; sender can always type
   const isInputDisabled = isRecipient || isBlockedByMe || isGroupDisbanded;
+
+  const handleEditStart = (message: { id: string; content: string | null }) => {
+    setEditTarget({ id: message.id, content: message.content ?? "" });
+  };
+
+  const handleEditCancel = () => {
+    setEditTarget(null);
+  };
+
+  const handleEditSaved = () => {
+    setEditTarget(null);
+  };
 
   useEffect(() => {
     setActiveConversation(conversation.id);
@@ -102,6 +115,10 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
       socket.emit("conversation:active", { conversationId: null });
     };
   }, [conversation.id, setActiveConversation, clearUnread, qc]);
+
+  useEffect(() => {
+    setEditTarget(null);
+  }, [conversation.id]);
 
   // Listen for message-request:accepted event (shown to the sender when recipient accepts)
   useEffect(() => {
@@ -688,7 +705,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
       )}
 
       {/* Message list */}
-      <MessageList conversation={conversation} />
+      <MessageList conversation={conversation} onEditStart={handleEditStart} />
 
       {/* Input */}
       <div className="mt-4">
@@ -696,6 +713,10 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
           conversationId={conversation.id}
           disabled={isInputDisabled}
           onMessageSent={handleMessageSent}
+          editMessageId={editTarget?.id ?? null}
+          editContent={editTarget?.content ?? ""}
+          onCancelEdit={handleEditCancel}
+          onEditSaved={handleEditSaved}
           placeholder={
             isBlockedByMe
               ? "Unblock this user to send messages..."

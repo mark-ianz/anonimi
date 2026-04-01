@@ -11,6 +11,7 @@ import { getChatSocket } from "@/lib/socket";
 import api from "@/lib/api";
 import type { Conversation } from "@/types/conversation";
 import type { GroupMember } from "@/types/group";
+import type { Message } from "@/types/message";
 import MessageBubble from "./MessageBubble";
 import TypingIndicator from "./TypingIndicator";
 import InfiniteScrollSentinel from "@/components/shared/InfiniteScroll";
@@ -22,6 +23,7 @@ type TimestampBubblePosition = "single" | "first" | "middle" | "last";
 
 interface MessageListProps {
   conversation: Conversation;
+  onEditStart?: (message: Message) => void;
 }
 
 function shouldShowDateDivider(prev: string | undefined, curr: string): boolean {
@@ -46,7 +48,7 @@ function getTimeBucketKey(value: string): number {
   return Math.floor(time / (15 * 60 * 1000));
 }
 
-export default function MessageList({ conversation }: MessageListProps) {
+export default function MessageList({ conversation, onEditStart }: MessageListProps) {
   const { user } = useAuthStore();
   const { clearUnread } = useChatStore();
   const { messages, isLoading, isFetchingMore, hasMore, fetchMore } = useMessages(conversation.id);
@@ -380,6 +382,7 @@ export default function MessageList({ conversation }: MessageListProps) {
                 showReadReceipt={showReadReceipt}
                 timestampBubblePosition={timestampBubblePosition}
                 isHighlighted={highlightMessageId === message.id}
+                onEditStart={onEditStart}
               />
             </div>
           );

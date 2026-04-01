@@ -1168,6 +1168,55 @@ Block behavior in private chats:
 
 ---
 
+### PATCH /api/messages/:messageId/edit
+
+Edit your own message (text messages only). Keeps edit history visible to all participants.
+
+**Constraints:**
+- Sender only
+- Text messages only
+- Must be within 24 hours of creation
+- Unsent messages cannot be edited
+
+**Request Body:**
+```json
+{
+  "content": "This message was edited for testing!"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "60d5ecb54b24a1001c8e4b52",
+    "conversationId": "60d5ecb54b24a1001c8e4b3f",
+    "senderId": "60d5ecb54b24a1001c8e4b3a",
+    "type": "text",
+    "content": "This message was edited for testing!",
+    "readBy": ["60d5ecb54b24a1001c8e4b3a"],
+    "unsent": false,
+    "editedAt": "2026-04-02T11:12:00Z",
+    "editedBy": "60d5ecb54b24a1001c8e4b3a",
+    "editHistory": [
+      {
+        "content": "Original message",
+        "editedAt": "2026-04-02T11:12:00Z",
+        "editedBy": "60d5ecb54b24a1001c8e4b3a"
+      }
+    ],
+    "createdAt": "2026-04-02T10:55:00Z"
+  }
+}
+```
+
+**Errors:**
+- `403` — Not the sender / outside edit window / unsent / non-text
+- `404` — Message not found
+
+---
+
 ### DELETE /api/messages/:messageId/for-me
 
 Delete a message for the authenticated user only.

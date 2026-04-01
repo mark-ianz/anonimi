@@ -520,6 +520,7 @@ The default view when entering the application.
 - Image/file preview inline
 - Context menu on messages: Copy, Delete for me, Unsend (if own message within time limit)
 - "This message was unsent" placeholder for unsent messages
+- Inline edit for own text messages (24-hour window). "Edited" label appears above the bubble and opens edit history.
 
 **Nickname actions in chat header menu (private):**
 - `Set nickname` — sets how **you** see the other user.
