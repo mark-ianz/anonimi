@@ -244,7 +244,7 @@ The edit option will appear on the 3 dots beside the message, the options now wi
 - Delete for me
 - Unsend
 
---
+-- Done
 
 Receiving a message or typing indicator behaviour updated.
 
@@ -259,7 +259,7 @@ The only scenario that I have to scroll down to see is that if I'm back reading 
 Additional Feature:
 If I'm actively scrolling through the conversation and someone messaged on that conversation, I should see a little pop up inside the conversation that they sent a message and if I clicked it, it will scroll me down to the very bottom to see their message.
 
---
+-- Done
 On the internet status. Sometimes it just stays on Disconnected or Reconnecting, my web app is not even really trying to reconnect. I have to manually refresh to fix it.
 
 --
