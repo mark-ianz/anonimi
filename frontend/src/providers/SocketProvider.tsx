@@ -46,7 +46,7 @@ export function useSocketContext() {
 export function SocketProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
-  const { setChatStatus } = useSocketStore();
+  const { setChatStatus, setConnectedFeedbackUntil } = useSocketStore();
   const qc = useQueryClient();
   const {
     replaceTempMessage,
@@ -59,6 +59,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const { setPresence } = usePresenceStore();
   const { setTyping } = useTypingStore();
   const socketRef = useRef<Socket | null>(null);
+  const hadOfflineRef = useRef(false);
 
   const baseTitleRef = useRef("anonimi - Real-time Chat");
   const [contactRequestUnread, setContactRequestUnread] = useState(0);
@@ -123,9 +124,46 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     setChatStatus("connecting");
     socket.connect();
 
-    socket.on("connect", () => setChatStatus("connected"));
-    socket.on("disconnect", () => setChatStatus("disconnected"));
-    socket.on("connect_error", () => setChatStatus("error"));
+    const handleConnect = () => {
+      setChatStatus("connected");
+      if (hadOfflineRef.current) {
+        setConnectedFeedbackUntil(Date.now() + 3500);
+        hadOfflineRef.current = false;
+      }
+    };
+
+    const handleDisconnect = () => {
+      hadOfflineRef.current = true;
+      setChatStatus("disconnected");
+    };
+
+    const handleConnectError = () => setChatStatus("error");
+    const handleReconnectAttempt = () => setChatStatus("reconnecting");
+    const handleReconnect = () => setChatStatus("connected");
+    const handleReconnectError = () => setChatStatus("error");
+    const handleReconnectFailed = () => setChatStatus("error");
+
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
+    socket.on("connect_error", handleConnectError);
+    socket.io.on("reconnect_attempt", handleReconnectAttempt);
+    socket.io.on("reconnect", handleReconnect);
+    socket.io.on("reconnect_error", handleReconnectError);
+    socket.io.on("reconnect_failed", handleReconnectFailed);
+
+    const handleOnline = () => {
+      if (!socket.connected) {
+        setChatStatus("reconnecting");
+        socket.connect();
+      }
+    };
+
+    const handleOffline = () => {
+      setChatStatus("disconnected");
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     // Message ack — replace optimistic message, preserving its original content/type/senderId
     socket.on("message:ack", (payload: MessageAckPayload) => {
@@ -640,9 +678,15 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => {
-      socket.off("connect");
-      socket.off("disconnect");
-      socket.off("connect_error");
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
+      socket.off("connect_error", handleConnectError);
+      socket.io.off("reconnect_attempt", handleReconnectAttempt);
+      socket.io.off("reconnect", handleReconnect);
+      socket.io.off("reconnect_error", handleReconnectError);
+      socket.io.off("reconnect_failed", handleReconnectFailed);
       socket.off("message:ack");
       socket.off("message:receive");
       socket.off("message:unsent");
@@ -663,6 +707,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   }, [
     isAuthenticated,
     setChatStatus,
+    setConnectedFeedbackUntil,
     replaceTempMessage,
     addMessage,
     updateMessage,
