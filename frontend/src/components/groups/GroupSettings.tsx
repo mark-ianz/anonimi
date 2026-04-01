@@ -8,6 +8,7 @@ import type { Group } from "@/types/group";
 import { cn } from "@/lib/utils";
 import { Camera, Save, Link as LinkIcon, QrCode, Copy, Check, X, AlertCircle, LogOut, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import GroupAvatar from "@/components/shared/GroupAvatar";
 
 interface GroupSettingsProps {
   group: Group;
@@ -15,7 +16,7 @@ interface GroupSettingsProps {
 
 export default function GroupSettings({ group }: GroupSettingsProps) {
   const router = useRouter();
-  const { updateGroup, inviteLinks, createInviteLink, revokeInviteLink, joinRequests, decideJoinRequest, leaveGroup, disbandGroup, isLeaving, isDisbanding } = useGroup(group.id);
+  const { updateGroup, inviteLinks, createInviteLink, revokeInviteLink, joinRequests, decideJoinRequest, leaveGroup, disbandGroup, isLeaving, isDisbanding, members } = useGroup(group.id);
   const { upload, isUploading } = useMediaUpload();
   const canManageSettings = group.myRole === "owner" || group.myRole === "admin";
   const canEditGroupProfile =
@@ -51,6 +52,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
     { value: 10080, label: "7d" },
   ];
   const expiryIndex = expiryOptions.findIndex((o) => o.value === selectedExpiry);
+  const fallbackProfileImages = members.slice(0, 3).map((member) => member.profileImage ?? null);
 
   function handleSave() {
     if (!canEditGroupProfile && !canManageSettings) return;
@@ -118,14 +120,15 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
       {/* Avatar */}
       <div className="flex justify-center">
         <label className={cn("relative group", canEditGroupProfile ? "cursor-pointer" : "cursor-not-allowed opacity-60")}>
-          <div className="w-20 h-20 rounded-2xl overflow-hidden bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-2xl font-medium">
-            {group.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={group.image} alt={group.name} className="w-full h-full object-cover" />
-            ) : (
-              group.name.slice(0, 2).toUpperCase()
-            )}
-          </div>
+          <GroupAvatar
+            imageUrl={group.image}
+            fallbackProfileImages={fallbackProfileImages}
+            name={group.name}
+            alt={group.name}
+            className="w-20 h-20"
+            roundedClassName="rounded-2xl"
+            textClassName="text-2xl"
+          />
           <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity">
             {isUploading ? (
               <span className="w-5 h-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
