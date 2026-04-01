@@ -4,7 +4,7 @@ export const createGroupSchema = z.object({
   body: z.object({
     name: z.string().max(100).optional(),
     description: z.string().max(500).optional(),
-    image: z.string().optional(),
+    image: z.string().nullable().optional(),
     settings: z
       .object({
         joinRequestEnabled: z.boolean().optional(),
@@ -26,7 +26,7 @@ export const updateGroupSchema = z.object({
   body: z.object({
     name: z.string().min(1).max(100).optional(),
     description: z.string().max(500).optional(),
-    image: z.string().optional(),
+    image: z.string().nullable().optional(),
     settings: z
       .object({
         joinRequestEnabled: z.boolean().optional(),

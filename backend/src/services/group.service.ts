@@ -132,7 +132,7 @@ export const createGroup = async (
   ownerId: string,
   name: string | undefined,
   memberEchoIds: string[],
-  image?: string,
+  image?: string | null,
   description?: string,
   settings?: {
     joinRequestEnabled: boolean;
@@ -345,7 +345,7 @@ export const updateGroup = async (
   updates: {
     name?: string;
     description?: string;
-    image?: string;
+    image?: string | null;
     settings?: {
       joinRequestEnabled?: boolean;
       nicknameEditPolicy?: "admins_only" | "all_members";
