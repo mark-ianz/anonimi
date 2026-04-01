@@ -77,6 +77,17 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
   const expiryIndex = expiryOptions.findIndex((o) => o.value === selectedExpiry);
   const fallbackProfileImages = members.slice(0, 3).map((member) => member.profileImage ?? null);
   const displayedGroupImage = pendingGroupImageRemoval ? null : (groupImagePreviewUrl ?? group.image ?? null);
+  const hasGroupProfileChanges =
+    name.trim() !== group.name.trim() ||
+    description.trim() !== (group.description ?? "").trim() ||
+    !!pendingGroupImage ||
+    pendingGroupImageRemoval;
+  const hasGroupSettingsChanges =
+    canManageSettings &&
+    (joinRequestEnabled !== group.settings.joinRequestEnabled ||
+      nicknameEditPolicy !== (group.settings.nicknameEditPolicy ?? "all_members") ||
+      groupProfileEditPolicy !== (group.settings.groupProfileEditPolicy ?? "admins_only"));
+  const hasUnsavedChanges = hasGroupProfileChanges || hasGroupSettingsChanges;
 
   useEffect(() => {
     return () => {
@@ -460,7 +471,13 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
       {canEditGroupProfile && (
         <button
           onClick={handleSave}
-          className="w-full h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors"
+          disabled={!hasUnsavedChanges || isUploading}
+          className={cn(
+            "w-full h-10 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors",
+            hasUnsavedChanges && !isUploading
+              ? "bg-primary text-primary-foreground hover:bg-primary/90"
+              : "bg-muted text-muted-foreground cursor-not-allowed"
+          )}
         >
           <Save className="w-4 h-4" />
           Save changes
