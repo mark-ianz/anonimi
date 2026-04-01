@@ -1,6 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import { apiSuccess } from "../utils/apiResponse";
 
+const resolveFolder = (category: unknown): "avatars" | "groups" | "messages" => {
+  if (category === "avatar") return "avatars";
+  if (category === "group") return "groups";
+  return "messages";
+};
+
 export const uploadMedia = async (
   req: Request,
   res: Response,
@@ -14,8 +20,8 @@ export const uploadMedia = async (
       });
     }
 
-    const category = req.body.category || "message";
-    const url = `/uploads/${category}s/${req.file.filename}`;
+    const folder = resolveFolder(req.body.category);
+    const url = `/uploads/${folder}/${req.file.filename}`;
 
     apiSuccess(
       res,

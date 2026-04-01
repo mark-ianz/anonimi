@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { usePresence } from "@/hooks/usePresence";
 import api from "@/lib/api";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 import type { Contact } from "@/types/contact";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
 
@@ -97,7 +98,7 @@ export default function ContactItem({ contact, onRemove }: ContactItemProps) {
           <div className="w-11 h-11 rounded-xl overflow-hidden bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-medium text-sm">
             {contact.profileImage ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={contact.profileImage} alt={contact.username} className="w-full h-full object-cover" />
+              <img src={resolveMediaUrl(contact.profileImage)} alt={contact.username} className="w-full h-full object-cover" />
             ) : (
               contact.username[0].toUpperCase()
             )}

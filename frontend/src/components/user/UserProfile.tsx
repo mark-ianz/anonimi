@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import OnlineIndicator from "./OnlineIndicator";
 import DateDisplay from "@/components/shared/DateDisplay";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 
 interface UserProfileProps {
   echoId: string;
@@ -52,10 +53,10 @@ export default function UserProfile({ echoId }: UserProfileProps) {
       {/* Avatar */}
       <div className="flex justify-center">
         <div className="relative">
-          <div className="w-24 h-24 rounded-3xl overflow-hidden bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-3xl font-display font-semibold">
+          <div className="w-24 h-24 rounded-3xl overflow-hidden bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-3xl font-display font-semibold">
             {user.profileImage ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.profileImage} alt={user.username} className="w-full h-full object-cover" />
+              <img src={resolveMediaUrl(user.profileImage)} alt={user.username} className="w-full h-full object-cover" />
             ) : (
               user.username[0].toUpperCase()
             )}

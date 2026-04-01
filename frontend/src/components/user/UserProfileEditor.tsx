@@ -13,9 +13,15 @@ export default function UserProfileEditor() {
   const [phone, setPhone] = useState(user?.phone ?? "");
   const canEditUsername = user?.usernameCanEdit ?? false;
 
+  const trimmedUsername = username.trim();
+  const trimmedPhone = phone.trim();
+  const hasChanges =
+    (trimmedUsername && trimmedUsername !== (user?.username ?? "")) ||
+    trimmedPhone !== (user?.phone ?? "");
+
   function handleSave() {
     const patch: Partial<Pick<AuthUser, "username" | "phone">> = {};
-    const nextUsername = username.trim();
+    const nextUsername = trimmedUsername;
 
     if (nextUsername && nextUsername !== user?.username) {
       if (nextUsername.length < 3 || nextUsername.length > 30) {
@@ -31,8 +37,14 @@ export default function UserProfileEditor() {
       patch.username = nextUsername;
     }
 
-    if (phone.trim() !== (user?.phone ?? "")) patch.phone = phone.trim() || undefined;
-    if (Object.keys(patch).length > 0) updateProfile(patch);
+    if (trimmedPhone !== (user?.phone ?? "")) patch.phone = trimmedPhone || undefined;
+
+    if (Object.keys(patch).length === 0) {
+      toast.info("No changes to save.");
+      return;
+    }
+
+    updateProfile(patch);
   }
 
   return (
@@ -96,8 +108,12 @@ export default function UserProfileEditor() {
         ) : (
           <Save className="w-4 h-4" />
         )}
-        Save profile
+        {isUpdatingProfile ? "Saving..." : "Save profile"}
       </button>
+
+      {!isUpdatingProfile && !hasChanges && (
+        <p className="text-xs text-muted-foreground text-center">No unsaved changes.</p>
+      )}
     </div>
   );
 }

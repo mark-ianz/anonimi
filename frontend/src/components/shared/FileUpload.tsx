@@ -3,7 +3,7 @@
 import { useRef, useCallback } from "react";
 import { Paperclip, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE, MAX_IMAGE_SIZE, ALLOWED_IMAGE_TYPES } from "@/lib/constants";
+import { buildAcceptValue, validateUploadFile } from "@/lib/uploadPolicy";
 
 interface FileUploadProps {
   onFile: (file: File) => void;
@@ -27,13 +27,8 @@ export default function FileUpload({
       const file = e.target.files?.[0];
       if (!file) return;
 
-      const isImage = ALLOWED_IMAGE_TYPES.includes(file.type);
-      const maxSize = isImage ? MAX_IMAGE_SIZE : MAX_FILE_SIZE;
-
-      if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-        return;
-      }
-      if (file.size > maxSize) {
+      const validation = validateUploadFile(file, { category: "message", source: "file" });
+      if (!validation.ok) {
         return;
       }
 
@@ -48,7 +43,7 @@ export default function FileUpload({
       <input
         ref={inputRef}
         type="file"
-        accept={accept ?? ALLOWED_FILE_TYPES.join(",")}
+        accept={accept ?? buildAcceptValue()}
         onChange={handleChange}
         className="hidden"
         disabled={disabled}

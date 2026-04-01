@@ -9,6 +9,7 @@ import api from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { disconnectSockets } from "@/lib/socket";
 import type { AuthUser } from "@/types/user";
+import type { UploadSource } from "@/lib/uploadPolicy";
 
 export function useAuth() {
   const router = useRouter();
@@ -50,9 +51,10 @@ export function useAuth() {
   });
 
   const updateAvatarMutation = useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: async ({ file, source }: { file: File; source?: UploadSource }) => {
       const form = new FormData();
       form.append("avatar", file);
+      form.append("source", source ?? "file");
       const res = await api.post("/auth/me/avatar", form, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -100,7 +102,7 @@ export function useAuth() {
     isAuthenticated,
     isLoading: isLoading || profileQuery.isLoading,
     logout,
-    updateAvatar: updateAvatarMutation.mutate,
+    updateAvatar: (file: File, source?: UploadSource) => updateAvatarMutation.mutate({ file, source }),
     updateProfile: updateProfileMutation.mutate,
     isUpdatingAvatar: updateAvatarMutation.isPending,
     isUpdatingProfile: updateProfileMutation.isPending,

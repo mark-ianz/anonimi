@@ -3,12 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import api from "@/lib/api";
-import {
-  MAX_IMAGE_SIZE,
-  MAX_FILE_SIZE,
-  ALLOWED_IMAGE_TYPES,
-  ALLOWED_FILE_TYPES,
-} from "@/lib/constants";
+import { UploadSource, validateUploadFile } from "@/lib/uploadPolicy";
 
 export type UploadCategory = "avatar" | "message" | "group";
 
@@ -25,22 +20,23 @@ export function useMediaUpload() {
   const abortRef = useRef<AbortController | null>(null);
 
   const upload = useCallback(
-    async (file: File, category: UploadCategory): Promise<UploadResult | null> => {
-      const isImage = ALLOWED_IMAGE_TYPES.includes(file.type);
-      const maxSize = isImage ? MAX_IMAGE_SIZE : MAX_FILE_SIZE;
+    async (
+      file: File,
+      category: UploadCategory,
+      options?: { source?: UploadSource }
+    ): Promise<UploadResult | null> => {
+      const source = options?.source ?? "file";
+      const validation = validateUploadFile(file, { category, source });
 
-      if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-        toast.error("File type not allowed.");
-        return null;
-      }
-      if (file.size > maxSize) {
-        toast.error(`File too large. Max ${isImage ? "10" : "25"} MB.`);
+      if (!validation.ok) {
+        toast.error(validation.error ?? "File type not allowed.");
         return null;
       }
 
       const form = new FormData();
       form.append("file", file);
       form.append("category", category);
+      form.append("source", source);
 
       abortRef.current = new AbortController();
       setIsUploading(true);

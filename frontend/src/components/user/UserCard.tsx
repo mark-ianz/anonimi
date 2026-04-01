@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { UserPlus, MessageCircle } from "lucide-react";
 import type { SearchUser, PublicUser } from "@/types/user";
 import OnlineIndicator from "./OnlineIndicator";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 
 interface UserCardProps {
   user: SearchUser | PublicUser;
@@ -45,7 +46,7 @@ export default function UserCard({
         <div className="w-11 h-11 rounded-xl overflow-hidden bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-medium text-sm">
           {user.profileImage ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.profileImage} alt={user.username} className="w-full h-full object-cover" />
+            <img src={resolveMediaUrl(user.profileImage)} alt={user.username} className="w-full h-full object-cover" />
           ) : (
             user.username[0].toUpperCase()
           )}

@@ -3,7 +3,7 @@ import * as authController from "../controllers/auth.controller";
 import { authenticate } from "../middleware/auth.middleware";
 import { validate } from "../middleware/validate.middleware";
 import { authLimiter } from "../middleware/rateLimiter.middleware";
-import { upload } from "../middleware/upload.middleware";
+import { uploadSingle } from "../middleware/upload.middleware";
 import {
   registerSchema,
   verifyEmailSchema,
@@ -35,6 +35,6 @@ router.post("/logout", authenticate, validate(logoutSchema), authController.logo
 
 router.get("/me", authenticate, authController.getProfile);
 router.patch("/me", authenticate, validate(updateProfileSchema), authController.updateProfile);
-router.post("/me/avatar", authenticate, upload.single("avatar"), authController.updateAvatar);
+router.post("/me/avatar", authenticate, uploadSingle("avatar", "avatar"), authController.updateAvatar);
 
 export default router;

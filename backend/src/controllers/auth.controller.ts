@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import path from "path";
 import * as authService from "../services/auth.service";
 import { apiSuccess, apiError } from "../utils/apiResponse";
 
@@ -212,7 +213,16 @@ export const updateAvatar = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const profileImage = `/uploads/avatars/${req.file?.filename}`;
+    if (!req.file) {
+      res.status(400).json({
+        success: false,
+        error: { code: "NO_FILE", message: "No file uploaded" },
+      });
+      return;
+    }
+
+    const parentFolder = path.basename(path.dirname(req.file.path));
+    const profileImage = `/uploads/${parentFolder}/${req.file.filename}`;
     const result = await authService.updateAvatar(
       req.user!._id.toString(),
       profileImage

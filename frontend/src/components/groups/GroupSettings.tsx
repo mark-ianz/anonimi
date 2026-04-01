@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useGroup } from "@/hooks/useGroups";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
@@ -41,6 +41,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const [showDisbandConfirmModal, setShowDisbandConfirmModal] = useState(false);
   const [disbandConfirmText, setDisbandConfirmText] = useState("");
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const expiryOptions: Array<{ value: 30 | 60 | 360 | 1440 | 10080; label: string }> = [
     { value: 30, label: "30m" },
@@ -78,11 +79,14 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
     updateGroup(payload);
   }
 
-  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleImageChange(
+    e: React.ChangeEvent<HTMLInputElement>,
+    source: "file" | "camera" = "file"
+  ) {
     if (!canEditGroupProfile) return;
     const file = e.target.files?.[0];
     if (!file) return;
-    const result = await upload(file, "group");
+    const result = await upload(file, "group", { source });
     if (result) {
       updateGroup({ image: result.url });
     }
@@ -129,7 +133,35 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
               <Camera className="w-5 h-5 text-white" />
             )}
           </div>
-          <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} disabled={!canEditGroupProfile} />
+          <button
+            type="button"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              cameraInputRef.current?.click();
+            }}
+            className="absolute -bottom-1 -right-1 z-10 h-7 w-7 rounded-full border border-border/60 bg-background/90 text-foreground flex items-center justify-center shadow-sm hover:bg-muted"
+            aria-label="Take group photo"
+            disabled={!canEditGroupProfile || isUploading}
+          >
+            <Camera className="h-3.5 w-3.5" />
+          </button>
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/jpg,image/gif"
+            className="hidden"
+            onChange={(event) => handleImageChange(event, "file")}
+            disabled={!canEditGroupProfile}
+          />
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/jpg,image/gif"
+            capture="environment"
+            className="hidden"
+            onChange={(event) => handleImageChange(event, "camera")}
+            disabled={!canEditGroupProfile}
+          />
         </label>
       </div>
 

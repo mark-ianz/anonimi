@@ -11,6 +11,7 @@ import LoadingSkeleton from "@/components/shared/LoadingSkeleton";
 import type { Group, GroupMember } from "@/types/group";
 import { Search, UserPlus } from "lucide-react";
 import api from "@/lib/api";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 
 interface GroupMemberListProps {
   groupId: string;
@@ -180,7 +181,7 @@ function AddMembersModal({
                 <div className="w-9 h-9 rounded-lg overflow-hidden bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-xs font-medium shrink-0">
                   {contact.profileImage ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={contact.profileImage} alt={contact.username} className="w-full h-full object-cover" />
+                    <img src={resolveMediaUrl(contact.profileImage)} alt={contact.username} className="w-full h-full object-cover" />
                   ) : (
                     contact.username[0]?.toUpperCase() ?? "U"
                   )}

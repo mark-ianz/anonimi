@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Shield, Crown, MoreVertical, UserMinus, VolumeX, Volume2, User, MessageCircle, Pencil, ShieldBan } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 import type { GroupMember, GroupRole } from "@/types/group";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
 
@@ -93,7 +94,7 @@ export default function GroupMemberItem({
         <div className="w-10 h-10 rounded-xl overflow-hidden bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-sm font-medium shrink-0">
           {member.profileImage ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={member.profileImage} alt={member.username} className="w-full h-full object-cover" />
+            <img src={resolveMediaUrl(member.profileImage)} alt={member.username} className="w-full h-full object-cover" />
           ) : (
             member.username[0].toUpperCase()
           )}

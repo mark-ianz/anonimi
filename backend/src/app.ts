@@ -1,7 +1,9 @@
 import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
+import path from "path";
 import routes from "./routes/index";
 import { errorHandler } from "./middleware/errorHandler.middleware";
+import { env } from "./config/env";
 
 export const createApp = (): Express => {
   const app = express();
@@ -12,6 +14,22 @@ export const createApp = (): Express => {
     origin: process.env.CORS_ORIGIN || "http://localhost:3000",
     credentials: true,
   }));
+
+  app.use(
+    "/uploads",
+    express.static(path.resolve(env.UPLOAD_DIR), {
+      setHeaders: (res, filePath) => {
+        res.setHeader("X-Content-Type-Options", "nosniff");
+
+        const extension = path.extname(filePath).toLowerCase();
+        if (extension === ".png" || extension === ".jpg" || extension === ".jpeg" || extension === ".gif") {
+          res.setHeader("Content-Disposition", "inline");
+        } else {
+          res.setHeader("Content-Disposition", "attachment");
+        }
+      },
+    })
+  );
 
   app.use("/api", routes);
 

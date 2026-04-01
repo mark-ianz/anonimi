@@ -3,6 +3,7 @@
 import type { Message } from "@/types/message";
 import { File, Music, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 
 interface MediaPreviewProps {
   message: Message;
@@ -17,13 +18,14 @@ function formatBytes(bytes: number): string {
 
 export default function MediaPreview({ message, className }: MediaPreviewProps) {
   if (!message.mediaUrl) return null;
+  const mediaUrl = resolveMediaUrl(message.mediaUrl);
 
   if (message.type === "image") {
     return (
-      <a href={message.mediaUrl} target="_blank" rel="noopener noreferrer" className="block mb-1">
+      <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="block mb-1">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={message.mediaUrl}
+          src={mediaUrl}
           alt={message.fileName ?? "Image"}
           className={cn(
             "max-w-full max-h-64 rounded-xl object-cover cursor-pointer hover:opacity-95 transition-opacity",
@@ -38,7 +40,7 @@ export default function MediaPreview({ message, className }: MediaPreviewProps) 
     return (
       <div className="mb-1">
         <video
-          src={message.mediaUrl}
+          src={mediaUrl}
           controls
           className={cn("max-w-full max-h-48 rounded-xl", className)}
         />
@@ -48,11 +50,11 @@ export default function MediaPreview({ message, className }: MediaPreviewProps) 
 
   if (message.type === "audio") {
     return (
-      <div className={cn("flex items-center gap-2 mb-1 min-w-[180px]", className)}>
+      <div className={cn("flex items-center gap-2 mb-1 min-w-45", className)}>
         <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
           <Music className="w-4 h-4 text-primary" />
         </div>
-        <audio src={message.mediaUrl} controls className="flex-1 h-8" />
+        <audio src={mediaUrl} controls className="flex-1 h-8" />
       </div>
     );
   }
@@ -60,7 +62,7 @@ export default function MediaPreview({ message, className }: MediaPreviewProps) 
   // Generic file
   return (
     <a
-      href={message.mediaUrl}
+      href={mediaUrl}
       target="_blank"
       rel="noopener noreferrer"
       className={cn(

@@ -6,6 +6,7 @@ import { useGroups } from "@/hooks/useGroups";
 import { useContacts } from "@/hooks/useContacts";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 
 interface CreateGroupDialogProps {
   open: boolean;
@@ -125,7 +126,7 @@ export default function CreateGroupDialog({ open, onClose }: CreateGroupDialogPr
                     <div className="w-8 h-8 rounded-lg overflow-hidden bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-xs font-medium shrink-0">
                       {contact.profileImage ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={contact.profileImage} alt={contact.username} className="w-full h-full object-cover" />
+                        <img src={resolveMediaUrl(contact.profileImage)} alt={contact.username} className="w-full h-full object-cover" />
                       ) : (
                         contact.username[0].toUpperCase()
                       )}

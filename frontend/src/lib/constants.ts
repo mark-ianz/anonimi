@@ -16,24 +16,48 @@ export const CONVERSATIONS_PER_PAGE = 20;
 export const CONTACTS_PER_PAGE = 50;
 export const SEARCH_RESULTS_PER_PAGE = 10;
 
-export const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10 MB
-export const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
+export const MB = 1024 * 1024;
+
+export const MAX_IMAGE_SIZE = 3 * MB;
+export const MAX_VIDEO_SIZE = 5 * MB;
+export const MAX_FILE_SIZE = 3 * MB;
+export const CAMERA_SIZE_BONUS = 3 * MB;
 
 export const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
   "image/png",
   "image/gif",
-  "image/webp",
+];
+
+export const ALLOWED_VIDEO_TYPES = ["video/mp4"];
+
+export const ALLOWED_DOCUMENT_TYPES = [
+  "application/pdf",
+  "text/plain",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/x-rar-compressed",
+  "application/vnd.rar",
+  "application/octet-stream",
 ];
 
 export const ALLOWED_FILE_TYPES = [
   ...ALLOWED_IMAGE_TYPES,
-  "application/pdf",
-  "application/zip",
-  "text/plain",
-  "video/mp4",
-  "audio/mpeg",
-  "audio/ogg",
+  ...ALLOWED_VIDEO_TYPES,
+  ...ALLOWED_DOCUMENT_TYPES,
+];
+
+export const ALLOWED_EXTENSIONS = [
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".pdf",
+  ".txt",
+  ".doc",
+  ".docx",
+  ".rar",
+  ".mp4",
 ];
 
 export const TYPING_DEBOUNCE_MS = 500;

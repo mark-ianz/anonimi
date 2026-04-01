@@ -2,6 +2,7 @@
 
 import { useId, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 
 interface UserAvatarProps {
   imageUrl?: string | null;
@@ -35,6 +36,7 @@ export default function UserAvatar({
 
   const initial = useMemo(() => getInitial(name), [name]);
   const showImage = Boolean(imageUrl) && !imageError;
+  const resolvedImageUrl = resolveMediaUrl(imageUrl);
 
   return (
     <div
@@ -47,7 +49,7 @@ export default function UserAvatar({
       {showImage ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={imageUrl ?? ""}
+          src={resolvedImageUrl}
           alt={alt ?? name ?? "User"}
           className="w-full h-full object-cover"
           onError={() => setImageError(true)}

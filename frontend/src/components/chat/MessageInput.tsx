@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Send, Paperclip, X } from "lucide-react";
+import { Send, Paperclip, Camera, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMessages } from "@/hooks/useMessages";
 import { useTyping } from "@/hooks/useTyping";
@@ -10,6 +10,7 @@ import { useChatStore } from "@/stores/chatStore";
 import { ALLOWED_IMAGE_TYPES } from "@/lib/constants";
 import { FilePreview } from "@/components/shared/FileUpload";
 import type { MessageType } from "@/types/message";
+import type { UploadSource } from "@/lib/uploadPolicy";
 
 interface MessageInputProps {
   conversationId: string;
@@ -29,10 +30,12 @@ export default function MessageInput({
   const { upload, isUploading, progress, cancel } = useMediaUpload();
   const { draftMessages, setDraft } = useChatStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [text, setText] = useState(draftMessages[conversationId] ?? "");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingSource, setPendingSource] = useState<UploadSource>("file");
 
   // Persist draft
   useEffect(() => {
@@ -47,9 +50,12 @@ export default function MessageInput({
     ta.style.height = `${Math.min(ta.scrollHeight, 120)}px`;
   }, [text]);
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>, source: UploadSource) => {
     const file = e.target.files?.[0];
-    if (file) setPendingFile(file);
+    if (file) {
+      setPendingFile(file);
+      setPendingSource(source);
+    }
     e.target.value = "";
   }, []);
 
@@ -64,7 +70,7 @@ export default function MessageInput({
     let type: MessageType = "text";
 
     if (pendingFile) {
-      const result = await upload(pendingFile, "message");
+      const result = await upload(pendingFile, "message", { source: pendingSource });
       if (!result) return;
       mediaUrl = result.url;
       fileName = result.fileName;
@@ -77,6 +83,7 @@ export default function MessageInput({
         ? "audio"
         : "file";
       setPendingFile(null);
+      setPendingSource("file");
     }
 
     sendMessage({
@@ -93,7 +100,17 @@ export default function MessageInput({
     setText("");
     onBlur();
     textareaRef.current?.focus();
-  }, [text, pendingFile, disabled, upload, sendMessage, conversationId, onBlur, onMessageSent]);
+  }, [
+    text,
+    pendingFile,
+    pendingSource,
+    disabled,
+    upload,
+    sendMessage,
+    conversationId,
+    onBlur,
+    onMessageSent,
+  ]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -116,6 +133,7 @@ export default function MessageInput({
             file={pendingFile}
             onRemove={() => {
               setPendingFile(null);
+              setPendingSource("file");
               cancel();
             }}
             progress={isUploading ? progress : undefined}
@@ -133,11 +151,28 @@ export default function MessageInput({
         >
           <Paperclip className="w-5 h-5" />
         </button>
+        <button
+          type="button"
+          disabled={disabled || isUploading}
+          onClick={() => cameraInputRef.current?.click()}
+          className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50 mb-0.5"
+          aria-label="Take photo or video"
+        >
+          <Camera className="w-5 h-5" />
+        </button>
         <input
           ref={fileInputRef}
           type="file"
           className="hidden"
-          onChange={handleFileChange}
+          onChange={(event) => handleFileChange(event, "file")}
+        />
+        <input
+          ref={cameraInputRef}
+          type="file"
+          className="hidden"
+          accept="image/png,image/jpeg,image/jpg,image/gif,video/mp4"
+          capture="environment"
+          onChange={(event) => handleFileChange(event, "camera")}
         />
 
         {/* Textarea */}
