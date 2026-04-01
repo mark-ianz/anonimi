@@ -41,3 +41,19 @@ export interface SendMessagePayload {
   fileSize?: number | null;
   tempId: string;
 }
+
+export interface MessageSearchHit {
+  id: string;
+  conversationId: string;
+  senderId: string | null;
+  senderUsername: string | null;
+  senderAnonimiId: string | null;
+  senderProfileImage: string | null;
+  type: MessageType;
+  content: string | null;
+  createdAt: string;
+  conversationType: "private" | "group";
+  conversationName: string;
+  conversationImage: string | null;
+  conversationFallbackImages?: Array<string | null>;
+}

@@ -70,6 +70,8 @@ const serializeReactions = (
   isUnsent: boolean
 ) => (isUnsent ? [] : (reactions ?? []).map(serializeReaction));
 
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 const getArchivedRecipientIds = async (
   conversationId: string,
   recipientIds: string[]
@@ -566,6 +568,216 @@ export const getMessages = async (
       unsentAt: m.unsent ? m.updatedAt : null,
       createdAt: m.createdAt,
     })),
+    nextCursor: hasMore ? data[data.length - 1]._id.toString() : undefined,
+    hasMore,
+    limit,
+  };
+};
+
+export const searchMessages = async (
+  userId: string,
+  query: string,
+  limit: number = 20,
+  cursor?: string
+) => {
+  const trimmed = query.trim();
+  if (!trimmed) {
+    return {
+      messages: [],
+      nextCursor: undefined,
+      hasMore: false,
+      limit,
+    };
+  }
+
+  const userObjectId = new Types.ObjectId(userId);
+
+  const conversations = await Conversation.find({ participants: userObjectId })
+    .select("_id type participants")
+    .lean();
+
+  if (!conversations.length) {
+    return {
+      messages: [],
+      nextCursor: undefined,
+      hasMore: false,
+      limit,
+    };
+  }
+
+  const conversationIds = conversations.map((conv: any) => conv._id);
+  const queryRegex = new RegExp(escapeRegex(trimmed), "i");
+
+  const messageQuery: Record<string, unknown> = {
+    conversationId: { $in: conversationIds },
+    deletedFor: { $ne: userObjectId },
+    unsent: false,
+    type: "text",
+    content: { $regex: queryRegex },
+  };
+
+  if (cursor) {
+    messageQuery._id = { $lt: new Types.ObjectId(cursor) };
+  }
+
+  const messages = await Message.find(messageQuery)
+    .sort({ createdAt: -1 })
+    .limit(limit + 1)
+    .lean();
+
+  const hasMore = messages.length > limit;
+  const data = hasMore ? messages.slice(0, limit) : messages;
+
+  const conversationIdSet = new Set(
+    data.map((message: any) => message.conversationId.toString())
+  );
+  const relevantConversations = conversations.filter((conv: any) =>
+    conversationIdSet.has(conv._id.toString())
+  );
+
+  const privateConversations = relevantConversations.filter(
+    (conv: any) => conv.type === "private"
+  );
+  const groupConversations = relevantConversations.filter(
+    (conv: any) => conv.type === "group"
+  );
+
+  const otherUserIds = privateConversations
+    .map((conv: any) =>
+      conv.participants.find((p: Types.ObjectId) => p.toString() !== userId)
+    )
+    .filter(Boolean)
+    .map((id: Types.ObjectId) => id.toString());
+
+  const uniqueOtherUserIds = Array.from(new Set(otherUserIds));
+
+  const [otherUsers, contacts, groups] = await Promise.all([
+    uniqueOtherUserIds.length
+      ? User.find({ _id: { $in: uniqueOtherUserIds } })
+          .select("anonimiId username profileImage")
+          .lean()
+      : [],
+    uniqueOtherUserIds.length
+      ? Contact.find({
+          userId: userObjectId,
+          contactId: { $in: uniqueOtherUserIds },
+          status: "accepted",
+        })
+          .select("contactId nickname")
+          .lean()
+      : [],
+    groupConversations.length
+      ? Group.find({
+          conversationId: { $in: groupConversations.map((conv: any) => conv._id) },
+        })
+          .select("conversationId name image")
+          .lean()
+      : [],
+  ]);
+
+  const otherUsersById = new Map(
+    (otherUsers as any[]).map((user) => [user._id.toString(), user])
+  );
+  const contactsByUserId = new Map(
+    (contacts as any[]).map((contact) => [contact.contactId.toString(), contact])
+  );
+  const groupByConversationId = new Map(
+    (groups as any[]).map((group) => [group.conversationId.toString(), group])
+  );
+
+  const groupFallbackImagesByConversationId = new Map<string, Array<string | null>>();
+  await Promise.all(
+    (groups as any[]).map(async (group) => {
+      const members = await GroupMember.find({ groupId: group._id })
+        .sort({ joinedAt: 1 })
+        .limit(3)
+        .populate("userId", "profileImage")
+        .lean();
+      const images = members.map((member: any) => member.userId?.profileImage ?? null);
+      groupFallbackImagesByConversationId.set(group.conversationId.toString(), images);
+    })
+  );
+
+  const senderIds = Array.from(
+    new Set(
+      data
+        .map((message: any) => message.senderId?.toString())
+        .filter(Boolean)
+    )
+  ) as string[];
+
+  const senders = senderIds.length
+    ? await User.find({ _id: { $in: senderIds } })
+        .select("anonimiId username profileImage")
+        .lean()
+    : [];
+  const sendersById = new Map(
+    (senders as any[]).map((sender) => [sender._id.toString(), sender])
+  );
+
+  const conversationMetaById = new Map(
+    relevantConversations.map((conv: any) => {
+      if (conv.type === "private") {
+        const otherId = conv.participants.find(
+          (p: Types.ObjectId) => p.toString() !== userId
+        );
+        const otherUser = otherId ? otherUsersById.get(otherId.toString()) : null;
+        const contact = otherId ? contactsByUserId.get(otherId.toString()) : null;
+        const name = contact?.nickname?.trim() || otherUser?.username || otherUser?.anonimiId || "Conversation";
+        return [
+          conv._id.toString(),
+          {
+            id: conv._id.toString(),
+            type: "private",
+            name,
+            image: otherUser?.profileImage ?? null,
+            fallbackProfileImages: [],
+          },
+        ];
+      }
+
+      const group = groupByConversationId.get(conv._id.toString());
+      return [
+        conv._id.toString(),
+        {
+          id: conv._id.toString(),
+          type: "group",
+          name: group?.name ?? "Group",
+          image: group?.image ?? null,
+          fallbackProfileImages:
+            groupFallbackImagesByConversationId.get(conv._id.toString()) ?? [],
+        },
+      ];
+    })
+  );
+
+  const formatted = data.map((message: any) => {
+    const conversationMeta = conversationMetaById.get(
+      message.conversationId.toString()
+    );
+    const sender = message.senderId
+      ? sendersById.get(message.senderId.toString())
+      : null;
+
+    return {
+      id: message._id.toString(),
+      conversationId: message.conversationId.toString(),
+      senderId: message.senderId?.toString() ?? null,
+      senderUsername: sender?.username ?? null,
+      senderAnonimiId: sender?.anonimiId ?? null,
+      senderProfileImage: sender?.profileImage ?? null,
+      type: message.type,
+      content: message.content ?? null,
+      createdAt: message.createdAt,
+      conversationType: conversationMeta?.type ?? "private",
+      conversationName: conversationMeta?.name ?? "Conversation",
+      conversationImage: conversationMeta?.image ?? null,
+      conversationFallbackImages: conversationMeta?.fallbackProfileImages ?? [],
+    };
+  });
+
+  return {
+    messages: formatted,
     nextCursor: hasMore ? data[data.length - 1]._id.toString() : undefined,
     hasMore,
     limit,

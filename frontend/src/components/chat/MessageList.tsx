@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { useMessages } from "@/hooks/useMessages";
 import { useTyping } from "@/hooks/useTyping";
 import { useAuthStore } from "@/stores/authStore";
@@ -51,10 +52,14 @@ export default function MessageList({ conversation }: MessageListProps) {
   const { messages, isLoading, isFetchingMore, hasMore, fetchMore } = useMessages(conversation.id);
   const { typingUsers } = useTyping(conversation.id);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
+  const targetMessageId = searchParams.get("messageId");
   const isFirstLoad = useRef(true);
   const lastMessageIdRef = useRef<string | null>(null);
   const emittedReadIdsRef = useRef<Set<string>>(new Set());
   const [canMarkRead, setCanMarkRead] = useState(true);
+  const [highlightMessageId, setHighlightMessageId] = useState<string | null>(null);
+  const scrollTargetHandledRef = useRef<string | null>(null);
   const groupId = conversation.type === "group" ? conversation.group?.id ?? null : null;
 
   const { data: groupMembers = [] } = useQuery({
@@ -137,13 +142,18 @@ export default function MessageList({ conversation }: MessageListProps) {
     emittedReadIdsRef.current.clear();
   }, [conversation.id]);
 
+  useEffect(() => {
+    setHighlightMessageId(null);
+    scrollTargetHandledRef.current = null;
+  }, [conversation.id, targetMessageId]);
+
   // Scroll to bottom on first load and when new messages arrive from me
   useEffect(() => {
-    if (!isLoading && isFirstLoad.current) {
+    if (!isLoading && isFirstLoad.current && !targetMessageId) {
       bottomRef.current?.scrollIntoView({ behavior: "instant" });
       isFirstLoad.current = false;
     }
-  }, [isLoading]);
+  }, [isLoading, targetMessageId]);
 
   useEffect(() => {
     if (!messages.length) return;
@@ -156,6 +166,44 @@ export default function MessageList({ conversation }: MessageListProps) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, user?.id, isFetchingMore]);
+
+  useEffect(() => {
+    if (!targetMessageId) return;
+
+    const targetMessage = messages.find((message) => message.id === targetMessageId);
+    if (targetMessage) {
+      if (scrollTargetHandledRef.current === targetMessageId) return;
+
+      scrollTargetHandledRef.current = targetMessageId;
+      setHighlightMessageId(targetMessageId);
+
+      const rafId = window.requestAnimationFrame(() => {
+        const node = document.getElementById(`message-${targetMessageId}`);
+        node?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+
+      const timeoutId = window.setTimeout(() => {
+        setHighlightMessageId((current) =>
+          current === targetMessageId ? null : current
+        );
+      }, 4000);
+
+      return () => {
+        window.cancelAnimationFrame(rafId);
+        window.clearTimeout(timeoutId);
+      };
+    }
+
+    if (hasMore && !isFetchingMore) {
+      fetchMore();
+    }
+  }, [
+    targetMessageId,
+    messages,
+    hasMore,
+    isFetchingMore,
+    fetchMore,
+  ]);
 
   // When opening a conversation, immediately mark all unread incoming messages as read.
   useEffect(() => {
@@ -302,7 +350,7 @@ export default function MessageList({ conversation }: MessageListProps) {
           }
 
           return (
-            <div key={message.id}>
+            <div key={message.id} id={`message-${message.id}`}>
               {showDivider && (
                 <div className="flex items-center justify-center py-3">
                   <div className="px-3 py-1 rounded-full bg-muted/60 text-xs text-muted-foreground">
@@ -331,6 +379,7 @@ export default function MessageList({ conversation }: MessageListProps) {
                 readByUsersById={reactionUserMetaById}
                 showReadReceipt={showReadReceipt}
                 timestampBubblePosition={timestampBubblePosition}
+                isHighlighted={highlightMessageId === message.id}
               />
             </div>
           );

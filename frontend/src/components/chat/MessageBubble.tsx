@@ -29,6 +29,7 @@ interface MessageBubbleProps {
   readByUsersById?: Record<string, { name?: string; anonimiId?: string; profileImage?: string | null }>;
   showReadReceipt?: boolean;
   timestampBubblePosition?: "single" | "first" | "middle" | "last";
+  isHighlighted?: boolean;
 }
 
 export default function MessageBubble({
@@ -43,6 +44,7 @@ export default function MessageBubble({
   readByUsersById,
   showReadReceipt = true,
   timestampBubblePosition = "single",
+  isHighlighted = false,
 }: MessageBubbleProps) {
   const { user } = useAuthStore();
   const router = useRouter();
@@ -263,13 +265,19 @@ export default function MessageBubble({
         {/* Bubble */}
         <div
           className={cn(
-            "group/bubble relative px-3 py-2 text-sm leading-relaxed",
+            "group/bubble relative px-3 py-2 text-sm leading-relaxed transition-colors duration-700",
             bubbleShapeClass,
             isMine
               ? "bg-primary text-primary-foreground"
               : "bg-card border border-border/50 text-foreground",
             message.pending && "opacity-70",
-            message.failed && "border-destructive/50 bg-destructive/5"
+            message.failed && "border-destructive/50 bg-destructive/5",
+            isHighlighted &&
+              "ring-2 ring-primary/80 ring-offset-2 ring-offset-background shadow-[0_0_0_4px_rgba(47,87,131,0.22)] animate-message-highlight transition-shadow duration-700",
+            isHighlighted && !isMine &&
+              "bg-amber-200/90 border-amber-300/80 text-foreground dark:bg-amber-400/20 dark:border-amber-300/50",
+            isHighlighted && isMine &&
+              "bg-sky-600 text-white border-sky-300/60"
           )}
         >
           {/* Hover timestamp tooltip */}

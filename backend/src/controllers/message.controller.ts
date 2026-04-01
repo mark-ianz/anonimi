@@ -98,6 +98,29 @@ export const getMessages = async (
   }
 };
 
+export const searchMessages = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { q, cursor, limit } = req.query;
+    const result = await chatService.searchMessages(
+      req.user!._id.toString(),
+      q as string,
+      limit ? parseInt(limit as string) : 20,
+      cursor as string
+    );
+    apiPaginated(res, result.messages, {
+      nextCursor: result.nextCursor,
+      hasMore: result.hasMore,
+      limit: result.limit,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const sendMessage = async (
   req: Request,
   res: Response,

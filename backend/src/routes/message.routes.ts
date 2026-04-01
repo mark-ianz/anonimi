@@ -4,6 +4,7 @@ import { authenticate } from "../middleware/auth.middleware";
 import { validate } from "../middleware/validate.middleware";
 import {
 	getMessagesSchema,
+	searchMessagesSchema,
 	sendMessageSchema,
 	messageParamsSchema,
 	addReactionSchema,
@@ -12,6 +13,12 @@ import {
 
 const router = Router();
 
+router.get(
+	"/search",
+	authenticate,
+	validate(searchMessagesSchema),
+	messageController.searchMessages
+);
 router.get("/", authenticate, validate(getMessagesSchema), messageController.getMessages);
 router.post("/", authenticate, validate(sendMessageSchema), messageController.sendMessage);
 router.delete("/:messageId/for-me", authenticate, validate(messageParamsSchema), messageController.deleteMessageForMe);

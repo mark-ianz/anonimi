@@ -9,6 +9,14 @@ export const getMessagesSchema = z.object({
   }),
 });
 
+export const searchMessagesSchema = z.object({
+  query: z.object({
+    q: z.string().min(2).max(80),
+    cursor: z.string().optional(),
+    limit: z.coerce.number().min(1).max(50).default(20),
+  }),
+});
+
 export const sendMessageSchema = z.object({
   body: z.object({
     conversationId: z.string(),

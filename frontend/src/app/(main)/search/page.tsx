@@ -14,10 +14,14 @@ import {
   UserRound,
 } from "lucide-react";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
+import GroupAvatar from "@/components/shared/GroupAvatar";
+import UserAvatar from "@/components/shared/UserAvatar";
 import api from "@/lib/api";
 import type { Contact, ContactRequest } from "@/types/contact";
 import type { Conversation } from "@/types/conversation";
+import type { MessageSearchHit } from "@/types/message";
 import type { SearchUser } from "@/types/user";
+import { useAuthStore } from "@/stores/authStore";
 
 function normalize(value: string) {
   return value.toLowerCase().trim();
@@ -31,8 +35,49 @@ function rankScore(value: string, q: string) {
   return 0;
 }
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function getSnippet(content: string, q: string, radius = 36) {
+  const normalized = normalize(content);
+  const normalizedQuery = normalize(q);
+  const index = normalized.indexOf(normalizedQuery);
+  if (index === -1) {
+    return content.length > 120 ? `${content.slice(0, 120)}...` : content;
+  }
+
+  const start = Math.max(0, index - radius);
+  const end = Math.min(content.length, index + normalizedQuery.length + radius);
+  const prefix = start > 0 ? "..." : "";
+  const suffix = end < content.length ? "..." : "";
+  return `${prefix}${content.slice(start, end)}${suffix}`;
+}
+
+function renderHighlightedText(text: string, q: string) {
+  if (!q) return text;
+  const safe = escapeRegExp(q);
+  const regex = new RegExp(`(${safe})`, "ig");
+  const parts = text.split(regex);
+  const normalizedQuery = normalize(q);
+
+  return parts.map((part, index) => {
+    const isMatch = normalize(part) === normalizedQuery;
+    if (!isMatch) return <span key={`${part}-${index}`}>{part}</span>;
+    return (
+      <mark
+        key={`${part}-${index}`}
+        className="rounded bg-primary/15 px-0.5 text-primary"
+      >
+        {part}
+      </mark>
+    );
+  });
+}
+
 export default function SearchPage() {
   const searchParams = useSearchParams();
+  const { user: currentUser } = useAuthStore();
   const q = (searchParams.get("q") ?? "").trim();
   const query = normalize(q);
 
@@ -71,12 +116,24 @@ export default function SearchPage() {
   });
 
   const conversationsQuery = useQuery({
-    queryKey: ["global-search", "messages", query],
+    queryKey: ["global-search", "conversations", query],
     queryFn: async () => {
       const res = await api.get("/conversations", { params: { limit: 80 } });
       return (res.data?.data ?? []) as Conversation[];
     },
     enabled: query.length > 0,
+    staleTime: 1000 * 30,
+  });
+
+  const messageSearchQuery = useQuery({
+    queryKey: ["global-search", "message-hits", query],
+    queryFn: async () => {
+      const res = await api.get("/messages/search", {
+        params: { q: query, limit: 30 },
+      });
+      return (res.data?.data ?? []) as MessageSearchHit[];
+    },
+    enabled: query.length >= 2,
     staleTime: 1000 * 30,
   });
 
@@ -123,7 +180,7 @@ export default function SearchPage() {
       .slice(0, 12);
   }, [peopleQuery.data, contactAnonimiIds]);
 
-  const messages = useMemo(() => {
+  const conversations = useMemo(() => {
     const list = (conversationsQuery.data ?? [])
       .map((conversation) => {
         const title =
@@ -143,6 +200,10 @@ export default function SearchPage() {
 
     return list;
   }, [conversationsQuery.data, query]);
+
+  const messageHits = useMemo(() => {
+    return (messageSearchQuery.data ?? []).filter((item) => item.content);
+  }, [messageSearchQuery.data]);
 
   const groups = useMemo(() => {
     const list = (conversationsQuery.data ?? [])
@@ -173,22 +234,32 @@ export default function SearchPage() {
     contactsQuery.isFetching ||
     requestsQuery.isFetching ||
     conversationsQuery.isFetching ||
-    peopleQuery.isFetching;
+    peopleQuery.isFetching ||
+    messageSearchQuery.isFetching;
 
   const hasResults =
     contacts.length > 0 ||
     requests.length > 0 ||
     people.length > 0 ||
     groups.length > 0 ||
-    messages.length > 0;
+    conversations.length > 0 ||
+    messageHits.length > 0;
 
   const orderedSections = useMemo(() => {
-    const baseOrder = ["contacts", "people", "groups", "messages", "requests"] as const;
+    const baseOrder = [
+      "contacts",
+      "people",
+      "groups",
+      "messageHits",
+      "conversations",
+      "requests",
+    ] as const;
     const counts = {
       contacts: contacts.length,
       people: people.length,
       groups: groups.length,
-      messages: messages.length,
+      messageHits: messageHits.length,
+      conversations: conversations.length,
       requests: requests.length,
     };
 
@@ -203,21 +274,28 @@ export default function SearchPage() {
     const withoutResults = baseOrder.filter((key) => counts[key] === 0);
 
     if (
-      withResults[0] === "messages" &&
-      withResults.some((key) => key !== "messages")
+      withResults[0] === "messageHits" &&
+      withResults.some((key) => key !== "messageHits")
     ) {
-      const firstNonMessages = withResults.find((key) => key !== "messages");
+      const firstNonMessages = withResults.find((key) => key !== "messageHits");
       if (firstNonMessages) {
         withResults.splice(withResults.indexOf(firstNonMessages), 1);
         withResults.unshift(firstNonMessages);
-        withResults.splice(1, 0, "messages");
+        withResults.splice(1, 0, "messageHits");
         const unique = Array.from(new Set(withResults));
         return [...unique, ...withoutResults];
       }
     }
 
     return [...withResults, ...withoutResults];
-  }, [contacts.length, people.length, groups.length, messages.length, requests.length]);
+  }, [
+    contacts.length,
+    people.length,
+    groups.length,
+    messageHits.length,
+    conversations.length,
+    requests.length,
+  ]);
 
   return (
     <ProtectedRoute>
@@ -234,7 +312,7 @@ export default function SearchPage() {
                 </p>
                 <h1 className="mt-1 text-2xl leading-tight font-semibold">Results for &quot;{q || ""}&quot;</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Grouped by Contacts, Requests, Other People, and Messages.
+                  Grouped by Contacts, Requests, Other People, Conversations, and Messages.
                 </p>
               </div>
             </div>
@@ -326,15 +404,79 @@ export default function SearchPage() {
                   );
                 }
 
-                if (section === "messages") {
+                if (section === "messageHits") {
                   return (
                     <section key={section} className="rounded-2xl border border-border/70 bg-card/70 p-4 sm:p-5">
-                      <h2 className="mb-2 text-sm font-semibold">Messages</h2>
-                      {messages.length === 0 ? (
+                      <h2 className="mb-2 text-sm font-semibold">Message Results</h2>
+                      {messageHits.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No matching messages.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {messageHits.map((item) => {
+                            const senderLabel =
+                              item.senderId && item.senderId === currentUser?.id
+                                ? "You"
+                                : item.senderUsername ?? item.senderAnonimiId ?? "User";
+                            const snippet = item.content ? getSnippet(item.content, query) : "";
+
+                            return (
+                            <Link
+                              key={item.id}
+                              href={`/chat/${item.conversationId}?messageId=${item.id}`}
+                              className="flex gap-3 rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-sm transition-colors hover:bg-muted"
+                            >
+                              <div className="pt-0.5">
+                                {item.conversationType === "group" ? (
+                                  <GroupAvatar
+                                    imageUrl={item.conversationImage}
+                                    fallbackProfileImages={item.conversationFallbackImages ?? []}
+                                    name={item.conversationName}
+                                    className="h-10 w-10"
+                                    textClassName="text-xs"
+                                  />
+                                ) : (
+                                  <UserAvatar
+                                    imageUrl={item.conversationImage}
+                                    name={item.conversationName}
+                                    className="h-10 w-10"
+                                    textClassName="text-xs"
+                                  />
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="truncate font-medium text-foreground">
+                                    {item.conversationName}
+                                  </p>
+                                  <span className="shrink-0 rounded-full border border-border/60 px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                                    {item.conversationType === "group" ? "Group" : "Private"}
+                                  </span>
+                                </div>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  <span className="font-medium text-foreground/80">
+                                    {senderLabel}:
+                                  </span>{" "}
+                                  {snippet ? renderHighlightedText(snippet, query) : "Message unavailable"}
+                                </p>
+                              </div>
+                            </Link>
+                          );
+                          })}
+                        </div>
+                      )}
+                    </section>
+                  );
+                }
+
+                if (section === "conversations") {
+                  return (
+                    <section key={section} className="rounded-2xl border border-border/70 bg-card/70 p-4 sm:p-5">
+                      <h2 className="mb-2 text-sm font-semibold">Conversations</h2>
+                      {conversations.length === 0 ? (
                         <p className="text-sm text-muted-foreground">No matching conversations.</p>
                       ) : (
                         <div className="space-y-2">
-                          {messages.map((item) => (
+                          {conversations.map((item) => (
                             <Link
                               key={item.conversation.id}
                               href={`/chat/${item.conversation.id}`}
