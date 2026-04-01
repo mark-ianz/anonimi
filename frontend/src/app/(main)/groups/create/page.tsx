@@ -145,17 +145,20 @@ export default function CreateGroupPage() {
   return (
     <ProtectedRoute>
       <div className="flex flex-col h-full bg-background">
-        <div className="flex items-center gap-3 p-4 border-b border-border/30">
-          <button
-            onClick={() => router.back()}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="font-display font-semibold">Create Group</h1>
+        <div className="flex items-center gap-3 border-b border-border/30">
+          <div className="mx-auto flex w-full max-w-3xl items-center gap-3 p-4">
+            <button
+              onClick={() => router.back()}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <h1 className="font-display font-semibold">Create Group</h1>
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        <div className="flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-3xl p-4 space-y-6">
           {/* Group Avatar */}
           <div className="flex justify-center">
             <div className="relative" ref={popoverRef}>
@@ -429,20 +432,23 @@ export default function CreateGroupPage() {
               )}
             </div>
           </div>
+          </div>
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-border/30">
-          <button
-            onClick={handleCreate}
-            disabled={selectedIds.length === 0 || isCreating || isUploading}
-            className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {isCreating || isUploading ? (
-              <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
-            ) : null}
-            Create Group ({selectedIds.length} members)
-          </button>
+        <div className="border-t border-border/30">
+          <div className="mx-auto w-full max-w-3xl p-4">
+            <button
+              onClick={handleCreate}
+              disabled={selectedIds.length === 0 || isCreating || isUploading}
+              className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isCreating || isUploading ? (
+                <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+              ) : null}
+              Create Group ({selectedIds.length} members)
+            </button>
+          </div>
         </div>
       </div>
     </ProtectedRoute>
