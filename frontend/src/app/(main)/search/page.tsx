@@ -182,6 +182,43 @@ export default function SearchPage() {
     groups.length > 0 ||
     messages.length > 0;
 
+  const orderedSections = useMemo(() => {
+    const baseOrder = ["contacts", "people", "groups", "messages", "requests"] as const;
+    const counts = {
+      contacts: contacts.length,
+      people: people.length,
+      groups: groups.length,
+      messages: messages.length,
+      requests: requests.length,
+    };
+
+    const withResults = baseOrder
+      .filter((key) => counts[key] > 0)
+      .sort((a, b) => {
+        const diff = counts[b] - counts[a];
+        if (diff !== 0) return diff;
+        return baseOrder.indexOf(a) - baseOrder.indexOf(b);
+      });
+
+    const withoutResults = baseOrder.filter((key) => counts[key] === 0);
+
+    if (
+      withResults[0] === "messages" &&
+      withResults.some((key) => key !== "messages")
+    ) {
+      const firstNonMessages = withResults.find((key) => key !== "messages");
+      if (firstNonMessages) {
+        withResults.splice(withResults.indexOf(firstNonMessages), 1);
+        withResults.unshift(firstNonMessages);
+        withResults.splice(1, 0, "messages");
+        const unique = Array.from(new Set(withResults));
+        return [...unique, ...withoutResults];
+      }
+    }
+
+    return [...withResults, ...withoutResults];
+  }, [contacts.length, people.length, groups.length, messages.length, requests.length]);
+
   return (
     <ProtectedRoute>
       <div className="h-full overflow-y-auto bg-background">
@@ -211,112 +248,132 @@ export default function SearchPage() {
             </div>
           ) : (
             <div className="mt-4 space-y-4">
-              <section className="rounded-2xl border border-border/70 bg-card/70 p-4 sm:p-5">
-                <h2 className="mb-2 text-sm font-semibold">My Contacts</h2>
-                {contacts.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No matching contacts.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {contacts.map((contact) => (
-                      <Link
-                        key={contact.contactId}
-                        href="/contacts"
-                        className="flex items-center justify-between rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-sm transition-colors hover:bg-muted"
-                      >
-                        <span className="truncate text-foreground">{contact.nickname ?? contact.username}</span>
-                        <span className="ml-2 shrink-0 text-xs text-muted-foreground">{contact.anonimiId}</span>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </section>
+              {orderedSections.map((section) => {
+                if (section === "contacts") {
+                  return (
+                    <section key={section} className="rounded-2xl border border-border/70 bg-card/70 p-4 sm:p-5">
+                      <h2 className="mb-2 text-sm font-semibold">My Contacts</h2>
+                      {contacts.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No matching contacts.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {contacts.map((contact) => (
+                            <Link
+                              key={contact.contactId}
+                              href="/contacts"
+                              className="flex items-center justify-between rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-sm transition-colors hover:bg-muted"
+                            >
+                              <span className="truncate text-foreground">{contact.nickname ?? contact.username}</span>
+                              <span className="ml-2 shrink-0 text-xs text-muted-foreground">{contact.anonimiId}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  );
+                }
 
-              <section className="rounded-2xl border border-border/70 bg-card/70 p-4 sm:p-5">
-                <h2 className="mb-2 text-sm font-semibold">Requests</h2>
-                {requests.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No matching requests.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {requests.map((request) => (
-                      <Link
-                        key={request.requestId}
-                        href="/contacts?tab=requests"
-                        className="flex items-center justify-between rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-sm transition-colors hover:bg-muted"
-                      >
-                        <span className="truncate text-foreground">{request.from.username}</span>
-                        <span className="ml-2 shrink-0 text-xs text-muted-foreground">{request.from.anonimiId}</span>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </section>
+                if (section === "people") {
+                  return (
+                    <section key={section} className="rounded-2xl border border-border/70 bg-card/70 p-4 sm:p-5">
+                      <h2 className="mb-2 text-sm font-semibold">Other People</h2>
+                      {people.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No matching people.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {people.map((person) => (
+                            <Link
+                              key={person.id}
+                              href={`/user/${person.anonimiId}`}
+                              className="flex w-full items-center justify-between rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
+                            >
+                              <span className="flex min-w-0 items-center gap-2">
+                                <UserRound className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                <span className="truncate text-foreground">{person.username}</span>
+                              </span>
+                              <span className="ml-2 shrink-0 text-xs text-muted-foreground">{person.anonimiId}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  );
+                }
 
-              <section className="rounded-2xl border border-border/70 bg-card/70 p-4 sm:p-5">
-                <h2 className="mb-2 text-sm font-semibold">Other People</h2>
-                {people.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No matching people.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {people.map((person) => (
-                      <Link
-                        key={person.id}
-                        href={`/user/${person.anonimiId}`}
-                        className="flex w-full items-center justify-between rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
-                      >
-                        <span className="flex min-w-0 items-center gap-2">
-                          <UserRound className="h-4 w-4 shrink-0 text-muted-foreground" />
-                          <span className="truncate text-foreground">{person.username}</span>
-                        </span>
-                        <span className="ml-2 shrink-0 text-xs text-muted-foreground">{person.anonimiId}</span>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </section>
+                if (section === "groups") {
+                  return (
+                    <section key={section} className="rounded-2xl border border-border/70 bg-card/70 p-4 sm:p-5">
+                      <h2 className="mb-2 text-sm font-semibold">Groups</h2>
+                      {groups.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No matching groups.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {groups.map((item) => (
+                            <Link
+                              key={item.conversation.id}
+                              href={`/chat/${item.conversation.id}`}
+                              className="flex items-center justify-between rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-sm transition-colors hover:bg-muted"
+                            >
+                              <span className="truncate text-foreground">{item.name}</span>
+                              <span className="ml-2 shrink-0 text-xs text-muted-foreground">
+                                Group
+                              </span>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  );
+                }
 
-              <section className="rounded-2xl border border-border/70 bg-card/70 p-4 sm:p-5">
-                <h2 className="mb-2 text-sm font-semibold">Groups</h2>
-                {groups.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No matching groups.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {groups.map((item) => (
-                      <Link
-                        key={item.conversation.id}
-                        href={`/chat/${item.conversation.id}`}
-                        className="flex items-center justify-between rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-sm transition-colors hover:bg-muted"
-                      >
-                        <span className="truncate text-foreground">{item.name}</span>
-                        <span className="ml-2 shrink-0 text-xs text-muted-foreground">
-                          Group
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </section>
+                if (section === "messages") {
+                  return (
+                    <section key={section} className="rounded-2xl border border-border/70 bg-card/70 p-4 sm:p-5">
+                      <h2 className="mb-2 text-sm font-semibold">Messages</h2>
+                      {messages.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No matching conversations.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {messages.map((item) => (
+                            <Link
+                              key={item.conversation.id}
+                              href={`/chat/${item.conversation.id}`}
+                              className="block rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-sm transition-colors hover:bg-muted"
+                            >
+                              <p className="truncate text-foreground">{item.title}</p>
+                              {item.preview ? (
+                                <p className="truncate text-xs text-muted-foreground">{item.preview}</p>
+                              ) : null}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  );
+                }
 
-              <section className="rounded-2xl border border-border/70 bg-card/70 p-4 sm:p-5">
-                <h2 className="mb-2 text-sm font-semibold">Messages</h2>
-                {messages.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No matching conversations.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {messages.map((item) => (
-                      <Link
-                        key={item.conversation.id}
-                        href={`/chat/${item.conversation.id}`}
-                        className="block rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-sm transition-colors hover:bg-muted"
-                      >
-                        <p className="truncate text-foreground">{item.title}</p>
-                        {item.preview ? (
-                          <p className="truncate text-xs text-muted-foreground">{item.preview}</p>
-                        ) : null}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </section>
+                return (
+                  <section key={section} className="rounded-2xl border border-border/70 bg-card/70 p-4 sm:p-5">
+                    <h2 className="mb-2 text-sm font-semibold">Requests</h2>
+                    {requests.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No matching requests.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {requests.map((request) => (
+                          <Link
+                            key={request.requestId}
+                            href="/contacts?tab=requests"
+                            className="flex items-center justify-between rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-sm transition-colors hover:bg-muted"
+                          >
+                            <span className="truncate text-foreground">{request.from.username}</span>
+                            <span className="ml-2 shrink-0 text-xs text-muted-foreground">{request.from.anonimiId}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                );
+              })}
 
               {loading && (
                 <div className="rounded-2xl border border-border/70 bg-card/70 px-4 py-6 text-center text-sm text-muted-foreground">
