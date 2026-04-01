@@ -1076,6 +1076,56 @@ Notes:
 
 ---
 
+### GET /api/messages/search
+
+Search messages by **content** across all conversations the user participates in.
+
+**Query Parameters:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| `q` | string | Yes | Search query (min 2 chars) |
+| `cursor` | string | No | Message ID cursor (omit for latest) |
+| `limit` | number | No | Results per page (default: 20, max: 50) |
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "60d5ecb54b24a1001c8e4b50",
+      "conversationId": "60d5ecb54b24a1001c8e4b3f",
+      "senderId": "60d5ecb54b24a1001c8e4b3a",
+      "senderUsername": "john_doe",
+      "senderAnonimiId": "aid_a8F3kP29",
+      "senderProfileImage": "/uploads/avatars/uuid.jpg",
+      "type": "text",
+      "content": "The location of the store is...",
+      "createdAt": "2026-03-08T11:40:00Z",
+      "conversationType": "group",
+      "conversationName": "Weekend Plans",
+      "conversationImage": null,
+      "conversationFallbackImages": [
+        "/uploads/avatars/a.jpg",
+        "/uploads/avatars/b.jpg"
+      ]
+    }
+  ],
+  "pagination": {
+    "nextCursor": "60d5ecb54b24a1001c8e4b4f",
+    "hasMore": true,
+    "limit": 20
+  }
+}
+```
+
+Notes:
+- Only text messages are searched and returned.
+- Messages are sorted newest-first.
+- Messages in the user's `deletedFor` array and unsent messages are excluded.
+
+---
+
 ### POST /api/messages
 
 Send a message via REST (alternative to WebSocket for reliability).

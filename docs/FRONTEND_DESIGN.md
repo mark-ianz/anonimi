@@ -96,6 +96,7 @@ These are implemented as **Next.js route groups** with separate layouts, sharing
 /chat                       → Conversation list (default app view)
 /chat/[conversationId]      → Active conversation / chat view
 /chat?tab=all|unread|private|groups → Conversation filters (groups live under chat)
+/search                     → Global search (contacts, people, conversations, message hits)
 /contacts                   → Contacts list
 /contacts/requests          → Incoming contact requests
 /groups                     → Redirect to `/chat?tab=groups`
@@ -535,6 +536,19 @@ The default view when entering the application.
 - Returning focus to an open conversation clears its local unread badge and emits read receipts.
 - Read receipt modal is rendered via a portal to guarantee full-screen backdrop coverage.
 
+### 8.2 Global Search (`/search`)
+
+Global search aggregates results across contacts, people, conversations, and **message content**.
+
+**Inputs:**
+- Query comes from the main search entry point (sidebar search). The page reads `q` from the URL.
+
+**Message results behavior:**
+- Results match **message content** (not people).
+- Each result shows the conversation name, whether it is Group or Private, sender label (`You` vs sender name), and a snippet with the query highlighted.
+- Clicking a message result navigates to `/chat/[conversationId]?messageId=...`, auto-scrolls to the message, and briefly highlights the bubble.
+- If the message is not loaded, the chat view auto-fetches older pages until the target appears.
+
 #### Non-Contact Notice Banner
 
 The banner is displayed in the chat view when `conversation.requestStatus` is `"pending"`. The content differs based on whether the current user is the **sender** (User A) or the **recipient** (User B).
@@ -579,7 +593,7 @@ The banner is displayed in the chat view when `conversation.requestStatus` is `"
 
 Accepting a contact request within the chat immediately upgrades `requestStatus` to `null` and re-enables the MessageInput for both parties.
 
-### 8.2 Groups (`/groups`)
+### 8.3 Groups (`/groups`)
 
 **Groups list page:**
 - Grid or list of groups the user belongs to
@@ -610,7 +624,7 @@ Accepting a contact request within the chat immediately upgrades `requestStatus`
 - Member search and selection (contacts prioritized)
 - Create button
 
-### 8.3 Contacts (`/contacts`)
+### 8.4 Contacts (`/contacts`)
 
 **Contacts list:**
 - Alphabetically sorted contact list
@@ -624,7 +638,7 @@ Accepting a contact request within the chat immediately upgrades `requestStatus`
 - Actions: Accept, Decline
 - Sent requests tab (pending outgoing)
 
-### 8.4 Message Requests (`/message-requests`)
+### 8.5 Message Requests (`/message-requests`)
 
 **List view:**
 - Shows all conversations with `requestStatus: "pending"` (not yet accepted or ignored).
@@ -644,7 +658,7 @@ Accepting a contact request within the chat immediately upgrades `requestStatus`
 - The "Message Requests" nav item displays an unread count badge showing the number of `pending` requests.
 - Badge updates in real-time via `message-request:new` socket events.
 
-### 8.5 Profile (`/profile`)
+### 8.6 Profile (`/profile`)
 
 **View mode:**
 - Avatar (large), username, anonimi (with copy button)
@@ -657,7 +671,7 @@ Accepting a contact request within the chat immediately upgrades `requestStatus`
 - Phone number field (optional; recommended for account recovery)
 - Password change section (current password + new password)
 
-### 8.6 User Profile (`/user/[anonimiId]`)
+### 8.7 User Profile (`/user/[anonimiId]`)
 
 Public profile view for another user:
 - Avatar, username, anonimi
@@ -671,7 +685,7 @@ Public profile view for another user:
 - If no conversation exists, creates one (with `requestStatus: "pending"` if not contacts, or `null` if already contacts).
 - Navigates to `/chat/[conversationId]` after the call resolves.
 
-### 8.7 Settings (`/settings`)
+### 8.8 Settings (`/settings`)
 
 Settings organized in tabs or sections:
 
@@ -682,13 +696,13 @@ Settings organized in tabs or sections:
 - **Blocked Users:** Link to `/blocked`
 - **Danger Zone:** Delete account (future)
 
-### 8.8 Blocked Users (`/blocked`)
+### 8.9 Blocked Users (`/blocked`)
 
 - List of blocked users
 - Each entry: avatar, username, block date
 - Unblock action
 
-### 8.9 Support (`/support`)
+### 8.10 Support (`/support`)
 
 **Ticket list** (`/support`):
 - User's support tickets
