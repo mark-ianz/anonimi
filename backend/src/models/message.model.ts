@@ -13,6 +13,13 @@ const messageSchema = new Schema<IMessage>(
     fileSize: { type: Number },
     readBy: [{ type: Schema.Types.ObjectId, ref: "User" }],
     readByAt: { type: Map, of: Date, default: {} },
+    reactions: [
+      {
+        emoji: { type: String, required: true },
+        userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
     deletedFor: [{ type: Schema.Types.ObjectId, ref: "User" }],
     unsent: { type: Boolean, default: false },
   },

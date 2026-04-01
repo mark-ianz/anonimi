@@ -12,7 +12,7 @@ import api from "@/lib/api";
 import { getChatSocket } from "@/lib/socket";
 import { useChatStore } from "@/stores/chatStore";
 import { useAuthStore } from "@/stores/authStore";
-import type { Message, SendMessagePayload } from "@/types/message";
+import type { Message, SendMessagePayload, ReactionEmoji, MessageReaction } from "@/types/message";
 import { MESSAGES_PER_PAGE } from "@/lib/constants";
 
 export function useMessages(conversationId: string | null) {
@@ -26,6 +26,42 @@ export function useMessages(conversationId: string | null) {
     updateMessage,
     updateConversationLastMessage,
   } = useChatStore();
+
+  const applyReactionUpdate = useCallback(
+    (
+      targetConversationId: string,
+      messageId: string,
+      updater: (current: MessageReaction[]) => MessageReaction[]
+    ) => {
+      qc.setQueryData(
+        ["messages", targetConversationId],
+        (old: { pages: { data: Message[] }[] } | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((p) => ({
+              ...p,
+              data: p.data.map((m) => {
+                if (m.id !== messageId) return m;
+                const nextReactions = updater(m.reactions ?? []);
+                return { ...m, reactions: nextReactions };
+              }),
+            })),
+          };
+        }
+      );
+
+      const currentMessage = (storeMessages[targetConversationId] ?? []).find(
+        (m) => m.id === messageId
+      );
+      if (currentMessage) {
+        updateMessage(targetConversationId, messageId, {
+          reactions: updater(currentMessage.reactions ?? []),
+        });
+      }
+    },
+    [qc, storeMessages, updateMessage]
+  );
 
   const query = useInfiniteQuery({
     queryKey: ["messages", conversationId],
@@ -79,6 +115,7 @@ export function useMessages(conversationId: string | null) {
         fileSize: payload.fileSize ?? null,
         readBy: [],
         readByAt: {},
+        reactions: [],
         unsent: false,
         createdAt: new Date().toISOString(),
         tempId,
@@ -158,14 +195,29 @@ export function useMessages(conversationId: string | null) {
             pages: old.pages.map((p) => ({
               ...p,
               data: p.data.map((m) =>
-                m.id === messageId ? { ...m, unsent: true, unsentAt, content: null, mediaUrl: null } : m
+                m.id === messageId
+                  ? {
+                      ...m,
+                      unsent: true,
+                      unsentAt,
+                      content: null,
+                      mediaUrl: null,
+                      reactions: [],
+                    }
+                  : m
               ),
             })),
           };
         }
       );
       // Also patch any in-flight copy in the chatStore
-      updateMessage(conversationId, messageId, { unsent: true, unsentAt, content: undefined, mediaUrl: null });
+      updateMessage(conversationId, messageId, {
+        unsent: true,
+        unsentAt,
+        content: undefined,
+        mediaUrl: null,
+        reactions: [],
+      });
       qc.invalidateQueries({ queryKey: ["conversations"] });
     },
     onError: (err: unknown) => {
@@ -174,6 +226,61 @@ export function useMessages(conversationId: string | null) {
           ?.response?.data?.error?.message ?? "Cannot unsend this message.";
       toast.error(msg);
     },
+  });
+
+  const addReactionMutation = useMutation({
+    mutationFn: async (payload: { messageId: string; emoji: ReactionEmoji }) => {
+      const res = await api.post(`/messages/${payload.messageId}/reactions`, {
+        emoji: payload.emoji,
+      });
+      return res.data.data as
+        | {
+            action: "added";
+            conversationId: string;
+            messageId: string;
+            reaction: MessageReaction;
+          }
+        | {
+            action: "removed";
+            conversationId: string;
+            messageId: string;
+            reactionId: string;
+          };
+    },
+    onSuccess: (payload) => {
+      if (payload.action === "added") {
+        applyReactionUpdate(payload.conversationId, payload.messageId, (current) => {
+          if (current.some((reaction) => reaction.id === payload.reaction.id)) {
+            return current;
+          }
+          return [...current, payload.reaction];
+        });
+        return;
+      }
+      applyReactionUpdate(payload.conversationId, payload.messageId, (current) =>
+        current.filter((reaction) => reaction.id !== payload.reactionId)
+      );
+    },
+    onError: () => toast.error("Failed to add reaction."),
+  });
+
+  const removeReactionMutation = useMutation({
+    mutationFn: async (payload: { messageId: string; reactionId: string }) => {
+      const res = await api.delete(
+        `/messages/${payload.messageId}/reactions/${payload.reactionId}`
+      );
+      return res.data.data as {
+        conversationId: string;
+        messageId: string;
+        reactionId: string;
+      };
+    },
+    onSuccess: (payload) => {
+      applyReactionUpdate(payload.conversationId, payload.messageId, (current) =>
+        current.filter((reaction) => reaction.id !== payload.reactionId)
+      );
+    },
+    onError: () => toast.error("Failed to remove reaction."),
   });
 
   return {
@@ -185,5 +292,7 @@ export function useMessages(conversationId: string | null) {
     sendMessage,
     deleteForMe: deleteForMeMutation.mutate,
     unsend: unsendMutation.mutate,
+    addReaction: addReactionMutation.mutate,
+    removeReaction: removeReactionMutation.mutate,
   };
 }

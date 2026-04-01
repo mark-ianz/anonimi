@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { REACTION_EMOJIS } from "../constants/reactions";
 
 export const getMessagesSchema = z.object({
   query: z.object({
@@ -20,5 +21,21 @@ export const sendMessageSchema = z.object({
 export const messageParamsSchema = z.object({
   params: z.object({
     messageId: z.string(),
+  }),
+});
+
+export const addReactionSchema = z.object({
+  params: z.object({
+    messageId: z.string(),
+  }),
+  body: z.object({
+    emoji: z.enum(REACTION_EMOJIS),
+  }),
+});
+
+export const removeReactionSchema = z.object({
+  params: z.object({
+    messageId: z.string(),
+    reactionId: z.string(),
   }),
 });

@@ -750,6 +750,22 @@ src/components/
 └── shared/              → Reusable app-wide components (guards, loading, errors)
 ```
 
+### Profile Popup Shortcut
+
+The **Profile Popup Shortcut** is the avatar-click menu used throughout chat surfaces.
+
+**Trigger:**
+- Clicking a user's avatar in chat bubbles or participant lists.
+
+**Actions shown:**
+- `View Profile` (always).
+- `Send Message` (only in group chats or contexts where the user is not already in a private conversation with the target).
+
+**Rules:**
+- Private conversation: show `View Profile` only.
+- Group conversation: show both `View Profile` and `Send Message`.
+- The same menu behavior should be reused across all chat surfaces (message bubble avatars, member lists, etc.).
+
 ### Marketing Components (`components/marketing/`)
 
 | Component | Purpose |

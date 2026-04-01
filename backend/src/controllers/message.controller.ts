@@ -220,3 +220,40 @@ export const deleteConversationForMe = async (
     next(error);
   }
 };
+
+export const addMessageReaction = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { messageId } = req.params;
+    const { emoji } = req.body;
+    const result = await chatService.addMessageReaction(
+      messageId,
+      req.user!._id.toString(),
+      emoji
+    );
+    apiSuccess(res, result, result.action === "removed" ? 200 : 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const removeMessageReaction = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { messageId, reactionId } = req.params;
+    const result = await chatService.removeMessageReaction(
+      messageId,
+      reactionId,
+      req.user!._id.toString()
+    );
+    apiSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};

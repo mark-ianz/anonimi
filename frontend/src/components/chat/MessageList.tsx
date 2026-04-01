@@ -79,6 +79,38 @@ export default function MessageList({ conversation }: MessageListProps) {
     return map;
   }, [groupMembers]);
 
+  const reactionUserMetaById = useMemo(() => {
+    const map: Record<string, { name?: string; profileImage?: string | null; anonimiId?: string }> = {};
+
+    if (user?.id) {
+      map[user.id] = {
+        name: user.username ?? user.anonimiId ?? "You",
+        profileImage: user.profileImage ?? null,
+        anonimiId: user.anonimiId,
+      };
+    }
+
+    if (conversation.type === "private" && conversation.participant) {
+      map[conversation.participant.id] = {
+        name: conversation.participant.nickname ?? conversation.participant.username,
+        profileImage: conversation.participant.profileImage ?? null,
+        anonimiId: conversation.participant.anonimiId,
+      };
+    }
+
+    if (conversation.type === "group") {
+      Object.entries(groupMemberMetaById).forEach(([userId, meta]) => {
+        map[userId] = {
+          name: meta.name,
+          profileImage: meta.profileImage ?? null,
+          anonimiId: meta.anonimiId,
+        };
+      });
+    }
+
+    return map;
+  }, [user?.id, user?.username, user?.anonimiId, user?.profileImage, conversation, groupMemberMetaById]);
+
   useEffect(() => {
     const computeCanMarkRead = () =>
       typeof document !== "undefined" &&
@@ -296,7 +328,7 @@ export default function MessageList({ conversation }: MessageListProps) {
                 senderAnonimiId={senderAnonimiId}
                 participantCount={participantCount}
                 conversationType={conversation.type}
-                readByUsersById={groupMemberMetaById}
+                readByUsersById={reactionUserMetaById}
                 showReadReceipt={showReadReceipt}
                 timestampBubblePosition={timestampBubblePosition}
               />

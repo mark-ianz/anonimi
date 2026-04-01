@@ -63,6 +63,12 @@ export interface IMessage extends Document {
   fileSize?: number;
   readBy: Types.ObjectId[];
   readByAt?: Map<string, Date>;
+  reactions: Array<{
+    _id: Types.ObjectId;
+    userId: Types.ObjectId;
+    emoji: string;
+    createdAt: Date;
+  }>;
   deletedFor: Types.ObjectId[];
   unsent: boolean;
   createdAt: Date;

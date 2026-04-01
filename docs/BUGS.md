@@ -213,5 +213,14 @@ When I message request someone, the request doesn't go to their request tab. tho
 - When I only pressed accept, the contact request should still be on my /contacts?tab=requests
 - When I press Accept and Add, I should automatically accept his contact request and sync it with my contacts.
 
---
+-- Done
 When creating a group chat, the members avatar when adding members initially are empty.
+
+--
+On Contacts tab, the contacts activity status are not sync to their current status.
+
+--
+Add typing indicator if the user is typing. 
+- If it's on the group chat and there are two people typing: x and x are typing...
+- 3 people: x and 2 others are typing...
+- 10+: x and 9+ others are typing...

@@ -10,6 +10,7 @@ import { Block } from "../models/block.model";
 import { ConversationArchive } from "../models/conversationArchive.model";
 import { NotFoundError, ForbiddenError, ConflictError } from "../utils/apiError";
 import { MessageType } from "../types/enums";
+import { isReactionEmoji } from "../constants/reactions";
 import {
   emitToUser,
   emitToConversation,
@@ -56,6 +57,18 @@ const serializeReadByAt = (
     return acc;
   }, {});
 };
+
+const serializeReaction = (reaction: { _id: Types.ObjectId; userId: Types.ObjectId; emoji: string; createdAt: Date }) => ({
+  id: reaction._id.toString(),
+  userId: reaction.userId.toString(),
+  emoji: reaction.emoji,
+  createdAt: reaction.createdAt,
+});
+
+const serializeReactions = (
+  reactions: Array<{ _id: Types.ObjectId; userId: Types.ObjectId; emoji: string; createdAt: Date }> | undefined,
+  isUnsent: boolean
+) => (isUnsent ? [] : (reactions ?? []).map(serializeReaction));
 
 const getArchivedRecipientIds = async (
   conversationId: string,
@@ -548,6 +561,7 @@ export const getMessages = async (
       fileSize: m.fileSize,
       readBy: m.readBy.map((r: Types.ObjectId) => r.toString()),
       readByAt: serializeReadByAt(m.readByAt),
+      reactions: serializeReactions(m.reactions, m.unsent),
       unsent: m.unsent,
       unsentAt: m.unsent ? m.updatedAt : null,
       createdAt: m.createdAt,
@@ -780,6 +794,7 @@ export const sendMessage = async (
         fileSize: message.fileSize,
         readBy: message.readBy.map((r: Types.ObjectId) => r.toString()),
         readByAt: serializeReadByAt(message.readByAt),
+        reactions: serializeReactions(message.reactions, message.unsent),
         unsent: message.unsent,
         unsentAt: message.unsent ? message.updatedAt : null,
         createdAt: message.createdAt,
@@ -868,6 +883,7 @@ export const sendMessage = async (
       fileSize: message.fileSize,
       readBy: message.readBy.map((r: Types.ObjectId) => r.toString()),
       readByAt: serializeReadByAt(message.readByAt),
+      reactions: serializeReactions(message.reactions, message.unsent),
       unsent: message.unsent,
       unsentAt: message.unsent ? message.updatedAt : null,
       createdAt: message.createdAt,
@@ -994,6 +1010,119 @@ export const deleteConversationForMe = async (
   };
 };
 
+export const addMessageReaction = async (
+  messageId: string,
+  userId: string,
+  emoji: string
+) => {
+  if (!isReactionEmoji(emoji)) {
+    throw new ConflictError("Invalid reaction emoji");
+  }
+
+  const message = await Message.findById(messageId);
+  if (!message) {
+    throw new NotFoundError("Message not found");
+  }
+
+  if (message.unsent) {
+    throw new ForbiddenError("Cannot react to an unsent message");
+  }
+
+  const conversation = await Conversation.findById(message.conversationId).select(
+    "participants"
+  );
+  if (!conversation) {
+    throw new NotFoundError("Conversation not found");
+  }
+
+  const isParticipant = conversation.participants.some(
+    (participant) => participant.toString() === userId
+  );
+
+  if (!isParticipant) {
+    throw new ForbiddenError("Not a participant in this conversation");
+  }
+
+  const existing = message.reactions.find(
+    (reaction) =>
+      reaction.userId.toString() === userId && reaction.emoji === emoji
+  );
+
+  if (existing) {
+    message.reactions.pull(existing._id);
+    await message.save();
+
+    const payload = {
+      action: "removed" as const,
+      conversationId: message.conversationId.toString(),
+      messageId: message._id.toString(),
+      reactionId: existing._id.toString(),
+    };
+
+    emitToConversation(message.conversationId.toString(), "message:reaction:remove", {
+      conversationId: payload.conversationId,
+      messageId: payload.messageId,
+      reactionId: payload.reactionId,
+    });
+
+    return payload;
+  }
+
+  message.reactions.push({
+    emoji,
+    userId: new Types.ObjectId(userId),
+    createdAt: new Date(),
+  });
+  await message.save();
+
+  const added = message.reactions[message.reactions.length - 1];
+  const reaction = serializeReaction(added as any);
+
+  const payload = {
+    action: "added" as const,
+    conversationId: message.conversationId.toString(),
+    messageId: message._id.toString(),
+    reaction,
+  };
+
+  emitToConversation(message.conversationId.toString(), "message:reaction:add", payload);
+
+  return payload;
+};
+
+export const removeMessageReaction = async (
+  messageId: string,
+  reactionId: string,
+  userId: string
+) => {
+  const message = await Message.findById(messageId);
+  if (!message) {
+    throw new NotFoundError("Message not found");
+  }
+
+  const reaction = message.reactions.id(reactionId);
+  if (!reaction) {
+    throw new NotFoundError("Reaction not found");
+  }
+
+  if (reaction.userId.toString() !== userId) {
+    throw new ForbiddenError("Not the owner of this reaction");
+  }
+
+  message.reactions.pull(reactionId);
+  await message.save();
+
+  const payload = {
+    conversationId: message.conversationId.toString(),
+    messageId: message._id.toString(),
+    reactionId,
+  };
+
+  emitToConversation(message.conversationId.toString(), "message:reaction:remove", payload);
+
+  return payload;
+};
+
 export const unsendMessage = async (
   messageId: string,
   senderId: string
@@ -1015,6 +1144,7 @@ export const unsendMessage = async (
 
   message.unsent = true;
   message.content = undefined;
+  message.reactions = [];
   await message.save();
 
   // Broadcast to all conversation participants so every client updates in real-time

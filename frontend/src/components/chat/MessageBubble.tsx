@@ -8,6 +8,8 @@ import MessageActions from "./MessageActions";
 import ReadReceipt from "./ReadReceipt";
 import MediaPreview from "./MediaPreview";
 import UserAvatar from "@/components/shared/UserAvatar";
+import MessageReactions from "./MessageReactions";
+import MessageReactionPicker from "./MessageReactionPicker";
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -24,7 +26,7 @@ interface MessageBubbleProps {
   senderAnonimiId?: string;
   participantCount?: number;
   conversationType?: "private" | "group";
-  readByUsersById?: Record<string, { name: string; anonimiId: string }>;
+  readByUsersById?: Record<string, { name?: string; anonimiId?: string; profileImage?: string | null }>;
   showReadReceipt?: boolean;
   timestampBubblePosition?: "single" | "first" | "middle" | "last";
 }
@@ -182,7 +184,7 @@ export default function MessageBubble({
   return (
     <div
       className={cn(
-        "relative flex items-end gap-2 px-4 py-0.5 animate-message-appear hover:z-30",
+        "group/message relative flex items-end gap-2 px-4 py-0.5 animate-message-appear hover:z-30",
         isMine && "flex-row-reverse"
       )}
       onMouseEnter={() => setShowActions(true)}
@@ -314,6 +316,15 @@ export default function MessageBubble({
           )}
         </div>
 
+        {!message.unsent && (
+          <MessageReactions
+            message={message}
+            isMine={isMine}
+            conversationType={conversationType}
+            userMetaById={readByUsersById}
+          />
+        )}
+
         {isMine && !message.pending && !message.failed && !message.unsent && showReadReceipt && (
           <div className="group mt-1 px-1 flex justify-end w-full">
             <ReadReceipt
@@ -330,14 +341,19 @@ export default function MessageBubble({
         )}
       </div>
 
-      {/* Actions */}
+      {/* Side controls */}
       <div
         className={cn(
-          "self-center transition-opacity",
-          (showActions || dialogOpen) ? "opacity-100" : "opacity-0",
-          isMine ? "order-first" : "order-last"
+          "self-center flex items-center gap-1.5 transition-opacity",
+          (showActions || dialogOpen) ? "opacity-100" : "opacity-0"
         )}
       >
+        <MessageReactionPicker
+          message={message}
+          isMine={isMine}
+          showOnHover
+          hasReactions={(message.reactions ?? []).length > 0}
+        />
         <MessageActions message={message} isMine={isMine} onDialogOpenChange={setDialogOpen} />
       </div>
     </div>

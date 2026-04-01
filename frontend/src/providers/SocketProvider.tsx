@@ -16,6 +16,8 @@ import type {
   MessageAckPayload,
   MessageReceivePayload,
   MessageUnsentPayload,
+  MessageReactionAddedPayload,
+  MessageReactionRemovedPayload,
   MessageReadReceiptPayload,
   TypingUpdatePayload,
   PresenceUpdatePayload,
@@ -143,6 +145,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
           fileSize: null,
           readBy: [],
           readByAt: {},
+          reactions: [],
           unsent: false,
         }),
         id: payload.messageId,
@@ -172,6 +175,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         fileSize: payload.fileSize,
         readBy: [],
         readByAt: {},
+        reactions: [],
         unsent: false,
         createdAt: payload.timestamp,
       };
@@ -337,7 +341,14 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
               ...page,
               data: page.data.map((message) =>
                 message.id === payload.messageId
-                  ? { ...message, unsent: true, unsentAt, content: null, mediaUrl: null }
+                  ? {
+                      ...message,
+                      unsent: true,
+                      unsentAt,
+                      content: null,
+                      mediaUrl: null,
+                      reactions: [],
+                    }
                   : message
               ),
             })),
@@ -350,9 +361,64 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         unsentAt,
         content: null,
         mediaUrl: null,
+        reactions: [],
       });
 
       qc.invalidateQueries({ queryKey: ["conversations"] });
+    });
+
+    const applyReactionUpdate = (
+      conversationId: string,
+      messageId: string,
+      updater: (current: Message["reactions"]) => Message["reactions"]
+    ) => {
+      qc.setQueryData(
+        ["messages", conversationId],
+        (old:
+          | {
+              pages: Array<{ data: Message[] }>;
+              pageParams: unknown[];
+            }
+          | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              data: page.data.map((message) => {
+                if (message.id !== messageId) return message;
+                return {
+                  ...message,
+                  reactions: updater(message.reactions ?? []),
+                };
+              }),
+            })),
+          };
+        }
+      );
+
+      const { messages } = useChatStore.getState();
+      const current = (messages[conversationId] ?? []).find(
+        (msg) => msg.id === messageId
+      );
+      if (current) {
+        updateMessage(conversationId, messageId, {
+          reactions: updater(current.reactions ?? []),
+        });
+      }
+    };
+
+    socket.on("message:reaction:add", (payload: MessageReactionAddedPayload) => {
+      applyReactionUpdate(payload.conversationId, payload.messageId, (current) => [
+        ...current.filter((reaction) => reaction.id !== payload.reaction.id),
+        payload.reaction as Message["reactions"][number],
+      ]);
+    });
+
+    socket.on("message:reaction:remove", (payload: MessageReactionRemovedPayload) => {
+      applyReactionUpdate(payload.conversationId, payload.messageId, (current) =>
+        current.filter((reaction) => reaction.id !== payload.reactionId)
+      );
     });
 
     // Read receipts
@@ -520,6 +586,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       socket.off("message:ack");
       socket.off("message:receive");
       socket.off("message:unsent");
+      socket.off("message:reaction:add");
+      socket.off("message:reaction:remove");
       socket.off("message:read");
       socket.off("typing:update");
       socket.off("presence:update");

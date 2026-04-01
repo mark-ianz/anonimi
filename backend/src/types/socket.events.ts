@@ -52,6 +52,23 @@ export interface MessageUnsentPayload {
   conversationId: string;
 }
 
+export interface MessageReactionAddedPayload {
+  conversationId: string;
+  messageId: string;
+  reaction: {
+    id: string;
+    userId: string;
+    emoji: string;
+    createdAt: string;
+  };
+}
+
+export interface MessageReactionRemovedPayload {
+  conversationId: string;
+  messageId: string;
+  reactionId: string;
+}
+
 export interface MessageReadEventPayload {
   conversationId: string;
   messageIds: string[];
