@@ -50,6 +50,21 @@ export default function MessageInput({
     ta.style.height = `${Math.min(ta.scrollHeight, 120)}px`;
   }, [text]);
 
+  // Focus input whenever user opens/switches conversations.
+  useEffect(() => {
+    if (disabled) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      const ta = textareaRef.current;
+      if (!ta) return;
+      ta.focus({ preventScroll: true });
+      const len = ta.value.length;
+      ta.setSelectionRange(len, len);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [conversationId, disabled]);
+
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>, source: UploadSource) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -178,6 +193,7 @@ export default function MessageInput({
         {/* Textarea */}
         <textarea
           ref={textareaRef}
+          autoFocus
           value={text}
           onChange={(e) => {
             setText(e.target.value);
