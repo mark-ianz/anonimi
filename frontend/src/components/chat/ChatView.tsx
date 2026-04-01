@@ -318,7 +318,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <header className="flex items-center gap-3 px-4 h-14 border-b border-border/50 shrink-0">
+      <header className="relative z-40 flex items-center gap-3 px-4 h-14 border-b border-border/50 shrink-0">
         {/* Back (mobile) */}
         <button
           onClick={() => router.push(backHref)}
@@ -405,7 +405,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 z-20 top-full mt-1 glass rounded-xl shadow-elevated py-1 min-w-44 animate-fade-in">
+              <div className="absolute right-0 z-50 top-full mt-1 glass rounded-xl shadow-elevated py-1 min-w-44 animate-fade-in">
                 {!isGroup && (
                   <Link
                     href={`/user/${conversation.participant?.anonimiId}`}
