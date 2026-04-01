@@ -151,7 +151,7 @@ function VerifyForm() {
       };
       setAuth(user, accessToken, refreshToken);
       clearPendingVerification();
-      toast.success("Account verified! Welcome to EchoID.");
+      toast.success("Account verified! Welcome to anonimi.");
       router.push("/chat");
     } catch (err: unknown) {
       const msg =
@@ -250,7 +250,7 @@ function VerifyForm() {
         onClick={submit}
         disabled={isSubmitting || isCheckingContext || code.some((c) => !c)}
         className="w-full h-10 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2 transition-opacity disabled:opacity-60"
-        style={{ background: "var(--echo-gradient)" }}
+        style={{ background: "var(--anonimi-gradient)" }}
       >
         {isSubmitting ? (
           <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />

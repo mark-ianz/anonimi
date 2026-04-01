@@ -1,6 +1,6 @@
 # Database Schema
 
-This document defines the complete MongoDB schema for EchoID, including collection definitions, field types, indexes, and relationships.
+This document defines the complete MongoDB schema for anonimi, including collection definitions, field types, indexes, and relationships.
 
 **Database:** MongoDB (document-oriented)  
 **ODM:** Mongoose (recommended for schema validation and middleware)
@@ -49,7 +49,7 @@ Collection: users
 
 {
   _id:              ObjectId,          // Auto-generated
-  echoId:         String,            // "eid_a8F3kP29" — generated, immutable
+  anonimiId:         String,            // "aid_a8F3kP29" — generated, immutable
   username:         String,            // "john_doe" — unique, user-provided or system-generated
   email:            String,            // "john@example.com" — unique, private
   phone:            String | null,     // "+1234567890" — optional, private, recovery-only
@@ -77,13 +77,13 @@ Collection: users
 
 | Index | Type | Purpose |
 |-------|------|---------|
-| `{ echoId: 1 }` | Unique | Fast lookup by EchoID, enforce uniqueness |
+| `{ anonimiId: 1 }` | Unique | Fast lookup by anonimi, enforce uniqueness |
 | `{ username: 1 }` | Unique | Fast lookup by username, enforce uniqueness |
 | `{ email: 1 }` | Unique, Sparse | Fast lookup for auth, sparse allows null |
 | `{ phone: 1 }` | Unique, Sparse | Fast lookup for auth, sparse allows null |
 | `{ status: 1 }` | Regular | Filter by account status |
 | `{ role: 1 }` | Regular | Filter admin/moderator users |
-| `{ username: "text", echoId: "text" }` | Text | Full-text search on public fields |
+| `{ username: "text", anonimiId: "text" }` | Text | Full-text search on public fields |
 
 ### Notes
 
@@ -91,7 +91,7 @@ Collection: users
 - `passwordHash` is **never** returned in any API response.
 - `verificationCode` and `passwordResetToken` are temporary fields, cleared after use.
 - `role` defaults to `"user"`. Admin roles are assigned by Super Admin only.
-- The text index on `username` and `echoId` supports the user search feature.
+- The text index on `username` and `anonimiId` supports the user search feature.
 - Registration requires email; phone can be added later for recovery/security.
 - If username is omitted during registration, a crypto-random unique username is generated.
 - Username manual edit is allowed once ever (applies to generated and custom usernames).

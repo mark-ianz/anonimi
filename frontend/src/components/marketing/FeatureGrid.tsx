@@ -10,7 +10,7 @@ const features = [
   {
     icon: Shield,
     title: "Privacy-First Identity",
-    description: "Your EchoID is uniquely generated — no phone numbers or personal info required. Stay anonymous while chatting.",
+    description: "Your anonimi is uniquely generated — no phone numbers or personal info required. Stay anonymous while chatting.",
   },
   {
     icon: Users,
@@ -96,7 +96,7 @@ export default function FeatureGrid() {
             <p className="font-mono text-[0.68rem] uppercase tracking-[0.12em] text-muted-foreground">Design Principle</p>
             <h3 className="mt-3 text-2xl leading-tight font-semibold">Every identity interaction needs a recovery path.</h3>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              EchoID now includes verification resume, resend with cooldown, and explicit pending-account continuation from login.
+              anonimi now includes verification resume, resend with cooldown, and explicit pending-account continuation from login.
             </p>
             <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
               <div className="rounded-2xl border border-border/65 bg-background/70 p-3">

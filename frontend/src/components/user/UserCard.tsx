@@ -10,8 +10,8 @@ import { resolveMediaUrl } from "@/lib/mediaUrl";
 interface UserCardProps {
   user: SearchUser | PublicUser;
   showActions?: boolean;
-  onAddContact?: (echoId: string) => void;
-  onMessage?: (echoId: string) => void;
+  onAddContact?: (anonimiId: string) => void;
+  onMessage?: (anonimiId: string) => void;
   className?: string;
 }
 
@@ -29,11 +29,11 @@ export default function UserCard({
     <div
       role="button"
       tabIndex={0}
-      onClick={() => router.push(`/user/${user.echoId}`)}
+      onClick={() => router.push(`/user/${user.anonimiId}`)}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          router.push(`/user/${user.echoId}`);
+          router.push(`/user/${user.anonimiId}`);
         }
       }}
       className={cn(
@@ -63,7 +63,7 @@ export default function UserCard({
         <p className="truncate text-sm font-medium hover:underline">
           {user.username}
         </p>
-        <p className="text-xs text-muted-foreground">@{user.echoId}</p>
+        <p className="text-xs text-muted-foreground">@{user.anonimiId}</p>
       </div>
 
       {/* Actions */}
@@ -73,7 +73,7 @@ export default function UserCard({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onAddContact(user.echoId);
+                onAddContact(user.anonimiId);
               }}
               className="flex items-center gap-1.5 h-8 px-3 rounded-xl bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
             >
@@ -85,7 +85,7 @@ export default function UserCard({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onMessage(user.echoId);
+                onMessage(user.anonimiId);
               }}
               className="w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
             >

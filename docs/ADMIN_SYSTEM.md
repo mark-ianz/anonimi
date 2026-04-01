@@ -6,7 +6,7 @@ This document defines the complete admin dashboard design including roles, permi
 
 ## 1. Admin Roles
 
-EchoID has three admin roles, each with progressively more access.
+anonimi has three admin roles, each with progressively more access.
 
 ### Role Definitions
 
@@ -115,7 +115,7 @@ The admin dashboard connects to the `/admin` Socket.IO namespace to receive live
 ### User Search
 
 Admins can search users by:
-- EchoID
+- anonimi
 - Username
 - Email (moderator+ only)
 - Phone (moderator+ only)
@@ -127,7 +127,7 @@ Admin user profile shows **all** fields including private data:
 
 | Field | Visibility |
 |-------|------------|
-| EchoID | Always shown |
+| anonimi | Always shown |
 | Username | Always shown |
 | Email | Moderator+ |
 | Phone | Moderator+ |
@@ -296,7 +296,7 @@ Admins can browse and search all groups in the system.
 
 **Search By:**
 - Group name
-- Owner username or EchoID
+- Owner username or anonimi
 - Member count range
 - Creation date range
 
@@ -329,7 +329,7 @@ Admins can browse conversations for moderation purposes.
 **Access:** Moderator+ only
 
 **Search By:**
-- User EchoID or username (find conversations involving a specific user)
+- User anonimi or username (find conversations involving a specific user)
 - Conversation ID (direct lookup)
 
 ### Conversation View
@@ -361,7 +361,7 @@ Admins can browse conversations for moderation purposes.
 
 | Column | Description |
 |--------|-------------|
-| User | Username, EchoID, profile image |
+| User | Username, anonimi, profile image |
 | Reason | Ban reason text |
 | Type | Temporary / Permanent |
 | Banned By | Admin who issued the ban |
@@ -375,7 +375,7 @@ Shows all historical bans including lifted/expired ones:
 
 | Column | Description |
 |--------|-------------|
-| User | Username, EchoID |
+| User | Username, anonimi |
 | Reason | Ban reason |
 | Type | Temporary / Permanent |
 | Banned By | Issuing admin |

@@ -30,20 +30,20 @@ export default function GroupMemberList({ groupId, members: initialMembers, grou
   const filtered = search
     ? displayMembers.filter(m => 
         m.username.toLowerCase().includes(search.toLowerCase()) ||
-        m.echoId.toLowerCase().includes(search.toLowerCase())
+        m.anonimiId.toLowerCase().includes(search.toLowerCase())
       )
     : displayMembers;
 
   const canAddMembers = !!group.myRole;
 
-  const handleAddMembers = (echoIds: string[]) => {
-    addMembers(echoIds);
+  const handleAddMembers = (anonimiIds: string[]) => {
+    addMembers(anonimiIds);
     setShowAddModal(false);
   };
 
-  const handleSendMessage = async (echoId: string) => {
+  const handleSendMessage = async (anonimiId: string) => {
     try {
-      const res = await api.post("/conversations", { participantEchoId: echoId });
+      const res = await api.post("/conversations", { participantAnonimiId: anonimiId });
       const conversationId = res.data?.data?.conversationId as string | undefined;
       if (!conversationId) {
         toast.error("Could not open conversation.");
@@ -55,9 +55,9 @@ export default function GroupMemberList({ groupId, members: initialMembers, grou
     }
   };
 
-  const handleBlock = async (echoId: string) => {
+  const handleBlock = async (anonimiId: string) => {
     try {
-      await api.post("/blocks", { targetEchoId: echoId });
+      await api.post("/blocks", { targetAnonimiId: anonimiId });
       toast.success("User blocked.");
     } catch {
       toast.error("Failed to block user.");
@@ -111,7 +111,7 @@ export default function GroupMemberList({ groupId, members: initialMembers, grou
 
       {showAddModal && (
         <AddMembersModal
-          existingMemberEchoIds={displayMembers.map((m) => m.echoId)}
+          existingMemberAnonimiIds={displayMembers.map((m) => m.anonimiId)}
           onClose={() => setShowAddModal(false)}
           onAdd={handleAddMembers}
         />
@@ -121,31 +121,31 @@ export default function GroupMemberList({ groupId, members: initialMembers, grou
 }
 
 function AddMembersModal({
-  existingMemberEchoIds,
+  existingMemberAnonimiIds,
   onClose,
   onAdd,
 }: {
-  existingMemberEchoIds: string[];
+  existingMemberAnonimiIds: string[];
   onClose: () => void;
-  onAdd: (echoIds: string[]) => void;
+  onAdd: (anonimiIds: string[]) => void;
 }) {
   const { contacts, isLoadingContacts } = useContacts();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
 
-  const existing = new Set(existingMemberEchoIds);
-  const selectableContacts = contacts.filter((contact) => !existing.has(contact.echoId));
+  const existing = new Set(existingMemberAnonimiIds);
+  const selectableContacts = contacts.filter((contact) => !existing.has(contact.anonimiId));
   const filtered = search
     ? selectableContacts.filter((c) => {
         const display = (c.nickname ?? c.username).toLowerCase();
         const q = search.toLowerCase();
-        return display.includes(q) || c.echoId.toLowerCase().includes(q);
+        return display.includes(q) || c.anonimiId.toLowerCase().includes(q);
       })
     : selectableContacts;
 
-  const toggle = (echoId: string) => {
+  const toggle = (anonimiId: string) => {
     setSelected((prev) =>
-      prev.includes(echoId) ? prev.filter((id) => id !== echoId) : [...prev, echoId]
+      prev.includes(anonimiId) ? prev.filter((id) => id !== anonimiId) : [...prev, anonimiId]
     );
   };
 
@@ -158,7 +158,7 @@ function AddMembersModal({
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by username or EchoID..."
+          placeholder="Search by username or anonimi..."
           className="w-full h-10 px-3 rounded-xl bg-muted/50 border-0 text-sm"
           autoFocus
         />
@@ -169,11 +169,11 @@ function AddMembersModal({
           )}
 
           {!isLoadingContacts && filtered.map((contact) => {
-            const isSelected = selected.includes(contact.echoId);
+            const isSelected = selected.includes(contact.anonimiId);
             return (
               <button
                 key={contact.contactId}
-                onClick={() => toggle(contact.echoId)}
+                onClick={() => toggle(contact.anonimiId)}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-colors ${
                   isSelected ? "bg-primary/10" : "hover:bg-muted/50"
                 }`}
@@ -188,7 +188,7 @@ function AddMembersModal({
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate">{contact.nickname ?? contact.username}</p>
-                  <p className="text-xs text-muted-foreground truncate">@{contact.echoId}</p>
+                  <p className="text-xs text-muted-foreground truncate">@{contact.anonimiId}</p>
                 </div>
                 {isSelected && <span className="text-xs text-primary font-medium">Selected</span>}
               </button>

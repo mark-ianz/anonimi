@@ -24,7 +24,7 @@ export default function MarketingFooter() {
                 <MessageCircle className="h-4 w-4 text-foreground" />
               </div>
               <span className="font-display text-xl font-semibold tracking-[0.02em]">
-                EchoID
+                anonimi
               </span>
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
@@ -73,7 +73,7 @@ export default function MarketingFooter() {
 
         <div className="mt-12 border-t border-border/60 pt-8">
           <p className="text-center text-sm text-muted-foreground">
-            © {new Date().getFullYear()} EchoID. All rights reserved.
+            © {new Date().getFullYear()} anonimi. All rights reserved.
           </p>
         </div>
       </div>

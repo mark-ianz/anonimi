@@ -21,7 +21,7 @@ export interface Group {
 
 export interface GroupMember {
   userId: string;
-  echoId: string;
+  anonimiId: string;
   username: string;
   profileImage: string | null;
   role: GroupRole;
@@ -29,7 +29,7 @@ export interface GroupMember {
   joinedVia?: "group_create" | "manual_add" | "invite_link" | "direct_request";
   addedBy?: {
     id: string;
-    echoId: string;
+    anonimiId: string;
     username: string;
   } | null;
   joinedAt: string;
@@ -43,13 +43,13 @@ export interface GroupJoinRequest {
   source?: "manual_add" | "invite_link" | "direct";
   user: {
     id: string;
-    echoId: string;
+    anonimiId: string;
     username: string;
     profileImage: string | null;
   };
   inviter?: {
     id: string;
-    echoId: string;
+    anonimiId: string;
     username: string;
   } | null;
   createdAt: string;
@@ -67,7 +67,7 @@ export interface GroupInviteLink {
   qrCode?: string;
   createdBy?: {
     id: string;
-    echoId: string;
+    anonimiId: string;
     username: string;
   } | null;
   createdAt: string;

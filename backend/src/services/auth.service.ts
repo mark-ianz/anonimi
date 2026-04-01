@@ -4,7 +4,7 @@ import path from "path";
 import { Types } from "mongoose";
 import { User } from "../models/user.model";
 import { RefreshToken } from "../models/refreshToken.model";
-import { generateEchoId } from "../utils/generateId";
+import { generateAnonimiId } from "../utils/generateId";
 import { hashPassword, comparePassword } from "../utils/hashPassword";
 import {
   generateAccessToken,
@@ -27,7 +27,7 @@ interface LoginResult {
   refreshToken: string;
   user: {
     id: string;
-    echoId: string;
+    anonimiId: string;
     username: string;
     profileImage: string | null;
     role: string;
@@ -137,7 +137,7 @@ export const register = async (
   const passwordHash = await hashPassword(password);
 
   const user = await User.create({
-    echoId: generateEchoId(),
+    anonimiId: generateAnonimiId(),
     email: normalizedEmail,
     username: resolvedUsername,
     passwordHash,
@@ -188,13 +188,13 @@ export const verifyEmail = async (
   user.status = UserStatus.ACTIVE;
   await user.save();
 
-  const tokens = await generateTokens(user._id.toString(), user.echoId, user.role);
+  const tokens = await generateTokens(user._id.toString(), user.anonimiId, user.role);
 
   return {
     ...tokens,
     user: {
       id: user._id.toString(),
-      echoId: user.echoId,
+      anonimiId: user.anonimiId,
       username: user.username,
       profileImage: user.profileImage,
       role: user.role,
@@ -238,13 +238,13 @@ export const verifyEmailLink = async (token: string): Promise<LoginResult> => {
   user.status = UserStatus.ACTIVE;
   await user.save();
 
-  const tokens = await generateTokens(user._id.toString(), user.echoId, user.role);
+  const tokens = await generateTokens(user._id.toString(), user.anonimiId, user.role);
 
   return {
     ...tokens,
     user: {
       id: user._id.toString(),
-      echoId: user.echoId,
+      anonimiId: user.anonimiId,
       username: user.username,
       profileImage: user.profileImage,
       role: user.role,
@@ -277,13 +277,13 @@ export const verifyPhone = async (
   user.status = UserStatus.ACTIVE;
   await user.save();
 
-  const tokens = await generateTokens(user._id.toString(), user.echoId, user.role);
+  const tokens = await generateTokens(user._id.toString(), user.anonimiId, user.role);
 
   return {
     ...tokens,
     user: {
       id: user._id.toString(),
-      echoId: user.echoId,
+      anonimiId: user.anonimiId,
       username: user.username,
       profileImage: user.profileImage,
       role: user.role,
@@ -444,13 +444,13 @@ export const login = async (
     throw new UnauthorizedError("Account is banned");
   }
 
-  const tokens = await generateTokens(user._id.toString(), user.echoId, user.role);
+  const tokens = await generateTokens(user._id.toString(), user.anonimiId, user.role);
 
   return {
     ...tokens,
     user: {
       id: user._id.toString(),
-      echoId: user.echoId,
+      anonimiId: user.anonimiId,
       username: user.username,
       profileImage: user.profileImage,
       role: user.role,
@@ -492,7 +492,7 @@ export const refreshToken = async (refreshToken: string) => {
 
   await RefreshToken.deleteOne({ _id: storedToken._id });
 
-  const tokens = await generateTokens(user._id.toString(), user.echoId, user.role);
+  const tokens = await generateTokens(user._id.toString(), user.anonimiId, user.role);
 
   return tokens;
 };
@@ -533,13 +533,13 @@ export const resetPassword = async (
 
   await RefreshToken.deleteMany({ userId: user._id });
 
-  const tokens = await generateTokens(user._id.toString(), user.echoId, user.role);
+  const tokens = await generateTokens(user._id.toString(), user.anonimiId, user.role);
 
   return {
     ...tokens,
     user: {
       id: user._id.toString(),
-      echoId: user.echoId,
+      anonimiId: user.anonimiId,
       username: user.username,
       profileImage: user.profileImage,
       role: user.role,
@@ -564,11 +564,11 @@ export const logout = async (
 
 const generateTokens = async (
   userId: string,
-  echoId: string,
+  anonimiId: string,
   role: string
 ): Promise<{ accessToken: string; refreshToken: string }> => {
-  const accessToken = generateAccessToken({ userId, echoId, role });
-  const refreshToken = generateRefreshTokenUtil({ userId, echoId, role });
+  const accessToken = generateAccessToken({ userId, anonimiId, role });
+  const refreshToken = generateRefreshTokenUtil({ userId, anonimiId, role });
 
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);

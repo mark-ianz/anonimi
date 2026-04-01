@@ -29,7 +29,7 @@ function BanRow({ ban, onUnban, canUnban }: { ban: Ban; onUnban: (id: string) =>
       <div className="flex-1 min-w-0 space-y-0.5">
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium truncate">{ban.username}</p>
-          <span className="text-[10px] text-muted-foreground">@{ban.echoId}</span>
+          <span className="text-[10px] text-muted-foreground">@{ban.anonimiId}</span>
         </div>
         <p className="text-xs text-muted-foreground truncate">{ban.reason}</p>
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">

@@ -3,7 +3,7 @@ import AdminSidebar from "@/components/admin/AdminSidebar";
 import { SocketProvider } from "@/providers/SocketProvider";
 
 export const metadata: Metadata = {
-  title: "EchoID Admin",
+  title: "anonimi Admin",
 };
 
 function AdminLayoutWithSocket({ children }: { children: React.ReactNode }) {

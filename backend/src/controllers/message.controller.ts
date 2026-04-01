@@ -8,10 +8,10 @@ export const createOrGetConversation = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { participantEchoId } = req.body;
+    const { participantAnonimiId } = req.body;
     const result = await chatService.createOrGetConversation(
       req.user!._id.toString(),
-      participantEchoId
+      participantAnonimiId
     );
     apiSuccess(res, result, result.created ? 201 : 200);
   } catch (error) {

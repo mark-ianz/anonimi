@@ -24,7 +24,7 @@ const getTransporter = (() => {
 
 const resolveFromAddress = (): string => {
   const fromEmail = env.SMTP_FROM_EMAIL || env.SMTP_USER;
-  const fromName = env.SMTP_FROM_NAME || "EchoID";
+  const fromName = env.SMTP_FROM_NAME || "anonimi";
 
   if (!fromEmail) {
     throw new ApiError("Email service is not configured", 500, "EMAIL_NOT_CONFIGURED");
@@ -48,12 +48,12 @@ export const sendVerificationEmail = async (params: {
 
   const transporter = getTransporter();
 
-  const subject = "Verify your EchoID account";
+  const subject = "Verify your anonimi account";
   const html = `
     <div style="font-family: Arial, sans-serif; color: #111;">
       <h2 style="margin: 0 0 12px;">Verify your account</h2>
       <p style="margin: 0 0 16px;">
-        Use this code to verify your EchoID account. It expires in 15 minutes.
+        Use this code to verify your anonimi account. It expires in 15 minutes.
       </p>
       <div style="font-size: 24px; font-weight: 700; letter-spacing: 4px; margin: 8px 0 20px;">
         ${params.code}
@@ -84,12 +84,12 @@ export const sendPasswordResetEmail = async (params: {
 
   const transporter = getTransporter();
 
-  const subject = "Reset your EchoID password";
+  const subject = "Reset your anonimi password";
   const html = `
     <div style="font-family: Arial, sans-serif; color: #111;">
       <h2 style="margin: 0 0 12px;">Reset your password</h2>
       <p style="margin: 0 0 16px;">
-        We received a request to reset your EchoID password. This link expires in 1 hour.
+        We received a request to reset your anonimi password. This link expires in 1 hour.
       </p>
       <p style="margin: 0 0 20px;">
         <a href="${params.link}" style="color: #2563eb;">Reset password</a>

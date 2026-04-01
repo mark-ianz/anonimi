@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import FAQAccordion from "@/components/marketing/FAQAccordion";
 
 export const metadata: Metadata = {
-  title: "FAQ — EchoID",
-  description: "Frequently asked questions about EchoID.",
+  title: "FAQ — anonimi",
+  description: "Frequently asked questions about anonimi.",
 };
 
 export default function FAQPage() {

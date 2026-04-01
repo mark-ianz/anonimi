@@ -34,15 +34,15 @@ export default function CreateGroupPage() {
     const n = c.nickname ?? c.username;
     return (
       n.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.echoId.toLowerCase().includes(searchQuery.toLowerCase())
+      c.anonimiId.toLowerCase().includes(searchQuery.toLowerCase())
     );
   });
 
-  function toggleContact(echoId: string) {
+  function toggleContact(anonimiId: string) {
     setSelectedIds((prev) =>
-      prev.includes(echoId)
-        ? prev.filter((id) => id !== echoId)
-        : [...prev, echoId]
+      prev.includes(anonimiId)
+        ? prev.filter((id) => id !== anonimiId)
+        : [...prev, anonimiId]
     );
   }
 
@@ -100,7 +100,7 @@ export default function CreateGroupPage() {
           groupProfileEditPolicy,
           nicknameEditPolicy,
         },
-        memberEchoIds: selectedIds,
+        memberAnonimiIds: selectedIds,
       },
       {
         onSuccess: (createdGroup) => {
@@ -351,16 +351,16 @@ export default function CreateGroupPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Selected ({selectedIds.length})</label>
               <div className="flex flex-wrap gap-2">
-                {selectedIds.map((echoId) => {
-                  const c = contacts.find((c) => c.echoId === echoId);
+                {selectedIds.map((anonimiId) => {
+                  const c = contacts.find((c) => c.anonimiId === anonimiId);
                   return (
                     <span
-                      key={echoId}
+                      key={anonimiId}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium"
                     >
-                      {c?.nickname ?? c?.username ?? echoId}
+                      {c?.nickname ?? c?.username ?? anonimiId}
                       <button
-                        onClick={() => toggleContact(echoId)}
+                        onClick={() => toggleContact(anonimiId)}
                         className="hover:text-destructive transition-colors"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -384,11 +384,11 @@ export default function CreateGroupPage() {
 
             <div className="space-y-1 max-h-64 overflow-y-auto">
               {filtered.map((contact) => {
-                const isSelected = selectedIds.includes(contact.echoId);
+                const isSelected = selectedIds.includes(contact.anonimiId);
                 return (
                   <button
                     key={contact.contactId}
-                    onClick={() => toggleContact(contact.echoId)}
+                    onClick={() => toggleContact(contact.anonimiId)}
                     className={cn(
                       "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-left transition-colors",
                       isSelected ? "bg-primary/10" : "hover:bg-muted/50"
@@ -411,7 +411,7 @@ export default function CreateGroupPage() {
                         {contact.nickname ?? contact.username}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        @{contact.echoId}
+                        @{contact.anonimiId}
                       </p>
                     </div>
                     {isSelected && (

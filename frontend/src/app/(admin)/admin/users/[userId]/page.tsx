@@ -93,7 +93,7 @@ export default function AdminUserDetailPage() {
                 )}
                 <div>
                   <p className="text-lg font-bold font-display">{profile.username}</p>
-                  <p className="text-sm text-muted-foreground">@{profile.echoId}</p>
+                  <p className="text-sm text-muted-foreground">@{profile.anonimiId}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded-full", statusColors[profile.status] ?? "bg-muted text-muted-foreground")}>
                       {profile.status.replace("_", " ")}

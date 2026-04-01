@@ -134,7 +134,7 @@ I tried logging in this: {
   "_id": {
     "$oid": "69c9fb1401d0426ef441b956"
   },
-  "echoId": "eid_6r1aunby",
+  "anonimiId": "aid_6r1aunby",
   "username": "anon_t4k55y",
   "email": "awdawd@gmail.com",
   "passwordHash": "$2b$12$ZAyMVkhAeIZ9gvTQSPX/m.u3mPxJRrxvM0MjCih5srSjcNLDBEClK",

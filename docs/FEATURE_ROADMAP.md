@@ -1,6 +1,6 @@
 # Feature Roadmap
 
-This document defines the phased implementation plan for EchoID. Each phase builds on the previous one. Phases are dependency-ordered — no phase requires features from a later phase.
+This document defines the phased implementation plan for anonimi. Each phase builds on the previous one. Phases are dependency-ordered — no phase requires features from a later phase.
 
 ---
 
@@ -39,7 +39,7 @@ This document defines the phased implementation plan for EchoID. Each phase buil
 - [ ] Set up environment configuration (dotenv + Zod validation)
 - [ ] Implement global middleware pipeline (CORS, body parser, error handler)
 - [ ] Create the `User` model with all schema fields and indexes
-- [ ] Implement EchoID generation (`eid_` + 8 chars via nanoid)
+- [ ] Implement anonimi generation (`aid_` + 8 chars via nanoid)
 - [ ] Build `AuthService`:
   - [ ] Registration with email only (hash password with bcrypt)
   - [ ] Optional username at registration; generate random username when omitted
@@ -55,8 +55,8 @@ This document defines the phased implementation plan for EchoID. Each phase buil
   - [ ] Get own profile (`GET /api/auth/me`)
   - [ ] Update profile (`PATCH /api/auth/me`)
   - [ ] Upload avatar (`POST /api/auth/me/avatar`)
-  - [ ] User search by EchoID and username (`GET /api/users/search`)
-  - [ ] Get public profile (`GET /api/users/:echoId`)
+  - [ ] User search by anonimi and username (`GET /api/users/search`)
+  - [ ] Get public profile (`GET /api/users/:anonimiId`)
 - [ ] Set up auth middleware (JWT verification)
 - [ ] Set up validation middleware (Zod schemas per route)
 - [ ] Implement health check endpoint (`GET /api/health`)
@@ -115,7 +115,7 @@ This document defines the phased implementation plan for EchoID. Each phase buil
 - [ ] Build `AppSidebar` component (nav: Chat, Contacts, Archive, Profile, Settings, Support)
 - [ ] Build user profile page (`/profile`) — view own profile, edit
 - [ ] Build user search page/component
-- [ ] Build public profile view (`/user/[echoId]`)
+- [ ] Build public profile view (`/user/[anonimiId]`)
 - [ ] Build settings page (`/settings`) — theme, notifications, account
 - [ ] Set up protected route wrapper (`ProtectedRoute` component)
 
@@ -131,7 +131,7 @@ This document defines the phased implementation plan for EchoID. Each phase buil
 - Username manual edit is limited to one change.
 - JWT tokens work correctly with refresh rotation.
 - Users can view and edit their profiles.
-- Users can search for other users by EchoID or username.
+- Users can search for other users by anonimi or username.
 - Public profiles show only public information (no email/phone).
 - All four layouts render correctly with proper navigation.
 
@@ -304,7 +304,7 @@ Completed items linked to this phase:
   - [ ] Badge updates in real-time via `message-request:new` socket event
 - [ ] Build "Send Message" entry points for non-contacts:
   - [ ] "Send Message" button in `UserSearchResults` alongside "Add Contact"
-  - [ ] "Send Message" button on `UserProfile` page (`/user/[echoId]`)
+  - [ ] "Send Message" button on `UserProfile` page (`/user/[anonimiId]`)
   - [ ] Both call `POST /api/conversations` then navigate to `/chat/[conversationId]`
 - [ ] Implement non-contact notice banner in `ChatView`:
   - [ ] Determine current user's role: sender or recipient (compare `currentUserId` with `MessageRequest.fromUserId`)

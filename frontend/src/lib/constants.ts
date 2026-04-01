@@ -7,9 +7,9 @@ export const API_BASE = API_BASE_URL;
 export const SOCKET_URL =
   process.env.NEXT_PUBLIC_SOCKET_URL ?? "http://localhost:5000";
 
-export const ACCESS_TOKEN_KEY = "echo_access_token";
-export const REFRESH_TOKEN_KEY = "echo_refresh_token";
-export const PENDING_VERIFICATION_KEY = "echo_pending_verification";
+export const ACCESS_TOKEN_KEY = "anonimi_access_token";
+export const REFRESH_TOKEN_KEY = "anonimi_refresh_token";
+export const PENDING_VERIFICATION_KEY = "anonimi_pending_verification";
 
 export const MESSAGES_PER_PAGE = 30;
 export const CONVERSATIONS_PER_PAGE = 20;

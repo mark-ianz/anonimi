@@ -3,7 +3,7 @@ import { UserRole, UserStatus, OnlineStatus, AppearanceStatus } from "./enums";
 
 export interface IUser extends Document {
   _id: Types.ObjectId;
-  echoId: string;
+  anonimiId: string;
   username: string;
   email: string;
   phone?: string;

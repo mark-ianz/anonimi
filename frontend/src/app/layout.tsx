@@ -26,7 +26,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EchoID - Real-time Chat",
+  title: "anonimi - Real-time Chat",
   description: "A modern real-time messaging platform",
 };
 

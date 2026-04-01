@@ -12,7 +12,7 @@ export const createGroupSchema = z.object({
         groupProfileEditPolicy: z.enum(["admins_only", "all_members"]).optional(),
       })
       .optional(),
-    memberEchoIds: z.array(z.string()).min(1, "At least one member is required"),
+    memberAnonimiIds: z.array(z.string()).min(1, "At least one member is required"),
   }),
 });
 
@@ -39,7 +39,7 @@ export const updateGroupSchema = z.object({
 
 export const addMembersSchema = z.object({
   body: z.object({
-    memberEchoIds: z.array(z.string()).min(1),
+    memberAnonimiIds: z.array(z.string()).min(1),
   }),
 });
 

@@ -7,13 +7,13 @@ import { UserPlus, Share2, MessageCircle } from "lucide-react";
 const steps = [
   {
     icon: UserPlus,
-    title: "Sign up and get your EchoID",
-    description: "Create a free account with email and receive your EchoID instantly. Username is optional and auto-generated if you skip it.",
+    title: "Sign up and get your anonimi",
+    description: "Create a free account with email and receive your anonimi instantly. Username is optional and auto-generated if you skip it.",
   },
   {
     icon: Share2,
     title: "Share your ID with friends",
-    description: "Share your EchoID with anyone you want to chat with. It's that simple.",
+    description: "Share your anonimi with anyone you want to chat with. It's that simple.",
   },
   {
     icon: MessageCircle,

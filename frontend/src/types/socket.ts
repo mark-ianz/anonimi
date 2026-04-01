@@ -89,7 +89,7 @@ export interface ContactRequestPayload {
   requestId: string;
   from: {
     id: string;
-    echoId: string;
+    anonimiId: string;
     username: string;
     profileImage: string | null;
   };
@@ -98,14 +98,14 @@ export interface ContactRequestPayload {
 
 export interface ContactAcceptedPayload {
   contactId: string;
-  echoId: string;
+  anonimiId: string;
   username: string;
   profileImage: string | null;
 }
 
 export interface ContactRequestCancelledPayload {
   fromUserId: string;
-  fromEchoId?: string;
+  fromAnonimiId?: string;
 }
 
 export interface ContactNicknameUpdatedPayload {
@@ -117,7 +117,7 @@ export interface MessageRequestNewPayload {
   conversationId: string;
   from: {
     id: string;
-    echoId: string;
+    anonimiId: string;
     username: string;
     profileImage: string | null;
   };
@@ -133,7 +133,7 @@ export interface MessageRequestAcceptedPayload {
   conversationId: string;
   acceptedBy: {
     id: string;
-    echoId?: string;
+    anonimiId?: string;
     username?: string;
     profileImage: string | null;
   };
@@ -144,7 +144,7 @@ export interface GroupMemberJoinedPayload {
   groupId: string;
   member: {
     userId: string;
-    echoId: string;
+    anonimiId: string;
     username: string;
     profileImage: string | null;
     role: GroupRole;

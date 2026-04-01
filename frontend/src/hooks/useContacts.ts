@@ -45,8 +45,8 @@ export function useContacts() {
   });
 
   const sendRequestMutation = useMutation({
-    mutationFn: async (targetEchoId: string) => {
-      const res = await api.post("/contacts/request", { targetEchoId });
+    mutationFn: async (targetAnonimiId: string) => {
+      const res = await api.post("/contacts/request", { targetAnonimiId });
       return res.data.data;
     },
     onSuccess: () => {
@@ -62,8 +62,8 @@ export function useContacts() {
   });
 
   const cancelRequestMutation = useMutation({
-    mutationFn: async (targetEchoId: string) => {
-      const res = await api.post("/contacts/request/cancel", { targetEchoId });
+    mutationFn: async (targetAnonimiId: string) => {
+      const res = await api.post("/contacts/request/cancel", { targetAnonimiId });
       return res.data.data;
     },
     onSuccess: () => {

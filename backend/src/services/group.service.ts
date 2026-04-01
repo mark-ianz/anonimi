@@ -131,7 +131,7 @@ const addMemberToGroup = async (
 export const createGroup = async (
   ownerId: string,
   name: string | undefined,
-  memberEchoIds: string[],
+  memberAnonimiIds: string[],
   image?: string | null,
   description?: string,
   settings?: {
@@ -140,14 +140,14 @@ export const createGroup = async (
     groupProfileEditPolicy?: "admins_only" | "all_members";
   }
 ) => {
-  const owner = await User.findById(ownerId).select("_id echoId username profileImage");
+  const owner = await User.findById(ownerId).select("_id anonimiId username profileImage");
   const actualOwnerId = ownerId;
   const groupName = name?.trim() ? name.trim() : formatAutoGroupName();
 
   const participants = [new Types.ObjectId(actualOwnerId)];
 
   const memberUsers = await User.find({
-    echoId: { $in: memberEchoIds },
+    anonimiId: { $in: memberAnonimiIds },
   });
 
   const invitedMembers: Types.ObjectId[] = [];
@@ -198,7 +198,7 @@ export const createGroup = async (
   const memberData = [
     {
       userId: actualOwnerId,
-      echoId: owner?.echoId || "",
+      anonimiId: owner?.anonimiId || "",
       role: "owner",
       status: "joined",
     },
@@ -223,7 +223,7 @@ export const createGroup = async (
 
     memberData.push({
       userId: user._id.toString(),
-      echoId: user.echoId,
+      anonimiId: user.anonimiId,
       role: "member",
       status: isContact ? "joined" : "invited",
     });
@@ -421,8 +421,8 @@ export const getGroupMembers = async (groupId: string, userId: string) => {
   }
 
   const members = await GroupMember.find({ groupId: group._id })
-    .populate("userId", "echoId username profileImage")
-    .populate("addedByUserId", "echoId username")
+    .populate("userId", "anonimiId username profileImage")
+    .populate("addedByUserId", "anonimiId username")
     .sort({ role: 1, joinedAt: 1 })
     .lean();
 
@@ -430,7 +430,7 @@ export const getGroupMembers = async (groupId: string, userId: string) => {
     groupId: group._id,
     status: { $in: ["approved", "pending"] },
   })
-    .populate("inviterUserId", "echoId username")
+    .populate("inviterUserId", "anonimiId username")
     .sort({ createdAt: -1 })
     .lean();
 
@@ -446,18 +446,18 @@ export const getGroupMembers = async (groupId: string, userId: string) => {
     addedBy: m.addedByUserId
       ? {
           id: m.addedByUserId._id.toString(),
-          echoId: m.addedByUserId.echoId,
+          anonimiId: m.addedByUserId.anonimiId,
           username: m.addedByUserId.username,
         }
       : requestByUserId.get(m.userId._id.toString())?.inviterUserId
       ? {
           id: requestByUserId.get(m.userId._id.toString()).inviterUserId._id.toString(),
-          echoId: requestByUserId.get(m.userId._id.toString()).inviterUserId.echoId,
+          anonimiId: requestByUserId.get(m.userId._id.toString()).inviterUserId.anonimiId,
           username: requestByUserId.get(m.userId._id.toString()).inviterUserId.username,
         }
       : null,
     userId: m.userId._id.toString(),
-    echoId: m.userId.echoId,
+    anonimiId: m.userId.anonimiId,
     username: m.userId.username,
     profileImage: m.userId.profileImage,
     role: m.role,
@@ -469,7 +469,7 @@ export const getGroupMembers = async (groupId: string, userId: string) => {
 export const addMembers = async (
   groupId: string,
   userId: string,
-  memberEchoIds: string[]
+  memberAnonimiIds: string[]
 ) => {
   const group = await Group.findById(groupId);
 
@@ -490,11 +490,11 @@ export const addMembers = async (
     throw new ForbiddenError("Not authorized to add members");
   }
 
-  const newMembers = await User.find({ echoId: { $in: memberEchoIds } });
+  const newMembers = await User.find({ anonimiId: { $in: memberAnonimiIds } });
 
-  const added: { echoId: string; status: string }[] = [];
-  const invited: { echoId: string; status: string }[] = [];
-  const pendingApproval: { echoId: string; status: string; requestId: string }[] = [];
+  const added: { anonimiId: string; status: string }[] = [];
+  const invited: { anonimiId: string; status: string }[] = [];
+  const pendingApproval: { anonimiId: string; status: string; requestId: string }[] = [];
 
   const canBypassApproval =
     membership.role === GroupRole.OWNER || membership.role === GroupRole.ADMIN;
@@ -535,7 +535,7 @@ export const addMembers = async (
         });
 
         pendingApproval.push({
-          echoId: user.echoId,
+          anonimiId: user.anonimiId,
           status: "pending_approval",
           requestId: request._id.toString(),
         });
@@ -555,9 +555,9 @@ export const addMembers = async (
     );
 
     if (isContact) {
-      added.push({ echoId: user.echoId, status: "joined" });
+      added.push({ anonimiId: user.anonimiId, status: "joined" });
     } else {
-      invited.push({ echoId: user.echoId, status: "invited" });
+      invited.push({ anonimiId: user.anonimiId, status: "invited" });
 
       await MessageRequest.create({
         conversationId: group.conversationId,
@@ -873,8 +873,8 @@ export const listJoinRequests = async (groupId: string, userId: string) => {
     groupId: group._id,
     status: "pending",
   })
-    .populate("userId", "echoId username profileImage")
-    .populate("inviterUserId", "echoId username")
+    .populate("userId", "anonimiId username profileImage")
+    .populate("inviterUserId", "anonimiId username")
     .sort({ createdAt: -1 })
     .lean();
 
@@ -885,14 +885,14 @@ export const listJoinRequests = async (groupId: string, userId: string) => {
     createdAt: req.createdAt,
     user: {
       id: req.userId?._id?.toString(),
-      echoId: req.userId?.echoId,
+      anonimiId: req.userId?.anonimiId,
       username: req.userId?.username,
       profileImage: req.userId?.profileImage ?? null,
     },
     inviter: req.inviterUserId
       ? {
           id: req.inviterUserId._id.toString(),
-          echoId: req.inviterUserId.echoId,
+          anonimiId: req.inviterUserId.anonimiId,
           username: req.inviterUserId.username,
         }
       : null,
@@ -1002,7 +1002,7 @@ export const createInviteLink = async (
 
   const joinUrl = `${getFrontendUrl()}/groups/join/${invite.token}`;
   const qrCode = await QRCode.toDataURL(joinUrl, { margin: 2, width: 256 });
-  const creator = await User.findById(userId).select("_id echoId username").lean();
+  const creator = await User.findById(userId).select("_id anonimiId username").lean();
 
   return {
     inviteLinkId: invite._id.toString(),
@@ -1014,7 +1014,7 @@ export const createInviteLink = async (
     createdBy: creator
       ? {
           id: creator._id.toString(),
-          echoId: creator.echoId,
+          anonimiId: creator.anonimiId,
           username: creator.username,
         }
       : null,
@@ -1032,7 +1032,7 @@ export const listInviteLinks = async (groupId: string, userId: string) => {
   if (!membership) throw new ForbiddenError("Not a group member");
 
   const links = await GroupInviteLink.find({ groupId: group._id })
-    .populate("createdBy", "echoId username")
+    .populate("createdBy", "anonimiId username")
     .sort({ createdAt: -1 })
     .lean();
 
@@ -1047,7 +1047,7 @@ export const listInviteLinks = async (groupId: string, userId: string) => {
     createdBy: link.createdBy
       ? {
           id: link.createdBy._id.toString(),
-          echoId: link.createdBy.echoId,
+          anonimiId: link.createdBy.anonimiId,
           username: link.createdBy.username,
         }
       : null,

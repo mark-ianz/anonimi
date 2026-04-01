@@ -20,7 +20,7 @@ interface ContactItemProps {
 
 export default function ContactItem({ contact, onRemove }: ContactItemProps) {
   const router = useRouter();
-  const { status: presenceStatus } = usePresence(contact.echoId);
+  const { status: presenceStatus } = usePresence(contact.anonimiId);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
@@ -31,7 +31,7 @@ export default function ContactItem({ contact, onRemove }: ContactItemProps) {
 
   const openConversationMutation = useMutation({
     mutationFn: async () => {
-      const res = await api.post("/conversations", { participantEchoId: contact.echoId });
+      const res = await api.post("/conversations", { participantAnonimiId: contact.anonimiId });
       return res.data.data as { conversationId: string };
     },
     onSuccess: (data) => {
@@ -120,7 +120,7 @@ export default function ContactItem({ contact, onRemove }: ContactItemProps) {
         {/* Info */}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{displayName}</p>
-          <p className="text-xs text-muted-foreground truncate">@{contact.echoId}</p>
+          <p className="text-xs text-muted-foreground truncate">@{contact.anonimiId}</p>
         </div>
 
         {/* Actions */}

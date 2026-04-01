@@ -45,7 +45,7 @@ export default function AdminUsersPage() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by username, email, EchoID..."
+              placeholder="Search by username, email, anonimi..."
               className="w-full h-10 pl-9 pr-3 rounded-xl bg-muted/40 border border-border/40 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
             />
           </div>
@@ -85,7 +85,7 @@ export default function AdminUsersPage() {
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{user.username}</p>
-                  <p className="text-xs text-muted-foreground truncate">{user.email} · @{user.echoId}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user.email} · @{user.anonimiId}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded-full", statusColors[user.status] ?? "bg-muted text-muted-foreground")}>

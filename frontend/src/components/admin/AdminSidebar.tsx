@@ -54,7 +54,7 @@ export default function AdminSidebar() {
           <span className="font-display text-xs font-semibold">E</span>
         </div>
         <div>
-          <p className="text-sm font-semibold">EchoID</p>
+          <p className="text-sm font-semibold">anonimi</p>
           <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted-foreground leading-none">Admin Panel</p>
         </div>
       </div>

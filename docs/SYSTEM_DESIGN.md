@@ -1,17 +1,17 @@
 # System Design
 
-This document provides detailed design specifications for every core subsystem of EchoID. Each section describes the data flow, business rules, edge cases, and key decisions for a specific feature area.
+This document provides detailed design specifications for every core subsystem of anonimi. Each section describes the data flow, business rules, edge cases, and key decisions for a specific feature area.
 
 ---
 
 ## 1. User Identity System
 
-### EchoID Generation
+### anonimi Generation
 
-Every user receives a permanent EchoIDentifier at account creation. This ID is the primary mechanism for user discovery and contact sharing.
+Every user receives a permanent anonimientifier at account creation. This ID is the primary mechanism for user discovery and contact sharing.
 
-**Format:** `eid_` + 8 URL-safe alphanumeric characters  
-**Example:** `eid_a8F3kP29`  
+**Format:** `aid_` + 8 URL-safe alphanumeric characters  
+**Example:** `aid_a8F3kP29`  
 **Character Set:** `A-Z`, `a-z`, `0-9` (62 characters)  
 **Library:** `nanoid` with custom alphabet  
 
@@ -22,12 +22,12 @@ With 62^8 ≈ 218 trillion possible combinations, collision probability remains 
 Despite negligible probability, the system must handle collisions gracefully:
 
 1. Generate candidate ID using `nanoid`.
-2. Check uniqueness against `users.echoId` index (unique index enforced at DB level).
+2. Check uniqueness against `users.anonimiId` index (unique index enforced at DB level).
 3. If duplicate (MongoDB throws duplicate key error), regenerate and retry (max 3 attempts).
 4. If all retries fail, return a server error (this should never happen in practice).
 
 **Immutability:**  
-Once assigned, a EchoID can **never** be changed. It is permanently bound to the account. This ensures that shared IDs always resolve to the correct user.
+Once assigned, a anonimi can **never** be changed. It is permanently bound to the account. This ensures that shared IDs always resolve to the correct user.
 
 ### Username
 
@@ -55,7 +55,7 @@ Client                          Server
   │                               │── Check email/phone uniqueness
   │                               │── Check username uniqueness
   │                               │── Hash password (bcrypt, 12 rounds)
-  │                               │── Generate EchoID (nanoid)
+  │                               │── Generate anonimi (nanoid)
   │                               │── Create user document (status: pending)
   │                               │── Generate verification code + link
   │                               │── Send verification email
@@ -115,7 +115,7 @@ Client                          Server
 ```json
 {
   "userId": "ObjectId",
-  "echoId": "eid_a8F3kP29",
+  "anonimiId": "aid_a8F3kP29",
   "role": "user",
   "iat": 1700000000,
   "exp": 1700000900
@@ -287,7 +287,7 @@ User A (non-contact)
     │  Clicks "Send Message"
     │
     ▼
-POST /api/conversations  { participantEchoId: "eid_b7G2mN48" }
+POST /api/conversations  { participantAnonimiId: "aid_b7G2mN48" }
     │
     │  If conversation already exists → returns existing
     │  If no conversation → creates new with:
@@ -493,7 +493,7 @@ Three distinct deletion modes serve different purposes:
 User A                         Server                      User B
   │                              │                           │
   │  POST /api/contacts/request  │                           │
-  │  { targetEchoId }          │                           │
+  │  { targetAnonimiId }          │                           │
   │─────────────────────────────▶│                           │
   │                              │── Validate target exists  │
   │                              │── Check not already       │
@@ -606,7 +606,7 @@ POST /api/groups
 {
   "name": "Project Team",
   "image": null,
-  "memberIds": ["echoId1", "echoId2", "echoId3"]
+  "memberIds": ["anonimiId1", "anonimiId2", "anonimiId3"]
 }
 ```
 

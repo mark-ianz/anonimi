@@ -20,10 +20,10 @@ interface UserSearchResultsProps {
 function isBroadPeopleQuery(value: string) {
   const normalized = value.trim().toLowerCase();
   if (!normalized) return false;
-  const generic = new Set(["eid", "eid_", "id", "echoid", "echo", "user", "users"]);
+  const generic = new Set(["aid", "aid_", "id", "anonimi", "user", "users"]);
   if (generic.has(normalized)) return true;
-  if (normalized.startsWith("eid")) {
-    const suffix = normalized.replace(/^eid_?/, "").replace(/[^a-z0-9]/gi, "");
+  if (normalized.startsWith("aid")) {
+    const suffix = normalized.replace(/^aid_?/, "").replace(/[^a-z0-9]/gi, "");
     return suffix.length < 3;
   }
   return false;
@@ -34,7 +34,7 @@ export default function UserSearchResults({
   onQueryChange,
 }: UserSearchResultsProps) {
   const [internalQuery, setInternalQuery] = useState("");
-  const [requestedEchoIds, setRequestedEchoIds] = useState<Set<string>>(new Set());
+  const [requestedAnonimiIds, setRequestedAnonimiIds] = useState<Set<string>>(new Set());
   const resolvedQuery = query ?? internalQuery;
   const setQuery = onQueryChange ?? setInternalQuery;
   const debounced = useDebounce(resolvedQuery, 350);
@@ -53,8 +53,8 @@ export default function UserSearchResults({
   });
 
   const openConversationMutation = useMutation({
-    mutationFn: async (echoId: string) => {
-      const res = await api.post("/conversations", { participantEchoId: echoId });
+    mutationFn: async (anonimiId: string) => {
+      const res = await api.post("/conversations", { participantAnonimiId: anonimiId });
       return res.data.data as { conversationId: string };
     },
     onSuccess: (data) => {
@@ -71,7 +71,7 @@ export default function UserSearchResults({
   return (
     <div className="flex flex-col gap-3">
       <SearchInput
-        placeholder="Search by username or EchoID..."
+        placeholder="Search by username or anonimi..."
         value={resolvedQuery}
         onChange={setQuery}
       />
@@ -80,7 +80,7 @@ export default function UserSearchResults({
 
       {!isFetching && broadQuery && (
         <p className="text-sm text-muted-foreground text-center py-6">
-          Query is too broad. Use a username or at least 3 characters after eid.
+          Query is too broad. Use a username or at least 3 characters after aid.
         </p>
       )}
 
@@ -91,7 +91,7 @@ export default function UserSearchResults({
       )}
 
       {data && data.map((user) => {
-        const dynamicUser = requestedEchoIds.has(user.echoId)
+        const dynamicUser = requestedAnonimiIds.has(user.anonimiId)
           ? { ...user, isContact: true }
           : user;
 
@@ -100,15 +100,15 @@ export default function UserSearchResults({
             key={user.id}
             user={dynamicUser}
             showActions
-            onAddContact={async (echoId) => {
+            onAddContact={async (anonimiId) => {
               try {
-                await sendRequestAsync(echoId);
-                setRequestedEchoIds((prev) => new Set(prev).add(echoId));
+                await sendRequestAsync(anonimiId);
+                setRequestedAnonimiIds((prev) => new Set(prev).add(anonimiId));
               } catch {
                 // Error toast is handled by useContacts.
               }
             }}
-            onMessage={(echoId) => openConversationMutation.mutate(echoId)}
+            onMessage={(anonimiId) => openConversationMutation.mutate(anonimiId)}
           />
         );
       })}

@@ -12,7 +12,7 @@ interface BlockEntry {
   blockId: string;
   blockedUser: {
     id: string;
-    echoId: string;
+    anonimiId: string;
     username: string;
     profileImage: string | null;
   };
@@ -45,7 +45,7 @@ function BlockedUserRow({ entry, onUnblock }: { entry: BlockEntry; onUnblock: (i
 
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{entry.blockedUser.username}</p>
-        <p className="text-xs text-muted-foreground truncate">@{entry.blockedUser.echoId}</p>
+        <p className="text-xs text-muted-foreground truncate">@{entry.blockedUser.anonimiId}</p>
       </div>
 
       <div className="relative">

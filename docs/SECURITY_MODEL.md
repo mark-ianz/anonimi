@@ -1,6 +1,6 @@
 # Security Model
 
-This document defines the security architecture for EchoID, covering authentication, authorization, input validation, rate limiting, spam prevention, and data protection.
+This document defines the security architecture for anonimi, covering authentication, authorization, input validation, rate limiting, spam prevention, and data protection.
 
 ---
 
@@ -8,7 +8,7 @@ This document defines the security architecture for EchoID, covering authenticat
 
 ### JWT Token Architecture
 
-EchoID uses a **dual-token strategy** (access + refresh) for stateless authentication.
+anonimi uses a **dual-token strategy** (access + refresh) for stateless authentication.
 
 | Token | Lifetime | Purpose | Storage (Web) | Storage (Mobile) |
 |-------|----------|---------|---------------|-------------------|
@@ -20,7 +20,7 @@ EchoID uses a **dual-token strategy** (access + refresh) for stateless authentic
 ```json
 {
   "userId": "60d5ecb54b24a1001c8e4b3a",
-  "echoId": "eid_a8F3kP29",
+  "anonimiId": "aid_a8F3kP29",
   "role": "user",
   "iat": 1709913600,
   "exp": 1709914500
@@ -166,7 +166,7 @@ Layer 3: Database (unique indexes as final safety net)
 | Field | Rules |
 |-------|-------|
 | `name` | 1–100 characters, trimmed, no leading/trailing whitespace |
-| `memberEchoIds` | Array of valid EchoIDs, min 1, max 256 members |
+| `memberAnonimiIds` | Array of valid anonimis, min 1, max 256 members |
 
 #### Reports
 
@@ -348,8 +348,8 @@ Cache-Control: public, max-age=31536000 (for immutable media)
 ```javascript
 {
   origin: [
-    "https://echoid.com",              // Web frontend
-    "https://www.echoid.com"            // www variant
+    "https://anonimi.com",              // Web frontend
+    "https://www.anonimi.com"            // www variant
     // Mobile app origins added later
   ],
   credentials: true,
@@ -385,7 +385,7 @@ All user queries use explicit field projection (`select`) to exclude private fie
 
 ```javascript
 // Public user query
-User.findOne({ echoId }).select("-email -phone -passwordHash -verificationCode -passwordResetToken");
+User.findOne({ anonimiId }).select("-email -phone -passwordHash -verificationCode -passwordResetToken");
 ```
 
 ### Admin Override
@@ -501,7 +501,7 @@ All secrets and configuration are stored in environment variables, never committ
 |----------|-------------|---------|
 | `NODE_ENV` | Environment | `development` / `production` |
 | `PORT` | Server port | `5000` |
-| `MONGODB_URI` | MongoDB connection string | `mongodb://localhost:27017/echoid` |
+| `MONGODB_URI` | MongoDB connection string | `mongodb://localhost:27017/anonimi` |
 | `JWT_SECRET` | Access token signing secret | 64+ random chars |
 | `JWT_REFRESH_SECRET` | Refresh token signing secret | 64+ random chars |
 | `JWT_ACCESS_EXPIRY` | Access token lifetime | `15m` |

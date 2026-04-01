@@ -199,13 +199,13 @@ export default function UserProfileEditor({ pendingAvatar, pendingAvatarRemoval,
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">EchoID</label>
+        <label className="text-sm font-medium">anonimi</label>
         <input
-          value={`@${user?.echoId ?? ""}`}
+          value={`@${user?.anonimiId ?? ""}`}
           disabled
           className="w-full h-10 px-3 rounded-xl bg-muted/30 border-0 text-sm text-muted-foreground cursor-not-allowed"
         />
-        <p className="text-xs text-muted-foreground">Your unique EchoID is permanent.</p>
+        <p className="text-xs text-muted-foreground">Your unique anonimi is permanent.</p>
       </div>
 
       <button

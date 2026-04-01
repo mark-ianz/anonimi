@@ -8,11 +8,11 @@ export const createGroup = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { name, description, image, memberEchoIds, settings } = req.body;
+    const { name, description, image, memberAnonimiIds, settings } = req.body;
     const result = await groupService.createGroup(
       req.user!._id.toString(),
       name,
-      memberEchoIds,
+      memberAnonimiIds,
       image,
       description,
       settings
@@ -78,11 +78,11 @@ export const addMembers = async (
 ): Promise<void> => {
   try {
     const { groupId } = req.params;
-    const { memberEchoIds } = req.body;
+    const { memberAnonimiIds } = req.body;
     const result = await groupService.addMembers(
       groupId,
       req.user!._id.toString(),
-      memberEchoIds
+      memberAnonimiIds
     );
     apiSuccess(res, result);
   } catch (error) {

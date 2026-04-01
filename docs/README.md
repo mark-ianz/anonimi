@@ -1,10 +1,10 @@
-# EchoID — Enterprise Real-Time Messaging Platform
+# anonimi — Enterprise Real-Time Messaging Platform
 
 ## Project Overview
 
-EchoID is an enterprise SaaS-style web application built around a real-time messaging platform. Users are identified by unique generated IDs, and the platform supports private messaging, contacts, group chats, moderation, and a full admin dashboard.
+anonimi is an enterprise SaaS-style web application built around a real-time messaging platform. Users are identified by unique generated IDs, and the platform supports private messaging, contacts, group chats, moderation, and a full admin dashboard.
 
-**This is NOT a simple chat page.** EchoID is a complete web application with:
+**This is NOT a simple chat page.** anonimi is a complete web application with:
 
 - **Public marketing site** — Landing page, features, about, contact, FAQ, legal pages
 - **Authentication system** — Registration, login, password recovery flows
@@ -26,7 +26,7 @@ The backend is designed as a standalone REST + WebSocket API that can serve both
 | [API_DESIGN.md](./API_DESIGN.md) | Complete REST API specification organized by domain |
 | [SOCKET_EVENTS.md](./SOCKET_EVENTS.md) | All Socket.IO events with payload schemas and lifecycle |
 | [FEATURE_ROADMAP.md](./FEATURE_ROADMAP.md) | Phased implementation plan with dependencies and scope |
-| [ANONIMI_RENAME_PLAN.md](./ANONIMI_RENAME_PLAN.md) | Full EchoID -> anonimi rebrand and identifier migration plan |
+| [ANONIMI_RENAME_PLAN.md](./ANONIMI_RENAME_PLAN.md) | Full anonimi -> anonimi rebrand and identifier migration plan |
 | [SECURITY_MODEL.md](./SECURITY_MODEL.md) | Authentication, authorization, rate limiting, input validation |
 | [ADMIN_SYSTEM.md](./ADMIN_SYSTEM.md) | Admin dashboard design, roles, permissions, workflows |
 | [FOLDER_STRUCTURE.md](./FOLDER_STRUCTURE.md) | Complete project folder layout and organization conventions |
@@ -35,7 +35,7 @@ The backend is designed as a standalone REST + WebSocket API that can serve both
 
 ## Application Structure
 
-EchoID is composed of three distinct frontend experiences under one deployment:
+anonimi is composed of three distinct frontend experiences under one deployment:
 
 ### 1. Public Marketing Site (`/`)
 
@@ -123,10 +123,10 @@ The frontend implements the following conditional routing:
 
 ## Core Identity Concept
 
-Every user receives a **generated EchoID** at account creation. This ID is the primary way users discover and connect with each other.
+Every user receives a **generated anonimi** at account creation. This ID is the primary way users discover and connect with each other.
 
-**Format:** `eid_` prefix + 8 alphanumeric characters  
-**Example:** `eid_a8F3kP29`
+**Format:** `aid_` prefix + 8 alphanumeric characters  
+**Example:** `aid_a8F3kP29`
 
 - Users share this ID to start conversations (similar to sharing a phone number, but privacy-first).
 - Users can also be searched by **username**.
@@ -137,7 +137,7 @@ Every user receives a **generated EchoID** at account creation. This ID is the p
 
 ## Platform Principles
 
-1. **Enterprise-Grade Application** — EchoID is a full SaaS web application with a marketing site, authentication flows, and a feature-rich application dashboard. Chat is the core product, not the entire product.
+1. **Enterprise-Grade Application** — anonimi is a full SaaS web application with a marketing site, authentication flows, and a feature-rich application dashboard. Chat is the core product, not the entire product.
 2. **Privacy by Default** — Personal contact information (email, phone) is never exposed. Users connect via generated IDs and usernames.
 3. **Moderation First** — Messages are never permanently deleted from the database. Admins always retain access to archived content for moderation purposes.
 4. **API-First Backend** — The Express + Socket.IO backend is a standalone service with no frontend coupling, enabling future mobile apps to consume the same API.
@@ -149,7 +149,7 @@ Every user receives a **generated EchoID** at account creation. This ID is the p
 ## Project Structure
 
 ```
-EchoID/
+anonimi/
 ├── backend/        # Express + Socket.IO API server (TypeScript)
 ├── frontend/       # Next.js enterprise web application (App Router + Tailwind + shadcn/ui)
 ├── docs/           # Architecture and planning documents (this folder)

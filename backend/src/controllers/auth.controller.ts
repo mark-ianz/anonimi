@@ -167,7 +167,7 @@ export const getProfile = async (
     const user = await authService.getProfile(req.user!._id.toString());
     apiSuccess(res, {
       id: user._id.toString(),
-      echoId: user.echoId,
+      anonimiId: user.anonimiId,
       username: user.username,
       usernameCanEdit: !user.usernameChangedAt,
       email: user.email,
@@ -201,7 +201,7 @@ export const updateProfile = async (
     });
     apiSuccess(res, {
       id: user._id.toString(),
-      echoId: user.echoId,
+      anonimiId: user.anonimiId,
       username: user.username,
       usernameCanEdit: !user.usernameChangedAt,
       email: user.email,

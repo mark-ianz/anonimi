@@ -1,6 +1,6 @@
 # Architecture Overview
 
-This document describes the high-level system architecture of EchoID, including the three-tier layout, frontend application structure, service boundaries, middleware pipeline, and the media storage abstraction layer.
+This document describes the high-level system architecture of anonimi, including the three-tier layout, frontend application structure, service boundaries, middleware pipeline, and the media storage abstraction layer.
 
 ---
 
@@ -225,7 +225,7 @@ Each service encapsulates a domain's business logic. Services are stateless clas
 | Service | Responsibility |
 |---------|----------------|
 | **AuthService** | Email-based registration/login, crypto username generation fallback, one-time username edit enforcement, optional recovery phone updates, email verification, verification-status checks, resend-verification lifecycle, password reset, JWT token generation and refresh |
-| **UserService** | Profile CRUD, EchoID generation, user search, avatar management, online status tracking |
+| **UserService** | Profile CRUD, anonimi generation, user search, avatar management, online status tracking |
 | **ChatService** | Message creation, retrieval with cursor pagination, message deletion (for-me, unsend), conversation management |
 | **ContactService** | Contact requests (send, accept, decline), nickname management, contacts list retrieval |
 | **GroupService** | Group CRUD, member management, role assignment, ownership transfer, join requests |

@@ -2,7 +2,7 @@ import type { UserRole } from "./user";
 
 export interface AdminUser {
   id: string;
-  echoId: string;
+  anonimiId: string;
   username: string;
   email: string;
   phone: string | null;
@@ -46,7 +46,7 @@ export interface Ban {
   id: string;
   userId: string;
   username: string;
-  echoId: string;
+  anonimiId: string;
   reason: string;
   bannedBy: string;
   bannedByUsername: string;

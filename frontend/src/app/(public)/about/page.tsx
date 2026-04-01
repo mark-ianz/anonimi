@@ -3,8 +3,8 @@ import Link from "next/link";
 import { ShieldCheck, Sparkles, Users2, Orbit } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "About EchoID",
-  description: "Learn about the EchoID platform and our mission.",
+  title: "About anonimi",
+  description: "Learn about the anonimi platform and our mission.",
 };
 
 export default function AboutPage() {
@@ -15,13 +15,13 @@ export default function AboutPage() {
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         <section className="pb-10 border-b border-border/50">
           <p className="inline-flex rounded-full border border-border/70 bg-background/80 px-3 py-1 font-mono text-[0.66rem] uppercase tracking-[0.14em] text-muted-foreground">
-            About EchoID
+            About anonimi
           </p>
           <h1 className="mt-4 max-w-[18ch] text-4xl font-display font-bold leading-[0.95] sm:text-5xl">
             We build identity-safe conversations for real people.
           </h1>
           <p className="mt-5 max-w-3xl text-base leading-relaxed text-muted-foreground md:text-lg">
-            EchoID exists because private communication should not demand personal exposure. Our platform is designed around aliases, recovery-safe onboarding, and moderation controls that keep people in control.
+            anonimi exists because private communication should not demand personal exposure. Our platform is designed around aliases, recovery-safe onboarding, and moderation controls that keep people in control.
           </p>
         </section>
 
@@ -42,7 +42,7 @@ export default function AboutPage() {
             </div>
             <h2 className="mt-4 text-2xl font-semibold">What Makes Us Different</h2>
             <ul className="mt-3 space-y-2 text-sm leading-relaxed text-muted-foreground md:text-base">
-              <li>Alias-first discovery with generated EchoIDs</li>
+              <li>Alias-first discovery with generated anonimis</li>
               <li>Email-only onboarding with optional username</li>
               <li>Recoverable verification flow with resend support</li>
               <li>User safety controls with block, report, and moderation tooling</li>
@@ -78,7 +78,7 @@ export default function AboutPage() {
         <section className="mt-10 border-t border-border/45 pt-8">
           <h3 className="text-2xl font-semibold">Design Principle</h3>
           <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground md:text-base">
-            Identity should reduce attack surface, not create onboarding friction. EchoID combines private aliases with recovery-friendly verification so secure communication stays usable.
+            Identity should reduce attack surface, not create onboarding friction. anonimi combines private aliases with recovery-friendly verification so secure communication stays usable.
           </p>
         </section>
       </div>

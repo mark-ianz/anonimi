@@ -18,7 +18,7 @@ export function useGroups() {
         nicknameEditPolicy?: "admins_only" | "all_members";
         groupProfileEditPolicy?: "admins_only" | "all_members";
       };
-      memberEchoIds: string[];
+      memberAnonimiIds: string[];
     }) => {
       const res = await api.post("/groups", payload);
       return res.data.data;
@@ -83,8 +83,8 @@ export function useGroup(groupId: string | null) {
   });
 
   const addMembersMutation = useMutation({
-    mutationFn: async (memberEchoIds: string[]) => {
-      const res = await api.post(`/groups/${groupId}/members`, { memberEchoIds });
+    mutationFn: async (memberAnonimiIds: string[]) => {
+      const res = await api.post(`/groups/${groupId}/members`, { memberAnonimiIds });
       return res.data.data;
     },
     onSuccess: () => {

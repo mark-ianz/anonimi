@@ -1,8 +1,8 @@
 # Frontend Design
 
-This document defines the complete frontend architecture for EchoID. It covers the application structure, routing system, layout hierarchy, page specifications, component organization, state management, and authentication flow.
+This document defines the complete frontend architecture for anonimi. It covers the application structure, routing system, layout hierarchy, page specifications, component organization, state management, and authentication flow.
 
-**EchoID is an enterprise SaaS web application.** The chat system is the core product, but the frontend includes a full public marketing site, authentication flows, and an admin panel.
+**anonimi is an enterprise SaaS web application.** The chat system is the core product, but the frontend includes a full public marketing site, authentication flows, and an admin panel.
 
 ---
 
@@ -29,7 +29,7 @@ This document defines the complete frontend architecture for EchoID. It covers t
 
 ## 1. Application Overview
 
-The EchoID frontend is a **Next.js App Router** application that serves three distinct experiences:
+The anonimi frontend is a **Next.js App Router** application that serves three distinct experiences:
 
 | Experience | URL Pattern | Audience | Layout |
 |------------|-------------|----------|--------|
@@ -104,7 +104,7 @@ These are implemented as **Next.js route groups** with separate layouts, sharing
 /groups/[groupId]/settings  → Group settings
 /message-requests           → Message requests from non-contacts
 /profile                    → Own profile view + edit
-/user/[echoId]              → Public user profile
+/user/[anonimiId]              → Public user profile
 /settings                   → Application settings (account, notifications, privacy)
 /archive                    → Archived conversations
 /blocked                    → Blocked users list
@@ -184,7 +184,7 @@ Middleware Logic:
 
 ## 5. Layout System
 
-EchoID uses four distinct layout hierarchies, implemented via Next.js route groups.
+anonimi uses four distinct layout hierarchies, implemented via Next.js route groups.
 
 ### Root Layout (`src/app/layout.tsx`)
 
@@ -235,7 +235,7 @@ Minimal, centered layout for authentication forms.
 ```
 Auth Layout
 ├── <main>                     ← Centered container
-│   ├── <Logo />               ← EchoID brand mark
+│   ├── <Logo />               ← anonimi brand mark
 │   └── {children}             ← Auth form card
 └── <footer>                   ← "Back to home" link
 ```
@@ -304,7 +304,7 @@ Admin Layout
 
 ### 6.1 Landing Page (`/`)
 
-The landing page introduces EchoID and drives users to sign up or log in.
+The landing page introduces anonimi and drives users to sign up or log in.
 
 **Sections (top to bottom):**
 
@@ -321,7 +321,7 @@ The landing page introduces EchoID and drives users to sign up or log in.
 
 3. **How It Works Section**
    - 3-step visual walkthrough:
-     1. Sign up and get your EchoID
+     1. Sign up and get your anonimi
      2. Share your ID with friends
      3. Start messaging instantly
    - Each step: number, title, description, illustration
@@ -337,14 +337,14 @@ The landing page introduces EchoID and drives users to sign up or log in.
 ### 6.2 About Page (`/about`)
 
 - Platform mission and vision
-- What makes EchoID different (privacy, generated IDs, moderation)
+- What makes anonimi different (privacy, generated IDs, moderation)
 - Team section (optional, can be placeholder)
 
 ### 6.3 Features Page (`/features`)
 
 - Detailed feature breakdown with sections:
   - Private Messaging (real-time, read receipts, typing indicators)
-  - EchoID Identity (privacy-first user discovery)
+  - anonimi Identity (privacy-first user discovery)
   - Group Chats (roles, settings, nicknames)
   - Media Sharing (images, files)
   - Block & Report System (user safety)
@@ -362,7 +362,7 @@ The landing page introduces EchoID and drives users to sign up or log in.
 - Accordion-style question/answer list
 - Categories: General, Account, Messaging, Privacy, Groups
 - Example questions:
-  - "What is an EchoID?"
+  - "What is an anonimi?"
   - "Can I change my username?"
   - "How do I block a user?"
   - "Is my data private?"
@@ -515,7 +515,7 @@ The default view when entering the application.
    - "Read by everyone" appears at most once for the latest fully-read outgoing message.
    - "Read by some" can appear on multiple outgoing messages.
    - "Read by some" is clickable and opens a modal with member names and per-user read timestamps.
-   - Reader names link to user profiles (`/user/:echoId`).
+   - Reader names link to user profiles (`/user/:anonimiId`).
 - Image/file preview inline
 - Context menu on messages: Copy, Delete for me, Unsend (if own message within time limit)
 - "This message was unsent" placeholder for unsent messages
@@ -620,7 +620,7 @@ Accepting a contact request within the chat immediately upgrades `requestStatus`
 
 **Contact requests** (`/contacts/requests`):
 - Incoming request cards
-- Each card: avatar, username, EchoID, timestamp
+- Each card: avatar, username, anonimi, timestamp
 - Actions: Accept, Decline
 - Sent requests tab (pending outgoing)
 
@@ -628,7 +628,7 @@ Accepting a contact request within the chat immediately upgrades `requestStatus`
 
 **List view:**
 - Shows all conversations with `requestStatus: "pending"` (not yet accepted or ignored).
-- Each list item: sender avatar, username, EchoID, message preview, timestamp.
+- Each list item: sender avatar, username, anonimi, message preview, timestamp.
 - Empty state: "No pending message requests."
 
 **Per-item actions:**
@@ -647,7 +647,7 @@ Accepting a contact request within the chat immediately upgrades `requestStatus`
 ### 8.5 Profile (`/profile`)
 
 **View mode:**
-- Avatar (large), username, EchoID (with copy button)
+- Avatar (large), username, anonimi (with copy button)
 - Account creation date
 - Edit button
 
@@ -657,16 +657,16 @@ Accepting a contact request within the chat immediately upgrades `requestStatus`
 - Phone number field (optional; recommended for account recovery)
 - Password change section (current password + new password)
 
-### 8.6 User Profile (`/user/[echoId]`)
+### 8.6 User Profile (`/user/[anonimiId]`)
 
 Public profile view for another user:
-- Avatar, username, EchoID
+- Avatar, username, anonimi
 - Online status / last seen
 - Contact status (is contact, pending, none)
 - Actions: Send message, Add to contacts, Block, Report
 
 **"Send Message" action:**
-- Calls `POST /api/conversations { participantEchoId: "..." }`.
+- Calls `POST /api/conversations { participantAnonimiId: "..." }`.
 - If a conversation already exists, returns the existing `conversationId`.
 - If no conversation exists, creates one (with `requestStatus: "pending"` if not contacts, or `null` if already contacts).
 - Navigates to `/chat/[conversationId]` after the call resolves.
@@ -894,7 +894,7 @@ src/stores/
 ["groups"]                             → groups list
 ["groups", groupId]                    → single group details
 ["groups", groupId, "members"]         → group members
-["user", echoId]                       → public user profile
+["user", anonimiId]                       → public user profile
 ["user", "me"]                         → own profile
 ["message-requests"]                   → pending message requests
 ["admin", "users"]                     → admin user search
@@ -960,7 +960,7 @@ The `SocketProvider` wraps only the authenticated application layout. It:
 2. Joins user rooms and conversation rooms
 3. Handles reconnection with exponential backoff
 4. Exposes socket instance via context or Zustand store
-5. Updates browser tab title for unread chat messages (e.g., `(3) New message - EchoID - Real-time Chat`) and resets when unread returns to zero.
+5. Updates browser tab title for unread chat messages (e.g., `(3) New message - anonimi - Real-time Chat`) and resets when unread returns to zero.
 
 ### Hooks
 
@@ -1032,13 +1032,13 @@ Marketing pages must include proper SEO metadata:
 
 | Page | Title | Description |
 |------|-------|-------------|
-| Landing | "EchoID — Private Messaging, Reimagined" | "Secure, real-time messaging with privacy-first identity. Sign up free." |
-| About | "About EchoID" | "Learn about the EchoID platform and our mission." |
-| Features | "EchoID Features" | "Explore EchoID's messaging, groups, privacy, and moderation features." |
-| Contact | "Contact EchoID" | "Get in touch with the EchoID team." |
-| FAQ | "FAQ — EchoID" | "Frequently asked questions about EchoID." |
-| Privacy | "Privacy Policy — EchoID" | "How EchoID handles your data." |
-| Terms | "Terms of Service — EchoID" | "Terms governing use of the EchoID platform." |
+| Landing | "anonimi — Private Messaging, Reimagined" | "Secure, real-time messaging with privacy-first identity. Sign up free." |
+| About | "About anonimi" | "Learn about the anonimi platform and our mission." |
+| Features | "anonimi Features" | "Explore anonimi's messaging, groups, privacy, and moderation features." |
+| Contact | "Contact anonimi" | "Get in touch with the anonimi team." |
+| FAQ | "FAQ — anonimi" | "Frequently asked questions about anonimi." |
+| Privacy | "Privacy Policy — anonimi" | "How anonimi handles your data." |
+| Terms | "Terms of Service — anonimi" | "Terms governing use of the anonimi platform." |
 
 ### Application Pages
 

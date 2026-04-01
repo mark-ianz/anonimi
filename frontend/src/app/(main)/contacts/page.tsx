@@ -22,7 +22,7 @@ export default function ContactsPage() {
     const q = search.toLowerCase();
     return (
       req.from.username.toLowerCase().includes(q) ||
-      req.from.echoId.toLowerCase().includes(q)
+      req.from.anonimiId.toLowerCase().includes(q)
     );
   });
 
@@ -154,7 +154,7 @@ export default function ContactsPage() {
               ) : filteredRequests.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center px-4">
                   <p className="font-medium text-sm mb-1">No matching requests</p>
-                  <p className="text-xs text-muted-foreground">Try another username or EchoID.</p>
+                  <p className="text-xs text-muted-foreground">Try another username or anonimi.</p>
                 </div>
               ) : (
                 filteredRequests.map((req) => (

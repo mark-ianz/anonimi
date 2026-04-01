@@ -19,7 +19,7 @@ import {
 
 interface ConversationParticipant {
   id: string;
-  echoId: string;
+  anonimiId: string;
   username: string;
   nickname?: string;
   blockId?: string | null;
@@ -85,10 +85,10 @@ const clearConversationArchiveForUser = async (
 
 export const createOrGetConversation = async (
   userId: string,
-  participantEchoId: string
+  participantAnonimiId: string
 ) => {
-  const participant = await User.findOne({ echoId: participantEchoId }).select(
-    "_id echoId username profileImage"
+  const participant = await User.findOne({ anonimiId: participantAnonimiId }).select(
+    "_id anonimiId username profileImage"
   );
   if (!participant) throw new NotFoundError("User not found");
 
@@ -146,7 +146,7 @@ export const getConversationRequests = async (userId: string) => {
     toUserId: new Types.ObjectId(userId),
     status: "pending",
   })
-    .populate("fromUserId", "echoId username profileImage onlineStatus")
+    .populate("fromUserId", "anonimiId username profileImage onlineStatus")
     .populate("conversationId", "_id updatedAt lastMessage")
     .sort({ createdAt: -1 })
     .lean();
@@ -156,7 +156,7 @@ export const getConversationRequests = async (userId: string) => {
     type: "private" as const,
     participant: {
       id: r.fromUserId._id.toString(),
-      echoId: r.fromUserId.echoId,
+      anonimiId: r.fromUserId.anonimiId,
       username: r.fromUserId.username,
       nickname: null,
       profileImage: r.fromUserId.profileImage ?? null,
@@ -242,7 +242,7 @@ export const getConversations = async (
       if (conv.type === "private") {
         const otherUserId = otherParticipants[0];
         const user = await User.findById(otherUserId).select(
-          "echoId username profileImage onlineStatus"
+          "anonimiId username profileImage onlineStatus"
         );
 
         const contact = await Contact.findOne({
@@ -282,7 +282,7 @@ export const getConversations = async (
           isArchived: archivedConvIdSet.has(conv._id.toString()),
           participant: {
             id: user?._id.toString(),
-            echoId: user?.echoId,
+            anonimiId: user?.anonimiId,
             username: user?.username,
             nickname: contact?.nickname,
             contactId: contact?._id.toString() ?? null,
@@ -405,7 +405,7 @@ export const getConversation = async (
       (p) => p.toString() !== userId
     );
     const user = await User.findById(otherParticipant).select(
-      "echoId username profileImage onlineStatus"
+      "anonimiId username profileImage onlineStatus"
     );
 
     const contact = await Contact.findOne({
@@ -434,7 +434,7 @@ export const getConversation = async (
       isArchived: !!archivedRow,
       participant: {
         id: user?._id.toString(),
-        echoId: user?.echoId,
+        anonimiId: user?.anonimiId,
         username: user?.username,
         nickname: contact?.nickname,
         contactId: contact?._id.toString() ?? null,
@@ -642,14 +642,14 @@ export const sendMessage = async (
 
         // Notify recipient of the new message request
         const senderForNotif = await User.findById(senderId).select(
-          "echoId username profileImage"
+          "anonimiId username profileImage"
         );
         emitToUser(recipientId!.toString(), "message-request:new", {
           requestId: newRequest._id.toString(),
           conversationId: conversation._id.toString(),
           from: {
             id: senderId,
-            echoId: senderForNotif?.echoId,
+            anonimiId: senderForNotif?.anonimiId,
             username: senderForNotif?.username,
             profileImage: senderForNotif?.profileImage ?? null,
           },
@@ -681,14 +681,14 @@ export const sendMessage = async (
         conversation.requestStatus = "accepted";
 
         const senderForAccept = await User.findById(senderId).select(
-          "echoId username profileImage"
+          "anonimiId username profileImage"
         );
         emitToUser(existingRequest.fromUserId.toString(), "message-request:accepted", {
           requestId: existingRequest._id.toString(),
           conversationId: conversation._id.toString(),
           acceptedBy: {
             id: senderId,
-            echoId: senderForAccept?.echoId,
+            anonimiId: senderForAccept?.anonimiId,
             username: senderForAccept?.username,
             profileImage: senderForAccept?.profileImage ?? null,
           },
@@ -733,7 +733,7 @@ export const sendMessage = async (
       conversation.updatedAt = new Date();
       await conversation.save();
     }
-    const sender = await User.findById(senderId).select("echoId username profileImage");
+    const sender = await User.findById(senderId).select("anonimiId username profileImage");
 
     const recipientIds = conversation.participants
       .map((participant) => participant.toString())
@@ -822,7 +822,7 @@ export const sendMessage = async (
   conversation.updatedAt = new Date();
   await conversation.save();
 
-  const sender = await User.findById(senderId).select("echoId username profileImage");
+  const sender = await User.findById(senderId).select("anonimiId username profileImage");
 
   const recipientIds = conversation.participants
     .map((participant) => participant.toString())

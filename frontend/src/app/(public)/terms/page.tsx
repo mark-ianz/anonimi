@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — EchoID",
-  description: "Terms governing use of the EchoID platform.",
+  title: "Terms of Service — anonimi",
+  description: "Terms governing use of the anonimi platform.",
 };
 
 export default function TermsPage() {
@@ -18,13 +18,13 @@ export default function TermsPage() {
 
           <h2 className="text-2xl font-semibold mt-12">1. Acceptance of Terms</h2>
           <p className="mt-4">
-            By accessing and using EchoID, you accept and agree to be bound by the terms 
+            By accessing and using anonimi, you accept and agree to be bound by the terms 
             and provision of this agreement.
           </p>
 
           <h2 className="text-2xl font-semibold mt-12">2. Description of Service</h2>
           <p className="mt-4">
-            EchoID is a real-time messaging platform that provides secure communication services, 
+            anonimi is a real-time messaging platform that provides secure communication services, 
             including one-on-one messaging, group chats, and contact management.
           </p>
 
@@ -48,7 +48,7 @@ export default function TermsPage() {
 
           <h2 className="text-2xl font-semibold mt-12">5. Content</h2>
           <p className="mt-4">
-            You retain ownership of any content you submit to EchoID. However, by submitting content, 
+            You retain ownership of any content you submit to anonimi. However, by submitting content, 
             you grant us a worldwide, non-exclusive, royalty-free license to use, reproduce, and display such content.
           </p>
 
@@ -60,13 +60,13 @@ export default function TermsPage() {
 
           <h2 className="text-2xl font-semibold mt-12">7. Limitation of Liability</h2>
           <p className="mt-4">
-            EchoID shall not be liable for any indirect, incidental, special, consequential, 
+            anonimi shall not be liable for any indirect, incidental, special, consequential, 
             or punitive damages resulting from your use of or inability to use the service.
           </p>
 
           <h2 className="text-2xl font-semibold mt-12">8. Contact Information</h2>
           <p className="mt-4">
-            If you have any questions about these Terms, please contact us at support@echoid.app.
+            If you have any questions about these Terms, please contact us at support@anonimi.app.
           </p>
         </div>
       </div>

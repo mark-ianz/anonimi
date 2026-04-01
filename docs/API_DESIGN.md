@@ -1,6 +1,6 @@
 # API Design
 
-This document specifies the complete REST API for the EchoID backend. All endpoints follow consistent conventions for authentication, request/response format, and error handling.
+This document specifies the complete REST API for the anonimi backend. All endpoints follow consistent conventions for authentication, request/response format, and error handling.
 
 The Next.js frontend consumes this API from all four route groups (marketing contact form, auth pages, authenticated app, admin panel). For frontend architecture details, see **FRONTEND_DESIGN.md**.
 
@@ -10,7 +10,7 @@ The Next.js frontend consumes this API from all four route groups (marketing con
 
 ```
 Development: http://localhost:5000/api
-Production:  https://api.echoid.com/api
+Production:  https://api.anonimi.com/api
 ```
 
 All endpoints are prefixed with `/api`.
@@ -146,7 +146,7 @@ Verify email address with code sent during registration.
     "refreshToken": "dGhpcyBpcyBhIHJlZnJl...",
     "user": {
       "id": "60d5ecb54b24a1001c8e4b3a",
-      "echoId": "eid_a8F3kP29",
+      "anonimiId": "aid_a8F3kP29",
       "username": "john_doe",
       "profileImage": null,
       "role": "user",
@@ -254,7 +254,7 @@ Login with email or phone number and password.
     "refreshToken": "dGhpcyBpcyBhIHJlZnJl...",
     "user": {
       "id": "60d5ecb54b24a1001c8e4b3a",
-      "echoId": "eid_a8F3kP29",
+      "anonimiId": "aid_a8F3kP29",
       "username": "john_doe",
       "profileImage": "/uploads/avatars/uuid.jpg",
       "role": "user",
@@ -349,7 +349,7 @@ Reset password using token from email.
     "refreshToken": "dGhpcyBpcyBhIHJlZnJl...",
     "user": {
       "id": "60d5ecb54b24a1001c8e4b3a",
-      "echoId": "eid_a8F3kP29",
+      "anonimiId": "aid_a8F3kP29",
       "username": "john_doe",
       "profileImage": null,
       "role": "user",
@@ -476,7 +476,7 @@ Send a test push notification (authenticated).
 
 ### GET /api/users/search
 
-Search users by EchoID or username.
+Search users by anonimi or username.
 
 **Query Parameters:**
 | Param | Type | Required | Description |
@@ -492,7 +492,7 @@ Search users by EchoID or username.
   "data": [
     {
       "id": "60d5ecb54b24a1001c8e4b3a",
-      "echoId": "eid_a8F3kP29",
+      "anonimiId": "aid_a8F3kP29",
       "username": "john_doe",
       "profileImage": "/uploads/avatars/uuid.jpg",
       "onlineStatus": "online"
@@ -509,7 +509,7 @@ Note: Results only include public profile fields. Email and phone are never retu
 
 ---
 
-### GET /api/users/:echoId
+### GET /api/users/:anonimiId
 
 Get a user's public profile.
 
@@ -519,7 +519,7 @@ Get a user's public profile.
   "success": true,
   "data": {
     "id": "60d5ecb54b24a1001c8e4b3a",
-    "echoId": "eid_a8F3kP29",
+    "anonimiId": "aid_a8F3kP29",
     "username": "john_doe",
     "profileImage": "/uploads/avatars/uuid.jpg",
     "onlineStatus": "online",
@@ -548,7 +548,7 @@ Get the authenticated user's full profile.
   "success": true,
   "data": {
     "id": "60d5ecb54b24a1001c8e4b3a",
-    "echoId": "eid_a8F3kP29",
+    "anonimiId": "aid_a8F3kP29",
     "username": "john_doe",
     "usernameCanEdit": true,
     "email": "john@example.com",
@@ -638,7 +638,7 @@ List the authenticated user's contacts.
   "data": [
     {
       "contactId": "60d5ecb54b24a1001c8e4b3b",
-      "echoId": "eid_b7G2mN48",
+      "anonimiId": "aid_b7G2mN48",
       "username": "jane_smith",
       "nickname": "Jane",
       "profileImage": "/uploads/avatars/uuid2.jpg",
@@ -667,7 +667,7 @@ List incoming contact requests.
       "requestId": "60d5ecb54b24a1001c8e4b3c",
       "from": {
         "id": "60d5ecb54b24a1001c8e4b3d",
-        "echoId": "eid_c9H4pQ67",
+        "anonimiId": "aid_c9H4pQ67",
         "username": "bob_builder",
         "profileImage": null
       },
@@ -686,7 +686,7 @@ Send a contact request.
 **Request Body:**
 ```json
 {
-  "targetEchoId": "eid_b7G2mN48"
+  "targetAnonimiId": "aid_b7G2mN48"
 }
 ```
 
@@ -845,7 +845,7 @@ Open or create a private conversation with another user. If a conversation betwe
 **Request Body:**
 ```json
 {
-  "participantEchoId": "eid_b7G2mN48"
+  "participantAnonimiId": "aid_b7G2mN48"
 }
 ```
 
@@ -876,7 +876,7 @@ Open or create a private conversation with another user. If a conversation betwe
 `requestStatus` will be `null` if the two users are already contacts, or `"pending"` if they are not.
 
 **Errors:**
-- `404` — User with the given EchoID not found
+- `404` — User with the given anonimi not found
 - `400` — Cannot create conversation with yourself
 - `403` — You have blocked this user
 
@@ -902,7 +902,7 @@ List the authenticated user's conversations.
       "type": "private",
       "participant": {
         "id": "60d5ecb54b24a1001c8e4b3b",
-        "echoId": "eid_b7G2mN48",
+        "anonimiId": "aid_b7G2mN48",
         "username": "jane_smith",
         "nickname": "Jane",
         "contactId": "60d5ecb54b24a1001c8e4b88",
@@ -967,12 +967,12 @@ List all conversations with `requestStatus: "pending"` where the current user is
       "type": "private",
       "participant": {
         "id": "60d5ecb54b24a1001c8e4b3d",
-        "echoId": "eid_c9H4pQ67",
+        "anonimiId": "aid_c9H4pQ67",
         "username": "bob_builder",
         "profileImage": null
       },
       "lastMessage": {
-        "content": "Hey, I found you on EchoID!",
+        "content": "Hey, I found you on anonimi!",
         "senderId": "60d5ecb54b24a1001c8e4b3d",
         "type": "text",
         "timestamp": "2026-03-08T10:00:00Z"
@@ -1170,12 +1170,12 @@ List pending message requests for the authenticated user.
       "conversationId": "60d5ecb54b24a1001c8e4b61",
       "from": {
         "id": "60d5ecb54b24a1001c8e4b3d",
-        "echoId": "eid_c9H4pQ67",
+        "anonimiId": "aid_c9H4pQ67",
         "username": "bob_builder",
         "profileImage": null
       },
       "lastMessage": {
-        "content": "Hey, I found you on EchoID!",
+        "content": "Hey, I found you on anonimi!",
         "type": "text",
         "timestamp": "2026-03-08T10:00:00Z"
       },
@@ -1245,7 +1245,7 @@ Create a new group chat.
 {
   "name": "Project Team",
   "image": null,
-  "memberEchoIds": ["eid_b7G2mN48", "eid_c9H4pQ67", "eid_d1J5rS89"]
+  "memberAnonimiIds": ["aid_b7G2mN48", "aid_c9H4pQ67", "aid_d1J5rS89"]
 }
 ```
 
@@ -1259,9 +1259,9 @@ Create a new group chat.
     "name": "Project Team",
     "ownerId": "60d5ecb54b24a1001c8e4b3a",
     "members": [
-      { "userId": "...", "echoId": "eid_a8F3kP29", "role": "owner", "status": "joined" },
-      { "userId": "...", "echoId": "eid_b7G2mN48", "role": "member", "status": "joined" },
-      { "userId": "...", "echoId": "eid_c9H4pQ67", "role": "member", "status": "invited" }
+      { "userId": "...", "anonimiId": "aid_a8F3kP29", "role": "owner", "status": "joined" },
+      { "userId": "...", "anonimiId": "aid_b7G2mN48", "role": "member", "status": "joined" },
+      { "userId": "...", "anonimiId": "aid_c9H4pQ67", "role": "member", "status": "invited" }
     ]
   }
 }
@@ -1329,7 +1329,7 @@ List group members.
   "data": [
     {
       "userId": "60d5ecb54b24a1001c8e4b3a",
-      "echoId": "eid_a8F3kP29",
+      "anonimiId": "aid_a8F3kP29",
       "username": "john_doe",
       "profileImage": "/uploads/avatars/uuid.jpg",
       "role": "owner",
@@ -1349,7 +1349,7 @@ Add members to the group.
 **Request Body:**
 ```json
 {
-  "memberEchoIds": ["eid_e2K6tU01"]
+  "memberAnonimiIds": ["aid_e2K6tU01"]
 }
 ```
 
@@ -1358,7 +1358,7 @@ Add members to the group.
 {
   "success": true,
   "data": {
-    "added": [{ "echoId": "eid_e2K6tU01", "status": "joined" }],
+    "added": [{ "anonimiId": "aid_e2K6tU01", "status": "joined" }],
     "invited": []
   }
 }
@@ -1470,7 +1470,7 @@ List pending join requests.
       "requestId": "60d5ecb54b24a1001c8e4b80",
       "user": {
         "id": "...",
-        "echoId": "eid_f3L7uV23",
+        "anonimiId": "aid_f3L7uV23",
         "username": "new_user",
         "profileImage": null
       },
@@ -1535,7 +1535,7 @@ List the authenticated user's block list.
       "blockId": "60d5ecb54b24a1001c8e4b90",
       "blockedUser": {
         "id": "60d5ecb54b24a1001c8e4b3d",
-        "echoId": "eid_c9H4pQ67",
+        "anonimiId": "aid_c9H4pQ67",
         "username": "bob_builder",
         "profileImage": null
       },
@@ -1554,7 +1554,7 @@ Block a user.
 **Request Body:**
 ```json
 {
-  "targetEchoId": "eid_c9H4pQ67"
+  "targetAnonimiId": "aid_c9H4pQ67"
 }
 ```
 

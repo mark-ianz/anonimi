@@ -4,7 +4,7 @@ import { UserRole, UserStatus, OnlineStatus, AppearanceStatus } from "../types/e
 
 const userSchema = new Schema<IUser>(
   {
-    echoId: { type: String, required: true, unique: true },
+    anonimiId: { type: String, required: true, unique: true },
     username: { type: String, required: true, unique: true, minlength: 3, maxlength: 30 },
     email: { type: String, required: true, unique: true },
     phone: { type: String, sparse: true },
@@ -28,7 +28,8 @@ const userSchema = new Schema<IUser>(
   { timestamps: true }
 );
 
-userSchema.index({ username: "text", echoId: "text" });
+userSchema.index({ username: "text", anonimiId: "text" });
+userSchema.index({ anonimiId: 1 }, { unique: true });
 userSchema.index({ status: 1 });
 userSchema.index({ role: 1 });
 

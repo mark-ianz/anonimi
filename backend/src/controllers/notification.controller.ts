@@ -157,7 +157,7 @@ export const testPush = async (
 ): Promise<void> => {
   try {
     await sendPushToUser(req.user!._id.toString(), {
-      title: "EchoID Test",
+      title: "anonimi Test",
       body: "This is a test push notification.",
       data: { href: "/chat" },
     });

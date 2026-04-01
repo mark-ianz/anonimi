@@ -68,11 +68,11 @@ export default function MessageList({ conversation }: MessageListProps) {
   });
 
   const groupMemberMetaById = useMemo(() => {
-    const map: Record<string, { name: string; echoId: string; profileImage: string | null }> = {};
+    const map: Record<string, { name: string; anonimiId: string; profileImage: string | null }> = {};
     groupMembers.forEach((member) => {
       map[member.userId] = {
         name: member.nickname?.trim() || member.username,
-        echoId: member.echoId,
+        anonimiId: member.anonimiId,
         profileImage: member.profileImage ?? null,
       };
     });
@@ -254,19 +254,19 @@ export default function MessageList({ conversation }: MessageListProps) {
           // Resolve sender info for group messages.
           let senderName: string | undefined;
           let senderImage: string | null = null;
-          let senderEchoId: string | undefined;
+          let senderAnonimiId: string | undefined;
 
           if (conversation.type === "group") {
             if (message.senderId !== user?.id) {
               const senderMeta = groupMemberMetaById[message.senderId];
               senderName = senderMeta?.name ?? "User";
               senderImage = senderMeta?.profileImage ?? null;
-              senderEchoId = senderMeta?.echoId;
+              senderAnonimiId = senderMeta?.anonimiId;
             }
           } else if (conversation.type === "private" && message.senderId !== user?.id) {
             senderName = conversation.participant?.nickname ?? conversation.participant?.username ?? "User";
             senderImage = conversation.participant?.profileImage ?? null;
-            senderEchoId = conversation.participant?.echoId;
+            senderAnonimiId = conversation.participant?.anonimiId;
           }
 
           return (
@@ -293,7 +293,7 @@ export default function MessageList({ conversation }: MessageListProps) {
                 showAvatar={showAvatar}
                 senderName={senderName}
                 senderImage={senderImage}
-                senderEchoId={senderEchoId}
+                senderAnonimiId={senderAnonimiId}
                 participantCount={participantCount}
                 conversationType={conversation.type}
                 readByUsersById={groupMemberMetaById}

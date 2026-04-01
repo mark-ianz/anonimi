@@ -12,7 +12,7 @@ import Link from "next/link";
 
 interface GroupMember {
   userId: string;
-  echoId: string;
+  anonimiId: string;
   username: string;
   profileImage: string | null;
   role: string;
@@ -161,7 +161,7 @@ export default function AdminGroupDetailPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{m.username}</p>
-                        <p className="text-[10px] text-muted-foreground">@{m.echoId}</p>
+                        <p className="text-[10px] text-muted-foreground">@{m.anonimiId}</p>
                       </div>
                       <span className="text-[10px] text-muted-foreground capitalize px-1.5 py-0.5 bg-muted/60 rounded-md">
                         {m.role}

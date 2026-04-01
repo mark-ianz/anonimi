@@ -24,7 +24,7 @@ export default function ContactList({ searchQuery = "" }: ContactListProps) {
         const name = c.nickname ?? c.username;
         return (
           name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          c.echoId.toLowerCase().includes(searchQuery.toLowerCase())
+          c.anonimiId.toLowerCase().includes(searchQuery.toLowerCase())
         );
       })
     : contacts;
@@ -40,7 +40,7 @@ export default function ContactList({ searchQuery = "" }: ContactListProps) {
         description={
           searchQuery
             ? `No contacts matching "${searchQuery}"`
-            : "Add contacts by searching their EchoID."
+            : "Add contacts by searching their anonimi."
         }
       />
     );

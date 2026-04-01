@@ -124,7 +124,7 @@ function ResetPasswordForm() {
           type="submit"
           disabled={isSubmitting}
           className="w-full h-10 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2 transition-opacity disabled:opacity-60"
-          style={{ background: "var(--echo-gradient)" }}
+          style={{ background: "var(--anonimi-gradient)" }}
         >
           {isSubmitting ? (
             <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />

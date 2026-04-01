@@ -4,7 +4,7 @@ export type ContactStatus = "accepted" | "pending" | "declined";
 
 export interface Contact {
   contactId: string;
-  echoId: string;
+  anonimiId: string;
   username: string;
   nickname: string | null;
   profileImage: string | null;
@@ -18,7 +18,7 @@ export interface ContactRequest {
   requestId: string;
   from: {
     id: string;
-    echoId: string;
+    anonimiId: string;
     username: string;
     profileImage: string | null;
   };

@@ -37,7 +37,7 @@ export const socketAuth = async (
 
     socket.data.user = {
       userId: decoded.userId,
-      echoId: decoded.echoId,
+      anonimiId: decoded.anonimiId,
       role: decoded.role,
     };
 

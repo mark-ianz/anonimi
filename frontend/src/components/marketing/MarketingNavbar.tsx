@@ -24,7 +24,7 @@ export default function MarketingNavbar() {
               <MessageCircle className="h-4 w-4 text-foreground" />
             </div>
             <span className="text-lg font-semibold tracking-[0.01em]">
-              EchoID
+              anonimi
             </span>
           </Link>
 

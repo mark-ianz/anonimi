@@ -24,14 +24,14 @@ export const searchUsers = async (
   }
 };
 
-export const getUserByEchoId = async (
+export const getUserByAnonimiId = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { echoId } = req.params;
-    const user = await userService.getUserByEchoId(echoId, req.user!._id.toString());
+    const { anonimiId } = req.params;
+    const user = await userService.getUserByAnonimiId(anonimiId, req.user!._id.toString());
     apiSuccess(res, user);
   } catch (error) {
     next(error);

@@ -1,6 +1,6 @@
 # Group Chat Feature Specification
 
-This document specifies the complete implementation plan for the group chat feature in EchoID, including creation flows, member management, roles, permissions, invite links, and frontend UI requirements.
+This document specifies the complete implementation plan for the group chat feature in anonimi, including creation flows, member management, roles, permissions, invite links, and frontend UI requirements.
 
 ---
 
@@ -361,7 +361,7 @@ export interface Group {
 
 export interface GroupMember {
   userId: string;
-  echoId: string;
+  anonimiId: string;
   username: string;
   profileImage: string | null;
   role: GroupRole;
@@ -463,7 +463,7 @@ const getGroupPhoto = (group: Group, members: GroupMember[]): string => {
 ```
 ┌─────────────────────────────────────────────────┐
 │ [Avatar]  Username                    [Menu]  │
-│           echoId                             │
+│           anonimiId                             │
 │           [Owner] [Admin] [Muted]            │
 └─────────────────────────────────────────────────┘
 ```

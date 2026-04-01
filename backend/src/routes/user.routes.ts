@@ -7,6 +7,6 @@ import { searchUsersSchema, userParamsSchema } from "../validators/user.validato
 const router = Router();
 
 router.get("/search", authenticate, validate(searchUsersSchema), userController.searchUsers);
-router.get("/:echoId", authenticate, validate(userParamsSchema), userController.getUserByEchoId);
+router.get("/:anonimiId", authenticate, validate(userParamsSchema), userController.getUserByAnonimiId);
 
 export default router;

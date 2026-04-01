@@ -1,6 +1,6 @@
 # Socket.IO Events
 
-This document specifies all real-time WebSocket events used in EchoID, including namespaces, authentication, event payloads, room management, and connection lifecycle.
+This document specifies all real-time WebSocket events used in anonimi, including namespaces, authentication, event payloads, room management, and connection lifecycle.
 
 > **Frontend note:** The Socket.IO client connects only within the authenticated `(main)` route group layout via `SocketProvider`. Marketing and auth pages do not establish WebSocket connections. See **FRONTEND_DESIGN.md** for client-side integration details.
 
@@ -39,7 +39,7 @@ Every Socket.IO connection must authenticate during the handshake.
 ### Client Connection
 
 ```
-const socket = io("https://api.echoid.com/chat", {
+const socket = io("https://api.anonimi.com/chat", {
   auth: {
     token: "<JWT access token>"
   },
@@ -57,7 +57,7 @@ The server intercepts the connection handshake and verifies the JWT:
 
 1. Extract `token` from `socket.handshake.auth`.
 2. Verify JWT signature and expiry.
-3. Decode payload → `{ userId, echoId, role }`.
+3. Decode payload → `{ userId, anonimiId, role }`.
 4. Check user status is `"active"` (reject banned users).
 5. Attach user data to `socket.data.user`.
 6. Allow connection.
@@ -409,7 +409,7 @@ A new contact request was received.
   "requestId": "60d5ecb54b24a1001c8e4b3e",
   "from": {
     "id": "60d5ecb54b24a1001c8e4b3a",
-    "echoId": "eid_a8F3kP29",
+    "anonimiId": "aid_a8F3kP29",
     "username": "john_doe",
     "profileImage": "/uploads/avatars/uuid.jpg"
   },
@@ -429,7 +429,7 @@ A contact request was accepted.
 ```json
 {
   "contactId": "60d5ecb54b24a1001c8e4b3b",
-  "echoId": "eid_b7G2mN48",
+  "anonimiId": "aid_b7G2mN48",
   "username": "jane_smith",
   "profileImage": "/uploads/avatars/uuid2.jpg"
 }
@@ -490,12 +490,12 @@ A new message request arrived from a non-contact.
   "conversationId": "60d5ecb54b24a1001c8e4b61",
   "from": {
     "id": "60d5ecb54b24a1001c8e4b3d",
-    "echoId": "eid_c9H4pQ67",
+    "anonimiId": "aid_c9H4pQ67",
     "username": "bob_builder",
     "profileImage": null
   },
   "preview": {
-    "content": "Hey, I found you on EchoID!",
+    "content": "Hey, I found you on anonimi!",
     "type": "text",
     "timestamp": "2026-03-08T10:00:00.000Z"
   }
@@ -521,7 +521,7 @@ The recipient accepted a message request. Sent to the original sender.
   "conversationId": "60d5ecb54b24a1001c8e4b61",
   "acceptedBy": {
     "id": "60d5ecb54b24a1001c8e4b3b",
-    "echoId": "eid_b7G2mN48",
+    "anonimiId": "aid_b7G2mN48",
     "username": "jane_smith",
     "profileImage": "/uploads/avatars/uuid2.jpg"
   },
@@ -548,7 +548,7 @@ A new member joined a group.
   "groupId": "60d5ecb54b24a1001c8e4b70",
   "member": {
     "userId": "60d5ecb54b24a1001c8e4b3d",
-    "echoId": "eid_c9H4pQ67",
+    "anonimiId": "aid_c9H4pQ67",
     "username": "bob_builder",
     "profileImage": null,
     "role": "member"
@@ -651,7 +651,7 @@ A new join request for an admin to review.
   "requestId": "60d5ecb54b24a1001c8e4b80",
   "user": {
     "id": "60d5ecb54b24a1001c8e4b3d",
-    "echoId": "eid_f3L7uV23",
+    "anonimiId": "aid_f3L7uV23",
     "username": "new_user",
     "profileImage": null
   }
@@ -689,7 +689,7 @@ Generic notification event for various system notifications.
 |-------|---------|-------------|
 | `admin:report-new` | `{ reportId, targetType, reason, reporterUsername, createdAt }` | New report submitted |
 | `admin:ticket-new` | `{ ticketId, subject, reason, username, createdAt }` | New support ticket |
-| `admin:user-registered` | `{ userId, echoId, username, createdAt }` | New user registered |
+| `admin:user-registered` | `{ userId, anonimiId, username, createdAt }` | New user registered |
 | `admin:metrics-update` | `{ totalUsers, activeUsers, messagesLast24h, pendingReports, openTickets }` | Periodic metrics refresh (every 30s) |
 
 ---

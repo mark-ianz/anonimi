@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -149,7 +149,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
 
   const blockMutation = useMutation({
     mutationFn: async () => {
-      await api.post("/blocks", { targetEchoId: conversation.participant?.echoId });
+      await api.post("/blocks", { targetAnonimiId: conversation.participant?.anonimiId });
     },
     onSuccess: () => {
       setConfirmBlock(false);
@@ -408,7 +408,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
               <div className="absolute right-0 z-20 top-full mt-1 glass rounded-xl shadow-elevated py-1 min-w-44 animate-fade-in">
                 {!isGroup && (
                   <Link
-                    href={`/user/${conversation.participant?.echoId}`}
+                    href={`/user/${conversation.participant?.anonimiId}`}
                     className="flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
                     onClick={() => setMenuOpen(false)}
                   >
@@ -561,11 +561,11 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
         </div>
       </header>
 
-      {/* Non-contact notice banner — recipient view */}
+      {/* Non-contact notice banner - recipient view */}
       {isRecipient && (
         <div className="mx-4 mt-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2.5 shrink-0">
           <div className="flex items-start gap-2">
-            <span className="text-amber-500 text-base leading-none mt-0.5">📩</span>
+            <span className="text-amber-500 text-base leading-none mt-0.5">!</span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium">Message request from {displayName}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
@@ -632,13 +632,13 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
         </div>
       )}
 
-      {/* Non-contact notice banner — sender view */}
+      {/* Non-contact notice banner - sender view */}
       {isSender && (
         <div className="mx-4 mt-3 px-4 py-3 rounded-xl bg-muted/60 border border-border/50 shrink-0">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Clock className="w-4 h-4 shrink-0" />
             <span>
-              Your message is a request — <span className="text-foreground font-medium">{displayName}</span> hasn&apos;t accepted yet.
+              Your message is a request - <span className="text-foreground font-medium">{displayName}</span> hasn&apos;t accepted yet.
               You can keep sending messages while you wait.
             </span>
           </div>
@@ -806,7 +806,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
                 onChange={(e) => setReportReason(e.target.value)}
                 className="w-full h-10 px-3 rounded-xl bg-muted/60 border border-border/50 text-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
               >
-                <option value="">Select a reason…</option>
+                <option value="">Select a reason...</option>
                 <option value="spam">Spam or unwanted messages</option>
                 <option value="harassment">Harassment or bullying</option>
                 <option value="hate_speech">Hate speech</option>
@@ -820,7 +820,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
                 maxLength={500}
                 rows={3}
                 className="w-full px-3 py-2 rounded-xl bg-muted/60 border border-border/50 text-sm focus:outline-none focus:ring-1 focus:ring-primary/40 resize-none"
-                placeholder="Additional details (optional)…"
+                placeholder="Additional details (optional)..."
               />
             </div>
             <div className="flex gap-3">
@@ -836,7 +836,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
                 disabled={!reportReason || reportMutation.isPending}
                 className="flex-1 h-10 rounded-xl bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-50"
               >
-                {reportMutation.isPending ? "Submitting…" : "Submit"}
+                {reportMutation.isPending ? "Submitting..." : "Submit"}
               </button>
             </div>
           </div>

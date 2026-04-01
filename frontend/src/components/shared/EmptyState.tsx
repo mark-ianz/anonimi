@@ -40,7 +40,7 @@ export default function EmptyState({
     },
     contacts: {
       title: "No contacts yet",
-      description: "Search for people by their EchoID to add them as a contact.",
+      description: "Search for people by their anonimi to add them as a contact.",
     },
     search: {
       title: "No results found",

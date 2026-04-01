@@ -23,7 +23,7 @@ export const notifyNewContactRequest = async (
   recipientId: string,
   request: {
     requestId: string;
-    from: { id: string; echoId: string; username: string; profileImage?: string };
+    from: { id: string; anonimiId: string; username: string; profileImage?: string };
     createdAt: Date;
   }
 ) => {
@@ -33,7 +33,7 @@ export const notifyNewContactRequest = async (
 export const notifyContactAccepted = async (
   io: Server,
   recipientId: string,
-  contact: { contactId: string; echoId: string; username: string; profileImage?: string }
+  contact: { contactId: string; anonimiId: string; username: string; profileImage?: string }
 ) => {
   io.to(`user:${recipientId}`).emit("contact:accepted", contact);
 };
@@ -44,7 +44,7 @@ export const notifyNewMessageRequest = async (
   request: {
     requestId: string;
     conversationId: string;
-    from: { id: string; echoId: string; username: string; profileImage?: string };
+    from: { id: string; anonimiId: string; username: string; profileImage?: string };
     preview: { content: string; type: string; timestamp: Date };
   }
 ) => {

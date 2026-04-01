@@ -43,7 +43,7 @@ export const getUsers = async (
     query.$or = [
       { username: { $regex: search, $options: "i" } },
       { email: { $regex: search, $options: "i" } },
-      { echoId: { $regex: search, $options: "i" } },
+      { anonimiId: { $regex: search, $options: "i" } },
     ];
   }
 
@@ -66,7 +66,7 @@ export const getUsers = async (
   return {
     users: data.map((u: any) => ({
       id: u._id.toString(),
-      echoId: u.echoId,
+      anonimiId: u.anonimiId,
       username: u.username,
       email: u.email,
       phone: u.phone,
@@ -87,7 +87,7 @@ export const getUserById = async (userId: string) => {
 
   return {
     id: user._id.toString(),
-    echoId: user.echoId,
+    anonimiId: user.anonimiId,
     username: user.username,
     email: user.email,
     phone: user.phone,
@@ -237,7 +237,7 @@ export const getReports = async (
   if (cursor) query._id = { $lt: new Types.ObjectId(cursor) };
 
   const reports = await Report.find(query)
-    .populate("reporterId", "username echoId")
+    .populate("reporterId", "username anonimiId")
     .sort({ createdAt: -1 })
     .limit(limit + 1)
     .lean();
@@ -262,7 +262,7 @@ export const getReports = async (
 
 export const getReportById = async (reportId: string) => {
   const report = await Report.findById(reportId)
-    .populate("reporterId", "username echoId")
+    .populate("reporterId", "username anonimiId")
     .populate("reviewedBy", "username")
     .lean();
 
@@ -375,7 +375,7 @@ export const getAdminTickets = async (
   if (cursor) query._id = { $lt: new Types.ObjectId(cursor) };
 
   const tickets = await SupportTicket.find(query)
-    .populate("userId", "username echoId")
+    .populate("userId", "username anonimiId")
     .populate("assignedTo", "username")
     .sort({ createdAt: -1 })
     .limit(limit + 1)
@@ -401,7 +401,7 @@ export const getAdminTickets = async (
 
 export const getAdminTicketById = async (ticketId: string) => {
   const ticket = await SupportTicket.findById(ticketId)
-    .populate("userId", "username echoId")
+    .populate("userId", "username anonimiId")
     .populate("assignedTo", "username")
     .lean();
 
@@ -544,7 +544,7 @@ export const getGroups = async (search?: string, limit: number = 20, cursor?: st
   }
 
   const groups = await Group.find(query)
-    .populate("ownerId", "username echoId")
+    .populate("ownerId", "username anonimiId")
     .sort({ createdAt: -1 })
     .limit(limit + 1)
     .lean();
@@ -575,7 +575,7 @@ export const getGroups = async (search?: string, limit: number = 20, cursor?: st
 
 export const getGroupById = async (groupId: string) => {
   const group = await Group.findById(groupId)
-    .populate("ownerId", "username echoId")
+    .populate("ownerId", "username anonimiId")
     .lean();
 
   if (!group) {
@@ -583,7 +583,7 @@ export const getGroupById = async (groupId: string) => {
   }
 
   const members = await GroupMember.find({ groupId: group._id })
-    .populate("userId", "username echoId")
+    .populate("userId", "username anonimiId")
     .lean();
 
   return {
@@ -671,7 +671,7 @@ export const getBans = async (
   }
 
   const bans = await Ban.find(query)
-    .populate("userId", "username echoId")
+    .populate("userId", "username anonimiId")
     .populate("bannedBy", "username")
     .sort({ createdAt: -1 })
     .limit(limit + 1)

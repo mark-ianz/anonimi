@@ -7,7 +7,7 @@ This document defines the complete directory layout for both the backend and fro
 ## Project Root
 
 ```
-EchoID/
+anonimi/
 ├── backend/                    # Express + Socket.IO API server
 ├── frontend/                   # Next.js enterprise web application
 ├── docs/                       # Architecture and planning documents
@@ -97,7 +97,7 @@ backend/
 │   ├── services/
 │   │   ├── auth.service.ts           # Registration, login, JWT, password reset
 │   │   ├── email.service.ts          # Email delivery (verification + reset)
-│   │   ├── user.service.ts           # Profile management, search, EchoID gen
+│   │   ├── user.service.ts           # Profile management, search, anonimi gen
 │   │   ├── contact.service.ts        # Contact requests, nicknames
 │   │   ├── chat.service.ts           # Messages, conversations, pagination
 │   │   ├── group.service.ts          # Group CRUD, members, roles
@@ -145,7 +145,7 @@ backend/
 │   │   └── socket.events.ts         # Socket event payload types
 │   │
 │   ├── utils/
-│   │   ├── generateId.ts             # EchoID generation (nanoid wrapper)
+│   │   ├── generateId.ts             # anonimi generation (nanoid wrapper)
 │   │   ├── hashPassword.ts           # bcrypt hash/compare utilities
 │   │   ├── jwt.ts                    # JWT sign/verify utilities
 │   │   ├── pagination.ts             # Cursor pagination helper
@@ -281,7 +281,7 @@ frontend/
 │   │   │   │   └── [ticketId]/
 │   │   │   │       └── page.tsx       # Ticket detail + thread
 │   │   │   └── user/
-│   │   │       └── [echoId]/
+│   │   │       └── [anonimiId]/
 │   │   │           └── page.tsx       # Public user profile
 │   │   │
 │   │   └── (admin)/                   # ADMIN PANEL — route group (admin layout)
@@ -554,7 +554,7 @@ Since the frontend and backend are **separate applications** without a monorepo 
 If the project adopts monorepo tooling (Turborepo, Nx, or npm workspaces), types can be extracted into a shared package:
 
 ```
-EchoID/
+anonimi/
 ├── packages/
 │   └── shared/
 │       ├── types/
@@ -567,7 +567,7 @@ EchoID/
 └── package.json (workspace root)
 ```
 
-Both `backend` and `frontend` would import from `@echoid/shared`.
+Both `backend` and `frontend` would import from `@anonimi/shared`.
 
 ---
 

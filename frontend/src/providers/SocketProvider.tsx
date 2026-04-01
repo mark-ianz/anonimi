@@ -57,7 +57,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const { setTyping } = useTypingStore();
   const socketRef = useRef<Socket | null>(null);
 
-  const baseTitleRef = useRef("EchoID - Real-time Chat");
+  const baseTitleRef = useRef("anonimi - Real-time Chat");
   const [contactRequestUnread, setContactRequestUnread] = useState(0);
 
   const getMemberCountDeltaFromSystem = (content: string | null | undefined): number => {
@@ -72,7 +72,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     if (typeof document === "undefined") return;
 
     if (!baseTitleRef.current || baseTitleRef.current.startsWith("(")) {
-      baseTitleRef.current = "EchoID - Real-time Chat";
+      baseTitleRef.current = "anonimi - Real-time Chat";
     }
 
     const messageUnread = Object.values(unreadCounts).reduce(

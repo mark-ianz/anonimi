@@ -8,14 +8,14 @@ export const getBlocks = async (userId: string) => {
     blockerId: new Types.ObjectId(userId),
     active: true,
   })
-    .populate("blockedId", "echoId username profileImage")
+    .populate("blockedId", "anonimiId username profileImage")
     .lean();
 
   return blocks.map((b: any) => ({
     blockId: b._id.toString(),
     blockedUser: {
       id: b.blockedId._id.toString(),
-      echoId: b.blockedId.echoId,
+      anonimiId: b.blockedId.anonimiId,
       username: b.blockedId.username,
       profileImage: b.blockedId.profileImage,
     },
@@ -23,8 +23,8 @@ export const getBlocks = async (userId: string) => {
   }));
 };
 
-export const blockUser = async (blockerId: string, targetEchoId: string) => {
-  const targetUser = await User.findOne({ echoId: targetEchoId });
+export const blockUser = async (blockerId: string, targetAnonimiId: string) => {
+  const targetUser = await User.findOne({ anonimiId: targetAnonimiId });
 
   if (!targetUser) {
     throw new NotFoundError("User not found");

@@ -540,7 +540,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
                     </div>
                     {link.createdBy && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        Created by {link.createdBy.username} (@{link.createdBy.echoId})
+                        Created by {link.createdBy.username} (@{link.createdBy.anonimiId})
                       </p>
                     )}
                     {link.description && (
@@ -604,7 +604,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium">{req.user.username}</p>
-                    <p className="text-xs text-muted-foreground">@{req.user.echoId}</p>
+                    <p className="text-xs text-muted-foreground">@{req.user.anonimiId}</p>
                   </div>
                   <div className="flex gap-2">
                     <button

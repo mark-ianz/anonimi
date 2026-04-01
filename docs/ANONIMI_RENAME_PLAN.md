@@ -63,7 +63,7 @@ Depends on steps 1 and 4.
 ### 4. Phase 3 - Frontend and Client Storage Migration
 
 1. Update all frontend types/components/routes/hooks from `echoId` usage to `anonimiId` with alias fallback support while backend is transitional. Depends on Phase 2 step 2.
-2. Migrate route segments and navigations where appropriate (`/user/[echoid]` semantics to new param naming) while preserving old deep links through redirects/compat parsing. Depends on step 1.
+2. Migrate route segments and navigations where appropriate (`/user/[echoId]` semantics to new param naming) while preserving old deep links through redirects/compat parsing. Depends on step 1.
 3. Migrate local storage keys (`echo_*`) to `anonimi_*` with one-time hydration/move logic so users stay signed in. Depends on step 1.
 4. Update visible label copy to `AID` throughout profile/search/chat/group UIs and prompts (e.g., "What's your AID?"). Parallel with step 3.
 
@@ -82,7 +82,7 @@ Depends on steps 1 and 4.
 - `backend/src/routes/user.routes.ts` - add new primary route and maintain deprecated route.
 - `backend/src/config/env.ts` - DB name/defaults, CORS origin docs and env evolution.
 - `frontend/src/lib/constants.ts` - token key migration from `echo_*` to `anonimi_*`.
-- `frontend/src/app/(main)/user/[echoid]/page.tsx` - user route param migration and compatibility handling.
+- `frontend/src/app/(main)/user/[anonimiId]/page.tsx` - user route param migration and compatibility handling.
 - `frontend/src/types` - DTO contracts changing `echoId` to `anonimiId` with aliases.
 - `frontend/src/components/user` - profile/search displays and labels to `AID`.
 - `docs/API_DESIGN.md` - contract updates + deprecation notices.
@@ -110,5 +110,5 @@ Depends on steps 1 and 4.
 ## Further Considerations
 
 1. Recommendation: reserve and verify domain variants early (`anonimi.com`, `api.anonimi.com`, plus fallback TLDs) before public announcement.
-2. Recommendation: keep accepting `eid_` in user search for one release cycle with UI hinting users toward `AID` format.
+2. Recommendation: keep accepting `aid_` in user search for one release cycle with UI hinting users toward `AID` format.
 3. Recommendation: if external API consumers exist, publish a versioned deprecation timeline (e.g., 60-90 days) before removing `echoId` fields/endpoints.

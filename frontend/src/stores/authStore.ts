@@ -52,7 +52,7 @@ export const useAuthStore = create<AuthState>()(
       setLoading: (isLoading) => set({ isLoading }),
     }),
     {
-      name: "echo-auth",
+      name: "anonimi-auth",
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,

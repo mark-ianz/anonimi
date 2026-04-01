@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const blockUserSchema = z.object({
   body: z.object({
-    targetEchoId: z.string().min(1, "Target EchoID is required"),
+    targetAnonimiId: z.string().min(1, "Target AID is required"),
   }),
 });
 

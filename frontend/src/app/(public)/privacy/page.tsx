@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — EchoID",
-  description: "How EchoID handles your data.",
+  title: "Privacy Policy — anonimi",
+  description: "How anonimi handles your data.",
 };
 
 export default function PrivacyPage() {
@@ -18,7 +18,7 @@ export default function PrivacyPage() {
 
           <h2 className="text-2xl font-semibold mt-12">1. Introduction</h2>
           <p className="mt-4">
-            At EchoID, we take your privacy seriously. This Privacy Policy explains how we collect, 
+            At anonimi, we take your privacy seriously. This Privacy Policy explains how we collect, 
             use, disclose, and safeguard your information when you use our messaging platform.
           </p>
 
@@ -58,7 +58,7 @@ export default function PrivacyPage() {
 
           <h2 className="text-2xl font-semibold mt-12">6. Contact Us</h2>
           <p className="mt-4">
-            If you have any questions about this Privacy Policy, please contact us at support@echoid.app.
+            If you have any questions about this Privacy Policy, please contact us at support@anonimi.app.
           </p>
         </div>
       </div>

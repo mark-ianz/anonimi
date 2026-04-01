@@ -4,7 +4,7 @@ import { z } from "zod";
 const envSchema = z.object({
   PORT: z.string().default("5000"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-  MONGODB_URI: z.string().default("mongodb://localhost:27017/echoid"),
+  MONGODB_URI: z.string().default("mongodb://localhost:27017/anonimi"),
   JWT_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
   JWT_EXPIRES_IN: z.string().default("15m"),
@@ -23,7 +23,7 @@ const envSchema = z.object({
   SMTP_SECURE: z.string().default("true"),
   SMTP_USER: z.string().default(""),
   SMTP_PASS: z.string().default(""),
-  SMTP_FROM_NAME: z.string().default("EchoID"),
+  SMTP_FROM_NAME: z.string().default("anonimi"),
   SMTP_FROM_EMAIL: z.string().default(""),
   EMAIL_VERIFY_URL: z.string().default("http://localhost:3000/verify-link"),
   RESET_PASSWORD_URL: z.string().default("http://localhost:3000/reset-password"),

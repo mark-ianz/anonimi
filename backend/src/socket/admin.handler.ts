@@ -57,7 +57,7 @@ export const notifyNewTicket = async (
 
 export const notifyNewUser = async (
   io: Server,
-  user: { userId: string; echoId: string; username: string; createdAt: Date }
+  user: { userId: string; anonimiId: string; username: string; createdAt: Date }
 ) => {
   notifyAdmins(io, "admin:user-registered", user);
 };

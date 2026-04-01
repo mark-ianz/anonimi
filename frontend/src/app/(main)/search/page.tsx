@@ -87,7 +87,7 @@ export default function SearchPage() {
         const score =
           rankScore(primary, query) +
           rankScore(contact.username, query) +
-          rankScore(contact.echoId, query);
+          rankScore(contact.anonimiId, query);
         return { contact, score };
       })
       .filter((item) => item.score > 0)
@@ -102,7 +102,7 @@ export default function SearchPage() {
     const list = (requestsQuery.data ?? [])
       .map((request) => {
         const score =
-          rankScore(request.from.username, query) + rankScore(request.from.echoId, query);
+          rankScore(request.from.username, query) + rankScore(request.from.anonimiId, query);
         return { request, score };
       })
       .filter((item) => item.score > 0)
@@ -123,7 +123,7 @@ export default function SearchPage() {
             ? conversation.group?.name ?? "Group"
             : conversation.participant?.nickname ??
               conversation.participant?.username ??
-              conversation.participant?.echoId ??
+              conversation.participant?.anonimiId ??
               "Conversation";
         const preview = conversation.lastMessage?.content ?? "";
         const score = rankScore(title, query) + rankScore(preview, query);
@@ -222,7 +222,7 @@ export default function SearchPage() {
                         className="flex items-center justify-between rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-sm transition-colors hover:bg-muted"
                       >
                         <span className="truncate text-foreground">{contact.nickname ?? contact.username}</span>
-                        <span className="ml-2 shrink-0 text-xs text-muted-foreground">{contact.echoId}</span>
+                        <span className="ml-2 shrink-0 text-xs text-muted-foreground">{contact.anonimiId}</span>
                       </Link>
                     ))}
                   </div>
@@ -242,7 +242,7 @@ export default function SearchPage() {
                         className="flex items-center justify-between rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-sm transition-colors hover:bg-muted"
                       >
                         <span className="truncate text-foreground">{request.from.username}</span>
-                        <span className="ml-2 shrink-0 text-xs text-muted-foreground">{request.from.echoId}</span>
+                        <span className="ml-2 shrink-0 text-xs text-muted-foreground">{request.from.anonimiId}</span>
                       </Link>
                     ))}
                   </div>
@@ -258,14 +258,14 @@ export default function SearchPage() {
                     {people.map((person) => (
                       <Link
                         key={person.id}
-                        href={`/user/${person.echoId}`}
+                        href={`/user/${person.anonimiId}`}
                         className="flex w-full items-center justify-between rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
                       >
                         <span className="flex min-w-0 items-center gap-2">
                           <UserRound className="h-4 w-4 shrink-0 text-muted-foreground" />
                           <span className="truncate text-foreground">{person.username}</span>
                         </span>
-                        <span className="ml-2 shrink-0 text-xs text-muted-foreground">{person.echoId}</span>
+                        <span className="ml-2 shrink-0 text-xs text-muted-foreground">{person.anonimiId}</span>
                       </Link>
                     ))}
                   </div>
@@ -304,7 +304,7 @@ export default function SearchPage() {
                 <div className="rounded-2xl border border-border/70 bg-card/70 px-4 py-6 text-center">
                   <p className="text-sm font-medium text-foreground">No results found.</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Try another keyword or search by EchoID.
+                    Try another keyword or search by anonimi.
                   </p>
                 </div>
               )}

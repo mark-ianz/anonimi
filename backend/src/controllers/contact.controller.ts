@@ -46,13 +46,13 @@ export const sendContactRequest = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { targetEchoId } = req.body;
-    const sender = await User.findById(req.user!._id).select("username echoId profileImage");
-    const targetUser = await User.findOne({ echoId: targetEchoId }).select("_id");
+    const { targetAnonimiId } = req.body;
+    const sender = await User.findById(req.user!._id).select("anonimiId username profileImage");
+    const targetUser = await User.findOne({ anonimiId: targetAnonimiId }).select("_id");
 
     const result = await contactService.sendContactRequest(
       req.user!._id.toString(),
-      targetEchoId
+      targetAnonimiId
     );
 
     if (targetUser && sender) {
@@ -60,7 +60,7 @@ export const sendContactRequest = async (
         requestId: result.requestId,
         from: {
           id: req.user!._id.toString(),
-          echoId: sender.echoId,
+          anonimiId: sender.anonimiId,
           username: sender.username,
           profileImage: sender.profileImage ?? null,
         },
@@ -76,7 +76,7 @@ export const sendContactRequest = async (
         body: `${sender?.username ?? "Someone"} sent you a contact request.`,
         data: {
           fromUserId: req.user!._id.toString(),
-          fromEchoId: sender?.echoId,
+          fromAnonimiId: sender?.anonimiId,
           href: "/contacts?tab=requests",
         },
       });
@@ -94,11 +94,11 @@ export const cancelOutgoingContactRequest = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { targetEchoId } = req.body;
+    const { targetAnonimiId } = req.body;
 
     const result = await contactService.cancelOutgoingContactRequest(
       req.user!._id.toString(),
-      targetEchoId
+      targetAnonimiId
     );
 
     emitToUser(result.targetUserId, "contact:request-cancelled", {
@@ -128,7 +128,7 @@ export const acceptContactRequest = async (
       contactId
     );
 
-    const accepter = await User.findById(req.user!._id).select("username echoId");
+    const accepter = await User.findById(req.user!._id).select("username anonimiId");
     if (requester?.userId) {
       await createAndEmitNotification({
         userId: requester.userId,
@@ -137,7 +137,7 @@ export const acceptContactRequest = async (
         body: `${accepter?.username ?? "A user"} accepted your contact request.`,
         data: {
           acceptedByUserId: req.user!._id.toString(),
-          acceptedByEchoId: accepter?.echoId,
+          acceptedByAnonimiId: accepter?.anonimiId,
           href: "/contacts",
         },
       });

@@ -84,7 +84,7 @@ export default function ProfilePage() {
           {/* User info */}
           <div className="text-center space-y-0.5">
             <p className="font-display font-semibold text-lg">{user?.username}</p>
-            <p className="text-sm text-muted-foreground">@{user?.echoId}</p>
+            <p className="text-sm text-muted-foreground">@{user?.anonimiId}</p>
           </div>
 
           {/* Edit form */}

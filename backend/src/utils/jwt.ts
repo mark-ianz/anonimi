@@ -3,7 +3,7 @@ import { env } from "../config/env";
 
 interface JWTPayload {
   userId: string;
-  echoId: string;
+  anonimiId: string;
   role: string;
 }
 

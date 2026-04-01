@@ -5,7 +5,7 @@ export type AppearanceStatus = "online" | "away" | "dnd" | "invisible";
 
 export interface User {
   id: string;
-  echoId: string;
+  anonimiId: string;
   username: string;
   profileImage: string | null;
   role: UserRole;
@@ -26,7 +26,7 @@ export interface AuthUser extends User {
 
 export interface PublicUser {
   id: string;
-  echoId: string;
+  anonimiId: string;
   username: string;
   profileImage: string | null;
   onlineStatus: OnlineStatus;
@@ -41,7 +41,7 @@ export interface PublicUser {
 
 export interface SearchUser {
   id: string;
-  echoId: string;
+  anonimiId: string;
   username: string;
   profileImage: string | null;
   onlineStatus: OnlineStatus;

@@ -6,20 +6,20 @@ import { cn } from "@/lib/utils";
 
 const faqs = [
   {
-    question: "What is EchoID?",
-    answer: "EchoID is a privacy-first messaging platform that gives you a unique identity without requiring phone numbers or personal information. Your EchoID is generated uniquely for you, allowing you to communicate securely and anonymously.",
+    question: "What is anonimi?",
+    answer: "anonimi is a privacy-first messaging platform that gives you a unique identity without requiring phone numbers or personal information. Your anonimi is generated uniquely for you, allowing you to communicate securely and anonymously.",
   },
   {
     question: "How do I get started?",
-    answer: "Simply create a free account using your email. You'll instantly receive your unique EchoID that you can share with friends to start chatting. No phone number or personal information required.",
+    answer: "Simply create a free account using your email. You'll instantly receive your unique anonimi that you can share with friends to start chatting. No phone number or personal information required.",
   },
   {
     question: "Is my data private?",
     answer: "Absolutely. We believe in privacy by design. Your messages are encrypted, and we never share your personal data with third parties. You control your identity and who can contact you.",
   },
   {
-    question: "Can I change my EchoID?",
-    answer: "Your EchoID is unique and cannot be changed. This helps maintain trust and accountability in the platform. You can update your username once and your profile picture anytime.",
+    question: "Can I change my anonimi?",
+    answer: "Your anonimi is unique and cannot be changed. This helps maintain trust and accountability in the platform. You can update your username once and your profile picture anytime.",
   },
   {
     question: "How do group chats work?",

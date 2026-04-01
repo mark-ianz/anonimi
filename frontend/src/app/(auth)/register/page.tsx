@@ -143,7 +143,7 @@ export default function RegisterPage() {
           </div>
           <div>
             <h1 className="text-3xl leading-[0.98] font-semibold">Create account</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Join EchoID today</p>
+            <p className="mt-1 text-sm text-muted-foreground">Join anonimi today</p>
           </div>
         </div>
       </div>

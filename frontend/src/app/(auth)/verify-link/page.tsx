@@ -46,7 +46,7 @@ export default function VerifyLinkPage() {
 
         setAuth(user, accessToken, refreshToken);
         clearPendingVerification();
-        toast.success("Account verified! Welcome to EchoID.");
+        toast.success("Account verified! Welcome to anonimi.");
         router.replace("/chat");
       } catch (err: unknown) {
         if (!mounted) return;

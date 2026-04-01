@@ -106,7 +106,7 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
     try {
       const { conversationId, isTyping } = payload;
       const userId = socket.data.user?.userId;
-      const echoId = socket.data.user?.echoId;
+      const anonimiId = socket.data.user?.anonimiId;
 
       if (!userId) return;
 
@@ -115,7 +115,7 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
       socket.to(`conversation:${conversationId}`).emit("typing:update", {
         conversationId,
         userId,
-        username: user?.username || echoId,
+        username: user?.username || anonimiId,
         isTyping,
       });
     } catch (error) {

@@ -21,10 +21,10 @@ interface MessageBubbleProps {
   showAvatar?: boolean;
   senderName?: string;
   senderImage?: string | null;
-  senderEchoId?: string;
+  senderAnonimiId?: string;
   participantCount?: number;
   conversationType?: "private" | "group";
-  readByUsersById?: Record<string, { name: string; echoId: string }>;
+  readByUsersById?: Record<string, { name: string; anonimiId: string }>;
   showReadReceipt?: boolean;
   timestampBubblePosition?: "single" | "first" | "middle" | "last";
 }
@@ -35,7 +35,7 @@ export default function MessageBubble({
   showAvatar,
   senderName,
   senderImage,
-  senderEchoId,
+  senderAnonimiId,
   participantCount = 2,
   conversationType = "private",
   readByUsersById,
@@ -154,9 +154,9 @@ export default function MessageBubble({
   }, [avatarMenuOpen, updateAvatarMenuPosition]);
 
   async function handleSendMessage() {
-    if (!senderEchoId) return;
+    if (!senderAnonimiId) return;
     try {
-      const res = await api.post("/conversations", { participantEchoId: senderEchoId });
+      const res = await api.post("/conversations", { participantAnonimiId: senderAnonimiId });
       const conversationId = res.data?.data?.conversationId as string | undefined;
       if (!conversationId) {
         toast.error("Could not open conversation.");
@@ -196,12 +196,12 @@ export default function MessageBubble({
               ref={avatarTriggerRef}
               type="button"
               onClick={() => {
-                if (!senderEchoId) return;
+                if (!senderAnonimiId) return;
                 setAvatarMenuOpen((prev) => !prev);
               }}
               className={cn(
                 "rounded-full",
-                senderEchoId ? "cursor-pointer" : "cursor-default"
+                senderAnonimiId ? "cursor-pointer" : "cursor-default"
               )}
               aria-haspopup="menu"
               aria-expanded={avatarMenuOpen}
@@ -216,7 +216,7 @@ export default function MessageBubble({
               />
             </button>
 
-            {canUsePortal && avatarMenuOpen && senderEchoId &&
+            {canUsePortal && avatarMenuOpen && senderAnonimiId &&
               createPortal(
                 <div
                   ref={avatarMenuRef}
@@ -227,7 +227,7 @@ export default function MessageBubble({
                     type="button"
                     onClick={() => {
                       setAvatarMenuOpen(false);
-                      router.push(`/user/${senderEchoId}`);
+                      router.push(`/user/${senderAnonimiId}`);
                     }}
                     className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/70"
                   >

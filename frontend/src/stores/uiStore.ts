@@ -38,7 +38,7 @@ export const useUIStore = create<UIState>()(
       setSearchQuery: (searchQuery) => set({ searchQuery }),
     }),
     {
-      name: "echo-ui",
+      name: "anonimi-ui",
       partialize: (state) => ({
         theme: state.theme,
         sidebarCollapsed: state.sidebarCollapsed,

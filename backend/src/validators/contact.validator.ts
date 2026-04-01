@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const sendContactRequestSchema = z.object({
   body: z.object({
-    targetEchoId: z.string().min(1, "Target EchoID is required"),
+    targetAnonimiId: z.string().min(1, "Target AID is required"),
   }),
 });
 
@@ -14,7 +14,7 @@ export const contactParamsSchema = z.object({
 
 export const cancelContactRequestSchema = z.object({
   body: z.object({
-    targetEchoId: z.string().min(1, "Target EchoID is required"),
+    targetAnonimiId: z.string().min(1, "Target AID is required"),
   }),
 });
 

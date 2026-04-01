@@ -31,11 +31,11 @@ export default function ContactRequestCard({
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <Link href={`/user/${request.from.echoId}`} className="text-sm font-medium hover:underline truncate block">
+        <Link href={`/user/${request.from.anonimiId}`} className="text-sm font-medium hover:underline truncate block">
           {request.from.username}
         </Link>
         <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground">@{request.from.echoId}</span>
+          <span className="text-xs text-muted-foreground">@{request.from.anonimiId}</span>
           <span className="text-xs text-muted-foreground">·</span>
           <DateDisplay date={request.createdAt} format="relative" />
         </div>

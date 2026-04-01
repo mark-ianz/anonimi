@@ -24,7 +24,7 @@ export const getContacts = async (
   }
 
   const contacts = await Contact.find(query)
-    .populate("contactId", "echoId username profileImage onlineStatus lastSeen")
+    .populate("contactId", "anonimiId username profileImage onlineStatus lastSeen")
     .sort({ createdAt: -1 })
     .limit(limit + 1)
     .lean();
@@ -35,7 +35,7 @@ export const getContacts = async (
   return {
     contacts: data.map((c: any) => ({
       contactId: c.contactId._id.toString(),
-      echoId: c.contactId.echoId,
+      anonimiId: c.contactId.anonimiId,
       username: c.contactId.username,
       nickname: c.nickname,
       profileImage: c.contactId.profileImage,
@@ -53,7 +53,7 @@ export const getIncomingRequests = async (userId: string) => {
     contactId: new Types.ObjectId(userId),
     status: "pending",
   })
-    .populate("userId", "echoId username profileImage")
+    .populate("userId", "anonimiId username profileImage")
     .sort({ createdAt: -1 })
     .lean();
 
@@ -61,7 +61,7 @@ export const getIncomingRequests = async (userId: string) => {
     requestId: c._id.toString(),
     from: {
       id: c.userId._id.toString(),
-      echoId: c.userId.echoId,
+      anonimiId: c.userId.anonimiId,
       username: c.userId.username,
       profileImage: c.userId.profileImage,
     },
@@ -71,9 +71,9 @@ export const getIncomingRequests = async (userId: string) => {
 
 export const sendContactRequest = async (
   fromUserId: string,
-  targetEchoId: string
+  targetAnonimiId: string
 ) => {
-  const targetUser = await User.findOne({ echoId: targetEchoId });
+  const targetUser = await User.findOne({ anonimiId: targetAnonimiId });
 
   if (!targetUser) {
     throw new NotFoundError("User not found");
@@ -231,9 +231,9 @@ export const declineContactRequest = async (
 
 export const cancelOutgoingContactRequest = async (
   userId: string,
-  targetEchoId: string
+  targetAnonimiId: string
 ) => {
-  const targetUser = await User.findOne({ echoId: targetEchoId }).select("_id");
+  const targetUser = await User.findOne({ anonimiId: targetAnonimiId }).select("_id");
 
   if (!targetUser) {
     throw new NotFoundError("User not found");
@@ -251,7 +251,7 @@ export const cancelOutgoingContactRequest = async (
 
   return {
     targetUserId: targetUser._id.toString(),
-    targetEchoId,
+    targetAnonimiId,
     message: "Contact request withdrawn.",
   };
 };

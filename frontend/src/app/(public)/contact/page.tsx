@@ -3,8 +3,8 @@ import ContactForm from "@/components/marketing/ContactForm";
 import { Mail, MapPin } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Contact EchoID",
-  description: "Get in touch with the EchoID team.",
+  title: "Contact anonimi",
+  description: "Get in touch with the anonimi team.",
 };
 
 export default function ContactPage() {
@@ -48,7 +48,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <h3 className="font-medium">Email</h3>
-                <p className="text-muted-foreground">support@echoid.app</p>
+                <p className="text-muted-foreground">support@anonimi.app</p>
               </div>
             </div>
 

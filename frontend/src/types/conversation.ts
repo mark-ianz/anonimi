@@ -5,7 +5,7 @@ export type ConversationType = "private" | "group";
 
 export interface ConversationParticipant {
   id: string;
-  echoId: string;
+  anonimiId: string;
   username: string;
   nickname: string | null;
   contactId: string | null;

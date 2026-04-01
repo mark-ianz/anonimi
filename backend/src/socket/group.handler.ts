@@ -43,7 +43,7 @@ export const setupGroupHandler = (io: Server, socket: Socket): void => {
 export const notifyGroupMemberJoined = async (
   io: Server,
   groupId: string,
-  member: { userId: string; echoId: string; username: string; profileImage?: string; role: string },
+  member: { userId: string; anonimiId: string; username: string; profileImage?: string; role: string },
   addedBy: { userId: string; username: string }
 ) => {
   const group = await Group.findById(groupId);

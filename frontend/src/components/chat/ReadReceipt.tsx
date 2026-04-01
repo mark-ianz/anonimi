@@ -13,7 +13,7 @@ interface ReadReceiptProps {
   participantCount: number;
   conversationType: "private" | "group";
   currentUserId?: string;
-  readByUsersById?: Record<string, { name: string; echoId: string }>;
+  readByUsersById?: Record<string, { name: string; anonimiId: string }>;
   className?: string;
 }
 
@@ -39,7 +39,7 @@ export default function ReadReceipt({
       readersExcludingSender.map((readerId) => ({
         id: readerId,
         name: readByUsersById?.[readerId]?.name ?? `${readerId.slice(0, 8)}...`,
-        echoId: readByUsersById?.[readerId]?.echoId ?? null,
+        anonimiId: readByUsersById?.[readerId]?.anonimiId ?? null,
         readAt: readByAt?.[readerId] ?? null,
       })),
     [readByAt, readByUsersById, readersExcludingSender]
@@ -109,9 +109,9 @@ export default function ReadReceipt({
                   key={reader.id}
                   className="rounded-lg border border-border/50 bg-background/60 px-3 py-2"
                 >
-                  {reader.echoId ? (
+                  {reader.anonimiId ? (
                     <Link
-                      href={`/user/${reader.echoId}`}
+                      href={`/user/${reader.anonimiId}`}
                       onClick={() => setIsReadersModalOpen(false)}
                       className="text-sm font-medium text-foreground transition-colors hover:text-primary hover:underline"
                     >

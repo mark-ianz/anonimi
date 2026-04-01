@@ -4,8 +4,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
-  title: "EchoID Features",
-  description: "Explore EchoID's messaging, groups, privacy, and moderation features.",
+  title: "anonimi Features",
+  description: "Explore anonimi's messaging, groups, privacy, and moderation features.",
 };
 
 const features = [
@@ -23,7 +23,7 @@ const features = [
   {
     icon: Shield,
     title: "Privacy-First Identity",
-    description: "Your EchoID is generated uniquely with email-only signup, optional usernames, and no phone requirement at registration.",
+    description: "Your anonimi is generated uniquely with email-only signup, optional usernames, and no phone requirement at registration.",
     details: [
       "Unique generated IDs",
       "No phone number required",
@@ -136,7 +136,7 @@ export default function FeaturesPage() {
         </div>
 
         <div className="mt-24 text-center">
-          <h2 className="text-2xl font-semibold">Ready to try EchoID?</h2>
+          <h2 className="text-2xl font-semibold">Ready to try anonimi?</h2>
           <p className="mt-4 text-muted-foreground">
             Join thousands of users who have already discovered a better way to communicate.
           </p>

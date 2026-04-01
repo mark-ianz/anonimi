@@ -21,10 +21,10 @@ export const blockUser = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { targetEchoId } = req.body;
+    const { targetAnonimiId } = req.body;
     const result = await blockService.blockUser(
       req.user!._id.toString(),
-      targetEchoId
+      targetAnonimiId
     );
     apiSuccess(res, result, 201);
   } catch (error) {

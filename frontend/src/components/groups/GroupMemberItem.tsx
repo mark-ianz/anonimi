@@ -17,9 +17,9 @@ interface GroupMemberItemProps {
   onMute?: (userId: string) => void;
   onUnmute?: (userId: string) => void;
   onTransferOwnership?: (userId: string) => void;
-  onSendMessage?: (echoId: string) => void;
+  onSendMessage?: (anonimiId: string) => void;
   onSetNickname?: (userId: string, nickname: string | null) => void;
-  onBlock?: (echoId: string) => void;
+  onBlock?: (anonimiId: string) => void;
 }
 
 const roleLabels: Record<GroupRole, string> = {
@@ -108,7 +108,7 @@ export default function GroupMemberItem({
             </span>
             <RoleIcon role={member.role} />
           </div>
-          <p className="text-xs text-muted-foreground truncate">@{member.echoId}</p>
+          <p className="text-xs text-muted-foreground truncate">@{member.anonimiId}</p>
           <p className="text-[11px] text-muted-foreground/80 truncate mt-0.5">{getJoinSourceLabel(member)}</p>
         </div>
 
@@ -139,7 +139,7 @@ export default function GroupMemberItem({
             {menuOpen && (
               <div className="absolute right-0 z-10 top-full mt-1 glass rounded-xl shadow-elevated py-1 min-w-40 animate-fade-in">
                 <Link
-                  href={`/user/${member.echoId}`}
+                  href={`/user/${member.anonimiId}`}
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
                   onClick={() => setMenuOpen(false)}
                 >
@@ -149,7 +149,7 @@ export default function GroupMemberItem({
 
                 {!isSelf && (
                   <button
-                    onClick={() => { onSendMessage?.(member.echoId); setMenuOpen(false); }}
+                    onClick={() => { onSendMessage?.(member.anonimiId); setMenuOpen(false); }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
                   >
                     <MessageCircle className="w-4 h-4" />
@@ -171,7 +171,7 @@ export default function GroupMemberItem({
 
                 {!isSelf && (
                   <button
-                    onClick={() => { onBlock?.(member.echoId); setMenuOpen(false); }}
+                    onClick={() => { onBlock?.(member.anonimiId); setMenuOpen(false); }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
                   >
                     <ShieldBan className="w-4 h-4" />

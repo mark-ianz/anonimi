@@ -14,7 +14,7 @@ import OnlineIndicator from "@/components/user/OnlineIndicator";
 import { useEffect, useRef, useState } from "react";
 
 export default function UserProfilePage() {
-  const { echoId } = useParams<{ echoId: string }>();
+  const { anonimiId } = useParams<{ anonimiId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user: me } = useAuthStore();
@@ -24,22 +24,26 @@ export default function UserProfilePage() {
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  const lookupId = `/users/${anonimiId}`;
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ["user-profile", echoId],
+    queryKey: ["user-profile", anonimiId],
     queryFn: async () => {
-      const res = await api.get(`/users/${echoId}`);
+      const res = await api.get(lookupId);
       return res.data.data as PublicUser;
     },
-    enabled: !!echoId,
+    enabled: !!anonimiId,
   });
 
   const addContactMutation = useMutation({
     mutationFn: async () => {
-      await api.post("/contacts/request", { targetEchoId: echoId });
+      const targetId = data?.anonimiId;
+      if (!targetId) return;
+      await api.post("/contacts/request", { targetAnonimiId: targetId });
     },
     onSuccess: () => {
       toast.success("Contact request sent");
-      queryClient.invalidateQueries({ queryKey: ["user-profile", echoId] });
+      queryClient.invalidateQueries({ queryKey: ["user-profile", anonimiId] });
     },
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { error?: { message?: string } } } })
@@ -50,11 +54,11 @@ export default function UserProfilePage() {
 
   const cancelContactRequestMutation = useMutation({
     mutationFn: async () => {
-      await api.post("/contacts/request/cancel", { targetEchoId: echoId });
+      await api.post("/contacts/request/cancel", { targetAnonimiId: anonimiId });
     },
     onSuccess: () => {
       toast.success("Contact request withdrawn");
-      queryClient.invalidateQueries({ queryKey: ["user-profile", echoId] });
+      queryClient.invalidateQueries({ queryKey: ["user-profile", anonimiId] });
       queryClient.invalidateQueries({ queryKey: ["contacts", "requests"] });
     },
     onError: (err: unknown) => {
@@ -71,7 +75,7 @@ export default function UserProfilePage() {
     },
     onSuccess: () => {
       toast.success("Contact removed");
-      queryClient.invalidateQueries({ queryKey: ["user-profile", echoId] });
+      queryClient.invalidateQueries({ queryKey: ["user-profile", anonimiId] });
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
       queryClient.invalidateQueries({ queryKey: ["contacts", "requests"] });
     },
@@ -84,11 +88,11 @@ export default function UserProfilePage() {
 
   const blockMutation = useMutation({
     mutationFn: async () => {
-      await api.post("/blocks", { targetEchoId: echoId });
+      await api.post("/blocks", { targetAnonimiId: anonimiId });
     },
     onSuccess: () => {
       toast.success("User blocked");
-      queryClient.invalidateQueries({ queryKey: ["user-profile", echoId] });
+      queryClient.invalidateQueries({ queryKey: ["user-profile", anonimiId] });
     },
     onError: () => {
       toast.error("Failed to block user");
@@ -97,7 +101,7 @@ export default function UserProfilePage() {
 
   const messageMutation = useMutation({
     mutationFn: async () => {
-      const res = await api.post("/conversations", { participantEchoId: echoId });
+      const res = await api.post("/conversations", { participantAnonimiId: anonimiId });
       return res.data.data as { conversationId: string };
     },
     onSuccess: (data) => {
@@ -144,7 +148,7 @@ export default function UserProfilePage() {
     if (!profile) return;
 
     if (isContact) {
-      const confirmed = window.confirm(`Remove @${profile.echoId} from your contacts?`);
+      const confirmed = window.confirm(`Remove @${profile.anonimiId} from your contacts?`);
       if (!confirmed) return;
       removeContactMutation.mutate();
       return;
@@ -282,7 +286,7 @@ export default function UserProfilePage() {
                     </div>
 
                     <h2 className="mt-4 font-display text-3xl font-semibold leading-none">{profile.username}</h2>
-                    <p className="mt-1 text-sm text-muted-foreground">@{profile.echoId}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">@{profile.anonimiId}</p>
                     {profile.contactNickname ? (
                       <p className="mt-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
                         Saved as {profile.contactNickname}
@@ -372,7 +376,7 @@ export default function UserProfilePage() {
 
               <h3 className="text-lg font-semibold">Report Details</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                Report @{profile.echoId}. Add optional context to help moderation.
+                Report @{profile.anonimiId}. Add optional context to help moderation.
               </p>
 
               <div className="mt-4 grid gap-2">

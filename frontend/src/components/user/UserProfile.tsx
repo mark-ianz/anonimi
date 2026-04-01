@@ -13,17 +13,17 @@ import DateDisplay from "@/components/shared/DateDisplay";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
 
 interface UserProfileProps {
-  echoId: string;
+  anonimiId: string;
 }
 
-export default function UserProfile({ echoId }: UserProfileProps) {
+export default function UserProfile({ anonimiId }: UserProfileProps) {
   const router = useRouter();
   const { sendRequest, removeContact, contacts } = useContacts();
 
   const { data: user, isLoading } = useQuery({
-    queryKey: ["users", echoId],
+    queryKey: ["users", anonimiId],
     queryFn: async () => {
-      const res = await api.get(`/users/${echoId}`);
+      const res = await api.get(`/users/${anonimiId}`);
       return res.data.data as PublicUser;
     },
     staleTime: 1000 * 60,
@@ -31,7 +31,7 @@ export default function UserProfile({ echoId }: UserProfileProps) {
 
   const { status: presenceStatus } = usePresence(user?.id);
 
-  const contact = contacts.find((c) => c.echoId === echoId);
+  const contact = contacts.find((c) => c.anonimiId === anonimiId);
   const isContact = !!contact;
 
   if (isLoading) {
@@ -74,14 +74,14 @@ export default function UserProfile({ echoId }: UserProfileProps) {
         <h2 className="font-display font-semibold text-xl">
           {contact?.nickname ?? user.username}
         </h2>
-        <p className="text-sm text-muted-foreground">@{user.echoId}</p>
+        <p className="text-sm text-muted-foreground">@{user.anonimiId}</p>
         <OnlineIndicator status={presenceStatus} showLabel className="justify-center" />
       </div>
 
       {/* Actions */}
       <div className="flex gap-2">
         <Link
-          href={`/chat?user=${echoId}`}
+          href={`/chat?user=${anonimiId}`}
           className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors"
         >
           <MessageCircle className="w-4 h-4" />
@@ -98,7 +98,7 @@ export default function UserProfile({ echoId }: UserProfileProps) {
           </button>
         ) : (
           <button
-            onClick={() => sendRequest(echoId)}
+            onClick={() => sendRequest(anonimiId)}
             className="flex-1 h-10 rounded-xl border border-border/50 text-sm font-medium flex items-center justify-center gap-2 hover:bg-muted transition-colors"
           >
             <UserPlus className="w-4 h-4" />

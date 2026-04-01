@@ -22,7 +22,7 @@ export const getMessageRequests = async (
       toUserId: req.user!._id,
       status: "pending",
     })
-      .populate("fromUserId", "echoId username profileImage")
+      .populate("fromUserId", "anonimiId username profileImage")
       .populate("conversationId")
       .sort({ createdAt: -1 })
       .lean();
@@ -38,7 +38,7 @@ export const getMessageRequests = async (
           conversationId: r.conversationId._id.toString(),
           from: {
             id: r.fromUserId._id.toString(),
-            echoId: r.fromUserId.echoId,
+            anonimiId: r.fromUserId.anonimiId,
             username: r.fromUserId.username,
             profileImage: r.fromUserId.profileImage,
           },
@@ -138,14 +138,14 @@ export const acceptMessageRequest = async (
 
     // Notify original sender that their request was accepted
     const accepter = await User.findById(req.user!._id).select(
-      "echoId username profileImage"
+      "anonimiId username profileImage"
     );
     emitToUser(request.fromUserId.toString(), "message-request:accepted", {
       requestId: request._id.toString(),
       conversationId: request.conversationId.toString(),
       acceptedBy: {
         id: req.user!._id.toString(),
-        echoId: accepter?.echoId,
+        anonimiId: accepter?.anonimiId,
         username: accepter?.username,
         profileImage: accepter?.profileImage ?? null,
       },

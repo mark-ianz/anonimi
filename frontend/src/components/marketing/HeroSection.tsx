@@ -19,7 +19,7 @@ export default function HeroSection() {
             </h1>
 
             <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              EchoID gives every user a private alias instead of exposing personal contact data.
+              anonimi gives every user a private alias instead of exposing personal contact data.
               Messages stay direct, encrypted, and intentionally simple.
             </p>
 
@@ -64,7 +64,7 @@ export default function HeroSection() {
                     Created. Invite link expires in 10 minutes.
                   </div>
                   <div className="max-w-[82%] rounded-2xl rounded-bl-sm border border-border/65 bg-card px-4 py-3 text-sm leading-relaxed text-foreground">
-                    Perfect. Sending EchoID now.
+                    Perfect. Sending anonimi now.
                   </div>
                 </div>
               </div>

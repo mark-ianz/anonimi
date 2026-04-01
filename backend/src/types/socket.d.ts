@@ -7,7 +7,7 @@ declare global {
       data: {
         user?: {
           userId: string;
-          echoId: string;
+          anonimiId: string;
           role: string;
         };
       };
@@ -19,7 +19,7 @@ export interface AuthSocket extends Socket {
   data: {
     user: {
       userId: string;
-      echoId: string;
+      anonimiId: string;
       role: string;
     };
   };

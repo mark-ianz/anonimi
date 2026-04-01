@@ -3,10 +3,10 @@ import MarketingNavbar from "@/components/marketing/MarketingNavbar";
 import MarketingFooter from "@/components/marketing/MarketingFooter";
 
 export const metadata: Metadata = {
-  title: "EchoID — Private Messaging, Reimagined",
+  title: "anonimi — Private Messaging, Reimagined",
   description: "Secure, real-time messaging with privacy-first identity. Sign up free.",
   openGraph: {
-    title: "EchoID — Private Messaging, Reimagined",
+    title: "anonimi — Private Messaging, Reimagined",
     description: "Secure, real-time messaging with privacy-first identity. Sign up free.",
     type: "website",
   },

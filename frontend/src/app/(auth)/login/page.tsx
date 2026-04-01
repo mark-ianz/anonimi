@@ -85,7 +85,7 @@ export default function LoginPage() {
           </div>
           <div>
             <h1 className="text-3xl leading-[0.98] font-semibold">Welcome back</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Sign in to EchoID</p>
+            <p className="mt-1 text-sm text-muted-foreground">Sign in to anonimi</p>
           </div>
         </div>
       </div>

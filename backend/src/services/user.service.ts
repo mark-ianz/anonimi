@@ -2,23 +2,22 @@ import { Types } from "mongoose";
 import { User } from "../models/user.model";
 import { Block } from "../models/block.model";
 import { Contact } from "../models/contact.model";
-import { NotFoundError, ForbiddenError } from "../utils/apiError";
+import { NotFoundError } from "../utils/apiError";
 import { OnlineStatus } from "../types/enums";
 
 interface SearchResult {
   id: string;
-  echoId: string;
+  anonimiId: string;
   username: string;
   profileImage: string | null;
   onlineStatus: string;
 }
 
 const GENERIC_SEARCH_TOKENS = new Set([
-  "eid",
-  "eid_",
+  "aid",
+  "aid_",
   "id",
-  "echoid",
-  "echo",
+  "anonimi",
   "user",
   "users",
 ]);
@@ -36,13 +35,13 @@ export const searchUsers = async (
     return { users: [] };
   }
 
-  const hasEchoPrefix = normalized.startsWith("eid");
-  const echoSuffix = normalized.replace(/^eid_?/, "").replace(/[^a-z0-9]/gi, "");
+  const hasAnonimiPrefix = normalized.startsWith("aid");
+  const anonimiSuffix = normalized.replace(/^aid_?/, "").replace(/[^a-z0-9]/gi, "");
   const isGeneric =
     GENERIC_SEARCH_TOKENS.has(normalized) ||
-    (hasEchoPrefix && echoSuffix.length < 3);
+    (hasAnonimiPrefix && anonimiSuffix.length < 3);
 
-  // Prevent broad wildcard-like queries (e.g. "eid") from listing everyone.
+  // Prevent broad wildcard-like queries (e.g. "aid") from listing everyone.
   if (isGeneric) {
     return { users: [] };
   }
@@ -50,16 +49,17 @@ export const searchUsers = async (
   const escapedQuery = escapeRegex(normalized);
   const usernameRegex = new RegExp(escapedQuery, "i");
 
-  const echoRegex = hasEchoPrefix
-    ? new RegExp(`^eid_${escapeRegex(echoSuffix)}`, "i")
+  const anonimiRegex = hasAnonimiPrefix
+    ? new RegExp(`^aid_${escapeRegex(anonimiSuffix)}`, "i")
     : new RegExp(escapedQuery, "i");
+  const orConditions = [{ username: usernameRegex }, { anonimiId: anonimiRegex }];
 
   const searchQuery = {
-    $or: [{ username: usernameRegex }, { echoId: echoRegex }],
+    $or: orConditions,
   };
 
   const users = await User.find(searchQuery)
-    .select("echoId username profileImage onlineStatus")
+    .select("anonimiId username profileImage onlineStatus")
     .limit(limit + 1)
     .sort({ username: 1 })
     .lean();
@@ -71,7 +71,7 @@ export const searchUsers = async (
   return {
     users: data.map((u) => ({
       id: u._id.toString(),
-      echoId: u.echoId,
+      anonimiId: u.anonimiId,
       username: u.username,
       profileImage: u.profileImage,
       onlineStatus: u.onlineStatus,
@@ -80,12 +80,12 @@ export const searchUsers = async (
   };
 };
 
-export const getUserByEchoId = async (
-  echoId: string,
+export const getUserByAnonimiId = async (
+  anonimiId: string,
   currentUserId: string
 ) => {
-  const user = await User.findOne({ echoId }).select(
-    "echoId username profileImage onlineStatus lastSeen createdAt"
+  const user = await User.findOne({ anonimiId }).select(
+    "anonimiId username profileImage onlineStatus lastSeen createdAt"
   );
 
   if (!user) {
@@ -139,7 +139,7 @@ export const getUserByEchoId = async (
 
   return {
     id: user._id.toString(),
-    echoId: user.echoId,
+    anonimiId: user.anonimiId,
     username: user.username,
     profileImage: user.profileImage,
     onlineStatus: user.onlineStatus,

@@ -65,7 +65,7 @@ export default function ForgotPasswordPage() {
       <div className="flex flex-col items-center mb-8">
         <div
           className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-md mb-4"
-          style={{ background: "var(--echo-gradient)" }}
+          style={{ background: "var(--anonimi-gradient)" }}
         >
           <span className="text-white font-display font-bold text-2xl">E</span>
         </div>
@@ -96,7 +96,7 @@ export default function ForgotPasswordPage() {
           type="submit"
           disabled={isSubmitting}
           className="w-full h-10 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2 transition-opacity disabled:opacity-60"
-          style={{ background: "var(--echo-gradient)" }}
+          style={{ background: "var(--anonimi-gradient)" }}
         >
           {isSubmitting ? (
             <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
