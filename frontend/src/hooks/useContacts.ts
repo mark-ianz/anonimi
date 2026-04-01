@@ -1,13 +1,16 @@
 "use client";
 
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import type { Contact, ContactRequest } from "@/types/contact";
 import { CONTACTS_PER_PAGE } from "@/lib/constants";
+import { usePresenceStore } from "@/stores/presenceStore";
 
 export function useContacts() {
   const qc = useQueryClient();
+  const { bulkSetPresence } = usePresenceStore();
 
   const contactsQuery = useInfiniteQuery({
     queryKey: ["contacts"],
@@ -27,6 +30,24 @@ export function useContacts() {
     initialPageParam: undefined as string | undefined,
     staleTime: 1000 * 60 * 2,
   });
+
+  useEffect(() => {
+    const contacts = contactsQuery.data?.pages.flatMap((p) => p.data) ?? [];
+    if (!contacts.length) return;
+
+    const presenceEntries = contacts.reduce<Record<string, { status: Contact["onlineStatus"]; lastSeen: string | null }>>(
+      (acc, contact) => {
+        acc[contact.contactId] = {
+          status: contact.onlineStatus,
+          lastSeen: contact.lastSeen ?? null,
+        };
+        return acc;
+      },
+      {}
+    );
+
+    bulkSetPresence(presenceEntries);
+  }, [contactsQuery.data, bulkSetPresence]);
 
   const requestsQuery = useInfiniteQuery({
     queryKey: ["contacts", "requests"],

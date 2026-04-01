@@ -20,7 +20,11 @@ interface ContactItemProps {
 
 export default function ContactItem({ contact, onRemove }: ContactItemProps) {
   const router = useRouter();
-  const { status: presenceStatus } = usePresence(contact.anonimiId);
+  const { status: presenceStatus } = usePresence(
+    contact.contactId,
+    contact.onlineStatus,
+    contact.lastSeen
+  );
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
