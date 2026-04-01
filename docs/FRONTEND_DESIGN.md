@@ -501,7 +501,7 @@ The default view when entering the application.
 - Header: Contact name/avatar, online status, actions menu (profile, block, report)
 - Message area: Scrollable message list (infinite scroll upward for history) using `ScrollArea`
 - Non-contact notice banner (conditionally rendered — see below)
-- Input area: Text input, attachment buttons (image, file), send button
+- Input area: Text input, attachment buttons (image, file), stealth toggle + duration selector, send button
 - For disbanded groups: show a disband notice banner and disable message input/actions
 
 **Message bubble features:**
@@ -521,6 +521,8 @@ The default view when entering the application.
 - Context menu on messages: Copy, Delete for me, Unsend (if own message within time limit)
 - "This message was unsent" placeholder for unsent messages
 - Inline edit for own text messages (24-hour window). "Edited" label appears above the bubble and opens edit history.
+- Stealth messages show a subtle "Stealth" label and countdown timer; once expired, the bubble displays an "Expired" placeholder and hides the original content.
+- Stealth messages cannot be edited or unsent (delete-for-me is still allowed).
 
 **Nickname actions in chat header menu (private):**
 - `Set nickname` — sets how **you** see the other user.
@@ -532,6 +534,7 @@ The default view when entering the application.
 - New messages appear instantly at bottom
 - Auto-scroll to newest message
 - Optimistic message rendering (show immediately, confirm on ack)
+- Stealth expiry updates are pushed via `message:stealth:expired` and update the bubble/preview state in-place.
 - Read marking is focus-aware: messages are auto-marked read only when the conversation is open **and** the browser tab is visible/focused.
 - If the conversation is open in a background tab, incoming messages stay unread until focus returns.
 - Returning focus to an open conversation clears its local unread badge and emits read receipts.

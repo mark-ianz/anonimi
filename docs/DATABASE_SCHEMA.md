@@ -153,6 +153,13 @@ Collection: messages
   senderId:         ObjectId,          // ref: users
   type:             String,            // "text" | "image" | "file" | "system"
   content:          String | null,     // Text content (or caption for media)
+  isStealth:        Boolean,           // True if message is Stealth Mode
+  stealthExpiresAt: Date | null,       // Absolute expiry timestamp
+  stealthExpiredAt: Date | null,       // Set when message expires
+  stealthContentCipher: String | null, // AES-GCM ciphertext (Base64)
+  stealthContentIv:    String | null,  // AES-GCM IV (Base64)
+  stealthContentTag:   String | null,  // AES-GCM auth tag (Base64)
+  stealthContentLength:Number | null,  // Original plaintext length
   mediaUrl:         String | null,     // Path/URL for image or file
   fileName:         String | null,     // Original filename for file messages
   fileSize:         Number | null,     // File size in bytes
@@ -178,6 +185,7 @@ Collection: messages
 
 - **This is the most performance-critical collection.** The compound index on `{ conversationId, _id }` is essential for cursor-based pagination.
 - `content` is preserved even when `unsent: true` — admin endpoints can access it, but client-facing APIs return `null` content for unsent messages.
+- For stealth messages, plaintext is not stored; content is encrypted at rest using AES-GCM and only revealed to clients before expiry.
 - `readBy` starts as an empty array and accumulates user IDs as users read the message.
 - `readByAt` stores the read timestamp for each reader (`userId -> Date`) to support "Read at" UX.
 - `deletedFor` starts as an empty array. Users who delete-for-self are added here.

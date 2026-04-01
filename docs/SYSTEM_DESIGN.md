@@ -182,6 +182,24 @@ Sender Client              Server                    Recipient Client
 7. Emit message event only to recipients that are allowed to receive it.
 8. If recipient is offline and delivery is allowed, the message persists in DB and is fetched on next login.
 
+### Stealth Mode (Ephemeral Text)
+
+Stealth messages are encrypted at rest and automatically expire after a fixed duration.
+
+**Flow (text-only):**
+1. Sender includes `stealthDuration` (minutes) when sending a text message.
+2. Server encrypts content with AES-GCM and stores only ciphertext + IV + auth tag.
+3. Server persists metadata: `isStealth: true`, `stealthExpiresAt`.
+4. Server emits the normal `message:receive` event with `stealth` fields for UI rendering.
+5. Background job scans for expired stealth messages and sets `stealthExpiredAt`.
+6. Server emits `message:stealth:expired` to update clients in real time.
+
+**Rules:**
+- Stealth messages cannot be edited or unsent.
+- Delete-for-me is still allowed (per-user removal).
+- Expired messages display a placeholder in the UI and no longer expose original content.
+- Stealth messages are excluded from content search.
+
 ### Supported Message Types
 
 | Type | Content Field | Media Field | Notes |

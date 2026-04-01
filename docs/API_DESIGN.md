@@ -1032,6 +1032,10 @@ Fetch messages for a conversation with cursor-based pagination.
       "senderId": "60d5ecb54b24a1001c8e4b3a",
       "type": "text",
       "content": "Hello!",
+      "isStealth": false,
+      "stealthExpiresAt": null,
+      "stealthExpiredAt": null,
+      "stealthContentLength": null,
       "mediaUrl": null,
       "fileName": null,
       "fileSize": null,
@@ -1049,6 +1053,10 @@ Fetch messages for a conversation with cursor-based pagination.
       "senderId": "60d5ecb54b24a1001c8e4b3b",
       "type": "image",
       "content": "Check this out!",
+      "isStealth": false,
+      "stealthExpiresAt": null,
+      "stealthExpiredAt": null,
+      "stealthContentLength": null,
       "mediaUrl": "/uploads/messages/uuid4.jpg",
       "fileName": null,
       "fileSize": null,
@@ -1071,6 +1079,7 @@ Fetch messages for a conversation with cursor-based pagination.
 Notes:
 - Messages are sorted newest-first in the response. Client reverses for display.
 - Unsent messages return `content: null` and `unsent: true`.
+- Stealth messages include `isStealth: true`. If expired, `content: null` and `stealthExpiredAt` is set.
 - Messages in the user's `deletedFor` array are excluded.
 - `readByAt` maps `userId -> ISO timestamp` for when each user read the message.
 
@@ -1123,6 +1132,7 @@ Notes:
 - Only text messages are searched and returned.
 - Messages are sorted newest-first.
 - Messages in the user's `deletedFor` array and unsent messages are excluded.
+- Stealth messages are excluded from content search.
 
 ---
 
@@ -1136,9 +1146,14 @@ Send a message via REST (alternative to WebSocket for reliability).
   "conversationId": "60d5ecb54b24a1001c8e4b3f",
   "type": "text",
   "content": "Hello there!",
-  "mediaUrl": null
+  "mediaUrl": null,
+  "stealthDuration": "30m"
 }
 ```
+
+Notes:
+- `stealthDuration` is optional and only valid for `type: "text"`.
+- Allowed values: `"1m"`, `"5m"`, `"15m"`, `"30m"`, `"1h"`, `"3h"`, `"6h"`, `"12h"`, `"24h"`.
 
 **Response (201):**
 ```json
@@ -1150,6 +1165,10 @@ Send a message via REST (alternative to WebSocket for reliability).
     "senderId": "60d5ecb54b24a1001c8e4b3a",
     "type": "text",
     "content": "Hello there!",
+    "isStealth": false,
+    "stealthExpiresAt": null,
+    "stealthExpiredAt": null,
+    "stealthContentLength": null,
     "readBy": ["60d5ecb54b24a1001c8e4b3a"],
     "readByAt": {
       "60d5ecb54b24a1001c8e4b3a": "2026-03-08T11:50:00Z"
