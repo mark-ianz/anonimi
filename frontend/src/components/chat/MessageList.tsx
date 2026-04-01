@@ -68,11 +68,12 @@ export default function MessageList({ conversation }: MessageListProps) {
   });
 
   const groupMemberMetaById = useMemo(() => {
-    const map: Record<string, { name: string; echoId: string }> = {};
+    const map: Record<string, { name: string; echoId: string; profileImage: string | null }> = {};
     groupMembers.forEach((member) => {
       map[member.userId] = {
         name: member.nickname?.trim() || member.username,
         echoId: member.echoId,
+        profileImage: member.profileImage ?? null,
       };
     });
     return map;
@@ -250,13 +251,16 @@ export default function MessageList({ conversation }: MessageListProps) {
             }
           }
 
-          // Find sender info for group
+          // Resolve sender info for group messages.
           let senderName: string | undefined;
-          const senderImage: string | null = null;
+          let senderImage: string | null = null;
 
           if (conversation.type === "group") {
-            // We don't have individual member info here; show senderId shortened
-            senderName = message.senderId === user?.id ? undefined : "User";
+            if (message.senderId !== user?.id) {
+              const senderMeta = groupMemberMetaById[message.senderId];
+              senderName = senderMeta?.name ?? "User";
+              senderImage = senderMeta?.profileImage ?? null;
+            }
           }
 
           return (
