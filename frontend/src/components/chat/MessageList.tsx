@@ -499,7 +499,7 @@ export default function MessageList({ conversation, onEditStart }: MessageListPr
         <button
           type="button"
           onClick={handleJumpToBottom}
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-border/60 bg-background/95 px-4 py-2 text-xs font-medium text-foreground shadow-elevated hover:bg-background"
+          className="absolute bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-full border border-border/60 bg-background/95 px-4 py-2 text-xs font-medium text-foreground shadow-elevated hover:bg-background"
         >
           New messages ({newMessageCount})
         </button>
