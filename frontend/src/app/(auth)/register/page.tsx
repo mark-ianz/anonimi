@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, UserPlus } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import {
@@ -138,9 +138,13 @@ export default function RegisterPage() {
           Create Account
         </p>
         <div className="mt-4 flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-xl border border-border/70 bg-background">
+          <Link
+            href="/"
+            aria-label="Go to landing page"
+            className="grid h-11 w-11 place-items-center rounded-xl border border-border/70 bg-background transition hover:border-border"
+          >
             <span className="font-display text-lg font-semibold">E</span>
-          </div>
+          </Link>
           <div>
             <h1 className="text-3xl leading-[0.98] font-semibold">Create account</h1>
             <p className="mt-1 text-sm text-muted-foreground">Join anonimi today</p>
