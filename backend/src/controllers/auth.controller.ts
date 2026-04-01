@@ -138,7 +138,7 @@ export const resetPassword = async (
   try {
     const { token, newPassword } = req.body;
     const result = await authService.resetPassword(token, newPassword);
-    apiSuccess(res, { message: result });
+    apiSuccess(res, result);
   } catch (error) {
     next(error);
   }

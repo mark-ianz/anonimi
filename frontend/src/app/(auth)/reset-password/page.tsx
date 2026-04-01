@@ -8,6 +8,8 @@ import { z } from "zod";
 import { Eye, EyeOff, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { useAuthStore } from "@/stores/authStore";
+import type { AuthUser } from "@/types/user";
 
 const schema = z
   .object({
@@ -29,6 +31,7 @@ function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
+  const { setAuth } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -43,12 +46,18 @@ function ResetPasswordForm() {
       return;
     }
     try {
-      await api.post("/auth/reset-password", {
+      const res = await api.post("/auth/reset-password", {
         token,
         newPassword: data.newPassword,
       });
-      toast.success("Password reset successfully. You can now sign in.");
-      router.push("/login");
+      const { accessToken, refreshToken, user } = res.data.data as {
+        accessToken: string;
+        refreshToken: string;
+        user: AuthUser;
+      };
+      setAuth(user, accessToken, refreshToken);
+      toast.success("Password reset successfully. Welcome back.");
+      router.push("/chat");
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { error?: { message?: string } } } })

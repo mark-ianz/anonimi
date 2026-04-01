@@ -15,7 +15,7 @@ import { ConflictError, UnauthorizedError, NotFoundError } from "../utils/apiErr
 import { AppearanceStatus, OnlineStatus, UserRole, UserStatus } from "../types/enums";
 import { createAdminLog } from "./admin.service";
 import { env } from "../config/env";
-import { sendVerificationEmail } from "./email.service";
+import { sendPasswordResetEmail, sendVerificationEmail } from "./email.service";
 
 interface RegisterResult {
   message: string;
@@ -108,6 +108,13 @@ const buildEmailVerificationLink = (token: string, email: string): string => {
   const url = new URL(baseUrl);
   url.searchParams.set("token", token);
   url.searchParams.set("email", email);
+  return url.toString();
+};
+
+const buildPasswordResetLink = (token: string): string => {
+  const baseUrl = env.RESET_PASSWORD_URL || `${env.FRONTEND_URL}/reset-password`;
+  const url = new URL(baseUrl);
+  url.searchParams.set("token", token);
   return url.toString();
 };
 
@@ -491,14 +498,16 @@ export const refreshToken = async (refreshToken: string) => {
 };
 
 export const forgotPassword = async (email: string): Promise<string> => {
-  const user = await User.findOne({ email });
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = await User.findOne({ email: normalizedEmail });
 
   if (user) {
     const resetToken = crypto.randomBytes(32).toString("hex");
     user.passwordResetToken = resetToken;
     user.passwordResetExpiresAt = new Date(Date.now() + 60 * 60 * 1000);
     await user.save();
-    console.log(`Password reset token for ${email}: ${resetToken}`);
+    const resetLink = buildPasswordResetLink(resetToken);
+    await sendPasswordResetEmail({ to: normalizedEmail, link: resetLink });
   }
 
   return "If an account with this email exists, a reset link has been sent.";
@@ -507,7 +516,7 @@ export const forgotPassword = async (email: string): Promise<string> => {
 export const resetPassword = async (
   token: string,
   newPassword: string
-): Promise<string> => {
+): Promise<LoginResult> => {
   const user = await User.findOne({
     passwordResetToken: token,
     passwordResetExpiresAt: { $gt: new Date() },
@@ -524,7 +533,23 @@ export const resetPassword = async (
 
   await RefreshToken.deleteMany({ userId: user._id });
 
-  return "Password reset successful. Please log in.";
+  const tokens = await generateTokens(user._id.toString(), user.echoId, user.role);
+
+  return {
+    ...tokens,
+    user: {
+      id: user._id.toString(),
+      echoId: user.echoId,
+      username: user.username,
+      profileImage: user.profileImage,
+      role: user.role,
+      status: user.status,
+      usernameCanEdit: !user.usernameChangedAt,
+      appearanceStatus: user.appearanceStatus,
+      onlineStatus: user.onlineStatus,
+      lastSeen: user.lastSeen,
+    },
+  };
 };
 
 export const logout = async (

@@ -26,6 +26,7 @@ const envSchema = z.object({
   SMTP_FROM_NAME: z.string().default("EchoID"),
   SMTP_FROM_EMAIL: z.string().default(""),
   EMAIL_VERIFY_URL: z.string().default("http://localhost:3000/verify-link"),
+  RESET_PASSWORD_URL: z.string().default("http://localhost:3000/reset-password"),
 });
 
 export type Env = z.infer<typeof envSchema>;

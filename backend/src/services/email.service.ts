@@ -75,3 +75,35 @@ export const sendVerificationEmail = async (params: {
     html,
   });
 };
+
+export const sendPasswordResetEmail = async (params: {
+  to: string;
+  link: string;
+}): Promise<void> => {
+  ensureEmailConfigured();
+
+  const transporter = getTransporter();
+
+  const subject = "Reset your EchoID password";
+  const html = `
+    <div style="font-family: Arial, sans-serif; color: #111;">
+      <h2 style="margin: 0 0 12px;">Reset your password</h2>
+      <p style="margin: 0 0 16px;">
+        We received a request to reset your EchoID password. This link expires in 1 hour.
+      </p>
+      <p style="margin: 0 0 20px;">
+        <a href="${params.link}" style="color: #2563eb;">Reset password</a>
+      </p>
+      <p style="margin: 0; color: #6b7280; font-size: 12px;">
+        If you did not request a password reset, you can safely ignore this email.
+      </p>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: resolveFromAddress(),
+    to: params.to,
+    subject,
+    html,
+  });
+};
