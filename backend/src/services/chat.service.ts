@@ -762,6 +762,7 @@ export const sendMessage = async (
           conversationId: conversation._id.toString(),
           senderId,
           senderUsername: sender?.username ?? "Someone",
+          senderProfileImage: sender?.profileImage ?? null,
           href: `/chat/${conversation._id.toString()}`,
         },
       });
@@ -792,7 +793,9 @@ export const sendMessage = async (
     };
   }
 
-  const groupForConversation = await Group.findOne({ conversationId: conversation._id }).select("disbandedAt");
+  const groupForConversation = await Group.findOne({ conversationId: conversation._id }).select(
+    "disbandedAt image name"
+  );
   if (groupForConversation?.disbandedAt) {
     throw new ForbiddenError("This group has been disbanded. Messaging is disabled.");
   }
@@ -845,6 +848,9 @@ export const sendMessage = async (
         conversationId: conversation._id.toString(),
         senderId,
         senderUsername: sender?.username ?? "Someone",
+        senderProfileImage: sender?.profileImage ?? null,
+        groupImage: groupForConversation?.image ?? null,
+        groupName: groupForConversation?.name ?? null,
         href: `/chat/${conversation._id.toString()}`,
       },
     });

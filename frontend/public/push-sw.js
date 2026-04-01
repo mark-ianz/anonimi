@@ -4,6 +4,9 @@ self.addEventListener("push", (event) => {
   const body = payload.body || "";
   const data = payload.data || {};
   const url = data.href || "/chat";
+  const iconUrl = data.iconUrl || "/file.svg";
+  const imageUrl = data.imageUrl || undefined;
+  const conversationId = data.conversationId || undefined;
 
   const show = async () => {
     const clientsList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
@@ -15,8 +18,10 @@ self.addEventListener("push", (event) => {
 
     await self.registration.showNotification(title, {
       body,
-      data: { url },
-      icon: "/file.svg",
+      data: { url, conversationId },
+      tag: conversationId,
+      icon: iconUrl,
+      image: imageUrl,
       badge: "/file.svg",
     });
   };
@@ -39,4 +44,19 @@ self.addEventListener("notificationclick", (event) => {
   };
 
   event.waitUntil(open());
+});
+
+self.addEventListener("message", (event) => {
+  const data = event.data || {};
+  if (data.type !== "close-notifications") return;
+
+  const conversationId = data.conversationId;
+  const close = async () => {
+    const notifications = await self.registration.getNotifications({
+      tag: conversationId,
+    });
+    notifications.forEach((notification) => notification.close());
+  };
+
+  event.waitUntil(close());
 });

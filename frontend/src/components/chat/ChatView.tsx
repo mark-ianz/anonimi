@@ -77,6 +77,17 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
     const socket = getChatSocket();
     socket.emit("conversation:active", { conversationId: conversation.id });
 
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.ready
+        .then((registration) => {
+          registration.active?.postMessage({
+            type: "close-notifications",
+            conversationId: conversation.id,
+          });
+        })
+        .catch(() => undefined);
+    }
+
     api
       .patch(`/notifications/messages/read-by-conversation/${conversation.id}`)
       .then(() => {

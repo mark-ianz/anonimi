@@ -3,6 +3,7 @@ import { Types } from "mongoose";
 import { Notification } from "../models/notification.model";
 import { NotFoundError } from "../utils/apiError";
 import { sendPushToUser } from "./push.service";
+import { env } from "../config/env";
 
 let io: Server;
 
@@ -94,6 +95,30 @@ const toPayload = (notification: {
   createdAt: notification.createdAt.toISOString(),
 });
 
+const isAbsoluteUrl = (value: string): boolean =>
+  value.startsWith("http://") || value.startsWith("https://");
+
+const toAbsoluteMediaUrl = (value: unknown): string | undefined => {
+  if (typeof value !== "string" || !value.trim()) return undefined;
+  if (isAbsoluteUrl(value)) return value;
+
+  const base = env.BACKEND_URL?.trim() || `http://localhost:${env.PORT}`;
+  const normalized = value.startsWith("/") ? value : `/${value}`;
+  return `${base}${normalized}`;
+};
+
+const buildPushData = (data: Record<string, unknown>) => {
+  const senderImage = toAbsoluteMediaUrl(data.senderProfileImage);
+  const groupImage = toAbsoluteMediaUrl(data.groupImage);
+  const iconUrl = groupImage ?? senderImage;
+
+  return {
+    ...data,
+    iconUrl,
+    imageUrl: iconUrl,
+  };
+};
+
 export const createAndEmitNotification = async (
   input: CreateNotificationInput
 ) => {
@@ -160,10 +185,11 @@ export const createAndEmitNotification = async (
   emitToUser(input.userId, "notification:new", payload);
 
   try {
+    const pushData = buildPushData(payload.data ?? {});
     await sendPushToUser(input.userId, {
       title: payload.title,
       body: payload.body,
-      data: payload.data,
+      data: pushData,
     });
   } catch {
     // Push failures should not break in-app notifications.
