@@ -6,11 +6,14 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
-import { validateUploadFile } from "@/lib/uploadPolicy";
+import { UploadSource, validateUploadFile } from "@/lib/uploadPolicy";
 
 interface AvatarUploadProps {
   size?: "sm" | "md" | "lg";
   className?: string;
+  previewUrl?: string | null;
+  isSaving?: boolean;
+  onSelectAvatar?: (file: File, source: UploadSource) => void;
 }
 
 const sizeMap = {
@@ -19,19 +22,26 @@ const sizeMap = {
   lg: "w-24 h-24 text-2xl",
 };
 
-export default function AvatarUpload({ size = "md", className }: AvatarUploadProps) {
-  const { user, updateAvatar, isUpdatingAvatar } = useAuth();
+export default function AvatarUpload({
+  size = "md",
+  className,
+  previewUrl,
+  isSaving,
+  onSelectAvatar,
+}: AvatarUploadProps) {
+  const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>, source: "file" | "camera") {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>, source: UploadSource) {
     const file = e.target.files?.[0];
     if (file) {
       const validation = validateUploadFile(file, { category: "avatar", source });
       if (!validation.ok) {
         toast.error(validation.error ?? "Invalid file.");
       } else {
-        updateAvatar(file, source);
+        onSelectAvatar?.(file, source);
+        toast.info("Profile photo selected. Click Save profile to apply it.");
       }
     }
     e.target.value = "";
@@ -40,6 +50,7 @@ export default function AvatarUpload({ size = "md", className }: AvatarUploadPro
   const initials = user
     ? (user.username[0] ?? "U").toUpperCase()
     : "U";
+  const displayImage = previewUrl ?? user?.profileImage ?? null;
 
   return (
     <label className={cn("relative cursor-pointer group inline-block", className)}>
@@ -49,15 +60,15 @@ export default function AvatarUpload({ size = "md", className }: AvatarUploadPro
           sizeMap[size]
         )}
       >
-        {user?.profileImage ? (
+        {displayImage ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={resolveMediaUrl(user.profileImage)} alt={user.username} className="w-full h-full object-cover" />
+          <img src={resolveMediaUrl(displayImage)} alt={user?.username ?? "User"} className="w-full h-full object-cover" />
         ) : (
           initials
         )}
       </div>
       <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity">
-        {isUpdatingAvatar ? (
+        {isSaving ? (
           <span className="w-5 h-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
         ) : (
           <Camera className="w-5 h-5 text-white" />
@@ -72,7 +83,7 @@ export default function AvatarUpload({ size = "md", className }: AvatarUploadPro
         }}
         className="absolute -bottom-1 -right-1 z-10 h-7 w-7 rounded-full border border-border/60 bg-background/90 text-foreground flex items-center justify-center shadow-sm hover:bg-muted"
         aria-label="Take photo"
-        disabled={isUpdatingAvatar}
+        disabled={isSaving}
       >
         <Camera className="h-3.5 w-3.5" />
       </button>

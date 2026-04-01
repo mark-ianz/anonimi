@@ -1,13 +1,52 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import AvatarUpload from "@/components/user/AvatarUpload";
 import UserProfileEditor from "@/components/user/UserProfileEditor";
 import { useAuth } from "@/hooks/useAuth";
 import { LogOut } from "lucide-react";
+import type { UploadSource } from "@/lib/uploadPolicy";
+
+interface PendingAvatar {
+  file: File;
+  source: UploadSource;
+}
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth();
+  const { user, logout, isUpdatingAvatar, isUpdatingProfile } = useAuth();
+  const [pendingAvatar, setPendingAvatar] = useState<PendingAvatar | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreviewUrl) {
+        URL.revokeObjectURL(avatarPreviewUrl);
+      }
+    };
+  }, [avatarPreviewUrl]);
+
+  const handleAvatarSelect = (file: File, source: UploadSource) => {
+    setPendingAvatar({ file, source });
+    setAvatarPreviewUrl((previousUrl) => {
+      if (previousUrl) {
+        URL.revokeObjectURL(previousUrl);
+      }
+      return URL.createObjectURL(file);
+    });
+  };
+
+  const handleAvatarSaved = () => {
+    setPendingAvatar(null);
+    setAvatarPreviewUrl((previousUrl) => {
+      if (previousUrl) {
+        URL.revokeObjectURL(previousUrl);
+      }
+      return null;
+    });
+  };
+
+  const isSaving = isUpdatingAvatar || isUpdatingProfile;
 
   return (
     <ProtectedRoute>
@@ -17,7 +56,12 @@ export default function ProfilePage() {
 
           {/* Avatar */}
           <div className="flex justify-center">
-            <AvatarUpload size="lg" />
+            <AvatarUpload
+              size="lg"
+              previewUrl={avatarPreviewUrl}
+              onSelectAvatar={handleAvatarSelect}
+              isSaving={isSaving}
+            />
           </div>
 
           {/* User info */}
@@ -27,7 +71,10 @@ export default function ProfilePage() {
           </div>
 
           {/* Edit form */}
-          <UserProfileEditor />
+          <UserProfileEditor
+            pendingAvatar={pendingAvatar}
+            onAvatarSaved={handleAvatarSaved}
+          />
 
           {/* Logout */}
           <button

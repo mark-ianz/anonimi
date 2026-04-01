@@ -103,7 +103,10 @@ export function useAuth() {
     isLoading: isLoading || profileQuery.isLoading,
     logout,
     updateAvatar: (file: File, source?: UploadSource) => updateAvatarMutation.mutate({ file, source }),
+    updateAvatarAsync: (file: File, source?: UploadSource) => updateAvatarMutation.mutateAsync({ file, source }),
     updateProfile: updateProfileMutation.mutate,
+    updateProfileAsync: (patch: Partial<Pick<AuthUser, "username" | "phone" | "appearanceStatus">>) =>
+      updateProfileMutation.mutateAsync(patch),
     isUpdatingAvatar: updateAvatarMutation.isPending,
     isUpdatingProfile: updateProfileMutation.isPending,
   };

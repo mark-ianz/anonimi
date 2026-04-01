@@ -5,9 +5,26 @@ import { useAuth } from "@/hooks/useAuth";
 import type { AuthUser } from "@/types/user";
 import { Save } from "lucide-react";
 import { toast } from "sonner";
+import type { UploadSource } from "@/lib/uploadPolicy";
 
-export default function UserProfileEditor() {
-  const { user, updateProfile, isUpdatingProfile } = useAuth();
+interface PendingAvatar {
+  file: File;
+  source: UploadSource;
+}
+
+interface UserProfileEditorProps {
+  pendingAvatar?: PendingAvatar | null;
+  onAvatarSaved?: () => void;
+}
+
+export default function UserProfileEditor({ pendingAvatar, onAvatarSaved }: UserProfileEditorProps) {
+  const {
+    user,
+    updateProfileAsync,
+    updateAvatarAsync,
+    isUpdatingProfile,
+    isUpdatingAvatar,
+  } = useAuth();
 
   const [username, setUsername] = useState(user?.username ?? "");
   const [phone, setPhone] = useState(user?.phone ?? "");
@@ -17,9 +34,10 @@ export default function UserProfileEditor() {
   const trimmedPhone = phone.trim();
   const hasChanges =
     (trimmedUsername && trimmedUsername !== (user?.username ?? "")) ||
-    trimmedPhone !== (user?.phone ?? "");
+    trimmedPhone !== (user?.phone ?? "") ||
+    !!pendingAvatar;
 
-  function handleSave() {
+  async function handleSave() {
     const patch: Partial<Pick<AuthUser, "username" | "phone">> = {};
     const nextUsername = trimmedUsername;
 
@@ -39,13 +57,49 @@ export default function UserProfileEditor() {
 
     if (trimmedPhone !== (user?.phone ?? "")) patch.phone = trimmedPhone || undefined;
 
-    if (Object.keys(patch).length === 0) {
+    if (Object.keys(patch).length === 0 && !pendingAvatar) {
       toast.info("No changes to save.");
       return;
     }
 
-    updateProfile(patch);
+    let savedProfile = false;
+    let savedAvatar = false;
+
+    if (Object.keys(patch).length > 0) {
+      try {
+        await updateProfileAsync(patch);
+        savedProfile = true;
+      } catch {
+        // Error toast is handled in hook.
+      }
+    }
+
+    if (pendingAvatar) {
+      try {
+        await updateAvatarAsync(pendingAvatar.file, pendingAvatar.source);
+        savedAvatar = true;
+        onAvatarSaved?.();
+      } catch {
+        // Error toast is handled in hook.
+      }
+    }
+
+    if (!savedProfile && !savedAvatar) {
+      return;
+    }
+
+    if (savedAvatar && !savedProfile) {
+      toast.success("Profile photo updated.");
+      return;
+    }
+
+    if (savedProfile) {
+      // updateProfile mutation already displays success toast.
+      return;
+    }
   }
+
+  const isSaving = isUpdatingProfile || isUpdatingAvatar;
 
   return (
     <div className="space-y-4">
@@ -100,19 +154,23 @@ export default function UserProfileEditor() {
 
       <button
         onClick={handleSave}
-        disabled={isUpdatingProfile}
+        disabled={isSaving}
         className="w-full h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-50"
       >
-        {isUpdatingProfile ? (
+        {isSaving ? (
           <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
         ) : (
           <Save className="w-4 h-4" />
         )}
-        {isUpdatingProfile ? "Saving..." : "Save profile"}
+        {isSaving ? "Saving..." : "Save profile"}
       </button>
 
-      {!isUpdatingProfile && !hasChanges && (
+      {!isSaving && !hasChanges && (
         <p className="text-xs text-muted-foreground text-center">No unsaved changes.</p>
+      )}
+
+      {!isSaving && !!pendingAvatar && (
+        <p className="text-xs text-primary text-center">New profile photo selected. Click Save profile to apply.</p>
       )}
     </div>
   );
