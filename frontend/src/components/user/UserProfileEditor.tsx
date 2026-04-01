@@ -6,6 +6,7 @@ import type { AuthUser } from "@/types/user";
 import { Save } from "lucide-react";
 import { toast } from "sonner";
 import type { UploadSource } from "@/lib/uploadPolicy";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 
 interface PendingAvatar {
   file: File;
@@ -15,6 +16,11 @@ interface PendingAvatar {
 interface UserProfileEditorProps {
   pendingAvatar?: PendingAvatar | null;
   onAvatarSaved?: () => void;
+}
+
+interface SavePlan {
+  patch: Partial<Pick<AuthUser, "username" | "phone">>;
+  changesSummary: string;
 }
 
 export default function UserProfileEditor({ pendingAvatar, onAvatarSaved }: UserProfileEditorProps) {
@@ -28,6 +34,8 @@ export default function UserProfileEditor({ pendingAvatar, onAvatarSaved }: User
 
   const [username, setUsername] = useState(user?.username ?? "");
   const [phone, setPhone] = useState(user?.phone ?? "");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [savePlan, setSavePlan] = useState<SavePlan | null>(null);
   const canEditUsername = user?.usernameCanEdit ?? false;
   const isSaving = isUpdatingProfile || isUpdatingAvatar;
 
@@ -39,32 +47,65 @@ export default function UserProfileEditor({ pendingAvatar, onAvatarSaved }: User
     !!pendingAvatar;
   const canSave = hasChanges && !isSaving;
 
-  async function handleSave() {
+  function buildSavePlan(): SavePlan | null {
     const patch: Partial<Pick<AuthUser, "username" | "phone">> = {};
     const nextUsername = trimmedUsername;
+    const changes: string[] = [];
 
     if (nextUsername && nextUsername !== user?.username) {
       if (nextUsername.length < 3 || nextUsername.length > 30) {
         toast.error("Username must be between 3 and 30 characters.");
-        return;
+        return null;
       }
 
       if (!/^[a-zA-Z0-9_.]+$/.test(nextUsername)) {
         toast.error("Username can only contain letters, numbers, underscores, and periods.");
-        return;
+        return null;
       }
 
       patch.username = nextUsername;
+      changes.push(`Username: ${user?.username ?? "(empty)"} -> ${nextUsername}`);
     }
 
-    if (trimmedPhone !== (user?.phone ?? "")) patch.phone = trimmedPhone || undefined;
+    if (trimmedPhone !== (user?.phone ?? "")) {
+      patch.phone = trimmedPhone || undefined;
+      const previousPhone = user?.phone?.trim() ? user.phone : "(empty)";
+      const nextPhone = trimmedPhone || "(empty)";
+      changes.push(`Phone: ${previousPhone} -> ${nextPhone}`);
+    }
+
+    if (pendingAvatar) {
+      changes.push(`Profile photo: ${pendingAvatar.file.name}`);
+    }
+
+    if (Object.keys(patch).length === 0 && !pendingAvatar) {
+      toast.info("No changes to save.");
+      return null;
+    }
+
+    return {
+      patch,
+      changesSummary: changes.join("; "),
+    };
+  }
+
+  function handleSave() {
+    const plan = buildSavePlan();
+    if (!plan) return;
+
+    setSavePlan(plan);
+    setConfirmOpen(true);
+  }
+
+  async function handleConfirmSave() {
+    if (!savePlan) return;
 
     let savedProfile = false;
     let savedAvatar = false;
 
-    if (Object.keys(patch).length > 0) {
+    if (Object.keys(savePlan.patch).length > 0) {
       try {
-        await updateProfileAsync(patch);
+        await updateProfileAsync(savePlan.patch);
         savedProfile = true;
       } catch {
         // Error toast is handled in hook.
@@ -84,6 +125,9 @@ export default function UserProfileEditor({ pendingAvatar, onAvatarSaved }: User
     if (!savedProfile && !savedAvatar) {
       return;
     }
+
+    setConfirmOpen(false);
+    setSavePlan(null);
 
     if (savedAvatar && !savedProfile) {
       toast.success("Profile photo updated.");
@@ -168,6 +212,21 @@ export default function UserProfileEditor({ pendingAvatar, onAvatarSaved }: User
       {!isSaving && !!pendingAvatar && (
         <p className="text-xs text-primary text-center">New profile photo selected. Click Save profile to apply.</p>
       )}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => {
+          if (isSaving) return;
+          setConfirmOpen(false);
+          setSavePlan(null);
+        }}
+        onConfirm={handleConfirmSave}
+        title="Confirm profile changes"
+        description={savePlan?.changesSummary}
+        confirmLabel="Save changes"
+        cancelLabel="Review again"
+        loading={isSaving}
+      />
     </div>
   );
 }
