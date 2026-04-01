@@ -41,7 +41,6 @@ export default function AvatarUpload({
         toast.error(validation.error ?? "Invalid file.");
       } else {
         onSelectAvatar?.(file, source);
-        toast.info("Profile photo selected. Click Save profile to apply it.");
       }
     }
     e.target.value = "";
