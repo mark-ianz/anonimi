@@ -35,6 +35,12 @@ function getLastMessagePreview(conversation: Conversation): string {
   return lm.content ?? "";
 }
 
+function clampPreview(text: string, maxLength: number = 47): string {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, maxLength).trimEnd()}...`;
+}
+
 export default function ConversationItem({
   conversation,
   isActive,
@@ -85,6 +91,7 @@ export default function ConversationItem({
     : lastSenderIsMe
     ? `You: ${basePreview}`
     : basePreview;
+  const previewText = clampPreview(preview);
   const timestamp = conversation.lastMessage?.timestamp ?? conversation.updatedAt;
 
   const archiveMutation = useMutation({
@@ -215,10 +222,10 @@ export default function ConversationItem({
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-0.5">
+          <div className="mb-0.5 flex min-w-0 items-center justify-between">
             <span
               className={cn(
-                "text-sm truncate",
+                "min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm",
                 hasUnread ? "font-semibold text-foreground" : "font-medium"
               )}
             >
@@ -232,17 +239,17 @@ export default function ConversationItem({
               />
             )}
           </div>
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2 overflow-hidden">
             <p
               className={cn(
-                "text-xs truncate",
+                "min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs",
                 hasUnread ? "text-foreground font-medium" : "text-muted-foreground"
               )}
             >
-              {preview}
+              {previewText}
             </p>
             {hasUnread && (
-              <span className="shrink-0 min-w-4.5 h-4.5 px-1 rounded-full bg-primary text-white text-[10px] font-semibold flex items-center justify-center">
+              <span className="ml-2 flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-white">
                 {unread > 99 ? "99+" : unread}
               </span>
             )}
