@@ -12,8 +12,8 @@ EchoID uses a **dual-token strategy** (access + refresh) for stateless authentic
 
 | Token | Lifetime | Purpose | Storage (Web) | Storage (Mobile) |
 |-------|----------|---------|---------------|-------------------|
-| Access Token | 15 minutes | Authenticates API requests | httpOnly, Secure, SameSite=Strict cookie | Encrypted secure storage |
-| Refresh Token | 7 days | Obtains new access tokens | httpOnly, Secure, SameSite=Strict cookie | Encrypted secure storage |
+| Access Token | 15 minutes | Authenticates API requests | localStorage + `access_token` cookie (for middleware routing) | Encrypted secure storage |
+| Refresh Token | 7 days | Obtains new access tokens | localStorage | Encrypted secure storage |
 
 ### Access Token Payload
 
@@ -376,6 +376,7 @@ The following fields are **never** returned in public API responses:
 | `phone` | Only visible to the user themselves and admins |
 | `passwordHash` | Never returned in any API response |
 | `verificationCode` | Never returned in any API response |
+| `emailVerificationTokenHash` | Never returned in any API response |
 | `passwordResetToken` | Never returned in any API response |
 
 ### Field Projection

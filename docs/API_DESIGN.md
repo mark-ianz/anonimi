@@ -129,6 +129,47 @@ Register a new user account.
 
 Verify email address with code sent during registration.
 
+**Request Body:**
+```json
+{
+  "email": "john@example.com",
+  "code": "482913"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+    "refreshToken": "dGhpcyBpcyBhIHJlZnJl...",
+    "user": {
+      "id": "60d5ecb54b24a1001c8e4b3a",
+      "echoId": "eid_a8F3kP29",
+      "username": "john_doe",
+      "profileImage": null,
+      "role": "user",
+      "status": "active"
+    }
+  }
+}
+```
+
+---
+
+### GET /api/auth/verify-email-link 🔓
+
+Verify email address via link sent during registration.
+
+**Query Parameters:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| `token` | string | Yes | Verification token from email |
+
+**Response (200):**
+Same as `POST /api/auth/verify-email`.
+
 ---
 
 ### GET /api/auth/verification-status 🔓
@@ -189,35 +230,6 @@ Regenerate and resend a verification code for pending accounts.
 **Errors:**
 - `404` — Verification target not found
 - `409` — Account already verified or not pending verification
-
----
-
-**Request Body:**
-```json
-{
-  "email": "john@example.com",
-  "code": "482913"
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-    "refreshToken": "dGhpcyBpcyBhIHJlZnJl...",
-    "user": {
-      "id": "60d5ecb54b24a1001c8e4b3a",
-      "echoId": "eid_a8F3kP29",
-      "username": "john_doe",
-      "profileImage": null,
-      "role": "user",
-      "status": "active"
-    }
-  }
-}
-```
 
 ---
 
@@ -291,6 +303,10 @@ Exchange a valid refresh token for new access + refresh tokens.
 
 Request a password reset link/code.
 
+**Behavior:**
+- Always returns success (prevents email enumeration).
+- Sends a reset link to the email when an account exists.
+
 **Request Body:**
 ```json
 {
@@ -329,7 +345,16 @@ Reset password using token from email.
 {
   "success": true,
   "data": {
-    "message": "Password reset successful. Please log in."
+    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+    "refreshToken": "dGhpcyBpcyBhIHJlZnJl...",
+    "user": {
+      "id": "60d5ecb54b24a1001c8e4b3a",
+      "echoId": "eid_a8F3kP29",
+      "username": "john_doe",
+      "profileImage": null,
+      "role": "user",
+      "status": "active"
+    }
   }
 }
 ```
@@ -359,7 +384,95 @@ Log out and invalidate refresh token.
 
 ---
 
-## 2. Users
+## 2. Notifications
+
+### GET /api/notifications
+
+List notifications for the authenticated user.
+
+**Query Parameters:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| `limit` | number | No | Default 20 |
+| `cursor` | string | No | Pagination cursor |
+
+---
+
+### PATCH /api/notifications/:notificationId/read
+
+Mark a single notification as read.
+
+---
+
+### PATCH /api/notifications/read-all
+
+Mark all notifications as read.
+
+---
+
+### PATCH /api/notifications/messages/read-by-conversation/:conversationId
+
+Mark message notifications for a conversation as read.
+
+---
+
+### DELETE /api/notifications/:notificationId
+
+Delete a notification.
+
+---
+
+### GET /api/notifications/push/status
+
+Returns whether the user has active push subscriptions.
+
+---
+
+### GET /api/notifications/push/public-key
+
+Returns the VAPID public key for Web Push.
+
+---
+
+### POST /api/notifications/push/subscribe
+
+Subscribe the current user for Web Push.
+
+**Request Body:**
+```json
+{
+  "endpoint": "https://fcm.googleapis.com/fcm/send/...",
+  "keys": {
+    "p256dh": "...",
+    "auth": "..."
+  },
+  "expirationTime": null,
+  "userAgent": "Mozilla/5.0 ..."
+}
+```
+
+---
+
+### POST /api/notifications/push/unsubscribe
+
+Unsubscribe the current user from Web Push.
+
+**Request Body:**
+```json
+{
+  "endpoint": "https://fcm.googleapis.com/fcm/send/..."
+}
+```
+
+---
+
+### POST /api/notifications/push/test
+
+Send a test push notification (authenticated).
+
+---
+
+## 3. Users
 
 ### GET /api/users/search
 

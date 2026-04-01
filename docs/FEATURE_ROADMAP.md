@@ -19,6 +19,15 @@ This document defines the phased implementation plan for EchoID. Each phase buil
 
 ---
 
+## Recent Updates (April 2026)
+
+- Email verification now supports both code and link flows.
+- Password reset emails are delivered via SMTP with auto-login on success.
+- Web Push notifications are available with a Settings toggle.
+- Chat list now supports All/Unread/Private/Groups tabs (groups live in Chats).
+
+---
+
 ## Phase 1 — Foundation
 
 **Goal:** Establish the project infrastructure, authentication system, user identity, and basic profile management.
@@ -67,15 +76,15 @@ This document defines the phased implementation plan for EchoID. Each phase buil
 #### Next.js Root Middleware (Auth Routing)
 - [ ] Create `src/middleware.ts` with authentication-based routing:
   - [ ] Read `access_token` cookie to determine auth state
-  - [ ] Unauthenticated users accessing `/app/*` → redirect to `/login`
+  - [ ] Unauthenticated users accessing app routes (e.g., `/chat`, `/contacts`) → redirect to `/login`
   - [ ] Unauthenticated users accessing `/admin/*` → redirect to `/login`
-  - [ ] Authenticated users accessing `/login` or `/register` → redirect to `/app/chat`
+  - [ ] Authenticated users accessing `/login` or `/register` → redirect to `/chat`
   - [ ] Public routes (`/`, `/about`, `/features`, `/contact`, `/faq`, `/privacy`, `/terms`) → always accessible
-  - [ ] Admin routes (`/admin/*`) → check user role, redirect non-admins to `/app/chat`
+  - [ ] Admin routes (`/admin/*`) → check user role, redirect non-admins to `/chat`
 
 #### Root Layout & Route Groups
 - [ ] Build root `layout.tsx` (providers, fonts, global styles — no navigation)
-- [ ] Build root `page.tsx` (redirect: authenticated → `/app/chat`, unauthenticated → landing)
+- [ ] Build root `page.tsx` (redirect: authenticated → `/chat`, unauthenticated → landing)
 - [ ] Create four route group layouts:
   - [ ] `(public)/layout.tsx` — Marketing layout (MarketingNavbar + MarketingFooter)
   - [ ] `(auth)/layout.tsx` — Auth layout (centered card, minimal, no navigation)
@@ -103,19 +112,19 @@ This document defines the phased implementation plan for EchoID. Each phase buil
 - [ ] Build Reset Password page — new password form with strength indicator
 
 #### Authenticated Application Pages (`(main)` route group)
-- [ ] Build `AppSidebar` component (nav: Chat, Contacts, Groups, Profile, Settings, Support)
-- [ ] Build user profile page (`/app/profile`) — view own profile, edit
+- [ ] Build `AppSidebar` component (nav: Chat, Contacts, Archive, Profile, Settings, Support)
+- [ ] Build user profile page (`/profile`) — view own profile, edit
 - [ ] Build user search page/component
-- [ ] Build public profile view (`/app/user/[echoId]`)
-- [ ] Build settings page (`/app/settings`) — theme, notifications, account
+- [ ] Build public profile view (`/user/[echoId]`)
+- [ ] Build settings page (`/settings`) — theme, notifications, account
 - [ ] Set up protected route wrapper (`ProtectedRoute` component)
 
 ### Acceptance Criteria
 
 - Public marketing site is accessible without authentication.
 - Marketing pages render with proper SEO metadata.
-- Authenticated users visiting `/login` or `/register` are redirected to `/app/chat`.
-- Unauthenticated users visiting `/app/*` are redirected to `/login`.
+- Authenticated users visiting `/login` or `/register` are redirected to `/chat`.
+- Unauthenticated users visiting app routes are redirected to `/login`.
 - Users can register with email only, verify, and log in.
 - Users can register without username and receive a random generated username.
 - Users can optionally add phone later for recovery/security.
@@ -215,15 +224,15 @@ Completed items linked to this phase:
 - [ ] Build Socket.IO connection manager (with auth + reconnect)
 - [ ] Build `ConnectionStatus` component (WebSocket connection indicator)
 - [ ] Build conversation list sidebar (`ConversationList`, `ConversationItem`, `ConversationSearch`)
-- [ ] Build chat view (`/app/chat/[conversationId]`):
+- [ ] Build chat view (`/chat/[conversationId]`):
   - [ ] `ChatView` container with `MessageList` and `MessageInput`
   - [ ] Message list with infinite scroll (upward for older messages)
   - [ ] Message input area with send button
   - [ ] `MessageBubble` (sent vs. received styling)
   - [ ] Scroll-to-bottom behavior for new messages
-- [ ] Build contacts page (`/app/contacts`):
+- [ ] Build contacts page (`/contacts`):
   - [ ] `ContactList` and `ContactItem` components
-  - [ ] Incoming requests tab (`/app/contacts/requests`)
+  - [ ] Incoming requests tab (`/contacts/requests`)
   - [ ] `ContactRequestCard` with accept/decline actions
   - [ ] Send contact request (from profile or search)
   - [ ] `NicknameEditor` dialog
@@ -288,15 +297,15 @@ Completed items linked to this phase:
 
 ### Frontend Tasks
 
-- [ ] Build message requests page (`/app/message-requests`):
+- [ ] Build message requests page (`/message-requests`):
   - [ ] Request list with accept / accept-and-add-to-contacts / ignore actions
   - [ ] Clicking a request navigates to the conversation (full chat view with recipient banner)
   - [ ] Sidebar "Message Requests" nav item with live unread-count badge
   - [ ] Badge updates in real-time via `message-request:new` socket event
 - [ ] Build "Send Message" entry points for non-contacts:
   - [ ] "Send Message" button in `UserSearchResults` alongside "Add Contact"
-  - [ ] "Send Message" button on `UserProfile` page (`/app/user/[echoId]`)
-  - [ ] Both call `POST /api/conversations` then navigate to `/app/chat/[conversationId]`
+  - [ ] "Send Message" button on `UserProfile` page (`/user/[echoId]`)
+  - [ ] Both call `POST /api/conversations` then navigate to `/chat/[conversationId]`
 - [ ] Implement non-contact notice banner in `ChatView`:
   - [ ] Determine current user's role: sender or recipient (compare `currentUserId` with `MessageRequest.fromUserId`)
   - [ ] **Recipient banner**: "Message request from [Username]" + Accept + Ignore buttons; disable `MessageInput`
@@ -310,7 +319,7 @@ Completed items linked to this phase:
   - [ ] "Accept Contact Request" shown when the other party sent a pending contact request
   - [ ] Accepting a contact request within chat upgrades `requestStatus` to `null` for both sides
 - [ ] Build block/unblock functionality (from profile view)
-- [ ] Build block list page (`/app/blocked`)
+- [ ] Build block list page (`/blocked`)
 - [ ] Implement typing indicators:
   - [ ] Detect input activity → emit typing events (debounce 2s)
   - [ ] `TypingIndicator` component — display "User is typing..." in chat view
@@ -390,17 +399,17 @@ Completed items linked to this phase:
 
 ### Frontend Tasks
 
-- [ ] Build groups list page (`/app/groups`)
+- [ ] Build groups list page (`/groups`)
 - [ ] Build `CreateGroupDialog`:
   - [ ] Group name input
   - [ ] Group image upload (`AvatarUpload` reuse)
   - [ ] Member search and selection (prioritize contacts)
-- [ ] Build group chat view (`/app/groups/[groupId]`, extends private chat view):
+- [ ] Build group chat view (`/groups/[groupId]`, extends private chat view):
   - [ ] `GroupHeader` — name, image, member count
   - [ ] Group info panel (show members, settings)
   - [ ] System messages (join, leave, nickname change)
   - [ ] Multiple typing indicators ("Alice, Bob are typing...")
-- [ ] Build group settings page (`/app/groups/[groupId]/settings`):
+- [ ] Build group settings page (`/groups/[groupId]/settings`):
   - [ ] Edit name and image (admin/owner)
   - [ ] Toggle join requests (admin/owner)
   - [ ] `GroupMemberList` with `GroupMemberItem` rows
@@ -519,9 +528,9 @@ Completed items linked to this phase:
 ### Frontend Tasks
 
 - [ ] Build user-facing support pages:
-  - [ ] Create ticket form (`/app/support/create`)
-  - [ ] Ticket list (`/app/support`) — my tickets
-  - [ ] Ticket detail with threaded messages (`/app/support/[ticketId]`)
+  - [ ] Create ticket form (`/support/create`)
+  - [ ] Ticket list (`/support`) — my tickets
+  - [ ] Ticket detail with threaded messages (`/support/[ticketId]`)
   - [ ] Reply to ticket
 - [ ] Build admin support section:
   - [ ] Support ticket queue (`/admin/support`) — filterable by status

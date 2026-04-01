@@ -23,12 +23,12 @@ This document describes the high-level system architecture of EchoID, including 
 │   │  ┌────────────────────────────┐  │            │                 │
 │   │  │ Auth Pages                │  │            │                 │
 │   │  │ /login, /register,        │  │            │                 │
-│   │  │ /forgot-password, /verify │  │            │                 │
+│   │  │ /forgot-password, /reset-password, /verify, /verify-link │  │            │                 │
 │   │  └────────────────────────────┘  │            │                 │
 │   │  ┌────────────────────────────┐  │            │                 │
 │   │  │ Authenticated App         │  │            │                 │
-│   │  │ /app/chat, /app/groups,   │  │            │                 │
-│   │  │ /app/contacts, /app/*     │  │            │                 │
+│   │  │ /chat, /contacts,         │  │            │                 │
+│   │  │ /message-requests, /settings, /profile │  │            │                 │
 │   │  └────────────────────────────┘  │            │                 │
 │   │  ┌────────────────────────────┐  │            │                 │
 │   │  │ Admin Panel               │  │            │                 │
@@ -124,6 +124,7 @@ This document describes the high-level system architecture of EchoID, including 
 │  │  - supportTickets        │    │  └──────────────────────┘  │     │
 │  │  - supportMessages       │    │                            │     │
 │  │  - messageRequests       │    └────────────────────────────┘     │
+│  │  - pushSubscriptions     │                                       │
 │  │  - adminLogs             │                                       │
 │  │  - bans                  │                                       │
 │  └──────────────────────────┘                                       │
@@ -156,8 +157,8 @@ The frontend is composed of four route groups, each with its own layout:
 | Route Group | URL Pattern | Layout | Description |
 |-------------|-------------|--------|-------------|
 | `(public)` | `/`, `/about`, `/features`, `/faq`, `/contact`, `/privacy`, `/terms` | Marketing (navbar + footer) | Public marketing site for unauthenticated visitors |
-| `(auth)` | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify` | Minimal centered | Authentication pages (email verification) |
-| `(main)` | `/app/*` | App (sidebar + content) | Authenticated application with chat, groups, contacts, settings |
+| `(auth)` | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify`, `/verify-link` | Minimal centered | Authentication pages (email verification) |
+| `(main)` | `/chat`, `/contacts`, `/message-requests`, `/settings`, `/profile`, `/groups` | App (sidebar + content) | Authenticated application with chat, contacts, settings |
 | `(admin)` | `/admin/*` | Admin (admin sidebar + content) | Admin panel for user management, reports, analytics |
 
 ### Authentication-Based Routing
@@ -166,7 +167,7 @@ A Next.js middleware enforces authentication routing:
 
 - **Unauthenticated user visits `/`** → sees the public landing page
 - **Authenticated user visits `/`** → redirected to `/chat`
-- **Unauthenticated user visits `/app/*`** → redirected to `/login`
+- **Unauthenticated user visits app routes** → redirected to `/login`
 - **Non-admin visits `/admin/*`** → redirected to `/chat`
 - **Unauthenticated user visits `/verify` without valid context** → redirected to `/register` by verification flow checks
 

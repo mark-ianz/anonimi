@@ -36,6 +36,7 @@ This document defines the complete MongoDB schema for EchoID, including collecti
 | `adminLogs` | Audit trail of admin actions | 1 doc per admin action |
 | `bans` | Ban records for users | 1 doc per ban |
 | `refreshTokens` | Active refresh tokens for JWT rotation | 1-N per user |
+| `pushSubscriptions` | Web Push subscription storage | 1-N per user |
 
 ---
 
@@ -62,6 +63,8 @@ Collection: users
   phoneVerified:    Boolean,           // Phone verification status (if phone added later)
   verificationCode: String | null,     // Temporary, for email verification
   verificationCodeExpiresAt: Date | null,
+  emailVerificationTokenHash: String | null,
+  emailVerificationTokenExpiresAt: Date | null,
   passwordResetToken:     String | null,
   passwordResetExpiresAt: Date | null,
   usernameChangedAt: Date | null,      // Records the single allowed manual username change
@@ -563,6 +566,39 @@ Collection: refreshTokens
 
 ---
 
+## 15. Push Subscriptions Collection
+
+Stores Web Push subscriptions per user/device.
+
+```
+Collection: pushSubscriptions
+
+{
+  _id:              ObjectId,
+  userId:           ObjectId,          // ref: users
+  endpoint:         String,            // Unique push endpoint
+  keys: {
+    p256dh:         String,
+    auth:           String
+  },
+  expirationTime:   Number | null,
+  userAgent:        String | null,
+  revokedAt:        Date | null,
+  lastUsedAt:       Date | null,
+  createdAt:        Date,
+  updatedAt:        Date
+}
+```
+
+### Indexes
+
+| Index | Type | Purpose |
+|-------|------|---------|
+| `{ endpoint: 1 }` | Unique | Prevent duplicate subscriptions |
+| `{ userId: 1, endpoint: 1 }` | Compound | Fast lookup by user |
+
+---
+
 ## Entity Relationship Diagram
 
 ```
@@ -594,7 +630,8 @@ contacts          conversations ◄──── messages (N:1)
   │                                                                        
   ├── adminLogs (admin performs action)                                    
   │                                                                        
-  └── refreshTokens (user has active tokens)                               
+  ├── refreshTokens (user has active tokens)
+  └── pushSubscriptions (user has web push endpoints)                              
 ```
 
 ---
@@ -608,6 +645,7 @@ contacts          conversations ◄──── messages (N:1)
 | Media files | Indefinite (admin responsibility to manage storage) |
 | Admin logs | Indefinite (immutable audit trail) |
 | Refresh tokens | Auto-deleted on expiry (TTL index) |
+| Push subscriptions | Removed on unsubscribe or invalid endpoint |
 | Verification codes | Auto-cleared after use or expiry |
 | Reports | Indefinite (even after resolution) |
 | Bans | Indefinite (historical record preserved) |

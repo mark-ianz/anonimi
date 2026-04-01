@@ -1,7 +1,7 @@
 ### Bugs & Improvements
 
 Status: Resolved
-Last updated: 2026-03-30
+Last updated: 2026-04-01
 
 ---
 
@@ -82,6 +82,42 @@ Requested later and implemented:
 * Added frontend resend button behavior with loading state and cooldown timer
 
 Result: Users have a direct recovery path when they do not receive or lose an old code.
+
+---
+
+#### 6. Web Push Notifications
+
+Implemented:
+
+* Web Push subscriptions with VAPID + service worker
+* Settings toggle for enable/disable
+* Notifications only display when the app is not visible
+* Images and deep links included in push payloads
+
+Result: Users receive background push notifications with correct routing.
+
+---
+
+#### 7. Chat Tabs + Groups Merge
+
+Implemented:
+
+* Groups tab removed from sidebar and merged into chat filters
+* Chat tabs: All, Unread, Private, Groups
+* /groups now redirects to /chat?tab=groups
+
+Result: Group chats live under the unified chat list with filtering.
+
+---
+
+#### 8. Password Reset Auto-Login
+
+Implemented:
+
+* Reset password returns tokens and auto-logs in
+* Reset email is sent via SMTP with a link
+
+Result: Users can reset and continue without a separate login step.
 
 ---
 

@@ -34,8 +34,8 @@ The EchoID frontend is a **Next.js App Router** application that serves three di
 | Experience | URL Pattern | Audience | Layout |
 |------------|-------------|----------|--------|
 | **Public Marketing Site** | `/`, `/about`, `/features`, `/contact`, `/faq`, `/privacy`, `/terms` | Unauthenticated visitors | Marketing layout (navbar + footer) |
-| **Authentication** | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify` | Unauthenticated users | Minimal centered layout |
-| **Application** | `/app/*` | Authenticated users | Application layout (sidebar + content) |
+| **Authentication** | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify`, `/verify-link` | Unauthenticated users | Minimal centered layout |
+| **Application** | `/chat`, `/contacts`, `/message-requests`, `/settings`, `/profile`, `/archive`, `/groups` | Authenticated users | Application layout (sidebar + content) |
 | **Admin Panel** | `/admin/*` | Authenticated admins | Admin layout (admin sidebar + content) |
 
 These are implemented as **Next.js route groups** with separate layouts, sharing a single deployment.
@@ -87,27 +87,30 @@ These are implemented as **Next.js route groups** with separate layouts, sharing
 /forgot-password            → Password reset request
 /reset-password             → Password reset with token
 /verify                     → Email verification
+/verify-link                → Email verification link
 ```
 
 #### Application Routes (Authentication Required)
 
 ```
-/app/chat                   → Conversation list (default app view)
-/app/chat/[conversationId]  → Active conversation / chat view
-/app/contacts               → Contacts list
-/app/contacts/requests      → Incoming contact requests
-/app/groups                 → Groups list
-/app/groups/create          → Create new group
-/app/groups/[groupId]       → Group chat view
-/app/groups/[groupId]/settings → Group settings
-/app/message-requests       → Message requests from non-contacts
-/app/profile                → Own profile view + edit
-/app/user/[echoId]          → Public user profile
-/app/settings               → Application settings (account, notifications, privacy)
-/app/blocked                → Blocked users list
-/app/support                → Support tickets list
-/app/support/create         → Create support ticket
-/app/support/[ticketId]     → Ticket detail + thread
+/chat                       → Conversation list (default app view)
+/chat/[conversationId]      → Active conversation / chat view
+/chat?tab=all|unread|private|groups → Conversation filters (groups live under chat)
+/contacts                   → Contacts list
+/contacts/requests          → Incoming contact requests
+/groups                     → Redirect to `/chat?tab=groups`
+/groups/create              → Create new group
+/groups/[groupId]           → Group chat view
+/groups/[groupId]/settings  → Group settings
+/message-requests           → Message requests from non-contacts
+/profile                    → Own profile view + edit
+/user/[echoId]              → Public user profile
+/settings                   → Application settings (account, notifications, privacy)
+/archive                    → Archived conversations
+/blocked                    → Blocked users list
+/support                    → Support tickets list
+/support/create             → Create support ticket
+/support/[ticketId]         → Ticket detail + thread
 ```
 
 #### Admin Routes (Admin Role Required)
@@ -154,14 +157,14 @@ Middleware Logic:
 1. Read `access_token` cookie from the request.
 
 2. If path matches PUBLIC routes (/, /about, /features, /contact, /faq, /privacy, /terms):
-   - If authenticated → redirect to /app/chat
+   - If authenticated → redirect to /chat
    - If NOT authenticated → allow access (show marketing page)
 
-3. If path matches AUTH routes (/login, /register, /forgot-password, /reset-password, /verify):
+3. If path matches AUTH routes (/login, /register, /forgot-password, /reset-password, /verify, /verify-link):
    - If authenticated → redirect to /chat
    - If NOT authenticated → allow access (show auth page)
 
-4. If path matches APP routes (/app/* and core app pages like /chat, /contacts, /groups, /message-requests, /profile, /settings, /blocked, /support, /user/*):
+4. If path matches APP routes (core app pages like /chat, /contacts, /groups, /message-requests, /profile, /settings, /blocked, /support, /user/*):
    - If authenticated → allow access
    - If NOT authenticated → redirect to /login?redirect={originalPath}
 
@@ -252,14 +255,13 @@ Application Layout
 │   ├── <AppSidebar />        ← Collapsible navigation sidebar
 │   │   ├── User avatar + name
 │   │   ├── Nav items:
-│   │   │   ├── Chats          → /app/chat
-│   │   │   ├── Contacts       → /app/contacts
-│   │   │   ├── Groups         → /app/groups
-│   │   │   ├── Message Requests → /app/message-requests
-│   │   │   └── Profile        → /app/profile
+│   │   │   ├── Chats          → /chat
+│   │   │   ├── Contacts       → /contacts
+│   │   │   ├── Archive        → /archive
+│   │   │   └── Profile        → /profile
 │   │   ├── Bottom nav:
-│   │   │   ├── Settings       → /app/settings
-│   │   │   ├── Support        → /app/support
+│   │   │   ├── Settings       → /settings
+│   │   │   ├── Support        → /support
 │   │   │   └── Admin          → /admin (if admin role)
 │   │   └── Collapse toggle
 │   └── <main>{children}</main> ← Page content area
@@ -267,10 +269,11 @@ Application Layout
 
 **Sidebar behavior:**
 - Collapsible (icons-only mode) for more content space
-- Unread counts as badges on Chat, Contacts, Message Requests
+- Unread counts as badges on Chats and Contacts; message requests appear via a banner in the chat list
 - Active route highlighted
 - Responsive: On mobile, sidebar becomes a bottom tab bar or a sheet/drawer
 - WebSocket connection status indicator
+- Groups are accessed via chat tabs (All/Unread/Private/Groups), with a New Group action shown on the Groups tab
 
 ### Admin Layout (`src/app/(admin)/layout.tsx`)
 
@@ -290,7 +293,7 @@ Admin Layout
 │   │   ├── Bans               → /admin/bans
 │   │   ├── Analytics          → /admin/analytics
 │   │   └── Logs               → /admin/logs (super_admin only)
-│   └── "Back to App" link     → /app/chat
+│   └── "Back to App" link     → /chat
 ├── <AdminHeader />            ← Page title, admin info, breadcrumbs
 └── <main>{children}</main>    ← Admin content area
 ```
@@ -471,7 +474,7 @@ Accessed via email link with `?token=xxx` query parameter.
 
 ### 8.1 Chat — Primary Feature
 
-#### Conversation List (`/app/chat`)
+#### Conversation List (`/chat`)
 
 The default view when entering the application.
 
@@ -487,11 +490,11 @@ The default view when entering the application.
 - Unread count badge
 
 **Actions:**
-- Click conversation → navigate to `/app/chat/[conversationId]`
+- Click conversation → navigate to `/chat/[conversationId]`
 - Search bar at top for filtering conversations
 - New conversation button (opens user search dialog)
 
-#### Active Chat View (`/app/chat/[conversationId]`)
+#### Active Chat View (`/chat/[conversationId]`)
 
 **Layout:**
 - Header: Contact name/avatar, online status, actions menu (profile, block, report)
@@ -576,21 +579,21 @@ The banner is displayed in the chat view when `conversation.requestStatus` is `"
 
 Accepting a contact request within the chat immediately upgrades `requestStatus` to `null` and re-enables the MessageInput for both parties.
 
-### 8.2 Groups (`/app/groups`)
+### 8.2 Groups (`/groups`)
 
 **Groups list page:**
 - Grid or list of groups the user belongs to
 - Each group: name, image, member count, last activity
 - "Create Group" button
 
-**Group chat view** (`/app/groups/[groupId]`):
+**Group chat view** (`/groups/[groupId]`):
 - Same chat interface as private chat
 - Group header: name, image, member count, settings gear icon
 - Multiple typing indicators ("Alice, Bob are typing...")
 - System messages for joins, leaves, role changes, nickname changes
 - If disbanded: show persistent disband notice, disable message input, and show disabled `Archive (soon)` / `Delete Chat (soon)` placeholders
 
-**Group settings** (`/app/groups/[groupId]/settings`):
+**Group settings** (`/groups/[groupId]/settings`):
 - Group name and image editing (admin/owner)
 - Member list with roles (owner, admin, member)
 - Promote/demote members (owner/admin)
@@ -601,13 +604,13 @@ Accepting a contact request within the chat immediately upgrades `requestStatus`
 - Disband group (owner only) with strict typed confirmation (`DISBAND`)
 - After successful disband, owner is redirected to the same conversation route to see the locked state
 
-**Create group** (`/app/groups/create`):
+**Create group** (`/groups/create`):
 - Group name input
 - Group image upload
 - Member search and selection (contacts prioritized)
 - Create button
 
-### 8.3 Contacts (`/app/contacts`)
+### 8.3 Contacts (`/contacts`)
 
 **Contacts list:**
 - Alphabetically sorted contact list
@@ -615,13 +618,13 @@ Accepting a contact request within the chat immediately upgrades `requestStatus`
 - Search/filter input
 - Click contact → open chat or view profile
 
-**Contact requests** (`/app/contacts/requests`):
+**Contact requests** (`/contacts/requests`):
 - Incoming request cards
 - Each card: avatar, username, EchoID, timestamp
 - Actions: Accept, Decline
 - Sent requests tab (pending outgoing)
 
-### 8.4 Message Requests (`/app/message-requests`)
+### 8.4 Message Requests (`/message-requests`)
 
 **List view:**
 - Shows all conversations with `requestStatus: "pending"` (not yet accepted or ignored).
@@ -634,14 +637,14 @@ Accepting a contact request within the chat immediately upgrades `requestStatus`
 - **Ignore** → `PATCH /api/message-requests/:id/ignore` — hides conversation from both inbox and requests list.
 
 **Click to preview:**
-- Clicking a request item navigates to `/app/chat/[conversationId]`, showing the conversation with the recipient-side non-contact banner.
+- Clicking a request item navigates to `/chat/[conversationId]`, showing the conversation with the recipient-side non-contact banner.
 - Accepting or ignoring from within the chat view works the same as from the list.
 
 **Sidebar badge:**
 - The "Message Requests" nav item displays an unread count badge showing the number of `pending` requests.
 - Badge updates in real-time via `message-request:new` socket events.
 
-### 8.5 Profile (`/app/profile`)
+### 8.5 Profile (`/profile`)
 
 **View mode:**
 - Avatar (large), username, EchoID (with copy button)
@@ -654,7 +657,7 @@ Accepting a contact request within the chat immediately upgrades `requestStatus`
 - Phone number field (optional; recommended for account recovery)
 - Password change section (current password + new password)
 
-### 8.6 User Profile (`/app/user/[echoId]`)
+### 8.6 User Profile (`/user/[echoId]`)
 
 Public profile view for another user:
 - Avatar, username, EchoID
@@ -666,9 +669,9 @@ Public profile view for another user:
 - Calls `POST /api/conversations { participantEchoId: "..." }`.
 - If a conversation already exists, returns the existing `conversationId`.
 - If no conversation exists, creates one (with `requestStatus: "pending"` if not contacts, or `null` if already contacts).
-- Navigates to `/app/chat/[conversationId]` after the call resolves.
+- Navigates to `/chat/[conversationId]` after the call resolves.
 
-### 8.7 Settings (`/app/settings`)
+### 8.7 Settings (`/settings`)
 
 Settings organized in tabs or sections:
 
@@ -676,29 +679,29 @@ Settings organized in tabs or sections:
 - **Notifications:** Notification preferences (sound, desktop notifications)
 - **Privacy:** Online status visibility, read receipts toggle
 - **Appearance:** Theme (light/dark/system), chat bubble style
-- **Blocked Users:** Link to `/app/blocked`
+- **Blocked Users:** Link to `/blocked`
 - **Danger Zone:** Delete account (future)
 
-### 8.8 Blocked Users (`/app/blocked`)
+### 8.8 Blocked Users (`/blocked`)
 
 - List of blocked users
 - Each entry: avatar, username, block date
 - Unblock action
 
-### 8.9 Support (`/app/support`)
+### 8.9 Support (`/support`)
 
-**Ticket list** (`/app/support`):
+**Ticket list** (`/support`):
 - User's support tickets
 - Each ticket: subject, status badge, last update time
 - "Create Ticket" button
 
-**Create ticket** (`/app/support/create`):
+**Create ticket** (`/support/create`):
 - Subject input
 - Reason select (account recovery, login issues, bug report, feature request, other)
 - Message textarea
 - Submit button
 
-**Ticket detail** (`/app/support/[ticketId]`):
+**Ticket detail** (`/support/[ticketId]`):
 - Ticket info header: subject, reason, status, created date
 - Threaded message view (user messages vs. staff messages, visually distinct)
 - Reply input (if ticket is not closed)

@@ -309,10 +309,10 @@ Disband is non-destructive.
 ### 7.1 Route Structure
 
 ```
-/app/groups                 → Groups list
-/app/groups/create          → Create new group
-/app/groups/[groupId]      → Group chat view
-/app/groups/[groupId]/settings → Group settings
+/groups                     → Redirects to `/chat?tab=groups`
+/groups/create              → Create new group
+/groups/[groupId]           → Group chat view
+/groups/[groupId]/settings  → Group settings
 /groups/join/:token         → Public join page (no auth required if link valid)
 ```
 

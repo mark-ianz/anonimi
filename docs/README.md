@@ -46,17 +46,19 @@ A polished public-facing website that introduces the product. Visible to **unaut
 - Privacy Policy and Terms of Service
 - Guides users toward registration or login
 
-### 2. Authenticated Application (`/app/*`)
+### 2. Authenticated Application (`/chat` and related)
 
 The core product experience. Accessible only to **authenticated users**.
 
-- **Chat** (`/app/chat`) — Primary feature: private and group messaging with real-time delivery
-- **Groups** (`/app/groups`) — Group management and group chat
-- **Contacts** (`/app/contacts`) — Contact list, requests, nicknames
-- **Profile** (`/app/profile`) — User profile viewing and editing
-- **Settings** (`/app/settings`) — Account and application settings
-- **Message Requests** (`/app/message-requests`) — Non-contact message inbox
-- **Support** (`/app/support`) — Submit and track support tickets
+- **Chat** (`/chat`) — Primary feature: private and group messaging with real-time delivery
+- **Chat tabs** (`/chat?tab=all|unread|private|groups`) — Filter conversations (groups are merged into chats)
+- **Groups** (`/groups`) — Redirects to `/chat?tab=groups`
+- **Contacts** (`/contacts`) — Contact list, requests, nicknames
+- **Profile** (`/profile`) — User profile viewing and editing
+- **Settings** (`/settings`) — Account and application settings (push notifications)
+- **Message Requests** (`/message-requests`) — Non-contact message inbox
+- **Archive** (`/archive`) — Archived conversations
+- **Support** (`/support`) — Submit and track support tickets
 
 ### 3. Admin Panel (`/admin/*`)
 
@@ -76,10 +78,10 @@ The frontend implements the following conditional routing:
 | Condition | Behavior |
 |-----------|----------|
 | User visits `/` with **no auth cookie** | Show public landing page |
-| User visits `/` with **valid auth cookie** | Redirect to `/app/chat` |
-| User visits `/app/*` with **no auth cookie** | Redirect to `/login` |
-| User visits `/admin/*` without **admin role** | Redirect to `/app/chat` |
-| User visits `/login` with **valid auth cookie** | Redirect to `/app/chat` |
+| User visits `/` with **valid auth cookie** | Redirect to `/chat` |
+| User visits app routes (e.g., `/chat`, `/contacts`) with **no auth cookie** | Redirect to `/login` |
+| User visits `/admin/*` without **admin role** | Redirect to `/chat` |
+| User visits `/login` with **valid auth cookie** | Redirect to `/chat` |
 
 ---
 
@@ -107,6 +109,8 @@ The frontend implements the following conditional routing:
 | **Socket.IO** | Real-time bidirectional WebSocket communication |
 | **MongoDB** | Document database for all persistent data |
 | **JWT** | Stateless authentication tokens |
+| **Nodemailer** | Email delivery for verification and password reset |
+| **Web Push** | Browser push notifications via VAPID |
 
 ### Media Storage
 
@@ -161,7 +165,7 @@ The frontend and backend are **separate applications** deployed independently. T
 
 ## Status
 
-**Current Phase:** Architecture & Planning  
-**Next Phase:** Core Implementation (Public Site + Auth + User Profiles + Private Messaging)
+**Current Phase:** Core Implementation (Auth + Messaging + Groups)  
+**Next Phase:** Hardening & Notifications (push, email, UX polish)
 
 See [FEATURE_ROADMAP.md](./FEATURE_ROADMAP.md) for the full implementation plan.

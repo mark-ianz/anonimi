@@ -68,6 +68,7 @@ backend/
 │   │   ├── contact.model.ts          # Contact schema
 │   │   ├── group.model.ts            # Group schema
 │   │   ├── groupMember.model.ts      # Group member schema
+│   │   ├── pushSubscription.model.ts # Web Push subscriptions
 │   │   ├── block.model.ts            # Block schema
 │   │   ├── messageRequest.model.ts   # Message request schema
 │   │   ├── report.model.ts           # Report schema
@@ -88,12 +89,14 @@ backend/
 │   │   ├── group.routes.ts           # /api/groups/*
 │   │   ├── block.routes.ts           # /api/blocks/*
 │   │   ├── report.routes.ts          # /api/reports/*
+│   │   ├── notification.routes.ts    # /api/notifications/*
 │   │   ├── support.routes.ts         # /api/support/*
 │   │   ├── media.routes.ts           # /api/media/*
 │   │   └── admin.routes.ts           # /api/admin/*
 │   │
 │   ├── services/
 │   │   ├── auth.service.ts           # Registration, login, JWT, password reset
+│   │   ├── email.service.ts          # Email delivery (verification + reset)
 │   │   ├── user.service.ts           # Profile management, search, EchoID gen
 │   │   ├── contact.service.ts        # Contact requests, nicknames
 │   │   ├── chat.service.ts           # Messages, conversations, pagination
@@ -104,6 +107,7 @@ backend/
 │   │   ├── support.service.ts        # Tickets, threaded messages
 │   │   ├── media.service.ts          # Upload orchestration, adapter selection
 │   │   ├── notification.service.ts   # Socket.IO event emission
+│   │   ├── push.service.ts           # Web Push delivery + subscription handling
 │   │   └── admin.service.ts          # Admin operations, analytics, logs
 │   │
 │   ├── socket/
@@ -200,12 +204,13 @@ frontend/
 │   │   ├── logo-dark.svg
 │   │   ├── og-image.png              # Open Graph social preview image
 │   │   └── hero/                      # Landing page hero assets
+│   ├── push-sw.js                      # Web Push service worker
 │   └── fonts/                         # Self-hosted fonts (if needed)
 │
 ├── src/
 │   ├── app/                           # Next.js App Router
 │   │   ├── layout.tsx                 # Root layout (providers, fonts, global styles)
-│   │   ├── page.tsx                   # Root page (redirect: auth → /app/chat, unauth → marketing)
+│   │   ├── page.tsx                   # Root page (redirect: auth → /chat, unauth → marketing)
 │   │   ├── globals.css                # Global Tailwind + custom CSS variables
 │   │   ├── not-found.tsx              # Custom 404 page
 │   │   │
@@ -232,6 +237,8 @@ frontend/
 │   │   │   │   └── page.tsx           # Registration form
 │   │   │   ├── verify/
 │   │   │   │   └── page.tsx           # Email verification (OTP)
+│   │   │   ├── verify-link/
+│   │   │   │   └── page.tsx           # Email verification (link)
 │   │   │   ├── forgot-password/
 │   │   │   │   └── page.tsx           # Request password reset
 │   │   │   └── reset-password/
@@ -239,42 +246,43 @@ frontend/
 │   │   │
 │   │   ├── (main)/                    # AUTHENTICATED APP — route group (sidebar layout)
 │   │   │   ├── layout.tsx             # App layout (sidebar + SocketProvider + content)
-│   │   │   ├── app/
-│   │   │   │   ├── chat/
-│   │   │   │   │   ├── page.tsx       # Conversation list (default app view)
-│   │   │   │   │   └── [conversationId]/
-│   │   │   │   │       └── page.tsx   # Active conversation / chat view
-│   │   │   │   ├── contacts/
-│   │   │   │   │   ├── page.tsx       # Contacts list
-│   │   │   │   │   └── requests/
-│   │   │   │   │       └── page.tsx   # Contact requests
-│   │   │   │   ├── groups/
-│   │   │   │   │   ├── page.tsx       # Groups list
-│   │   │   │   │   ├── create/
-│   │   │   │   │   │   └── page.tsx   # Create group form
-│   │   │   │   │   └── [groupId]/
-│   │   │   │   │       ├── page.tsx   # Group chat view
-│   │   │   │   │       └── settings/
-│   │   │   │   │           └── page.tsx # Group settings
-│   │   │   │   ├── message-requests/
-│   │   │   │   │   └── page.tsx       # Message requests from non-contacts
-│   │   │   │   ├── profile/
-│   │   │   │   │   └── page.tsx       # Own profile view + edit
-│   │   │   │   ├── user/
-│   │   │   │   │   └── [echoId]/
-│   │   │   │   │       └── page.tsx   # Public user profile
-│   │   │   │   ├── settings/
-│   │   │   │   │   └── page.tsx       # Application settings
-│   │   │   │   ├── blocked/
-│   │   │   │   │   └── page.tsx       # Block list
-│   │   │   │   └── support/
-│   │   │   │       ├── page.tsx       # My support tickets
-│   │   │   │       ├── create/
-│   │   │   │       │   └── page.tsx   # Create ticket
-│   │   │   │       └── [ticketId]/
-│   │   │   │           └── page.tsx   # Ticket detail + thread
-│   │   │   │
-│   │   │   └── middleware.ts          # (Optional) Additional app-level middleware
+│   │   │   ├── archive/
+│   │   │   │   └── page.tsx           # Archived conversations
+│   │   │   ├── blocked/
+│   │   │   │   └── page.tsx           # Block list
+│   │   │   ├── chat/
+│   │   │   │   ├── page.tsx           # Conversation list (default app view)
+│   │   │   │   └── [conversationId]/
+│   │   │   │       └── page.tsx       # Active conversation / chat view
+│   │   │   ├── contacts/
+│   │   │   │   ├── page.tsx           # Contacts list
+│   │   │   │   └── requests/
+│   │   │   │       └── page.tsx       # Contact requests
+│   │   │   ├── groups/
+│   │   │   │   ├── page.tsx           # Groups (redirects to chat tab)
+│   │   │   │   ├── create/
+│   │   │   │   │   └── page.tsx       # Create group form
+│   │   │   │   └── [groupId]/
+│   │   │   │       ├── page.tsx       # Group chat view
+│   │   │   │       └── settings/
+│   │   │   │           └── page.tsx   # Group settings
+│   │   │   ├── message-requests/
+│   │   │   │   └── page.tsx           # Message requests from non-contacts
+│   │   │   ├── profile/
+│   │   │   │   └── page.tsx           # Own profile view + edit
+│   │   │   ├── search/
+│   │   │   │   └── page.tsx           # Global user search
+│   │   │   ├── settings/
+│   │   │   │   └── page.tsx           # Application settings
+│   │   │   ├── support/
+│   │   │   │   ├── page.tsx           # My support tickets
+│   │   │   │   ├── create/
+│   │   │   │   │   └── page.tsx       # Create ticket
+│   │   │   │   └── [ticketId]/
+│   │   │   │       └── page.tsx       # Ticket detail + thread
+│   │   │   └── user/
+│   │   │       └── [echoId]/
+│   │   │           └── page.tsx       # Public user profile
 │   │   │
 │   │   └── (admin)/                   # ADMIN PANEL — route group (admin layout)
 │   │       ├── layout.tsx             # Admin layout (admin sidebar + header)
@@ -471,7 +479,7 @@ frontend/
 
 1. **Route groups separate layouts:** `(public)`, `(auth)`, `(main)`, and `(admin)` each define their own `layout.tsx`, ensuring each experience has the appropriate navigation structure.
 
-2. **Application routes nest under `/app`:** All authenticated app routes live under `/app/*` within the `(main)` route group. This cleanly separates application routes from marketing routes.
+2. **Application routes live at root paths:** Authenticated app routes use `/chat`, `/contacts`, `/settings`, etc., within the `(main)` route group, while marketing routes stay in `(public)`.
 
 3. **Marketing components are isolated:** Components for the public site (`components/marketing/`) are separate from application components, preventing accidental coupling.
 

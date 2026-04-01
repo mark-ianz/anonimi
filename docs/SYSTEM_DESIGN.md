@@ -57,8 +57,8 @@ Client                          Server
   │                               │── Hash password (bcrypt, 12 rounds)
   │                               │── Generate EchoID (nanoid)
   │                               │── Create user document (status: pending)
-  │                               │── Generate verification code/link
-  │                               │── Send verification email/SMS
+  │                               │── Generate verification code + link
+  │                               │── Send verification email
   │                               │
   │  { success, message:          │
   │    "Verification sent" }      │
@@ -71,6 +71,15 @@ Client                          Server
   │                               │── Update user status: active
   │                               │── Generate JWT tokens
   │                               │
+  │  { accessToken, refreshToken, │
+  │    user }                     │
+  │◀──────────────────────────────│
+  │                               │
+  │  GET /api/auth/verify-email-link?token=... (alt)
+  │──────────────────────────────▶│
+  │                               │── Verify token (time-limited, 15 min)
+  │                               │── Update user status: active
+  │                               │── Generate JWT tokens
   │  { accessToken, refreshToken, │
   │    user }                     │
   │◀──────────────────────────────│
@@ -132,6 +141,7 @@ Client                          Server
 3. Server sends reset link via email
 4. User clicks link → POST /api/auth/reset-password { token, newPassword }
 5. Server verifies token, hashes new password, invalidates all sessions
+6. Server returns access + refresh tokens for auto-login
 ```
 
 ---

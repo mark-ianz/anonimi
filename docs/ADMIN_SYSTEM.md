@@ -57,7 +57,7 @@ Support Staff
 
 ## 2. Admin Dashboard Sections
 
-The admin dashboard is a dedicated section of the frontend at `/admin/*`, using the `(admin)` route group with its own `AdminSidebar` layout. It is accessible only to users with admin roles. The root middleware redirects non-admin users attempting to access `/admin/*` to `/app/chat`.
+The admin dashboard is a dedicated section of the frontend at `/admin/*`, using the `(admin)` route group with its own `AdminSidebar` layout. It is accessible only to users with admin roles. The root middleware redirects non-admin users attempting to access `/admin/*` to `/chat`.
 
 > For complete frontend layout and component specifications, see **FRONTEND_DESIGN.md**.
 
