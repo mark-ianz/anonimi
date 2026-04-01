@@ -227,6 +227,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
       });
       setSaveConfirmOpen(false);
       setSavePlan(null);
+      router.push(`/chat/${group.conversationId}`);
     } catch {
       // Error toast is already handled by the mutation hook.
     }
