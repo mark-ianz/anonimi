@@ -1,14 +1,15 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useGroup } from "@/hooks/useGroups";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
 import type { Group } from "@/types/group";
 import { cn } from "@/lib/utils";
-import { Camera, Save, Link as LinkIcon, QrCode, Copy, Check, X, AlertCircle, LogOut, Trash2 } from "lucide-react";
+import { Camera, Save, Link as LinkIcon, QrCode, Copy, Check, X, AlertCircle, LogOut, Trash2, ChevronDown, Upload } from "lucide-react";
 import { toast } from "sonner";
 import GroupAvatar from "@/components/shared/GroupAvatar";
+import { UploadSource, validateUploadFile } from "@/lib/uploadPolicy";
 
 interface GroupSettingsProps {
   group: Group;
@@ -42,7 +43,12 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const [showDisbandConfirmModal, setShowDisbandConfirmModal] = useState(false);
   const [disbandConfirmText, setDisbandConfirmText] = useState("");
-  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const [avatarPopoverOpen, setAvatarPopoverOpen] = useState(false);
+  const [pendingGroupImage, setPendingGroupImage] = useState<{ file: File; source: UploadSource } | null>(null);
+  const [pendingGroupImageRemoval, setPendingGroupImageRemoval] = useState(false);
+  const [groupImagePreviewUrl, setGroupImagePreviewUrl] = useState<string | null>(null);
 
   const expiryOptions: Array<{ value: 30 | 60 | 360 | 1440 | 10080; label: string }> = [
     { value: 30, label: "30m" },
@@ -53,13 +59,48 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
   ];
   const expiryIndex = expiryOptions.findIndex((o) => o.value === selectedExpiry);
   const fallbackProfileImages = members.slice(0, 3).map((member) => member.profileImage ?? null);
+  const displayedGroupImage = pendingGroupImageRemoval ? null : (groupImagePreviewUrl ?? group.image ?? null);
 
-  function handleSave() {
+  useEffect(() => {
+    return () => {
+      if (groupImagePreviewUrl) {
+        URL.revokeObjectURL(groupImagePreviewUrl);
+      }
+    };
+  }, [groupImagePreviewUrl]);
+
+  useEffect(() => {
+    if (!avatarPopoverOpen) return;
+
+    const handleOutside = (event: MouseEvent) => {
+      if (!popoverRef.current) return;
+      if (!popoverRef.current.contains(event.target as Node)) {
+        setAvatarPopoverOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setAvatarPopoverOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [avatarPopoverOpen]);
+
+  async function handleSave() {
     if (!canEditGroupProfile && !canManageSettings) return;
 
     const payload: {
       name?: string;
       description?: string;
+      image?: string | null;
       settings?: {
         joinRequestEnabled?: boolean;
         nicknameEditPolicy?: "admins_only" | "all_members";
@@ -78,21 +119,52 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
       };
     }
 
+    if (pendingGroupImage) {
+      const result = await upload(pendingGroupImage.file, "group", { source: pendingGroupImage.source });
+      if (!result) return;
+      payload.image = result.url;
+    } else if (pendingGroupImageRemoval) {
+      payload.image = null;
+    }
+
     updateGroup(payload);
+    setPendingGroupImage(null);
+    setPendingGroupImageRemoval(false);
+    setGroupImagePreviewUrl((previousUrl) => {
+      if (previousUrl) URL.revokeObjectURL(previousUrl);
+      return null;
+    });
   }
 
-  async function handleImageChange(
-    e: React.ChangeEvent<HTMLInputElement>,
-    source: "file" | "camera" = "file"
-  ) {
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>, source: UploadSource = "file") {
     if (!canEditGroupProfile) return;
     const file = e.target.files?.[0];
     if (!file) return;
-    const result = await upload(file, "group", { source });
-    if (result) {
-      updateGroup({ image: result.url });
+
+    const validation = validateUploadFile(file, { category: "group", source });
+    if (!validation.ok) {
+      toast.error(validation.error ?? "Invalid file.");
+      e.target.value = "";
+      return;
     }
+
+    setPendingGroupImage({ file, source });
+    setPendingGroupImageRemoval(false);
+    setGroupImagePreviewUrl((previousUrl) => {
+      if (previousUrl) URL.revokeObjectURL(previousUrl);
+      return URL.createObjectURL(file);
+    });
     e.target.value = "";
+  }
+
+  function handleRemoveImage() {
+    if (!canEditGroupProfile) return;
+    setPendingGroupImage(null);
+    setPendingGroupImageRemoval(true);
+    setGroupImagePreviewUrl((previousUrl) => {
+      if (previousUrl) URL.revokeObjectURL(previousUrl);
+      return null;
+    });
   }
 
   function handleCreateInvite() {
@@ -119,9 +191,20 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
 
       {/* Avatar */}
       <div className="flex justify-center">
-        <label className={cn("relative group", canEditGroupProfile ? "cursor-pointer" : "cursor-not-allowed opacity-60")}>
+        <div className={cn("relative", !canEditGroupProfile && "opacity-60")} ref={popoverRef}>
+          <button
+            type="button"
+            onClick={() => {
+              if (!canEditGroupProfile || isUploading) return;
+              setAvatarPopoverOpen((prev) => !prev);
+            }}
+            className={cn(canEditGroupProfile ? "cursor-pointer" : "cursor-not-allowed", "group block")}
+            aria-haspopup="menu"
+            aria-expanded={avatarPopoverOpen}
+            aria-label="Group photo options"
+          >
           <GroupAvatar
-            imageUrl={group.image}
+            imageUrl={displayedGroupImage}
             fallbackProfileImages={fallbackProfileImages}
             name={group.name}
             alt={group.name}
@@ -133,39 +216,51 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
             {isUploading ? (
               <span className="w-5 h-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
             ) : (
-              <Camera className="w-5 h-5 text-white" />
+              <div className="flex items-center gap-1 text-white">
+                <Camera className="w-5 h-5" />
+                <ChevronDown className="w-4 h-4" />
+              </div>
             )}
           </div>
-          <button
-            type="button"
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              cameraInputRef.current?.click();
-            }}
-            className="absolute -bottom-1 -right-1 z-10 h-7 w-7 rounded-full border border-border/60 bg-background/90 text-foreground flex items-center justify-center shadow-sm hover:bg-muted"
-            aria-label="Take group photo"
-            disabled={!canEditGroupProfile || isUploading}
-          >
-            <Camera className="h-3.5 w-3.5" />
           </button>
+
+          {avatarPopoverOpen && canEditGroupProfile && (
+            <div className="absolute left-1/2 top-full z-30 mt-2 w-52 -translate-x-1/2 rounded-xl border border-border/60 bg-card/95 p-1 shadow-elevated backdrop-blur-sm animate-fade-in">
+              <button
+                type="button"
+                onClick={() => {
+                  setAvatarPopoverOpen(false);
+                  fileInputRef.current?.click();
+                }}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/70"
+              >
+                <Upload className="h-4 w-4" />
+                Select photo
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAvatarPopoverOpen(false);
+                  handleRemoveImage();
+                }}
+                disabled={!displayedGroupImage || isUploading}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
+              >
+                <Trash2 className="h-4 w-4" />
+                Remove photo
+              </button>
+            </div>
+          )}
+
           <input
+            ref={fileInputRef}
             type="file"
             accept="image/png,image/jpeg,image/jpg,image/gif"
             className="hidden"
             onChange={(event) => handleImageChange(event, "file")}
             disabled={!canEditGroupProfile}
           />
-          <input
-            ref={cameraInputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/jpg,image/gif"
-            capture="environment"
-            className="hidden"
-            onChange={(event) => handleImageChange(event, "camera")}
-            disabled={!canEditGroupProfile}
-          />
-        </label>
+        </div>
       </div>
 
       {/* Name */}
