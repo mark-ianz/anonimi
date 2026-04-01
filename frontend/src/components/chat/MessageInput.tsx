@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Send, Paperclip, Camera, X } from "lucide-react";
+import { Send, Paperclip, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMessages } from "@/hooks/useMessages";
 import { useTyping } from "@/hooks/useTyping";
@@ -30,7 +30,6 @@ export default function MessageInput({
   const { upload, isUploading, progress, cancel } = useMediaUpload();
   const { draftMessages, setDraft } = useChatStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [text, setText] = useState(draftMessages[conversationId] ?? "");
@@ -166,28 +165,11 @@ export default function MessageInput({
         >
           <Paperclip className="w-5 h-5" />
         </button>
-        <button
-          type="button"
-          disabled={disabled || isUploading}
-          onClick={() => cameraInputRef.current?.click()}
-          className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50 mb-0.5"
-          aria-label="Take photo or video"
-        >
-          <Camera className="w-5 h-5" />
-        </button>
         <input
           ref={fileInputRef}
           type="file"
           className="hidden"
           onChange={(event) => handleFileChange(event, "file")}
-        />
-        <input
-          ref={cameraInputRef}
-          type="file"
-          className="hidden"
-          accept="image/png,image/jpeg,image/jpg,image/gif,video/mp4"
-          capture="environment"
-          onChange={(event) => handleFileChange(event, "camera")}
         />
 
         {/* Textarea */}
