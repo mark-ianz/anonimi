@@ -21,7 +21,7 @@ export default function AboutPage() {
             We build identity-safe conversations for real people.
           </h1>
           <p className="mt-5 max-w-3xl text-base leading-relaxed text-muted-foreground md:text-lg">
-            anonimi exists because private communication should not demand personal exposure. Our platform is designed around aliases, recovery-safe onboarding, and moderation controls that keep people in control.
+            anonimi exists because private communication should not demand personal exposure. Our platform is designed around AIDs, recovery-safe onboarding, and moderation controls that keep people in control.
           </p>
         </section>
 
@@ -42,7 +42,7 @@ export default function AboutPage() {
             </div>
             <h2 className="mt-4 text-2xl font-semibold">What Makes Us Different</h2>
             <ul className="mt-3 space-y-2 text-sm leading-relaxed text-muted-foreground md:text-base">
-              <li>Alias-first discovery with generated anonimis</li>
+              <li>AID-first discovery with generated identifiers</li>
               <li>Email-only onboarding with optional username</li>
               <li>Recoverable verification flow with resend support</li>
               <li>User safety controls with block, report, and moderation tooling</li>

@@ -11,16 +11,16 @@ export default function HeroSection() {
         <div className="grid gap-10 border-y border-border/70 py-12 md:grid-cols-[minmax(0,1fr)_minmax(0,0.88fr)] md:gap-12 md:py-14">
           <div className="animate-reveal-up">
             <p className="inline-flex rounded-full border border-border/70 bg-background/80 px-3 py-1 font-mono text-[0.68rem] font-medium uppercase tracking-[0.16em] text-foreground/88">
-              Private Messaging Infrastructure
+              AID-First Messaging
             </p>
 
             <h1 className="mt-6 max-w-[14ch] text-4xl leading-[0.95] font-semibold sm:text-5xl md:text-6xl">
-              Chat identity with less surface, more trust.
+              Private identity, clean conversations.
             </h1>
 
             <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              anonimi gives every user a private alias instead of exposing personal contact data.
-              Messages stay direct, encrypted, and intentionally simple.
+              anonimi gives every user a private AID instead of exposing personal contact data.
+              Share it once, keep control with requests, and keep messaging focused.
             </p>
 
             <div className="mt-9 flex flex-wrap items-center gap-3">
@@ -41,9 +41,9 @@ export default function HeroSection() {
             </div>
 
             <div className="mt-10 grid max-w-2xl grid-cols-1 gap-2 font-mono text-[0.72rem] uppercase tracking-[0.08em] text-muted-foreground sm:grid-cols-3">
-              <p>End-to-end encryption</p>
-              <p>Alias-only discovery</p>
-              <p>Realtime transport layer</p>
+              <p>Encrypted transport</p>
+              <p>AID-only discovery</p>
+              <p>Verification resume</p>
             </div>
           </div>
 

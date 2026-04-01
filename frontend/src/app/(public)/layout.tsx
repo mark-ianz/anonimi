@@ -4,10 +4,10 @@ import MarketingFooter from "@/components/marketing/MarketingFooter";
 
 export const metadata: Metadata = {
   title: "anonimi — Private Messaging, Reimagined",
-  description: "Secure, real-time messaging with privacy-first identity. Sign up free.",
+  description: "Secure, real-time messaging with AID-first identity. Sign up free.",
   openGraph: {
     title: "anonimi — Private Messaging, Reimagined",
-    description: "Secure, real-time messaging with privacy-first identity. Sign up free.",
+    description: "Secure, real-time messaging with AID-first identity. Sign up free.",
     type: "website",
   },
 };

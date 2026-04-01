@@ -29,7 +29,7 @@ export default function ContactPage() {
           <div>
             <h2 className="text-2xl font-semibold">Send us a message</h2>
             <p className="mt-4 text-muted-foreground">
-              Fill out the form below and we'll get back to you as soon as possible.
+              Tell us what you need help with. If it is account-specific, include your AID.
             </p>
             <ContactForm />
           </div>

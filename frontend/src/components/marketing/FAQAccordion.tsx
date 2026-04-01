@@ -7,19 +7,19 @@ import { cn } from "@/lib/utils";
 const faqs = [
   {
     question: "What is anonimi?",
-    answer: "anonimi is a privacy-first messaging platform that gives you a unique identity without requiring phone numbers or personal information. Your anonimi is generated uniquely for you, allowing you to communicate securely and anonymously.",
+    answer: "anonimi is a privacy-first messaging platform that gives you a unique AID without requiring phone numbers or personal data. Your AID is generated for you so you can chat without exposing contact info.",
   },
   {
     question: "How do I get started?",
-    answer: "Simply create a free account using your email. You'll instantly receive your unique anonimi that you can share with friends to start chatting. No phone number or personal information required.",
+    answer: "Create a free account with email. You will instantly receive your AID to share with people you trust, or you can accept message requests when you are ready.",
   },
   {
     question: "Is my data private?",
-    answer: "Absolutely. We believe in privacy by design. Your messages are encrypted, and we never share your personal data with third parties. You control your identity and who can contact you.",
+    answer: "Yes. We use encrypted transport and never require phone numbers at signup. You control your identity and who can contact you with requests, block, and report tools.",
   },
   {
-    question: "Can I change my anonimi?",
-    answer: "Your anonimi is unique and cannot be changed. This helps maintain trust and accountability in the platform. You can update your username once and your profile picture anytime.",
+    question: "Can I change my AID?",
+    answer: "Your AID is unique and stays stable so people can reliably find you. You can update your profile details and username in settings.",
   },
   {
     question: "How do group chats work?",

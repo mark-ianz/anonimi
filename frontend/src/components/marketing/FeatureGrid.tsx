@@ -5,12 +5,12 @@ const features = [
   {
     icon: MessageCircle,
     title: "Real-time Messaging",
-    description: "Instant message delivery with typing indicators and read receipts. Experience conversations that flow naturally.",
+    description: "Instant delivery with typing indicators and read receipts. Conversations stay fluid across devices.",
   },
   {
     icon: Shield,
     title: "Privacy-First Identity",
-    description: "Your anonimi is uniquely generated — no phone numbers or personal info required. Stay anonymous while chatting.",
+    description: "Your AID is generated for you with email-only signup and optional usernames. No phone required.",
   },
   {
     icon: Users,
@@ -19,13 +19,13 @@ const features = [
   },
   {
     icon: Lock,
-    title: "End-to-End Encryption",
-    description: "Your messages are secured with industry-standard encryption. Only you and your recipients can read them.",
+    title: "Secure Transport",
+    description: "Messages move through encrypted channels with safety controls like requests, block, and report.",
   },
   {
     icon: Zap,
-    title: "Lightning Fast",
-    description: "Built on modern infrastructure for sub-millisecond message delivery. No lag, no waiting.",
+    title: "Low-Latency Sync",
+    description: "Built for real-time delivery and quick catch-up when you return to a conversation.",
   },
   {
     icon: Bell,
@@ -94,9 +94,9 @@ export default function FeatureGrid() {
 
           <div className="rounded-3xl border border-border/70 bg-card/70 p-6 shadow-soft md:col-span-5 md:p-7">
             <p className="font-mono text-[0.68rem] uppercase tracking-[0.12em] text-muted-foreground">Design Principle</p>
-            <h3 className="mt-3 text-2xl leading-tight font-semibold">Every identity interaction needs a recovery path.</h3>
+            <h3 className="mt-3 text-2xl leading-tight font-semibold">Identity needs a recovery path.</h3>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              anonimi now includes verification resume, resend with cooldown, and explicit pending-account continuation from login.
+              anonimi includes verification resume, resend with cooldown, and pending-account continuation from login.
             </p>
             <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
               <div className="rounded-2xl border border-border/65 bg-background/70 p-3">

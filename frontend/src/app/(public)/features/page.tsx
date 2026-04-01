@@ -12,7 +12,7 @@ const features = [
   {
     icon: MessageCircle,
     title: "Real-time Messaging",
-    description: "Experience lightning-fast message delivery with instant notifications. See when your messages are sent, delivered, and read with read receipts.",
+    description: "Fast delivery with read state, typing indicators, and responsive sync across devices.",
     details: [
       "Instant message delivery",
       "Typing indicators",
@@ -23,9 +23,9 @@ const features = [
   {
     icon: Shield,
     title: "Privacy-First Identity",
-    description: "Your anonimi is generated uniquely with email-only signup, optional usernames, and no phone requirement at registration.",
+    description: "Your AID is generated with email-only signup, optional usernames, and no phone requirement at registration.",
     details: [
-      "Unique generated IDs",
+      "Unique generated AID",
       "No phone number required",
       "Optional auto-generated username",
       "Public profile options",
@@ -59,9 +59,9 @@ const features = [
     title: "Block & Report System",
     description: "Full control over who can contact you. Block users and report inappropriate behavior.",
     details: [
+      "Message requests",
       "Block users",
       "Report violations",
-      "Message requests",
       "Privacy settings",
     ],
   },
@@ -138,7 +138,7 @@ export default function FeaturesPage() {
         <div className="mt-24 text-center">
           <h2 className="text-2xl font-semibold">Ready to try anonimi?</h2>
           <p className="mt-4 text-muted-foreground">
-            Join thousands of users who have already discovered a better way to communicate.
+            Join early adopters who want private-first messaging built around AID.
           </p>
           <Button className="mt-8" size="lg" asChild>
             <Link href="/register">Get Started Free</Link>

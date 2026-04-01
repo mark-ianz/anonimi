@@ -7,18 +7,18 @@ import { UserPlus, Share2, MessageCircle } from "lucide-react";
 const steps = [
   {
     icon: UserPlus,
-    title: "Sign up and get your anonimi",
-    description: "Create a free account with email and receive your anonimi instantly. Username is optional and auto-generated if you skip it.",
+    title: "Create an account, get your AID",
+    description: "Sign up with email and receive your AID instantly. Usernames stay optional and auto-generated when skipped.",
   },
   {
     icon: Share2,
-    title: "Share your ID with friends",
-    description: "Share your anonimi with anyone you want to chat with. It's that simple.",
+    title: "Share your AID or accept requests",
+    description: "Share your AID with people you trust, or use message requests to stay in control of new contacts.",
   },
   {
     icon: MessageCircle,
-    title: "Start messaging instantly",
-    description: "Enjoy secure, real-time messaging with end-to-end encryption and no delays.",
+    title: "Start messaging right away",
+    description: "Jump into real-time conversations with delivery, typing, and read state built in.",
   },
 ];
 
