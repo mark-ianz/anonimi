@@ -216,11 +216,89 @@ When I message request someone, the request doesn't go to their request tab. tho
 -- Done
 When creating a group chat, the members avatar when adding members initially are empty.
 
---
+-- Done
 On Contacts tab, the contacts activity status are not sync to their current status.
 
---
+-- Done
 Add typing indicator if the user is typing. 
 - If it's on the group chat and there are two people typing: x and x are typing...
 - 3 people: x and 2 others are typing...
 - 10+: x and 9+ others are typing...
+
+-- Done
+When the 3 buttons popover actions are open on the conversation header and I hover to a message, the message overlaps the opened popover.
+
+-- Done
+Edit message function:
+- Users can edit their own message, if they edit it other people can see the edit history of the message.
+
+(xPersonx) username
+(xxIconxx) Edited (this is clickable)
+xxxxxxxxxx This message was edited for testing!
+
+x - whitespace
+
+The edit option will appear on the 3 dots beside the message, the options now will be:
+
+- Edit
+- Delete for me
+- Unsend
+
+--
+
+Receiving a message or typing indicator behaviour updated.
+
+Currently if I'm not scrolling like I just opened the conversation, the messages will be alright.
+
+But the problem is that if I'm at the very bottom (most recent) of th conversation and I received a message, the message will appear at below of my screen and I have to scroll it down before I receive. Same for typing, if I'm at the very borrom of the conversation and someone typed, the typing indicator will be at the bottom overflowing hidden. Meaning I also have to scroll down to see that they are typing. 
+
+This shouldn't the behavior instead I should see it instantly and don't need to scroll.
+
+The only scenario that I have to scroll down to see is that if I'm back reading to the top of our conversation or I'm actively scrolling, in that case then I have to scroll down to see.
+
+Additional Feature:
+If I'm actively scrolling through the conversation and someone messaged on that conversation, I should see a little pop up inside the conversation that they sent a message and if I clicked it, it will scroll me down to the very bottom to see their message.
+
+--
+On the internet status. Sometimes it just stays on Disconnected or Reconnecting, my web app is not even really trying to reconnect. I have to manually refresh to fix it.
+
+--
+Stealth Mode
+
+What is Stealth Mode? 
+- It's a way for the message that you are sending to become like a ticking time bomb depending on the amount of time you set. 
+- For example you set it for 5m and you start messaging, your message will become a  `stealth messages`, it will have a different background color and will have a timer above on how long before it becomes `stealthy`. 
+- `Stealthy message` is a term for a message that will still on the conversation but it's a blank (color is the same as the `stealth background message` color). 
+- The stealthy message is NOT accessible through devtool, network or etc. The backend will just say that it's a stealthy message and won't send back the actual message BUT backend will still send the amount of characters that stealthy message has so that the length of the message will still be dynamic.
+
+This mode is toggleable, the option to toggle this will be beside the attachment icon.
+
+If the toggle it, an option will appear on how long will the message be visible.
+- 1m
+- 5m
+- 15m
+- 30m
+- 1h
+- 3h
+- 6h
+- 12h
+- 24h
+
+Definition of Terms:
+Stealth Message - the message that was sent during stealth mode.
+Stealthy Message - Stealth Message that was expired. This has no content but there's a character length so the width/length of the stealthy message is still dynamic based on the stealth message.
+
+-- 
+Temporary accounts, users can opt in to a temporary account. This will have full anonymity and requires no email and password.
+
+Steps:
+- On login/register, the user clicks temporary account.
+- They will automatically be logged in and auto generated an AID but has no password. This account is session only account, if they closed the window or logged out, the account will be no longer accessible.
+- Their username will be a generic `temp_xxxxxx` similar to the generic username of verified user `anon_xxxxxx`
+- Though this is a session only account, there will be a timer somewhere since temporary accounts can only exsist for 24h and need to be claimed/verify.
+- Their usage will still be similar for a verified user, they can search for someone and message it but they won't have a permission yet to add contact, report, block, or etc that requires an account. The options will be there but if they tried to access it, a modal will pop up reminding them that they are only using temporary account and requires to claim/verify the account to have a full access something....
+- They are not searchable yet on the search global
+- Other users will see if these accounts are temporary.
+- If other users are having a conversation with temporary account, there's a persistent banner on the conversation saying to be careful for these account blah blah blah.
+- I'm saying yet on here BECAUSE, temporary account users could claim this account by having an option to verify/claim account that will require their email and have a verification and  set a password.
+- If they got verified, they can use the app like a normal person now.
