@@ -78,6 +78,184 @@ const features = [
   },
 ];
 
+const mockKinds = [
+  "chat",
+  "identity",
+  "group",
+  "media",
+  "safety",
+  "admin",
+] as const;
+type MockKind = (typeof mockKinds)[number];
+
+function FeatureMock({ kind }: { kind: MockKind }) {
+  if (kind === "identity") {
+    return (
+      <div className="relative z-10 w-full px-6 py-6">
+        <div className="mb-4 flex items-center justify-between border-b border-border/60 pb-3">
+          <div>
+            <p className="font-mono text-[0.62rem] uppercase tracking-[0.14em] text-muted-foreground">
+              Identity card
+            </p>
+            <p className="mt-1 text-sm font-semibold text-foreground">AID: aid_7F2•KQ</p>
+          </div>
+          <div className="h-9 w-9 rounded-full border border-border/60 bg-card/80" />
+        </div>
+        <div className="space-y-3">
+          <div className="rounded-2xl border border-border/60 bg-card px-4 py-3 text-sm">
+            <p className="text-muted-foreground">Username</p>
+            <p className="mt-1 font-semibold text-foreground">silent.orbit</p>
+          </div>
+          <div className="rounded-2xl border border-border/60 bg-card px-4 py-3 text-sm">
+            <p className="text-muted-foreground">Verification</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <span className="rounded-full border border-border/60 bg-background px-2 py-1 text-[0.65rem] uppercase tracking-[0.12em] text-muted-foreground">
+                Email
+              </span>
+              <span className="rounded-full bg-primary/10 px-2 py-1 text-[0.65rem] uppercase tracking-[0.12em] text-primary">
+                Resume Ready
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (kind === "group") {
+    return (
+      <div className="relative z-10 w-full px-6 py-6">
+        <div className="mb-4 flex items-center justify-between border-b border-border/60 pb-3">
+          <div>
+            <p className="font-mono text-[0.62rem] uppercase tracking-[0.14em] text-muted-foreground">
+              Group room
+            </p>
+            <p className="mt-1 text-sm font-semibold text-foreground">Studio Dispatch</p>
+          </div>
+          <span className="rounded-full border border-border/60 bg-background px-2 py-1 text-[0.62rem] uppercase tracking-[0.12em] text-muted-foreground">
+            12 members
+          </span>
+        </div>
+        <div className="space-y-3">
+          {[
+            "Owner · aid_2S9",
+            "Admin · aid_8L4",
+            "Member · aid_5J1",
+          ].map((label) => (
+            <div key={label} className="flex items-center justify-between rounded-2xl border border-border/60 bg-card px-4 py-3 text-sm">
+              <span className="text-foreground">{label}</span>
+              <span className="text-[0.62rem] uppercase tracking-[0.12em] text-muted-foreground">Active</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (kind === "media") {
+    return (
+      <div className="relative z-10 w-full px-6 py-6">
+        <div className="mb-4 flex items-center justify-between border-b border-border/60 pb-3">
+          <p className="font-mono text-[0.62rem] uppercase tracking-[0.14em] text-muted-foreground">
+            Media drop
+          </p>
+          <span className="text-[0.62rem] uppercase tracking-[0.12em] text-muted-foreground">3 files</span>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="h-24 rounded-2xl border border-border/60 bg-card/80" />
+          <div className="h-24 rounded-2xl border border-border/60 bg-card/80" />
+          <div className="col-span-2 h-24 rounded-2xl border border-border/60 bg-card/80" />
+        </div>
+      </div>
+    );
+  }
+
+  if (kind === "safety") {
+    return (
+      <div className="relative z-10 w-full px-6 py-6">
+        <div className="mb-4 flex items-center justify-between border-b border-border/60 pb-3">
+          <p className="font-mono text-[0.62rem] uppercase tracking-[0.14em] text-muted-foreground">
+            Safety controls
+          </p>
+          <span className="text-[0.62rem] uppercase tracking-[0.12em] text-muted-foreground">Live</span>
+        </div>
+        <div className="space-y-3">
+          {[
+            "Message requests",
+            "Block user",
+            "Report",
+          ].map((label) => (
+            <div key={label} className="flex items-center justify-between rounded-2xl border border-border/60 bg-card px-4 py-3 text-sm">
+              <span className="text-foreground">{label}</span>
+              <span className="h-4 w-8 rounded-full bg-primary/15" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (kind === "admin") {
+    return (
+      <div className="relative z-10 w-full px-6 py-6">
+        <div className="mb-4 flex items-center justify-between border-b border-border/60 pb-3">
+          <p className="font-mono text-[0.62rem] uppercase tracking-[0.14em] text-muted-foreground">
+            Moderation queue
+          </p>
+          <span className="text-[0.62rem] uppercase tracking-[0.12em] text-muted-foreground">Priority</span>
+        </div>
+        <div className="space-y-3">
+          {[
+            "Harassment · aid_3K7",
+            "Spam · aid_0Q2",
+            "Impersonation · aid_9V5",
+          ].map((label) => (
+            <div key={label} className="flex items-center justify-between rounded-2xl border border-border/60 bg-card px-4 py-3 text-sm">
+              <span className="text-foreground">{label}</span>
+              <span className="rounded-full bg-primary/10 px-2 py-1 text-[0.6rem] uppercase tracking-[0.12em] text-primary">
+                Review
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative z-10 w-full px-6 py-6">
+      <div className="mb-4 flex items-center justify-between border-b border-border/60 pb-3">
+        <div>
+          <p className="font-mono text-[0.62rem] uppercase tracking-[0.14em] text-muted-foreground">
+            Live thread
+          </p>
+          <p className="mt-1 text-sm font-semibold text-foreground">AID: aid_•••9Q</p>
+        </div>
+        <div className="h-9 w-9 rounded-full border border-border/60 bg-card/80" />
+      </div>
+      <div className="space-y-3">
+        <div className="max-w-[78%] rounded-2xl rounded-bl-sm border border-border/65 bg-card px-4 py-3 text-sm leading-relaxed text-foreground">
+          Need a private room for tonight? Invite link expires fast.
+        </div>
+        <div className="ml-auto max-w-[78%] rounded-2xl rounded-br-sm bg-primary px-4 py-3 text-sm leading-relaxed text-primary-foreground">
+          Created. Request approved. Sending you the AID now.
+        </div>
+        <div className="max-w-[78%] rounded-2xl rounded-bl-sm border border-border/65 bg-card px-4 py-3 text-sm leading-relaxed text-foreground">
+          Perfect. See you inside anonimi.
+        </div>
+      </div>
+      <div className="mt-5 flex items-center gap-2">
+        <div className="h-3 w-3 rounded-full bg-primary/40" />
+        <div className="h-2 w-2 rounded-full bg-primary/25" />
+        <div className="h-2 w-2 rounded-full bg-primary/15" />
+        <span className="ml-auto text-[0.62rem] font-mono uppercase tracking-[0.12em] text-muted-foreground">
+          typing
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function FeaturesPage() {
   return (
     <div className="relative overflow-hidden pb-20 pt-24 md:pb-24">
@@ -126,9 +304,9 @@ export default function FeaturesPage() {
                 </ul>
               </div>
               <div className="w-full">
-                <div className="relative mx-auto flex aspect-square max-w-md items-center justify-center overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_16%_18%,rgba(44,106,130,0.22),transparent_42%),radial-gradient(circle_at_84%_82%,rgba(18,52,91,0.24),transparent_45%),linear-gradient(165deg,rgba(255,255,255,0.64),rgba(255,255,255,0.2))]">
-                  <div className="absolute inset-3 rounded-[1.2rem] border border-white/25" />
-                  <feature.icon className="relative z-10 w-24 h-24 text-foreground/50" />
+                <div className="relative mx-auto flex aspect-square max-w-md items-center justify-center overflow-hidden rounded-[2rem] border border-border/70 bg-card/75 shadow-soft">
+                  <div className="absolute inset-4 rounded-[1.3rem] border border-border/60 bg-background/80" />
+                  <FeatureMock kind={mockKinds[index]} />
                 </div>
               </div>
             </div>
