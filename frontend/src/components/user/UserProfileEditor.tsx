@@ -29,6 +29,7 @@ export default function UserProfileEditor({ pendingAvatar, onAvatarSaved }: User
   const [username, setUsername] = useState(user?.username ?? "");
   const [phone, setPhone] = useState(user?.phone ?? "");
   const canEditUsername = user?.usernameCanEdit ?? false;
+  const isSaving = isUpdatingProfile || isUpdatingAvatar;
 
   const trimmedUsername = username.trim();
   const trimmedPhone = phone.trim();
@@ -36,6 +37,7 @@ export default function UserProfileEditor({ pendingAvatar, onAvatarSaved }: User
     (trimmedUsername && trimmedUsername !== (user?.username ?? "")) ||
     trimmedPhone !== (user?.phone ?? "") ||
     !!pendingAvatar;
+  const canSave = hasChanges && !isSaving;
 
   async function handleSave() {
     const patch: Partial<Pick<AuthUser, "username" | "phone">> = {};
@@ -56,11 +58,6 @@ export default function UserProfileEditor({ pendingAvatar, onAvatarSaved }: User
     }
 
     if (trimmedPhone !== (user?.phone ?? "")) patch.phone = trimmedPhone || undefined;
-
-    if (Object.keys(patch).length === 0 && !pendingAvatar) {
-      toast.info("No changes to save.");
-      return;
-    }
 
     let savedProfile = false;
     let savedAvatar = false;
@@ -98,8 +95,6 @@ export default function UserProfileEditor({ pendingAvatar, onAvatarSaved }: User
       return;
     }
   }
-
-  const isSaving = isUpdatingProfile || isUpdatingAvatar;
 
   return (
     <div className="space-y-4">
@@ -154,8 +149,13 @@ export default function UserProfileEditor({ pendingAvatar, onAvatarSaved }: User
 
       <button
         onClick={handleSave}
-        disabled={isSaving}
-        className="w-full h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-50"
+        disabled={!canSave}
+        className={
+          "w-full h-10 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors " +
+          (canSave
+            ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
+            : "bg-muted text-muted-foreground cursor-not-allowed")
+        }
       >
         {isSaving ? (
           <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
@@ -164,10 +164,6 @@ export default function UserProfileEditor({ pendingAvatar, onAvatarSaved }: User
         )}
         {isSaving ? "Saving..." : "Save profile"}
       </button>
-
-      {!isSaving && !hasChanges && (
-        <p className="text-xs text-muted-foreground text-center">No unsaved changes.</p>
-      )}
 
       {!isSaving && !!pendingAvatar && (
         <p className="text-xs text-primary text-center">New profile photo selected. Click Save profile to apply.</p>
