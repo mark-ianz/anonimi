@@ -254,13 +254,19 @@ export default function MessageList({ conversation }: MessageListProps) {
           // Resolve sender info for group messages.
           let senderName: string | undefined;
           let senderImage: string | null = null;
+          let senderEchoId: string | undefined;
 
           if (conversation.type === "group") {
             if (message.senderId !== user?.id) {
               const senderMeta = groupMemberMetaById[message.senderId];
               senderName = senderMeta?.name ?? "User";
               senderImage = senderMeta?.profileImage ?? null;
+              senderEchoId = senderMeta?.echoId;
             }
+          } else if (conversation.type === "private" && message.senderId !== user?.id) {
+            senderName = conversation.participant?.nickname ?? conversation.participant?.username ?? "User";
+            senderImage = conversation.participant?.profileImage ?? null;
+            senderEchoId = conversation.participant?.echoId;
           }
 
           return (
@@ -287,6 +293,7 @@ export default function MessageList({ conversation }: MessageListProps) {
                 showAvatar={showAvatar}
                 senderName={senderName}
                 senderImage={senderImage}
+                senderEchoId={senderEchoId}
                 participantCount={participantCount}
                 conversationType={conversation.type}
                 readByUsersById={groupMemberMetaById}

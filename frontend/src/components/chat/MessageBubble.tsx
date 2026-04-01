@@ -8,7 +8,12 @@ import MessageActions from "./MessageActions";
 import ReadReceipt from "./ReadReceipt";
 import MediaPreview from "./MediaPreview";
 import UserAvatar from "@/components/shared/UserAvatar";
-import { useState } from "react";
+import { createPortal } from "react-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import api from "@/lib/api";
+import { MessageCircle, User } from "lucide-react";
 
 interface MessageBubbleProps {
   message: Message;
@@ -16,6 +21,7 @@ interface MessageBubbleProps {
   showAvatar?: boolean;
   senderName?: string;
   senderImage?: string | null;
+  senderEchoId?: string;
   participantCount?: number;
   conversationType?: "private" | "group";
   readByUsersById?: Record<string, { name: string; echoId: string }>;
@@ -29,6 +35,7 @@ export default function MessageBubble({
   showAvatar,
   senderName,
   senderImage,
+  senderEchoId,
   participantCount = 2,
   conversationType = "private",
   readByUsersById,
@@ -36,9 +43,15 @@ export default function MessageBubble({
   timestampBubblePosition = "single",
 }: MessageBubbleProps) {
   const { user } = useAuthStore();
+  const router = useRouter();
   const isMine = message.senderId === user?.id;
   const [showActions, setShowActions] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [avatarMenuPosition, setAvatarMenuPosition] = useState({ top: 0, left: 0 });
+  const avatarMenuRef = useRef<HTMLDivElement>(null);
+  const avatarTriggerRef = useRef<HTMLButtonElement>(null);
+  const canUsePortal = typeof document !== "undefined";
   const latestReadAt = (() => {
     const readers = (message.readBy ?? []).filter((readerId) => readerId !== user?.id);
     const readTimestamps = readers
@@ -74,6 +87,88 @@ export default function MessageBubble({
       : "left-[calc(100%+8px)] top-1/2 -translate-y-1/2")
     : "left-[calc(100%+8px)] top-1/2 -translate-y-1/2";
 
+  const updateAvatarMenuPosition = useCallback(() => {
+    const trigger = avatarTriggerRef.current;
+    if (!trigger) return;
+
+    const triggerRect = trigger.getBoundingClientRect();
+    const menuHeight = avatarMenuRef.current?.offsetHeight ?? 88;
+    const menuWidth = 160;
+    const gap = 8;
+
+    const spaceBelow = window.innerHeight - triggerRect.bottom;
+    const shouldOpenUp = spaceBelow < menuHeight + gap && triggerRect.top > menuHeight + gap;
+
+    const top = shouldOpenUp
+      ? Math.max(gap, triggerRect.top - menuHeight - gap)
+      : Math.min(window.innerHeight - menuHeight - gap, triggerRect.bottom + gap);
+
+    const left = Math.min(
+      Math.max(gap, triggerRect.left),
+      window.innerWidth - menuWidth - gap
+    );
+
+    setAvatarMenuPosition({ top, left });
+  }, []);
+
+  useEffect(() => {
+    if (!avatarMenuOpen) return;
+
+    updateAvatarMenuPosition();
+
+    const rafId = window.requestAnimationFrame(() => {
+      updateAvatarMenuPosition();
+    });
+
+    const handleOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const clickedInsideMenu = avatarMenuRef.current?.contains(target);
+      const clickedTrigger = avatarTriggerRef.current?.contains(target);
+      if (!clickedInsideMenu && !clickedTrigger) {
+        setAvatarMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setAvatarMenuOpen(false);
+      }
+    };
+
+    const handleViewportChange = () => {
+      updateAvatarMenuPosition();
+    };
+
+    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("keydown", handleEscape);
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange, true);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("keydown", handleEscape);
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleViewportChange, true);
+    };
+  }, [avatarMenuOpen, updateAvatarMenuPosition]);
+
+  async function handleSendMessage() {
+    if (!senderEchoId) return;
+    try {
+      const res = await api.post("/conversations", { participantEchoId: senderEchoId });
+      const conversationId = res.data?.data?.conversationId as string | undefined;
+      if (!conversationId) {
+        toast.error("Could not open conversation.");
+        return;
+      }
+      setAvatarMenuOpen(false);
+      router.push(`/chat/${conversationId}`);
+    } catch {
+      toast.error("Failed to open conversation.");
+    }
+  }
+
   if (message.type === "system") {
     return (
       <div className="flex justify-center py-2 px-4">
@@ -96,13 +191,64 @@ export default function MessageBubble({
       {/* Avatar */}
       <div className="w-8 shrink-0">
         {showAvatar && !isMine && (
-          <UserAvatar
-            imageUrl={senderImage}
-            name={senderName}
-            alt={senderName ?? "Sender"}
-            className="w-8 h-8"
-            textClassName="text-xs"
-          />
+          <>
+            <button
+              ref={avatarTriggerRef}
+              type="button"
+              onClick={() => {
+                if (!senderEchoId) return;
+                setAvatarMenuOpen((prev) => !prev);
+              }}
+              className={cn(
+                "rounded-full",
+                senderEchoId ? "cursor-pointer" : "cursor-default"
+              )}
+              aria-haspopup="menu"
+              aria-expanded={avatarMenuOpen}
+              aria-label="Sender actions"
+            >
+              <UserAvatar
+                imageUrl={senderImage}
+                name={senderName}
+                alt={senderName ?? "Sender"}
+                className="w-8 h-8"
+                textClassName="text-xs"
+              />
+            </button>
+
+            {canUsePortal && avatarMenuOpen && senderEchoId &&
+              createPortal(
+                <div
+                  ref={avatarMenuRef}
+                  className="fixed z-120 w-40 rounded-xl border border-border/60 bg-card/95 p-1 shadow-elevated backdrop-blur-sm animate-fade-in"
+                  style={{ top: avatarMenuPosition.top, left: avatarMenuPosition.left }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAvatarMenuOpen(false);
+                      router.push(`/user/${senderEchoId}`);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/70"
+                  >
+                    <User className="h-4 w-4" />
+                    View profile
+                  </button>
+
+                  {conversationType === "group" && (
+                    <button
+                      type="button"
+                      onClick={handleSendMessage}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/70"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      Send message
+                    </button>
+                  )}
+                </div>,
+                document.body
+              )}
+          </>
         )}
       </div>
 
