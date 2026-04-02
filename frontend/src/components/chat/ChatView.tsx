@@ -100,6 +100,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
 
   const handleEditStart = (message: { id: string; content: string | null }) => {
     setEditTarget({ id: message.id, content: message.content ?? "" });
+    setReplyTarget(null);
   };
 
   const handleEditCancel = () => {

@@ -205,6 +205,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         id: payload.messageId,
         createdAt: payload.timestamp,
         pending: false,
+        replyToId: payload.replyToId ?? tempMsg?.replyToId ?? null,
+        replyPreview: payload.replyPreview ?? tempMsg?.replyPreview ?? null,
       } as Message);
 
       // If this conversation is not yet in the sidebar list (new pending conversation),

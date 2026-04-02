@@ -72,6 +72,8 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
         messageId: result.message.id,
         conversationId: result.message.conversationId,
         timestamp: result.message.createdAt,
+        replyToId: result.message.replyToId ?? null,
+        replyPreview: result.message.replyPreview ?? null,
       });
 
       const deliveredRecipientIds = result.deliveredRecipientIds ?? recipientIds;

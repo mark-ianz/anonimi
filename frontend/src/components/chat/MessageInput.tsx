@@ -74,13 +74,23 @@ export default function MessageInput({
   const [stealthEnabled, setStealthEnabled] = useState(false);
   const [stealthDuration, setStealthDuration] = useState<StealthDuration>("5m");
 
+  const resolveReplyPreviewContent = (message: Message) => {
+    if (message.unsent) return "Message removed";
+    if (message.isStealth) return "[Stealth]";
+    if (message.type === "image") return "Photo";
+    if (message.type === "video") return "Video";
+    if (message.type === "audio") return "Audio";
+    if (message.type === "file") return message.fileName || "File";
+    return message.content || "Message";
+  };
+
   const replyPreview: ReplyPreview | null = replyTo
     ? {
         messageId: replyTo.id,
         senderId: replyTo.senderId ?? null,
         senderUsername: null,
         type: replyTo.type,
-        content: replyTo.content,
+        content: resolveReplyPreviewContent(replyTo),
         mediaUrl: replyTo.mediaUrl ?? null,
         fileName: replyTo.fileName ?? null,
         createdAt: replyTo.createdAt,
@@ -216,6 +226,9 @@ export default function MessageInput({
     editMessageId,
     editMessageAsync,
     onEditSaved,
+    replyTo,
+    replyPreview,
+    onCancelReply,
   ]);
 
   const handleKeyDown = useCallback(

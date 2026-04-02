@@ -41,6 +41,17 @@ export interface MessageAckPayload {
   messageId: string;
   conversationId: string;
   timestamp: string;
+  replyToId?: string | null;
+  replyPreview?: {
+    messageId: string;
+    senderId: string | null;
+    senderUsername?: string | null;
+    type: MessageType;
+    content: string | null;
+    mediaUrl?: string | null;
+    fileName?: string | null;
+    createdAt?: string;
+  } | null;
 }
 
 export interface MessageReceivePayload {
