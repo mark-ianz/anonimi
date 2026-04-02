@@ -35,6 +35,10 @@ export interface IConversation extends Document {
   _id: Types.ObjectId;
   type: "private" | "group";
   participants: Types.ObjectId[];
+  mutedUsers?: Array<{
+    userId: Types.ObjectId;
+    mutedUntil?: Date | null;
+  }>;
   lastMessage?: {
     content?: string;
     senderId: Types.ObjectId;
@@ -60,7 +64,7 @@ export interface IMessage extends Document {
   _id: Types.ObjectId;
   conversationId: Types.ObjectId;
   senderId: Types.ObjectId;
-  type: "text" | "image" | "file" | "system";
+  type: "text" | "image" | "video" | "audio" | "file" | "system";
   content?: string;
   isStealth?: boolean;
   stealthExpiresAt?: Date;
@@ -72,6 +76,17 @@ export interface IMessage extends Document {
   mediaUrl?: string;
   fileName?: string;
   fileSize?: number;
+  replyTo?: Types.ObjectId | null;
+  replyPreview?: {
+    messageId: Types.ObjectId;
+    senderId: Types.ObjectId;
+    senderUsername?: string | null;
+    type: string;
+    content?: string | null;
+    mediaUrl?: string | null;
+    fileName?: string | null;
+    createdAt?: Date;
+  };
   readBy: Types.ObjectId[];
   readByAt?: Map<string, Date>;
   reactions: Array<{

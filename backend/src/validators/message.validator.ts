@@ -20,9 +20,12 @@ export const searchMessagesSchema = z.object({
 export const sendMessageSchema = z.object({
   body: z.object({
     conversationId: z.string(),
-    type: z.enum(["text", "image", "file"]),
+    type: z.enum(["text", "image", "video", "audio", "file"]),
     content: z.string().trim().max(256).optional(),
     mediaUrl: z.string().optional(),
+    fileName: z.string().optional(),
+    fileSize: z.number().int().positive().optional(),
+    replyToId: z.string().optional(),
     stealthDuration: z
       .enum(["1m", "5m", "15m", "30m", "1h", "3h", "6h", "12h", "24h"])
       .optional(),
@@ -42,6 +45,17 @@ export const editMessageSchema = z.object({
   body: z.object({
     content: z.string().trim().min(1).max(256),
   }),
+});
+
+export const muteConversationSchema = z.object({
+  params: z.object({
+    conversationId: z.string(),
+  }),
+  body: z
+    .object({
+      durationMinutes: z.number().int().positive().max(43200).optional(),
+    })
+    .optional(),
 });
 
 export const addReactionSchema = z.object({

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Trash2, RotateCcw, MoreHorizontal, Pencil } from "lucide-react";
+import { Trash2, RotateCcw, MoreHorizontal, Pencil, Reply } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMessages } from "@/hooks/useMessages";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
@@ -13,6 +13,7 @@ interface MessageActionsProps {
   onDialogOpenChange?: (open: boolean) => void;
   canEdit?: boolean;
   onEdit?: () => void;
+  onReply?: () => void;
 }
 
 export default function MessageActions({
@@ -21,6 +22,7 @@ export default function MessageActions({
   onDialogOpenChange,
   canEdit = false,
   onEdit,
+  onReply,
 }: MessageActionsProps) {
   const [open, setOpen] = useState(false);
   const [confirmUnsend, setConfirmUnsend] = useState(false);
@@ -62,6 +64,16 @@ export default function MessageActions({
               isMine ? "right-0" : "left-0"
             )}
           >
+            <button
+              onClick={() => {
+                setOpen(false);
+                onReply?.();
+              }}
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+            >
+              <Reply className="w-4 h-4" />
+              Reply
+            </button>
             {canEdit && (
               <button
                 onClick={() => {

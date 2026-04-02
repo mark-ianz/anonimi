@@ -9,12 +9,13 @@ import * as chatService from "../services/chat.service";
 
 interface MessageSendPayload {
   conversationId: string;
-  type: "text" | "image" | "file";
+  type: "text" | "image" | "video" | "audio" | "file";
   content?: string;
   mediaUrl?: string;
   fileName?: string;
   fileSize?: number;
   stealthDuration?: "1m" | "5m" | "15m" | "30m" | "1h" | "3h" | "6h" | "12h" | "24h";
+  replyToId?: string;
   tempId: string;
 }
 
@@ -22,8 +23,8 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
   socket.data.activeConversationId = null;
 
   socket.on("message:send", async (payload: MessageSendPayload) => {
+    const { conversationId, type, content, mediaUrl, fileName, fileSize, stealthDuration, replyToId, tempId } = payload;
     try {
-      const { conversationId, type, content, mediaUrl, fileName, fileSize, stealthDuration, tempId } = payload;
       const userId = socket.data.user?.userId;
 
       if (!userId) {
@@ -62,7 +63,7 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
         mediaUrl,
         fileName,
         fileSize,
-        { suppressNotificationUserIds, stealthDuration }
+        { suppressNotificationUserIds, stealthDuration, replyToId }
       );
 
       // Acknowledge to sender
@@ -87,6 +88,8 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
           senderProfileImage: result.sender.profileImage,
           type: result.message.type,
           content: result.message.content,
+          replyToId: result.message.replyToId ?? null,
+          replyPreview: result.message.replyPreview ?? null,
           isStealth: result.message.isStealth,
           stealthExpiresAt: result.message.stealthExpiresAt,
           stealthExpiredAt: result.message.stealthExpiredAt,
@@ -103,7 +106,12 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
       const code =
         error.statusCode === 403 ? "PERMISSION_DENIED" :
         error.statusCode === 404 ? "NOT_FOUND" : "SERVER_ERROR";
-      socket.emit("error", { code, message: error.message ?? "Failed to send message" });
+      socket.emit("error", {
+        code,
+        message: error.message ?? "Failed to send message",
+        tempId,
+        conversationId,
+      });
     }
   });
 

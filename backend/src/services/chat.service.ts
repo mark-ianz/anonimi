@@ -83,6 +83,20 @@ const serializeEditHistory = (
     editedBy: entry.editedBy?.toString(),
   }));
 
+const serializeReplyPreview = (preview: any) => {
+  if (!preview) return null;
+  return {
+    messageId: preview.messageId?.toString?.() ?? preview.messageId,
+    senderId: preview.senderId?.toString?.() ?? null,
+    senderUsername: preview.senderUsername ?? null,
+    type: preview.type,
+    content: preview.content ?? null,
+    mediaUrl: preview.mediaUrl ?? null,
+    fileName: preview.fileName ?? null,
+    createdAt: preview.createdAt,
+  };
+};
+
 const STEALTH_DURATION_MS: Record<string, number> = {
   "1m": 60 * 1000,
   "5m": 5 * 60 * 1000,
@@ -144,6 +158,69 @@ const serializeStealth = (message: any) => {
     stealthExpiredAt: message.stealthExpiredAt ?? null,
     stealthContentLength: message.stealthContentLength ?? (content ? content.length : 0),
   };
+};
+
+const clampPreview = (value: string, maxLength: number = 120) => {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, maxLength).trimEnd()}...`;
+};
+
+const resolveReplyPreviewContent = (message: any, stealthContent: string | null) => {
+  if (message.unsent) return "Message removed";
+  if (message.isStealth) return "[Stealth]";
+  if (message.type === "image") return "Photo";
+  if (message.type === "video") return "Video";
+  if (message.type === "audio") return "Audio";
+  if (message.type === "file") return message.fileName || "File";
+  return stealthContent ?? message.content ?? "";
+};
+
+const buildReplyPreview = async (replyToId: string, conversationId: string) => {
+  const replyMessage = await Message.findById(replyToId).lean();
+  if (!replyMessage) {
+    throw new NotFoundError("Reply message not found");
+  }
+  if (replyMessage.conversationId.toString() !== conversationId) {
+    throw new ForbiddenError("Reply message does not belong to this conversation");
+  }
+
+  const replySender = replyMessage.senderId
+    ? await User.findById(replyMessage.senderId).select("username").lean()
+    : null;
+  const stealth = serializeStealth(replyMessage);
+  const previewText = resolveReplyPreviewContent(replyMessage, stealth.content);
+
+  return {
+    messageId: replyMessage._id,
+    senderId: replyMessage.senderId,
+    senderUsername: replySender?.username ?? null,
+    type: replyMessage.type,
+    content: previewText ? clampPreview(previewText) : null,
+    mediaUrl: replyMessage.mediaUrl ?? null,
+    fileName: replyMessage.fileName ?? null,
+    createdAt: replyMessage.createdAt,
+  };
+};
+
+const getConversationMuteUntil = (conversation: any, userId: string) => {
+  const entry = (conversation.mutedUsers ?? []).find(
+    (row: any) => row.userId?.toString?.() === userId
+  );
+  if (!entry) return null;
+  if (!entry.mutedUntil) return null;
+  const mutedUntil = new Date(entry.mutedUntil);
+  if (Number.isNaN(mutedUntil.getTime())) return null;
+  return mutedUntil;
+};
+
+const isConversationMuted = (conversation: any, userId: string) => {
+  const entry = (conversation.mutedUsers ?? []).find(
+    (row: any) => row.userId?.toString?.() === userId
+  );
+  if (!entry) return false;
+  if (!entry.mutedUntil) return true;
+  return new Date(entry.mutedUntil).getTime() > Date.now();
 };
 
 const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -368,12 +445,16 @@ export const getConversations = async (
           active: true,
         }).select("_id");
 
-        const unreadCount = await Message.countDocuments({
-          conversationId: conv._id,
-          senderId: { $ne: userObjectId },
-          readBy: { $ne: userObjectId },
-          deletedFor: { $ne: userObjectId },
-        });
+        const isMuted = isConversationMuted(conv, userId);
+        const mutedUntil = getConversationMuteUntil(conv, userId);
+        const unreadCount = isMuted
+          ? 0
+          : await Message.countDocuments({
+              conversationId: conv._id,
+              senderId: { $ne: userObjectId },
+              readBy: { $ne: userObjectId },
+              deletedFor: { $ne: userObjectId },
+            });
 
         const latestVisibleMessage = await Message.findOne({
           conversationId: conv._id,
@@ -430,6 +511,8 @@ export const getConversations = async (
               }
             : null,
           unreadCount,
+          isMuted,
+          mutedUntil,
           requestStatus: conv.requestStatus ?? null,
           updatedAt: conv.updatedAt,
         };
@@ -452,12 +535,16 @@ export const getConversations = async (
           (m: any) => m.userId?.profileImage ?? null
         );
 
-        const unreadCount = await Message.countDocuments({
-          conversationId: conv._id,
-          senderId: { $ne: userObjectId },
-          readBy: { $ne: userObjectId },
-          deletedFor: { $ne: userObjectId },
-        });
+        const isMuted = isConversationMuted(conv, userId);
+        const mutedUntil = getConversationMuteUntil(conv, userId);
+        const unreadCount = isMuted
+          ? 0
+          : await Message.countDocuments({
+              conversationId: conv._id,
+              senderId: { $ne: userObjectId },
+              readBy: { $ne: userObjectId },
+              deletedFor: { $ne: userObjectId },
+            });
 
         const latestVisibleMessage = await Message.findOne({
           conversationId: conv._id,
@@ -493,6 +580,8 @@ export const getConversations = async (
               }
             : null,
           unreadCount,
+          isMuted,
+          mutedUntil,
           requestStatus: null,
           updatedAt: conv.updatedAt,
         };
@@ -589,6 +678,8 @@ export const getConversation = async (
       id: conversation._id.toString(),
       type: conversation.type,
       isArchived: !!archivedRow,
+      isMuted: isConversationMuted(conversation, userId),
+      mutedUntil: getConversationMuteUntil(conversation, userId),
       participant,
       requestStatus: conversation.requestStatus ?? null,
       requestId: messageRequest?._id.toString() ?? null,
@@ -626,6 +717,8 @@ export const getConversation = async (
       id: conversation._id.toString(),
       type: conversation.type,
       isArchived: !!archivedRow,
+      isMuted: isConversationMuted(conversation, userId),
+      mutedUntil: getConversationMuteUntil(conversation, userId),
       group: {
         id: group?._id.toString(),
         name: group?.name,
@@ -699,6 +792,8 @@ export const getMessages = async (
         mediaUrl: m.mediaUrl,
         fileName: m.fileName,
         fileSize: m.fileSize,
+        replyToId: m.replyTo?.toString() ?? null,
+        replyPreview: serializeReplyPreview(m.replyPreview),
         readBy: m.readBy.map((r: Types.ObjectId) => r.toString()),
         readByAt: serializeReadByAt(m.readByAt),
         reactions: serializeReactions(m.reactions, m.unsent),
@@ -938,6 +1033,7 @@ export const sendMessage = async (
   options?: {
     suppressNotificationUserIds?: string[];
     stealthDuration?: string;
+    replyToId?: string;
   }
 ) => {
   const conversation = await Conversation.findById(conversationId);
@@ -960,6 +1056,9 @@ export const sendMessage = async (
   const stealthDurationMs = getStealthDurationMs(options?.stealthDuration);
   const isStealth = !!stealthDurationMs;
   const trimmedContent = (content ?? "").trim();
+  const replyPreview = options?.replyToId
+    ? await buildReplyPreview(options.replyToId, conversation._id.toString())
+    : null;
 
   if (isStealth) {
     if (type !== "text") {
@@ -1114,6 +1213,8 @@ export const sendMessage = async (
       mediaUrl,
       fileName,
       fileSize,
+      replyTo: replyPreview?.messageId,
+      replyPreview: replyPreview ?? undefined,
       readBy: [new Types.ObjectId(senderId)],
       readByAt: { [senderId]: new Date() },
       deletedFor: isShadowDelivery ? [recipientId] : [],
@@ -1139,12 +1240,16 @@ export const sendMessage = async (
       conversation._id.toString(),
       recipientIds
     );
+    const mutedRecipientIds = recipientIds.filter((recipientId) =>
+      isConversationMuted(conversation, recipientId)
+    );
     const deliveredRecipientIds = isShadowDelivery
       ? []
       : recipientIds;
     const suppressedRecipients = new Set([
       ...(options?.suppressNotificationUserIds ?? []),
       ...Array.from(archivedRecipientIds),
+      ...mutedRecipientIds,
     ]);
 
     for (const recipientIdStr of deliveredRecipientIds) {
@@ -1181,6 +1286,8 @@ export const sendMessage = async (
         mediaUrl: message.mediaUrl,
         fileName: message.fileName,
         fileSize: message.fileSize,
+        replyToId: message.replyTo?.toString() ?? null,
+        replyPreview: serializeReplyPreview(message.replyPreview),
         readBy: message.readBy.map((r: Types.ObjectId) => r.toString()),
         readByAt: serializeReadByAt(message.readByAt),
         reactions: serializeReactions(message.reactions, message.unsent),
@@ -1196,15 +1303,34 @@ export const sendMessage = async (
         profileImage: sender?.profileImage,
       },
       deliveredRecipientIds,
-      suppressedUnreadRecipientIds: Array.from(archivedRecipientIds),
+      suppressedUnreadRecipientIds: Array.from(
+        new Set([...Array.from(archivedRecipientIds), ...mutedRecipientIds])
+      ),
     };
   }
 
   const groupForConversation = await Group.findOne({ conversationId: conversation._id }).select(
-    "disbandedAt image name"
+    "disbandedAt image name _id"
   );
   if (groupForConversation?.disbandedAt) {
     throw new ForbiddenError("This group has been disbanded. Messaging is disabled.");
+  }
+
+  if (groupForConversation?._id) {
+    const membership = await GroupMember.findOne({
+      groupId: groupForConversation._id,
+      userId: new Types.ObjectId(senderId),
+    }).select("mutedUntil");
+
+    if (!membership) {
+      throw new ForbiddenError("Not a member of this group");
+    }
+
+    if (membership?.mutedUntil && new Date(membership.mutedUntil).getTime() > Date.now()) {
+      throw new ForbiddenError(
+        `You are muted in this group until ${new Date(membership.mutedUntil).toLocaleString()}.`
+      );
+    }
   }
 
   const stealthExpiresAt = isStealth ? new Date(Date.now() + stealthDurationMs!) : undefined;
@@ -1224,6 +1350,8 @@ export const sendMessage = async (
     mediaUrl,
     fileName,
     fileSize,
+    replyTo: replyPreview?.messageId,
+    replyPreview: replyPreview ?? undefined,
     readBy: [new Types.ObjectId(senderId)],
     readByAt: { [senderId]: new Date() },
     unsent: false,
@@ -1238,6 +1366,11 @@ export const sendMessage = async (
   conversation.updatedAt = new Date();
   await conversation.save();
 
+  emitToUser(userId, "conversation:muted", {
+    conversationId: conversation._id.toString(),
+    mutedUntil,
+  });
+
   const sender = await User.findById(senderId).select("anonimiId username profileImage");
 
   const recipientIds = conversation.participants
@@ -1247,9 +1380,13 @@ export const sendMessage = async (
     conversation._id.toString(),
     recipientIds
   );
+  const mutedRecipientIds = recipientIds.filter((recipientId) =>
+    isConversationMuted(conversation, recipientId)
+  );
   const suppressedRecipients = new Set([
     ...(options?.suppressNotificationUserIds ?? []),
     ...Array.from(archivedRecipientIds),
+    ...mutedRecipientIds,
   ]);
 
   for (const recipientIdStr of recipientIds) {
@@ -1288,6 +1425,8 @@ export const sendMessage = async (
       mediaUrl: message.mediaUrl,
       fileName: message.fileName,
       fileSize: message.fileSize,
+      replyToId: message.replyTo?.toString() ?? null,
+      replyPreview: serializeReplyPreview(message.replyPreview),
       readBy: message.readBy.map((r: Types.ObjectId) => r.toString()),
       readByAt: serializeReadByAt(message.readByAt),
       reactions: serializeReactions(message.reactions, message.unsent),
@@ -1303,7 +1442,9 @@ export const sendMessage = async (
       profileImage: sender?.profileImage,
     },
     deliveredRecipientIds: recipientIds,
-    suppressedUnreadRecipientIds: Array.from(archivedRecipientIds),
+    suppressedUnreadRecipientIds: Array.from(
+      new Set([...Array.from(archivedRecipientIds), ...mutedRecipientIds])
+    ),
   };
 
 };
@@ -1367,6 +1508,84 @@ export const unarchiveConversation = async (
   return {
     conversationId: conversation._id.toString(),
     unarchived: true,
+  };
+};
+
+export const muteConversation = async (
+  conversationId: string,
+  userId: string,
+  durationMinutes?: number
+) => {
+  const conversation = await Conversation.findById(conversationId).select(
+    "participants mutedUsers"
+  );
+  if (!conversation) {
+    throw new NotFoundError("Conversation not found");
+  }
+
+  const isParticipant = conversation.participants.some(
+    (participant) => participant.toString() === userId
+  );
+  if (!isParticipant) {
+    throw new ForbiddenError("Not a participant in this conversation");
+  }
+
+  const mutedUntil =
+    typeof durationMinutes === "number" && durationMinutes > 0
+      ? new Date(Date.now() + durationMinutes * 60 * 1000)
+      : null;
+
+  const existing = (conversation.mutedUsers ?? []).find(
+    (entry: any) => entry.userId?.toString?.() === userId
+  );
+
+  if (existing) {
+    existing.mutedUntil = mutedUntil ?? undefined;
+  } else {
+    conversation.mutedUsers = [
+      ...(conversation.mutedUsers ?? []),
+      { userId: new Types.ObjectId(userId), mutedUntil },
+    ];
+  }
+
+  await conversation.save();
+
+  emitToUser(userId, "conversation:unmuted", {
+    conversationId: conversation._id.toString(),
+  });
+
+  return {
+    conversationId: conversation._id.toString(),
+    mutedUntil,
+  };
+};
+
+export const unmuteConversation = async (
+  conversationId: string,
+  userId: string
+) => {
+  const conversation = await Conversation.findById(conversationId).select(
+    "participants mutedUsers"
+  );
+  if (!conversation) {
+    throw new NotFoundError("Conversation not found");
+  }
+
+  const isParticipant = conversation.participants.some(
+    (participant) => participant.toString() === userId
+  );
+  if (!isParticipant) {
+    throw new ForbiddenError("Not a participant in this conversation");
+  }
+
+  conversation.mutedUsers = (conversation.mutedUsers ?? []).filter(
+    (entry: any) => entry.userId?.toString?.() !== userId
+  );
+  await conversation.save();
+
+  return {
+    conversationId: conversation._id.toString(),
+    muted: false,
   };
 };
 

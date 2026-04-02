@@ -17,6 +17,17 @@ export interface MessageEditHistoryEntry {
   editedBy: string;
 }
 
+export interface ReplyPreview {
+  messageId: string;
+  senderId: string | null;
+  senderUsername?: string | null;
+  type: MessageType;
+  content: string | null;
+  mediaUrl?: string | null;
+  fileName?: string | null;
+  createdAt?: string;
+}
+
 export interface Message {
   id: string;
   conversationId: string;
@@ -43,6 +54,8 @@ export interface Message {
   tempId?: string;
   pending?: boolean;
   failed?: boolean;
+  replyToId?: string | null;
+  replyPreview?: ReplyPreview | null;
 }
 
 export interface SendMessagePayload {
@@ -52,6 +65,7 @@ export interface SendMessagePayload {
   mediaUrl?: string | null;
   fileName?: string | null;
   fileSize?: number | null;
+  replyToId?: string | null;
   stealthDuration?: "1m" | "5m" | "15m" | "30m" | "1h" | "3h" | "6h" | "12h" | "24h";
   tempId: string;
 }

@@ -18,6 +18,17 @@ const messageSchema = new Schema<IMessage>(
     mediaUrl: { type: String },
     fileName: { type: String },
     fileSize: { type: Number },
+    replyTo: { type: Schema.Types.ObjectId, ref: "Message" },
+    replyPreview: {
+      messageId: { type: Schema.Types.ObjectId, ref: "Message" },
+      senderId: { type: Schema.Types.ObjectId, ref: "User" },
+      senderUsername: { type: String },
+      type: { type: String, enum: MessageType },
+      content: { type: String },
+      mediaUrl: { type: String },
+      fileName: { type: String },
+      createdAt: { type: Date },
+    },
     readBy: [{ type: Schema.Types.ObjectId, ref: "User" }],
     readByAt: { type: Map, of: Date, default: {} },
     reactions: [

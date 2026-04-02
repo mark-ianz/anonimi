@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { ArrowLeft, MoreVertical, Phone, Video, UserPlus, Check, X, Clock, User, ShieldBan, Flag, LogOut, Settings, Users, Archive, BellOff, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { usePresence } from "@/hooks/usePresence";
@@ -14,6 +14,8 @@ import { useAuthStore } from "@/stores/authStore";
 import { getChatSocket } from "@/lib/socket";
 import api from "@/lib/api";
 import type { Conversation } from "@/types/conversation";
+import type { Message } from "@/types/message";
+import type { GroupMember } from "@/types/group";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import ConnectionStatus from "@/components/shared/ConnectionStatus";
@@ -47,10 +49,12 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
   const menuRef = useRef<HTMLDivElement>(null);
   const [editTarget, setEditTarget] = useState<{ id: string; content: string } | null>(null);
   const [tempGateOpen, setTempGateOpen] = useState(false);
+  const [replyTarget, setReplyTarget] = useState<Message | null>(null);
 
   const isGroup = conversation.type === "group";
   const isGroupDisbanded = isGroup && !!conversation.group?.disbandedAt;
   const participantId = conversation.participant?.id;
+  const groupId = conversation.group?.id ?? null;
   const isTempParticipant = !isGroup && !!conversation.participant?.isTemporary;
   const isDeletedParticipant = !isGroup && !!conversation.participant?.isDeleted;
   const isTempUser = !!currentUser?.isTemporary;
@@ -74,9 +78,25 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
   const isRecipient = isPending && !isSender;
   const isBlockedByMe = !isGroup && !!conversation.participant?.blockedByMe;
   const isArchived = !!conversation.isArchived;
+  const isConversationMuted = !!conversation.isMuted && (!conversation.mutedUntil || new Date(conversation.mutedUntil).getTime() > Date.now());
   const myBlockId = conversation.participant?.blockId ?? null;
   // Recipient can't type until they accept; sender can always type
   const isInputDisabled = isRecipient || isBlockedByMe || isGroupDisbanded || isDeletedParticipant;
+
+  const { data: groupMembers = [] } = useQuery({
+    queryKey: ["groups", groupId, "members"],
+    queryFn: async () => {
+      const res = await api.get(`/groups/${groupId}/members`);
+      return res.data.data as GroupMember[];
+    },
+    enabled: !!groupId,
+    staleTime: 1000 * 30,
+  });
+
+  const currentMember = groupMembers.find((member) => member.userId === currentUser?.id);
+  const groupMutedUntil = currentMember?.mutedUntil ? new Date(currentMember.mutedUntil) : null;
+  const isGroupMuted = !!groupMutedUntil && groupMutedUntil.getTime() > Date.now();
+  const isInputDisabledWithMute = isInputDisabled || isGroupMuted;
 
   const handleEditStart = (message: { id: string; content: string | null }) => {
     setEditTarget({ id: message.id, content: message.content ?? "" });
@@ -126,6 +146,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
 
   useEffect(() => {
     setEditTarget(null);
+    setReplyTarget(null);
   }, [conversation.id]);
 
   // Listen for message-request:accepted event (shown to the sender when recipient accepts)
@@ -288,6 +309,47 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
       router.push("/chat");
     },
     onError: () => toast.error("Failed to delete conversation."),
+  });
+
+  const muteConversationMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.post(`/conversations/${conversation.id}/mute`, {});
+      return res.data.data as { mutedUntil?: string | null };
+    },
+    onSuccess: (data) => {
+      const mutedUntil = data?.mutedUntil ?? null;
+      qc.setQueryData(["conversation", conversation.id], (old: Conversation | undefined) =>
+        old ? { ...old, isMuted: true, mutedUntil } : old
+      );
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+      qc.invalidateQueries({ queryKey: ["conversations", "active"] });
+      qc.invalidateQueries({ queryKey: ["conversations", "archived"] });
+      setConversations(conversations.map((conv) =>
+        conv.id === conversation.id ? { ...conv, isMuted: true, mutedUntil } : conv
+      ));
+      clearUnread(conversation.id);
+      toast.success("Conversation muted.");
+    },
+    onError: () => toast.error("Failed to mute conversation."),
+  });
+
+  const unmuteConversationMutation = useMutation({
+    mutationFn: async () => {
+      await api.delete(`/conversations/${conversation.id}/mute`);
+    },
+    onSuccess: () => {
+      qc.setQueryData(["conversation", conversation.id], (old: Conversation | undefined) =>
+        old ? { ...old, isMuted: false, mutedUntil: null } : old
+      );
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+      qc.invalidateQueries({ queryKey: ["conversations", "active"] });
+      qc.invalidateQueries({ queryKey: ["conversations", "archived"] });
+      setConversations(conversations.map((conv) =>
+        conv.id === conversation.id ? { ...conv, isMuted: false, mutedUntil: null } : conv
+      ));
+      toast.success("Conversation unmuted.");
+    },
+    onError: () => toast.error("Failed to unmute conversation."),
   });
 
   const handleMessageSent = () => {
@@ -484,12 +546,16 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
                 <button
                   onClick={() => {
                     setMenuOpen(false);
-                    toast.info("Mute is coming soon.");
+                    if (isConversationMuted) {
+                      unmuteConversationMutation.mutate();
+                    } else {
+                      muteConversationMutation.mutate();
+                    }
                   }}
                   className="flex items-center gap-2.5 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
                 >
                   <BellOff className="w-4 h-4 text-muted-foreground shrink-0" />
-                  Mute
+                  {isConversationMuted ? "Unmute" : "Mute"}
                 </button>
 
                 {!isGroup && (
@@ -616,6 +682,15 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
           </div>
         </div>
       </header>
+
+      {isGroupMuted && (
+        <div className="mx-4 mt-3 rounded-xl border border-destructive/35 bg-destructive/10 px-4 py-3 shrink-0">
+          <p className="text-sm font-medium text-foreground">You are muted in this group</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            You cannot send messages until {groupMutedUntil?.toLocaleString() ?? "unmuted"}.
+          </p>
+        </div>
+      )}
 
       {!isGroup && isTempParticipant && !isDeletedParticipant && (
         <div className="mx-4 mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 shrink-0">
@@ -789,18 +864,24 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
       )}
 
       {/* Message list */}
-      <MessageList conversation={conversation} onEditStart={handleEditStart} />
+      <MessageList
+        conversation={conversation}
+        onEditStart={handleEditStart}
+        onReplyStart={(message) => setReplyTarget(message)}
+      />
 
       {/* Input */}
       <div className="mt-4">
         <MessageInput
           conversationId={conversation.id}
-          disabled={isInputDisabled}
+          disabled={isInputDisabledWithMute}
           onMessageSent={handleMessageSent}
           editMessageId={editTarget?.id ?? null}
           editContent={editTarget?.content ?? ""}
           onCancelEdit={handleEditCancel}
           onEditSaved={handleEditSaved}
+          replyTo={replyTarget}
+          onCancelReply={() => setReplyTarget(null)}
           placeholder={
             isBlockedByMe
               ? "Unblock this user to send messages..."
@@ -810,6 +891,8 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
               ? "This group has been disbanded..."
               : isRecipient
               ? "Accept the request to reply..."
+              : isGroupMuted
+              ? "You are muted in this group..."
               : "Message..."
           }
         />

@@ -68,6 +68,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     updateMessage,
     updateConversationLastMessage,
     incrementUnread,
+    setUnreadCount,
     unreadCounts,
   } = useChatStore();
   const { setPresence } = usePresenceStore();
@@ -223,6 +224,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         senderId: payload.senderId,
         type: payload.type,
         content: payload.content,
+        replyToId: payload.replyToId ?? null,
+        replyPreview: payload.replyPreview ?? null,
         isStealth: payload.isStealth ?? false,
         stealthExpiresAt: payload.stealthExpiresAt ?? null,
         stealthExpiredAt: payload.stealthExpiredAt ?? null,
@@ -519,6 +522,18 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       });
     });
 
+    socket.on("error", (payload: { message?: string; tempId?: string; conversationId?: string }) => {
+      if (payload?.tempId && payload?.conversationId) {
+        updateMessage(payload.conversationId, payload.tempId, {
+          failed: true,
+          pending: false,
+        });
+      }
+      if (payload?.message) {
+        toast.error(payload.message);
+      }
+    });
+
     const applyReactionUpdate = (
       conversationId: string,
       messageId: string,
@@ -675,6 +690,16 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       qc.invalidateQueries({ queryKey: ["conversation", payload.conversationId] });
     });
 
+    socket.on("group:member-muted", (payload: { groupId: string; userId: string }) => {
+      qc.invalidateQueries({ queryKey: ["groups", payload.groupId, "members"] });
+      qc.invalidateQueries({ queryKey: ["conversation"] });
+    });
+
+    socket.on("group:member-unmuted", (payload: { groupId: string; userId: string }) => {
+      qc.invalidateQueries({ queryKey: ["groups", payload.groupId, "members"] });
+      qc.invalidateQueries({ queryKey: ["conversation"] });
+    });
+
     socket.on("message-request:new", (_payload: MessageRequestNewPayload) => {
       qc.invalidateQueries({ queryKey: ["message-requests"] });
       qc.invalidateQueries({ queryKey: ["conversations"] });
@@ -739,6 +764,31 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
+    socket.on("conversation:muted", (payload: { conversationId: string; mutedUntil?: string | null }) => {
+      setUnreadCount(payload.conversationId, 0);
+      useChatStore.setState((state) => ({
+        conversations: state.conversations.map((conv) =>
+          conv.id === payload.conversationId
+            ? { ...conv, isMuted: true, mutedUntil: payload.mutedUntil ?? null }
+            : conv
+        ),
+      }));
+      qc.invalidateQueries({ queryKey: ["conversation", payload.conversationId] });
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+    });
+
+    socket.on("conversation:unmuted", (payload: { conversationId: string }) => {
+      useChatStore.setState((state) => ({
+        conversations: state.conversations.map((conv) =>
+          conv.id === payload.conversationId
+            ? { ...conv, isMuted: false, mutedUntil: null }
+            : conv
+        ),
+      }));
+      qc.invalidateQueries({ queryKey: ["conversation", payload.conversationId] });
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+    });
+
     socket.on("support:ticket:new", (_payload: SupportTicketEventPayload) => {
       qc.invalidateQueries({ queryKey: ["support-overview"] });
     });
@@ -779,15 +829,20 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       socket.off("message:reaction:add");
       socket.off("message:reaction:remove");
       socket.off("message:read");
+      socket.off("error");
       socket.off("typing:update");
       socket.off("presence:update");
       socket.off("contact:request");
       socket.off("contact:request-cancelled");
       socket.off("contact:accepted");
       socket.off("contact:nickname-updated");
+      socket.off("group:member-muted");
+      socket.off("group:member-unmuted");
       socket.off("message-request:new");
       socket.off("message-request:accepted");
       socket.off("notification:new");
+      socket.off("conversation:muted");
+      socket.off("conversation:unmuted");
       socket.off("support:ticket:new");
       socket.off("support:ticket:updated");
       socket.off("support:message:new");

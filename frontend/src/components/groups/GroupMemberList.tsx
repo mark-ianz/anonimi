@@ -99,7 +99,7 @@ export default function GroupMemberList({ groupId, members: initialMembers, grou
             currentUserId={user?.id ?? ""}
             onRemove={(userId) => removeMember(userId)}
             onChangeRole={(userId, role) => changeRole({ userId, role })}
-            onMute={(userId) => muteMember({ userId, durationMinutes: 60 })}
+            onMute={(userId, durationMinutes) => muteMember({ userId, durationMinutes })}
             onUnmute={(userId) => unmuteMember(userId)}
             onTransferOwnership={(userId) => transferOwnership(userId)}
             onSendMessage={handleSendMessage}

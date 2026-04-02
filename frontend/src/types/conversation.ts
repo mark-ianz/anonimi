@@ -38,6 +38,8 @@ export interface Conversation {
   id: string;
   type: ConversationType;
   isArchived?: boolean;
+  isMuted?: boolean;
+  mutedUntil?: string | null;
   participant?: ConversationParticipant;
   group?: ConversationGroup;
   lastMessage: LastMessage | null;

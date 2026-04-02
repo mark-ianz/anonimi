@@ -9,7 +9,7 @@ import { useMediaUpload } from "@/hooks/useMediaUpload";
 import { useChatStore } from "@/stores/chatStore";
 import { ALLOWED_IMAGE_TYPES } from "@/lib/constants";
 import { FilePreview } from "@/components/shared/FileUpload";
-import type { MessageType } from "@/types/message";
+import type { Message, MessageType, ReplyPreview } from "@/types/message";
 import type { UploadSource } from "@/lib/uploadPolicy";
 
 const STEALTH_DURATIONS = [
@@ -34,6 +34,8 @@ interface MessageInputProps {
   editContent?: string;
   onCancelEdit?: () => void;
   onEditSaved?: () => void;
+  replyTo?: Message | null;
+  onCancelReply?: () => void;
 }
 
 const MAX_MESSAGE_LENGTH = 256;
@@ -47,6 +49,8 @@ export default function MessageInput({
   editContent = "",
   onCancelEdit,
   onEditSaved,
+  replyTo = null,
+  onCancelReply,
 }: MessageInputProps) {
   const { sendMessage, editMessageAsync, isEditingMessage } = useMessages(conversationId);
   const { onInputChange, onBlur } = useTyping(conversationId);
@@ -62,6 +66,19 @@ export default function MessageInput({
   const [pendingSource, setPendingSource] = useState<UploadSource>("file");
   const [stealthEnabled, setStealthEnabled] = useState(false);
   const [stealthDuration, setStealthDuration] = useState<StealthDuration>("5m");
+
+  const replyPreview: ReplyPreview | null = replyTo
+    ? {
+        messageId: replyTo.id,
+        senderId: replyTo.senderId ?? null,
+        senderUsername: null,
+        type: replyTo.type,
+        content: replyTo.content,
+        mediaUrl: replyTo.mediaUrl ?? null,
+        fileName: replyTo.fileName ?? null,
+        createdAt: replyTo.createdAt,
+      }
+    : null;
 
   useEffect(() => {
     if (!editMessageId) {
@@ -168,10 +185,13 @@ export default function MessageInput({
       mediaUrl,
       fileName,
       fileSize,
+      replyToId: replyTo?.id ?? null,
+      replyPreview,
       stealthDuration: stealthEnabled ? stealthDuration : undefined,
     });
 
     onMessageSent?.();
+    onCancelReply?.();
 
     setText("");
     onBlur();
@@ -205,6 +225,34 @@ export default function MessageInput({
 
   return (
     <div className="border-t border-border/50 p-3 bg-background">
+      {replyTo && (
+        <div className="mb-2 flex items-center justify-between rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              Replying
+            </p>
+            <p className="truncate text-sm text-foreground">
+              {replyTo.type === "image"
+                ? "Photo"
+                : replyTo.type === "video"
+                ? "Video"
+                : replyTo.type === "audio"
+                ? "Audio"
+                : replyTo.type === "file"
+                ? replyTo.fileName || "File"
+                : replyTo.content || "Message"}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onCancelReply?.()}
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-foreground hover:bg-muted"
+          >
+            <X className="h-3 w-3" />
+            Cancel
+          </button>
+        </div>
+      )}
       {editMessageId && (
         <div className="mb-2 flex items-center justify-between rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
           <span>Editing message</span>

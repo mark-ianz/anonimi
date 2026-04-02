@@ -14,7 +14,7 @@ interface GroupMemberItemProps {
   currentUserId: string;
   onRemove?: (userId: string) => void;
   onChangeRole?: (userId: string, role: GroupRole) => void;
-  onMute?: (userId: string) => void;
+  onMute?: (userId: string, durationMinutes: number) => void;
   onUnmute?: (userId: string) => void;
   onTransferOwnership?: (userId: string) => void;
   onSendMessage?: (anonimiId: string) => void;
@@ -60,6 +60,8 @@ export default function GroupMemberItem({
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [showNicknameForm, setShowNicknameForm] = useState(false);
   const [nicknameValue, setNicknameValue] = useState(member.nickname ?? "");
+  const [showMuteDialog, setShowMuteDialog] = useState(false);
+  const [muteDuration, setMuteDuration] = useState(60);
 
   const isSelf = member.userId === currentUserId;
   const isOwner = currentUserRole === "owner";
@@ -73,6 +75,7 @@ export default function GroupMemberItem({
   const canShowAdminActions = canManage;
   
   const isMuted = member.mutedUntil && new Date(member.mutedUntil) > new Date();
+  const muteOptions = [15, 60, 240, 1440, 10080];
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -228,11 +231,11 @@ export default function GroupMemberItem({
                       </button>
                     ) : (
                       <button
-                        onClick={() => { onMute?.(member.userId); setMenuOpen(false); }}
+                        onClick={() => { setMenuOpen(false); setShowMuteDialog(true); }}
                         className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
                       >
                         <VolumeX className="w-4 h-4" />
-                        Mute (1 hour)
+                        Mute
                       </button>
                     )}
                   </>
@@ -250,6 +253,55 @@ export default function GroupMemberItem({
             )}
         </div>
       </div>
+
+      {showMuteDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowMuteDialog(false)}
+          />
+          <div className="relative w-full max-w-sm rounded-2xl border border-border/70 bg-card p-5 shadow-elevated space-y-4">
+            <h3 className="text-base font-semibold">Mute {member.nickname ?? member.username}</h3>
+            <p className="text-sm text-muted-foreground">
+              Choose how long this member should be muted.
+            </p>
+            <select
+              value={muteDuration}
+              onChange={(event) => setMuteDuration(Number(event.target.value))}
+              className="w-full h-10 rounded-xl border border-border/60 bg-background px-3 text-sm"
+            >
+              {muteOptions.map((minutes) => (
+                <option key={minutes} value={minutes}>
+                  {minutes >= 1440
+                    ? `${minutes / 1440} day${minutes / 1440 === 1 ? "" : "s"}`
+                    : minutes >= 60
+                    ? `${minutes / 60} hour${minutes / 60 === 1 ? "" : "s"}`
+                    : `${minutes} min`}
+                </option>
+              ))}
+            </select>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowMuteDialog(false)}
+                className="flex-1 h-10 rounded-xl border border-border/70 text-sm font-medium hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onMute?.(member.userId, muteDuration);
+                  setShowMuteDialog(false);
+                }}
+                className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+              >
+                Mute
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ConfirmDialog
         open={confirmRemove}

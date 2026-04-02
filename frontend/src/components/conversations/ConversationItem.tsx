@@ -68,6 +68,7 @@ export default function ConversationItem({
   const participantId = conversation.participant?.id;
   const isTempParticipant = !isGroup && !!conversation.participant?.isTemporary;
   const isDeletedParticipant = !isGroup && !!conversation.participant?.isDeleted;
+  const isConversationMuted = !!conversation.isMuted && (!conversation.mutedUntil || new Date(conversation.mutedUntil).getTime() > Date.now());
   const { status: presenceStatus } = usePresence(
     isGroup ? null : participantId,
     conversation.participant?.onlineStatus ?? "offline"
@@ -158,6 +159,49 @@ export default function ConversationItem({
     onError: () => toast.error("Failed to unarchive conversation."),
   });
 
+  const muteConversationMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.post(`/conversations/${conversation.id}/mute`, {});
+      return res.data.data as { mutedUntil?: string | null };
+    },
+    onSuccess: (data) => {
+      const mutedUntil = data?.mutedUntil ?? null;
+      qc.invalidateQueries({ queryKey: ["conversation", conversation.id] });
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+      qc.invalidateQueries({ queryKey: ["conversations", "active"] });
+      qc.invalidateQueries({ queryKey: ["conversations", "archived"] });
+      clearUnread(conversation.id);
+      useChatStore.setState((state) => ({
+        conversations: state.conversations.map((conv) =>
+          conv.id === conversation.id ? { ...conv, isMuted: true, mutedUntil } : conv
+        ),
+      }));
+      toast.success("Conversation muted.");
+      setMenuOpen(false);
+    },
+    onError: () => toast.error("Failed to mute conversation."),
+  });
+
+  const unmuteConversationMutation = useMutation({
+    mutationFn: async () => {
+      await api.delete(`/conversations/${conversation.id}/mute`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["conversation", conversation.id] });
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+      qc.invalidateQueries({ queryKey: ["conversations", "active"] });
+      qc.invalidateQueries({ queryKey: ["conversations", "archived"] });
+      useChatStore.setState((state) => ({
+        conversations: state.conversations.map((conv) =>
+          conv.id === conversation.id ? { ...conv, isMuted: false, mutedUntil: null } : conv
+        ),
+      }));
+      toast.success("Conversation unmuted.");
+      setMenuOpen(false);
+    },
+    onError: () => toast.error("Failed to unmute conversation."),
+  });
+
   const deleteConversationMutation = useMutation({
     mutationFn: async () => {
       await api.delete(`/conversations/${conversation.id}`);
@@ -178,6 +222,20 @@ export default function ConversationItem({
       qc.invalidateQueries({ queryKey: ["conversations", "archived"] });
       qc.invalidateQueries({ queryKey: ["conversation", conversation.id] });
 
+
+          <button
+            onClick={() => {
+              if (isConversationMuted) {
+                unmuteConversationMutation.mutate();
+              } else {
+                muteConversationMutation.mutate();
+              }
+            }}
+            className="flex items-center gap-2.5 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+          >
+            <BellOff className="w-4 h-4 text-muted-foreground shrink-0" />
+            {isConversationMuted ? "Unmute" : "Mute"}
+          </button>
       if (isActive) {
         const fallback = pathname?.startsWith("/archive") ? "/archive" : "/chat";
         router.push(fallback);

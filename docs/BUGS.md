@@ -644,4 +644,14 @@ Bug: Support Staff and moderator has the admin button on tabs but if clicked, no
       - When navigating to sidebar navigations, automatically close it if I click for other tabs. For example my sidebar is open and I clicked to contacts, my sidebar will automatically close for better user experience.
 --
 
-Group owners can mute members.
+Group owners can mute members. If member is muted, they can't be able to send message and will have a banner on the conversation saying that they are muted
+
+--
+
+Add a reply functionality, this allows the users to reply to any other messages even if it's media. Reply works on both private and group.
+
+--
+
+Mute conversation feature: User should be able to mute the converastion, they won't receive a notification or notification count won't count on the muted conversation
+
+--

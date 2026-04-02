@@ -6,6 +6,12 @@ const conversationSchema = new Schema<IConversation>(
   {
     type: { type: String, enum: ConversationType, required: true },
     participants: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    mutedUsers: [
+      {
+        userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        mutedUntil: { type: Date },
+      },
+    ],
     lastMessage: {
       content: { type: String },
       senderId: { type: Schema.Types.ObjectId, ref: "User" },
@@ -19,6 +25,7 @@ const conversationSchema = new Schema<IConversation>(
 
 conversationSchema.index({ participants: 1 });
 conversationSchema.index({ participants: 1, type: 1 });
+conversationSchema.index({ "mutedUsers.userId": 1 });
 conversationSchema.index({ updatedAt: -1 });
 conversationSchema.index({ requestStatus: 1, participants: 1 });
 

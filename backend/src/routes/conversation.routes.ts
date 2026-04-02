@@ -2,7 +2,7 @@ import { Router } from "express";
 import * as conversationController from "../controllers/message.controller";
 import { authenticate } from "../middleware/auth.middleware";
 import { validate } from "../middleware/validate.middleware";
-import { getMessagesSchema, sendMessageSchema, messageParamsSchema } from "../validators/message.validator";
+import { getMessagesSchema, sendMessageSchema, messageParamsSchema, muteConversationSchema } from "../validators/message.validator";
 
 const router = Router();
 
@@ -12,6 +12,8 @@ router.post("/", authenticate, conversationController.createOrGetConversation);
 router.get("/", authenticate, conversationController.getConversations);
 router.post("/:conversationId/archive", authenticate, conversationController.archiveConversation);
 router.delete("/:conversationId/archive", authenticate, conversationController.unarchiveConversation);
+router.post("/:conversationId/mute", authenticate, validate(muteConversationSchema), conversationController.muteConversation);
+router.delete("/:conversationId/mute", authenticate, validate(muteConversationSchema), conversationController.unmuteConversation);
 router.delete("/:conversationId", authenticate, conversationController.deleteConversationForMe);
 router.get("/:conversationId", authenticate, conversationController.getConversation);
 

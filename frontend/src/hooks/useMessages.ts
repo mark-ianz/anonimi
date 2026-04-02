@@ -17,6 +17,7 @@ import type {
   SendMessagePayload,
   ReactionEmoji,
   MessageReaction,
+  ReplyPreview,
 } from "@/types/message";
 import { MESSAGES_PER_PAGE } from "@/lib/constants";
 
@@ -138,7 +139,7 @@ export function useMessages(conversationId: string | null) {
   const messages = [...queryMessages, ...extraMessages];
 
   const sendMessage = useCallback(
-    (payload: Omit<SendMessagePayload, "tempId">) => {
+    (payload: Omit<SendMessagePayload, "tempId"> & { replyPreview?: ReplyPreview | null }) => {
       if (!user) return;
       const tempId = uuidv4();
       const isStealth = !!payload.stealthDuration;
@@ -161,6 +162,8 @@ export function useMessages(conversationId: string | null) {
         reactions: [],
         unsent: false,
         createdAt: new Date().toISOString(),
+        replyToId: payload.replyToId ?? null,
+        replyPreview: payload.replyPreview ?? null,
         tempId,
         pending: true,
       };
@@ -173,13 +176,14 @@ export function useMessages(conversationId: string | null) {
         timestamp: optimistic.createdAt,
       });
 
+      const { replyPreview, ...payloadToSend } = payload;
       const socket = getChatSocket();
       if (socket.connected) {
-        socket.emit("message:send", { ...payload, tempId });
+        socket.emit("message:send", { ...payloadToSend, tempId });
       } else {
         // Fallback to REST
         api
-          .post("/messages", { ...payload })
+          .post("/messages", { ...payloadToSend })
           .then((res) => {
             replaceTempMessage(
               payload.conversationId,
@@ -187,12 +191,18 @@ export function useMessages(conversationId: string | null) {
               res.data.data as Message
             );
           })
-          .catch(() => {
-            toast.error("Failed to send message.");
+          .catch((error) => {
+            updateMessage(payload.conversationId, tempId, {
+              failed: true,
+              pending: false,
+            });
+            const message =
+              error?.response?.data?.message ?? "Failed to send message.";
+            toast.error(message);
           });
       }
     },
-    [user, addMessage, replaceTempMessage, updateConversationLastMessage]
+    [user, addMessage, replaceTempMessage, updateConversationLastMessage, updateMessage]
   );
 
   const deleteForMeMutation = useMutation({

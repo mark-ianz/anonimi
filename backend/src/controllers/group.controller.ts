@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import * as groupService from "../services/group.service";
 import { apiSuccess } from "../utils/apiResponse";
+import { Group } from "../models/group.model";
+import { emitToConversation } from "../services/notification.service";
 
 export const createGroup = async (
   req: Request,
@@ -339,6 +341,14 @@ export const muteMember = async (
       userId,
       durationMinutes || 60
     );
+    const group = await Group.findById(groupId).select("conversationId");
+    if (group?.conversationId) {
+      emitToConversation(group.conversationId.toString(), "group:member-muted", {
+        groupId,
+        userId,
+        mutedUntil: result.mutedUntil ?? null,
+      });
+    }
     apiSuccess(res, result);
   } catch (error) {
     next(error);
@@ -357,6 +367,13 @@ export const unmuteMember = async (
       req.user!._id.toString(),
       userId
     );
+    const group = await Group.findById(groupId).select("conversationId");
+    if (group?.conversationId) {
+      emitToConversation(group.conversationId.toString(), "group:member-unmuted", {
+        groupId,
+        userId,
+      });
+    }
     apiSuccess(res, result);
   } catch (error) {
     next(error);

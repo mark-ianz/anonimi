@@ -24,6 +24,7 @@ type TimestampBubblePosition = "single" | "first" | "middle" | "last";
 interface MessageListProps {
   conversation: Conversation;
   onEditStart?: (message: Message) => void;
+  onReplyStart?: (message: Message) => void;
 }
 
 function shouldShowDateDivider(prev: string | undefined, curr: string): boolean {
@@ -48,7 +49,7 @@ function getTimeBucketKey(value: string): number {
   return Math.floor(time / (15 * 60 * 1000));
 }
 
-export default function MessageList({ conversation, onEditStart }: MessageListProps) {
+export default function MessageList({ conversation, onEditStart, onReplyStart }: MessageListProps) {
   const { user } = useAuthStore();
   const { clearUnread } = useChatStore();
   const { messages, isLoading, isFetchingMore, hasMore, fetchMore } = useMessages(conversation.id);
@@ -483,6 +484,7 @@ export default function MessageList({ conversation, onEditStart }: MessageListPr
                 timestampBubblePosition={timestampBubblePosition}
                 isHighlighted={highlightMessageId === message.id}
                 onEditStart={onEditStart}
+                onReply={onReplyStart}
               />
             </div>
           );

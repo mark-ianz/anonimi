@@ -31,6 +31,7 @@ interface MessageBubbleProps {
   timestampBubblePosition?: "single" | "first" | "middle" | "last";
   isHighlighted?: boolean;
   onEditStart?: (message: Message) => void;
+  onReply?: (message: Message) => void;
 }
 
 export default function MessageBubble({
@@ -47,6 +48,7 @@ export default function MessageBubble({
   timestampBubblePosition = "single",
   isHighlighted = false,
   onEditStart,
+  onReply,
 }: MessageBubbleProps) {
   const { user } = useAuthStore();
   const router = useRouter();
@@ -94,6 +96,23 @@ export default function MessageBubble({
     3,
     Math.min(message.stealthContentLength ?? 0, 240)
   );
+
+  const replyPreview = message.replyPreview;
+  const replySenderLabel = replyPreview
+    ? (replyPreview.senderId && replyPreview.senderId === user?.id
+      ? "You"
+      : replyPreview.senderUsername ?? "Member")
+    : null;
+
+  const replyPreviewText = (() => {
+    if (!replyPreview) return null;
+    if (replyPreview.content) return replyPreview.content;
+    if (replyPreview.type === "image") return "Photo";
+    if (replyPreview.type === "video") return "Video";
+    if (replyPreview.type === "audio") return "Audio";
+    if (replyPreview.type === "file") return replyPreview.fileName ?? "File";
+    return "Message";
+  })();
 
   const formatRemaining = (ms: number) => {
     const totalSeconds = Math.max(Math.floor(ms / 1000), 0);
@@ -357,6 +376,23 @@ export default function MessageBubble({
               "bg-sky-600 text-white border-sky-300/60"
           )}
         >
+          {replyPreview && !message.unsent && (
+            <div
+              className={cn(
+                "mb-2 rounded-lg border border-border/60 bg-background/60 px-2.5 py-1.5",
+                isMine && "bg-primary-foreground/10 border-primary-foreground/20"
+              )}
+            >
+              <p className="text-[11px] font-semibold text-muted-foreground">
+                Replying to {replySenderLabel}
+              </p>
+              {replyPreviewText && (
+                <p className="text-xs text-foreground line-clamp-1">
+                  {replyPreviewText}
+                </p>
+              )}
+            </div>
+          )}
           {/* Hover timestamp tooltip */}
           <div
             className={cn(
@@ -449,6 +485,7 @@ export default function MessageBubble({
           onDialogOpenChange={setDialogOpen}
           canEdit={canEdit}
           onEdit={() => onEditStart?.(message)}
+          onReply={() => onReply?.(message)}
         />
       </div>
     </div>

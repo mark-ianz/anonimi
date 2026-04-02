@@ -127,16 +127,16 @@ export const sendMessage = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { conversationId, type, content, mediaUrl, stealthDuration } = req.body;
+    const { conversationId, type, content, mediaUrl, fileName, fileSize, replyToId, stealthDuration } = req.body;
     const result = await chatService.sendMessage(
       req.user!._id.toString(),
       conversationId,
       type,
       content,
       mediaUrl,
-      undefined,
-      undefined,
-      { stealthDuration }
+      fileName,
+      fileSize,
+      { stealthDuration, replyToId }
     );
     apiSuccess(res, result.message, 201);
   } catch (error) {
@@ -240,6 +240,42 @@ export const unarchiveConversation = async (
   try {
     const conversationId = req.params.conversationId as string;
     const result = await chatService.unarchiveConversation(
+      conversationId,
+      req.user!._id.toString()
+    );
+    apiSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const muteConversation = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { conversationId } = req.params;
+    const { durationMinutes } = req.body ?? {};
+    const result = await chatService.muteConversation(
+      conversationId,
+      req.user!._id.toString(),
+      durationMinutes
+    );
+    apiSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const unmuteConversation = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { conversationId } = req.params;
+    const result = await chatService.unmuteConversation(
       conversationId,
       req.user!._id.toString()
     );
