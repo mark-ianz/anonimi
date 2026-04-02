@@ -193,6 +193,49 @@
   }
 }
 
+@keyframes reveal-left {
+  from {
+    opacity: 0;
+    transform: translateX(-26px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes reveal-right {
+  from {
+    opacity: 0;
+    transform: translateX(26px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.scroll-animate {
+  opacity: 0;
+  animation: reveal-up 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  animation-timeline: view();
+  animation-range: entry 10% cover 30%;
+}
+
+.scroll-animate-left {
+  opacity: 0;
+  animation: reveal-left 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  animation-timeline: view();
+  animation-range: entry 10% cover 30%;
+}
+
+.scroll-animate-right {
+  opacity: 0;
+  animation: reveal-right 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  animation-timeline: view();
+  animation-range: entry 10% cover 30%;
+}
+
 @keyframes drift {
   0%,
   100% {
@@ -248,7 +291,7 @@
 }
 
 .animate-reveal-up {
-  animation: reveal-up 680ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: reveal-up 680ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
 .animate-drift {
@@ -352,4 +395,45 @@
 
 .dark .message-scrollbar::-webkit-scrollbar-thumb:hover {
   background: color-mix(in oklch, var(--primary) 52%, var(--muted-foreground) 48%);
+}
+
+/* Scroll reveal utility */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(18px) scale(0.994);
+  will-change: transform, opacity;
+  transition-property: opacity, transform;
+  transition-duration: 820ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--delay, 0ms);
+}
+.scroll-reveal.scroll-in {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* typing effect for hero title */
+.typing-title {
+  display: inline;
+  white-space: pre-wrap;
+}
+.typing-cursor {
+  display: inline-block;
+  margin-left: 0.3ch;
+  opacity: 0.9;
+  vertical-align: text-bottom;
+  transition: opacity 200ms linear;
+  animation: typing-cursor-blink 1s steps(2, start) infinite;
+}
+
+@keyframes typing-cursor-blink {
+  0% { opacity: 0.9; }
+  50% { opacity: 0.15; }
+  100% { opacity: 0.9; }
+}
+
+/* prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .scroll-reveal { transition: none; transform: none; opacity: 1; }
+  .typing-cursor { animation: none; }
 }

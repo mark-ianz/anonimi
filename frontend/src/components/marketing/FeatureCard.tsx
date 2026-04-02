@@ -24,13 +24,16 @@ export default function FeatureCard({
   return (
     <article
       className={cn(
-        "group animate-reveal-up relative overflow-hidden rounded-3xl border border-border/70 bg-card/70 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/35 hover:shadow-soft",
+        "scroll-animate group relative overflow-hidden rounded-3xl border border-border/70 bg-card/70 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/35 hover:shadow-soft",
         isFeature && "p-8 md:p-10",
         !isFeature && !isCompact && "p-6 md:p-7",
         isCompact && "p-5 md:p-6",
         emphasized && "border-primary/45"
       )}
-      style={{ animationDelay: `${delay}ms` }}
+      style={{ 
+        animationDelay: `${delay}ms`,
+        animationFillMode: "forwards"
+      }}
     >
       <div className="pointer-events-none absolute inset-0 opacity-70 [background:radial-gradient(circle_at_6%_10%,rgba(42,108,130,0.12),transparent_42%),radial-gradient(circle_at_100%_100%,rgba(34,79,115,0.1),transparent_40%)]" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-primary/30 to-transparent" />

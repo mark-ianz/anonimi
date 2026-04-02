@@ -8,14 +8,15 @@ export default function HeroSection() {
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-116 bg-[radial-gradient(circle_at_12%_6%,rgba(12,39,60,0.09),transparent_40%),radial-gradient(circle_at_90%_18%,rgba(32,121,136,0.1),transparent_46%),linear-gradient(180deg,rgba(255,255,255,0.64),transparent)]" />
 
       <div className="mx-auto max-w-6xl">
-        <div className="grid gap-10 border-y border-border/70 py-12 md:grid-cols-[minmax(0,1fr)_minmax(0,0.88fr)] md:gap-12 md:py-14">
-          <div className="animate-reveal-up">
+      <div className="grid gap-10 border-y border-border/70 py-12 md:grid-cols-[0.62fr_0.38fr] md:gap-12 md:py-14">
+          <div data-scroll style={{ ['--delay' as any]: '0ms' }} className="scroll-reveal">
             <p className="inline-flex rounded-full border border-border/70 bg-background/80 px-3 py-1 font-mono text-[0.68rem] font-medium uppercase tracking-[0.16em] text-foreground/88">
               AID-First Messaging
             </p>
 
-            <h1 className="mt-6 max-w-[14ch] text-4xl leading-[0.95] font-semibold sm:text-5xl md:text-6xl">
-              Private identity, clean conversations.
+            <h1 className="mt-6 max-w-[26ch] text-4xl leading-[0.95] font-semibold sm:text-5xl md:text-6xl whitespace-normal break-words" data-typing data-text={"Private identity,\nclean conversations."} data-typing-speed="40">
+              <span className="typing-title" data-text={"Private identity,\nclean conversations."}></span>
+              <span className="typing-cursor">▌</span>
             </h1>
 
             <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
@@ -47,7 +48,7 @@ export default function HeroSection() {
             </div>
           </div>
 
-          <div className="animate-reveal-up [animation-delay:140ms]">
+          <div data-scroll style={{ ['--delay' as any]: '140ms' }} className="scroll-reveal">
             <div className="rounded-[1.5rem] border border-border/75 bg-card/70 p-5 shadow-soft">
               <div className="rounded-2xl border border-border/65 bg-background/85 p-5">
                 <div className="mb-5 flex items-center justify-between border-b border-border/55 pb-3">

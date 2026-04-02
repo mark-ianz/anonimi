@@ -2,6 +2,7 @@ import HeroSection from "@/components/marketing/HeroSection";
 import FeatureGrid from "@/components/marketing/FeatureGrid";
 import CTASection from "@/components/marketing/CTASection";
 import HowItWorksStep from "@/components/marketing/HowItWorksStep";
+import ScrollAnimator from "@/components/ScrollAnimator";
 import { UserPlus, Share2, MessageCircle } from "lucide-react";
 import Link from "next/link";
 
@@ -26,11 +27,12 @@ const steps = [
 export default function LandingPage() {
   return (
     <>
+      <ScrollAnimator />
       <HeroSection />
 
       <section className="py-20 md:py-24">
         <div className="mx-auto max-w-6xl px-5 sm:px-8">
-          <div className="mb-12 border-l border-border/70 pl-5 md:mb-14 md:pl-6">
+          <div data-scroll style={{ ['--delay' as any]: '120ms' }} className="mb-12 border-l border-border/70 pl-5 md:mb-14 md:pl-6 scroll-reveal">
             <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
               Start In Minutes
             </p>
@@ -44,13 +46,14 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-5">
             {steps.map((step, index) => (
-              <HowItWorksStep
-                key={step.title}
-                number={index + 1}
-                icon={step.icon}
-                title={step.title}
-                description={step.description}
-              />
+              <div key={step.title} data-scroll style={{ ['--delay' as any]: `${index * 220}ms` }} className="scroll-reveal">
+                <HowItWorksStep
+                  number={index + 1}
+                  icon={step.icon}
+                  title={step.title}
+                  description={step.description}
+                />
+              </div>
             ))}
           </div>
         </div>
@@ -61,7 +64,7 @@ export default function LandingPage() {
       <section className="relative py-20 md:py-24">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_10%_20%,rgba(245,158,11,0.12),transparent_40%),radial-gradient(circle_at_90%_10%,rgba(245,158,11,0.08),transparent_45%)]" />
         <div className="mx-auto max-w-6xl px-5 sm:px-8">
-          <div className="mb-12 md:mb-14">
+          <div data-scroll style={{ ['--delay' as any]: '0ms' }} className="mb-12 md:mb-14 scroll-reveal">
             <p className="inline-flex rounded-full border border-border/70 bg-card/70 px-3 py-1 font-mono text-[0.68rem] font-medium uppercase tracking-[0.14em] text-muted-foreground">
               Temporary Access
             </p>
@@ -74,7 +77,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="group relative overflow-hidden rounded-[2rem] border border-amber-500/30 bg-gradient-to-br from-amber-500/12 via-background to-background p-7 shadow-soft">
+          <div data-scroll style={{ ['--delay' as any]: '80ms' }} className="group relative overflow-hidden rounded-[2rem] border border-amber-500/30 bg-gradient-to-br from-amber-500/12 via-background to-background p-7 shadow-soft scroll-reveal">
             <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-amber-500/15 blur-2xl" />
             <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
               <div>
@@ -82,12 +85,12 @@ export default function LandingPage() {
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                   Use it when you need an immediate line of communication. Keep control by claiming only when you are sure.
                 </p>
-                <div className="mt-6 flex flex-wrap items-center gap-2 text-xs font-semibold text-amber-700 dark:text-amber-200">
+                <div data-scroll style={{ ['--delay' as any]: '220ms' }} className="mt-6 flex flex-wrap items-center gap-2 text-xs font-semibold text-amber-700 dark:text-amber-200 scroll-reveal">
                   <span className="rounded-full border border-amber-500/45 bg-amber-500/15 px-3 py-1">Session-only</span>
                   <span className="rounded-full border border-amber-500/45 bg-amber-500/15 px-3 py-1">Claim to keep</span>
                   <span className="rounded-full border border-amber-500/45 bg-amber-500/15 px-3 py-1">24h expiration</span>
                 </div>
-                <div className="mt-8 flex items-center gap-3">
+                <div data-scroll style={{ ['--delay' as any]: '260ms' }} className="mt-8 flex items-center gap-3 scroll-reveal">
                   <Link
                     href="/temporary"
                     className="inline-flex h-10 items-center rounded-full bg-amber-600 px-5 text-xs font-semibold text-white shadow-soft transition-colors hover:bg-amber-600/90"
@@ -103,7 +106,7 @@ export default function LandingPage() {
                 </div>
               </div>
               <div className="space-y-4">
-                <div className="rounded-2xl border border-amber-500/25 bg-amber-500/8 p-5">
+                <div data-scroll style={{ ['--delay' as any]: '40ms' }} className="rounded-2xl border border-amber-500/25 bg-amber-500/8 p-5 scroll-reveal">
                   <p className="font-mono text-[0.64rem] uppercase tracking-[0.14em] text-amber-800/80">
                     Benefit
                   </p>
@@ -112,7 +115,7 @@ export default function LandingPage() {
                     Perfect for first-time contacts, one-off collaborations, or trial conversations that may become long-term.
                   </p>
                 </div>
-                <div className="rounded-2xl border border-amber-500/20 bg-background/70 p-5">
+                <div data-scroll style={{ ['--delay' as any]: '80ms' }} className="rounded-2xl border border-amber-500/20 bg-background/70 p-5 scroll-reveal">
                   <p className="text-xs font-semibold text-foreground">Best for</p>
                   <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
                     <li>Fast intros with new partners</li>
@@ -129,7 +132,7 @@ export default function LandingPage() {
       <section className="relative py-20 md:py-24">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_10%_20%,rgba(6,182,212,0.12),transparent_40%),radial-gradient(circle_at_90%_10%,rgba(6,182,212,0.08),transparent_45%)]" />
         <div className="mx-auto max-w-6xl px-5 sm:px-8">
-          <div className="mb-12 md:mb-14">
+          <div data-scroll style={{ ['--delay' as any]: '0ms' }} className="mb-12 md:mb-14 scroll-reveal">
             <p className="inline-flex rounded-full border border-border/70 bg-card/70 px-3 py-1 font-mono text-[0.68rem] font-medium uppercase tracking-[0.14em] text-muted-foreground">
               Stealth Mode
             </p>
@@ -142,7 +145,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="group relative overflow-hidden rounded-[2rem] border border-cyan-500/30 bg-gradient-to-br from-cyan-500/12 via-background to-background p-7 shadow-soft">
+          <div data-scroll style={{ ['--delay' as any]: '80ms' }} className="group relative overflow-hidden rounded-[2rem] border border-cyan-500/30 bg-gradient-to-br from-cyan-500/12 via-background to-background p-7 shadow-soft scroll-reveal">
             <div className="absolute -left-10 -bottom-12 h-40 w-40 rounded-full bg-cyan-500/15 blur-2xl" />
             <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
               <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/8 p-5">
@@ -154,15 +157,15 @@ export default function LandingPage() {
                   Best for temporary access codes, quick location drops, and sensitive collaboration moments.
                 </p>
                 <div className="mt-5 space-y-3 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-3">
+                  <div data-scroll style={{ ['--delay' as any]: '40ms' }} className="flex items-center gap-3 scroll-reveal">
                     <span className="h-2 w-2 rounded-full bg-cyan-500" />
                     <span>Pick a timer per message</span>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div data-scroll style={{ ['--delay' as any]: '80ms' }} className="flex items-center gap-3 scroll-reveal">
                     <span className="h-2 w-2 rounded-full bg-cyan-500" />
                     <span>Share what matters, then let it fade</span>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div data-scroll style={{ ['--delay' as any]: '120ms' }} className="flex items-center gap-3 scroll-reveal">
                     <span className="h-2 w-2 rounded-full bg-cyan-500" />
                     <span>Keep the thread, not the trail</span>
                   </div>
