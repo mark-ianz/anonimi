@@ -76,7 +76,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
   const isArchived = !!conversation.isArchived;
   const myBlockId = conversation.participant?.blockId ?? null;
   // Recipient can't type until they accept; sender can always type
-  const isInputDisabled = isRecipient || isBlockedByMe || isGroupDisbanded;
+  const isInputDisabled = isRecipient || isBlockedByMe || isGroupDisbanded || isDeletedParticipant;
 
   const handleEditStart = (message: { id: string; content: string | null }) => {
     setEditTarget({ id: message.id, content: message.content ?? "" });
@@ -624,8 +624,29 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
         <div className="mx-4 mt-3 rounded-xl border border-border/60 bg-muted/50 px-4 py-3 shrink-0">
           <p className="text-sm font-medium text-foreground">Deleted temporary user</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            This temporary account has been deleted. Message history is still visible.
+            This temporary account has been deleted. Message history is still visible, but you can&apos;t send new messages.
           </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => (isArchived ? unarchiveMutation.mutate() : archiveMutation.mutate())}
+              disabled={archiveMutation.isPending || unarchiveMutation.isPending}
+              className="h-8 px-3 rounded-lg border border-border/50 text-xs font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+            >
+              {isArchived ? "Unarchive" : "Archive"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setConfirmDelete(true);
+                setDeleteConfirmText("");
+              }}
+              disabled={deleteConversationMutation.isPending}
+              className="inline-flex h-8 items-center gap-1.5 px-3 rounded-lg border border-destructive/40 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {deleteConversationMutation.isPending ? "Deleting..." : "Delete Conversation"}
+            </button>
+          </div>
         </div>
       )}
 
@@ -777,6 +798,8 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
           placeholder={
             isBlockedByMe
               ? "Unblock this user to send messages..."
+              : isDeletedParticipant
+              ? "This temporary account was deleted..."
               : isGroupDisbanded
               ? "This group has been disbanded..."
               : isRecipient
