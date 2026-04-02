@@ -14,7 +14,11 @@ export default function HeroSection() {
               AID-First Messaging
             </p>
 
-            <h1 className="mt-6 max-w-[26ch] text-4xl leading-[0.95] font-semibold sm:text-5xl md:text-6xl whitespace-normal break-words" data-typing data-text={"Private identity,\nclean conversations."} data-typing-speed="40">
+            <h1 className="mt-6 max-w-[26ch] text-4xl leading-[0.95] font-semibold sm:text-5xl md:text-6xl whitespace-normal break-words" data-typing data-texts={JSON.stringify([
+              "Private identity,\nclean conversations.",
+              "Private AID,\nfocused messaging.",
+              "Share once,\nstay in control."
+            ])} data-typing-speed="40">
               <span className="typing-title" data-text={"Private identity,\nclean conversations."}></span>
               <span className="typing-cursor">▌</span>
             </h1>

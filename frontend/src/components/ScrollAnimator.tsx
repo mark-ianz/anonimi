@@ -8,6 +8,7 @@ export default function ScrollAnimator() {
 
     // keep reference to typing timers so we can clear/reset on leave
     const typingTimers = new WeakMap<HTMLElement, number>();
+    const typingControllers = new WeakMap<HTMLElement, { cancel: () => void }>();
 
     const io = new IntersectionObserver(
       (entries) => {
@@ -20,50 +21,82 @@ export default function ScrollAnimator() {
             // if element has data-typing, start typing (restartable)
             if (el.hasAttribute("data-typing")) {
               const span = el.querySelector(".typing-title") as HTMLElement | null;
-              const text = el.dataset.text || (span && span.dataset.text) || "";
-              if (span && text) {
-                // clear any existing timer
-                const prev = typingTimers.get(span);
-                if (prev) window.clearInterval(prev);
-                // allow explicit newline characters in data-text to render as <br>
-                span.innerHTML = "";
-                span.dataset.typed = "1";
-                let i = 0;
+              const raw = el.getAttribute("data-texts") || el.getAttribute("data-text") || (span && span.dataset.text) || "";
+              // support either a JSON array in data-texts or a single text
+              let texts: string[] = [];
+              try {
+                if (el.hasAttribute("data-texts")) texts = JSON.parse(raw || "[]");
+                else texts = [raw];
+              } catch (e) {
+                texts = [raw];
+              }
+
+              if (span && texts.length) {
+                // cancel previous controller if exists
+                const prevCtrl = typingControllers.get(el);
+                if (prevCtrl) prevCtrl.cancel();
+
+                let cancelled = false;
+                const cancel = () => {
+                  cancelled = true;
+                };
+                typingControllers.set(el, { cancel });
+
                 const speed = parseInt(el.dataset.typingSpeed || "45", 10);
-                const timer = window.setInterval(() => {
-                  i += 1;
-                  // render newlines as <br> so we can force line breaks in the headline
-                  span.innerHTML = text.slice(0, i).replace(/\n/g, "<br/>");
-                  if (i >= text.length) {
-                    window.clearInterval(timer);
-                    typingTimers.delete(span);
-                    // stop blinking cursor (make it static)
-                    const cursor = el.querySelector('.typing-cursor') as HTMLElement | null;
-                    if (cursor) {
-                      cursor.style.animation = 'none';
+                const pause = parseInt(el.dataset.displayPause || "1600", 10);
+
+                const run = async () => {
+                  let idx = 0;
+                  while (!cancelled) {
+                    const text = texts[idx % texts.length] || "";
+                    // type
+                    span.innerHTML = "";
+                    for (let i = 0; i <= text.length && !cancelled; i++) {
+                      span.innerHTML = text.slice(0, i).replace(/\n/g, "<br/>");
+                      await new Promise((res) => {
+                        const t = window.setTimeout(res, speed);
+                        typingTimers.set(span, t);
+                      });
                     }
+                    if (cancelled) break;
+                    // wait while showing full text
+                    await new Promise((res) => {
+                      const t = window.setTimeout(res, pause);
+                      typingTimers.set(span, t);
+                    });
+                    if (cancelled) break;
+                    // delete (reverse)
+                    for (let i = text.length; i >= 0 && !cancelled; i--) {
+                      span.innerHTML = text.slice(0, i).replace(/\n/g, "<br/>");
+                      await new Promise((res) => {
+                        const t = window.setTimeout(res, Math.max(20, Math.floor(speed / 2)));
+                        typingTimers.set(span, t);
+                      });
+                    }
+                    if (cancelled) break;
+                    idx += 1;
                   }
-                }, speed);
-                typingTimers.set(span, timer);
+                };
+
+                // start run but don't block
+                run();
               }
             }
           } else {
             // leaving viewport: remove reveal class so it can retrigger later
             el.classList.remove("scroll-in");
-            // if typing, clear and reset so it restarts on re-entry
+            // if typing, cancel controller, clear timers and reset so it restarts on re-entry
             if (el.hasAttribute("data-typing")) {
               const span = el.querySelector(".typing-title") as HTMLElement | null;
+              const ctrl = typingControllers.get(el);
+              if (ctrl) ctrl.cancel();
+              typingControllers.delete(el);
               if (span) {
                 const prev = typingTimers.get(span);
                 if (prev) window.clearInterval(prev);
                 typingTimers.delete(span);
                 span.innerHTML = "";
                 delete span.dataset.typed;
-                // restore cursor blink so it will animate on next start
-                const cursor = el.querySelector('.typing-cursor') as HTMLElement | null;
-                if (cursor) {
-                  cursor.style.animation = '';
-                }
               }
             }
           }
