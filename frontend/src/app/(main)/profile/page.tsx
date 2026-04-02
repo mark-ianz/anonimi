@@ -6,11 +6,12 @@ import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import AvatarUpload from "@/components/user/AvatarUpload";
 import UserProfileEditor from "@/components/user/UserProfileEditor";
 import { useAuth } from "@/hooks/useAuth";
-import { LogOut } from "lucide-react";
+import { Eye, EyeOff, LogOut } from "lucide-react";
 import type { UploadSource } from "@/lib/uploadPolicy";
 import { useTempCountdown } from "@/hooks/useTempCountdown";
 import { toast } from "sonner";
-import { savePendingVerification } from "@/lib/verification";
+import { getResendCooldownSeconds, savePendingVerification, startResendCooldown } from "@/lib/verification";
+import api from "@/lib/api";
 
 interface PendingAvatar {
   file: File;
@@ -37,7 +38,17 @@ export default function ProfilePage() {
   const [claimEmail, setClaimEmail] = useState("");
   const [claimPassword, setClaimPassword] = useState("");
   const [claimConfirm, setClaimConfirm] = useState("");
+  const [claimError, setClaimError] = useState<string | null>(null);
+  const [showClaimPassword, setShowClaimPassword] = useState(false);
+  const [showClaimConfirm, setShowClaimConfirm] = useState(false);
+  const [isResendingVerification, setIsResendingVerification] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const { remainingLabel: tempRemaining } = useTempCountdown(user?.tempExpiresAt ?? null);
+
+  const isSaving = isUpdatingAvatar || isUpdatingProfile;
+  const isTempUser = !!user?.isTemporary;
+  const pendingVerificationEmail = user?.email && !user?.emailVerified ? user.email : null;
+  const hasPendingVerification = isTempUser && !!pendingVerificationEmail;
 
   useEffect(() => {
     return () => {
@@ -46,6 +57,11 @@ export default function ProfilePage() {
       }
     };
   }, [avatarPreviewUrl]);
+
+  useEffect(() => {
+    if (!pendingVerificationEmail) return;
+    setResendCooldown(getResendCooldownSeconds(pendingVerificationEmail, "email"));
+  }, [pendingVerificationEmail]);
 
   const handleAvatarSelect = (file: File, source: UploadSource) => {
     setPendingAvatarChange({ type: "upload", file, source });
@@ -77,11 +93,45 @@ export default function ProfilePage() {
     });
   };
 
-  const isSaving = isUpdatingAvatar || isUpdatingProfile;
-  const isTempUser = !!user?.isTemporary;
+  const isPasswordStrong = (value: string) => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(value);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+
+    const timer = window.setInterval(() => {
+      setResendCooldown((current) => {
+        if (current <= 1) {
+          window.clearInterval(timer);
+          return 0;
+        }
+        return current - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [resendCooldown]);
+
+  const handleResendVerification = async () => {
+    if (!pendingVerificationEmail || resendCooldown > 0 || isResendingVerification) return;
+    setIsResendingVerification(true);
+    try {
+      await api.post("/auth/resend-verification", { type: "email", target: pendingVerificationEmail });
+      toast.success("Verification code resent. Check your email.");
+      startResendCooldown(pendingVerificationEmail, "email");
+      setResendCooldown(getResendCooldownSeconds(pendingVerificationEmail, "email"));
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { error?: { message?: string } } } })
+          ?.response?.data?.error?.message ?? "Unable to resend verification code.";
+      toast.error(msg);
+    } finally {
+      setIsResendingVerification(false);
+    }
+  };
 
   const handleClaim = async () => {
     if (!isTempUser) return;
+    setClaimError(null);
     const normalizedEmail = claimEmail.trim().toLowerCase();
     if (!normalizedEmail) {
       toast.error("Email is required to claim your account.");
@@ -93,6 +143,12 @@ export default function ProfilePage() {
     }
     if (claimPassword !== claimConfirm) {
       toast.error("Passwords do not match.");
+      return;
+    }
+    if (!isPasswordStrong(claimPassword)) {
+      const message = "Password must be at least 8 characters and include uppercase, lowercase, and a number.";
+      setClaimError(message);
+      toast.error(message);
       return;
     }
 
@@ -157,37 +213,93 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <input
-                  value={claimEmail}
-                  onChange={(event) => setClaimEmail(event.target.value)}
-                  placeholder="Email address"
-                  type="email"
-                  className="w-full h-10 rounded-xl border border-border/60 bg-background px-3 text-sm"
-                />
-                <input
-                  value={claimPassword}
-                  onChange={(event) => setClaimPassword(event.target.value)}
-                  placeholder="Create a password"
-                  type="password"
-                  className="w-full h-10 rounded-xl border border-border/60 bg-background px-3 text-sm"
-                />
-                <input
-                  value={claimConfirm}
-                  onChange={(event) => setClaimConfirm(event.target.value)}
-                  placeholder="Confirm password"
-                  type="password"
-                  className="w-full h-10 rounded-xl border border-border/60 bg-background px-3 text-sm"
-                />
-              </div>
+              {hasPendingVerification ? (
+                <div className="space-y-3">
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2">
+                    <p className="text-xs text-muted-foreground">Verification pending</p>
+                    <p className="text-sm font-semibold text-foreground">{pendingVerificationEmail}</p>
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <button
+                      onClick={() =>
+                        router.push(`/verify?target=${encodeURIComponent(pendingVerificationEmail)}&type=email`)
+                      }
+                      className="flex-1 h-10 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-600/90 transition-colors"
+                    >
+                      Enter verification code
+                    </button>
+                    <button
+                      onClick={handleResendVerification}
+                      disabled={isResendingVerification || resendCooldown > 0}
+                      className="flex-1 h-10 rounded-xl border border-amber-500/40 text-amber-700 text-sm font-medium hover:bg-amber-500/10 transition-colors disabled:opacity-60 dark:text-amber-300"
+                    >
+                      {isResendingVerification
+                        ? "Resending..."
+                        : resendCooldown > 0
+                          ? `Resend in ${resendCooldown}s`
+                          : "Resend code"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <input
+                    value={claimEmail}
+                    onChange={(event) => setClaimEmail(event.target.value)}
+                    placeholder="Email address"
+                    type="email"
+                    className="w-full h-10 rounded-xl border border-border/60 bg-background px-3 text-sm"
+                  />
+                  <div className="relative">
+                    <input
+                      value={claimPassword}
+                      onChange={(event) => setClaimPassword(event.target.value)}
+                      placeholder="Create a password"
+                      type={showClaimPassword ? "text" : "password"}
+                      className="w-full h-10 rounded-xl border border-border/60 bg-background px-3 pr-10 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowClaimPassword((prev) => !prev)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label={showClaimPassword ? "Hide password" : "Show password"}
+                    >
+                      {showClaimPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input
+                      value={claimConfirm}
+                      onChange={(event) => setClaimConfirm(event.target.value)}
+                      placeholder="Confirm password"
+                      type={showClaimConfirm ? "text" : "password"}
+                      className="w-full h-10 rounded-xl border border-border/60 bg-background px-3 pr-10 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowClaimConfirm((prev) => !prev)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label={showClaimConfirm ? "Hide password" : "Show password"}
+                    >
+                      {showClaimConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <p className="text-[0.7rem] text-muted-foreground">
+                    Use 8+ characters with uppercase, lowercase, and a number.
+                  </p>
+                  {claimError && (
+                    <p className="text-xs text-destructive">{claimError}</p>
+                  )}
 
-              <button
-                onClick={handleClaim}
-                disabled={isClaimingTemporary}
-                className="w-full h-10 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-600/90 transition-colors disabled:opacity-60"
-              >
-                {isClaimingTemporary ? "Claiming..." : "Claim account"}
-              </button>
+                  <button
+                    onClick={handleClaim}
+                    disabled={isClaimingTemporary}
+                    className="w-full h-10 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-600/90 transition-colors disabled:opacity-60"
+                  >
+                    {isClaimingTemporary ? "Claiming..." : "Claim account"}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

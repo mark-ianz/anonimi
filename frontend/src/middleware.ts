@@ -51,6 +51,9 @@ export function middleware(request: NextRequest) {
   }
 
   if (isAuthRoute(pathname)) {
+    if (pathname.startsWith("/verify")) {
+      return NextResponse.next();
+    }
     if (isAuthenticated) {
       const redirectUrl = new URL("/chat", request.url);
       return NextResponse.redirect(redirectUrl);

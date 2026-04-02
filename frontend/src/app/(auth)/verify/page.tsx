@@ -9,8 +9,10 @@ import { useAuthStore } from "@/stores/authStore";
 import type { AuthUser } from "@/types/user";
 import {
   clearPendingVerification,
+  getResendCooldownSeconds,
   getPendingVerification,
   savePendingVerification,
+  startResendCooldown,
   type VerificationType,
 } from "@/lib/verification";
 
@@ -50,6 +52,7 @@ function VerifyForm() {
       }
 
       savePendingVerification({ target, type });
+      setResendCooldown(getResendCooldownSeconds(target, type));
 
       try {
         const res = await api.get("/auth/verification-status", {
@@ -196,7 +199,8 @@ function VerifyForm() {
       await api.post("/auth/resend-verification", { target, type });
       setCode(["", "", "", "", "", ""]);
       inputs.current[0]?.focus();
-      setResendCooldown(30);
+      startResendCooldown(target, type);
+      setResendCooldown(getResendCooldownSeconds(target, type));
       toast.success(`A new verification code was sent to your ${targetLabel}.`, {
         duration: 5000,
       });

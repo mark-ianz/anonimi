@@ -114,6 +114,16 @@ export function useAuth() {
       const res = await api.post("/auth/temporary/claim", payload);
       return res.data.data as { message: string; verificationTarget: string };
     },
+    onSuccess: (_data, variables) => {
+      if (user) {
+        setUser({
+          ...user,
+          email: variables.email,
+          emailVerified: false,
+        });
+      }
+      qc.invalidateQueries({ queryKey: ["auth", "me"] });
+    },
     onError: (err: unknown) => {
       const responseError = (err as {
         response?: {
