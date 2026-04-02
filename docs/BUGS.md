@@ -623,3 +623,23 @@ Bug: Support Staff and moderator has the admin button on tabs but if clicked, no
     - Reports (full access)
     - Support (full access)
     - Warnings (view only? idk if should support staff should have a view permission or send warning please help me decide)
+
+--
+  UI Updates:
+    - If the call or video call icon was clicked, show a toast saying something similar to that this is not implemented yet or soon.
+    - Move the global search from the sidebar to the very top and with the same container of the notification bell but they will be space-between.
+    - The position of the old search bar will be replaced by:
+      - Container that displays:
+        - User Profile
+        - Username
+        - ID
+        - Dropdown to change of status (use the existing change of status that is on the top right)
+      - Think of it like a snippet banner for the user.
+
+  Responsive Update:
+    - If the screen is small:
+      - The sidebar should take up the entire width of the screen if the user decided to open the sidebar.
+      - At initial visit, the sidebar is always close.
+      - The search bar at the top (beside the notification bell) will be a Search Icon only and the input will pop up if the icon was clicked.
+      - When navigating to sidebar navigations, automatically close it if I click for other tabs. For example my sidebar is open and I clicked to contacts, my sidebar will automatically close for better user experience.
+--
