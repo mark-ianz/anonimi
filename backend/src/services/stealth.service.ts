@@ -45,12 +45,12 @@ const expireStealthMessages = async () => {
 
 export const startStealthExpiryJob = (intervalMs: number = DEFAULT_INTERVAL_MS) => {
   expireStealthMessages().catch((error) => {
-    logger.error("Failed to process stealth expirations:", error);
+    logger.error({ err: error }, "Failed to process stealth expirations");
   });
 
   setInterval(() => {
     expireStealthMessages().catch((error) => {
-      logger.error("Failed to process stealth expirations:", error);
+      logger.error({ err: error }, "Failed to process stealth expirations");
     });
   }, intervalMs);
 };

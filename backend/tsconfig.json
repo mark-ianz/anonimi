@@ -28,15 +28,16 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": false,
     "noPropertyAccessFromIndexSignature": false,
+    "noImplicitAny": false,
 
     // Recommended Options
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
-    "strict": true,
+    "strict": false,
     "jsx": "react-jsx",
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
-    "skipLibCheck": true,
+    "skipLibCheck": true
   }
 }

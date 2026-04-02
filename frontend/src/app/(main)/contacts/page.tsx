@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { UserPlus, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
@@ -9,7 +10,7 @@ import SearchInput from "@/components/shared/SearchInput";
 import UserSearchResults from "@/components/user/UserSearchResults";
 import { useContacts } from "@/hooks/useContacts";
 
-export default function ContactsPage() {
+function ContactsContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -171,5 +172,13 @@ export default function ContactsPage() {
         </div>
       </div>
     </ProtectedRoute>
+  );
+}
+
+export default function ContactsPage() {
+  return (
+    <Suspense fallback={<div className="h-full flex items-center justify-center">Loading...</div>}>
+      <ContactsContent />
+    </Suspense>
   );
 }

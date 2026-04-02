@@ -8,7 +8,7 @@ const urlBase64ToUint8Array = (base64String: string): Uint8Array => {
     outputArray[i] = rawData.charCodeAt(i);
   }
 
-  return outputArray;
+  return outputArray as unknown as Uint8Array;
 };
 
 export const isPushSupported = (): boolean => {
@@ -32,7 +32,7 @@ export const subscribeToPush = async (publicKey: string) => {
 
   return registration.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(publicKey),
+    applicationServerKey: urlBase64ToUint8Array(publicKey) as unknown as BufferSource,
   });
 };
 

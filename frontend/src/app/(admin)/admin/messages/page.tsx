@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import AdminRoute from "@/components/shared/AdminRoute";
@@ -19,7 +19,7 @@ interface AdminMessage {
   createdAt: string;
 }
 
-export default function AdminMessagesPage() {
+function AdminMessagesContent() {
   const searchParams = useSearchParams();
   const [conversationId, setConversationId] = useState("");
   const [inputValue, setInputValue] = useState("");
@@ -94,5 +94,13 @@ export default function AdminMessagesPage() {
         </div>
       </div>
     </AdminRoute>
+  );
+}
+
+export default function AdminMessagesPage() {
+  return (
+    <Suspense fallback={<div className="h-full flex items-center justify-center">Loading...</div>}>
+      <AdminMessagesContent />
+    </Suspense>
   );
 }

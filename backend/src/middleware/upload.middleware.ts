@@ -1,6 +1,7 @@
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { Request, Response, NextFunction, RequestHandler } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { env } from "../config/env";
 import { ApiError } from "../utils/apiError";
@@ -40,12 +41,12 @@ const FORCED_CATEGORY_KEY = "__forcedUploadCategory" as const;
 const isUploadCategory = (value: unknown): value is UploadCategory =>
   value === "avatar" || value === "message" || value === "group";
 
-const getForcedCategory = (req: Express.Request): UploadCategory | null => {
-  const forced = (req as Express.Request & { [FORCED_CATEGORY_KEY]?: unknown })[FORCED_CATEGORY_KEY];
+const getForcedCategory = (req: Request): UploadCategory | null => {
+  const forced = (req as Request & { [FORCED_CATEGORY_KEY]?: unknown })[FORCED_CATEGORY_KEY];
   return isUploadCategory(forced) ? forced : null;
 };
 
-const resolveCategory = (req: Express.Request): UploadCategory => {
+const resolveCategory = (req: Request & { body?: Record<string, unknown> }): UploadCategory => {
   const forcedCategory = getForcedCategory(req);
   if (forcedCategory) return forcedCategory;
 
@@ -53,7 +54,7 @@ const resolveCategory = (req: Express.Request): UploadCategory => {
   return isUploadCategory(bodyCategory) ? bodyCategory : "message";
 };
 
-const resolveSource = (req: Express.Request): UploadSource =>
+const resolveSource = (req: Request & { body?: Record<string, unknown> }): UploadSource =>
   req.body?.source === "camera" ? "camera" : "file";
 
 const getKindFromExtension = (fileName: string): UploadKind | null => {
@@ -122,9 +123,9 @@ const upload = multer({
 });
 
 const validateUploadedFile = (
-  req: Express.Request,
-  _res: Express.Response,
-  next: Express.NextFunction
+  req: Request,
+  _res: Response,
+  next: NextFunction
 ): void => {
   const file = req.file;
   if (!file) {
@@ -174,12 +175,12 @@ const validateUploadedFile = (
 export const uploadSingle = (
   fieldName: string,
   forcedCategory?: UploadCategory
-): Express.RequestHandler => {
+): RequestHandler => {
   const single = upload.single(fieldName);
 
   return (req, res, next) => {
     if (forcedCategory) {
-      (req as Express.Request & { [FORCED_CATEGORY_KEY]?: UploadCategory })[FORCED_CATEGORY_KEY] = forcedCategory;
+      (req as Request & { [FORCED_CATEGORY_KEY]?: UploadCategory })[FORCED_CATEGORY_KEY] = forcedCategory;
       req.body = req.body ?? {};
       req.body.category = forcedCategory;
     }

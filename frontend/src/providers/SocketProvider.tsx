@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, createContext, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Socket } from "socket.io-client";
+import type { Message } from "@/types/message";
+import type { Conversation } from "@/types/conversation";
 import { toast } from "sonner";
 import { getChatSocket, disconnectSockets } from "@/lib/socket";
 import api from "@/lib/api";
@@ -15,7 +17,8 @@ import { useTypingStore } from "@/stores/typingStore";
 import type {
   MessageAckPayload,
   MessageReceivePayload,
-  MessageReadEventPayload,
+  MessageReadPayload,
+  MessageReadReceiptPayload,
   MessageReactionAddedPayload,
   MessageReactionRemovedPayload,
   MessageUnsentPayload,
@@ -33,6 +36,7 @@ import type {
   GroupMemberLeftPayload,
   GroupUpdatedPayload,
   GroupRoleChangedPayload,
+  ContactNicknameUpdatedPayload,
 } from "@/types/socket";
 interface SocketContextValue {
   chatSocket: Socket | null;

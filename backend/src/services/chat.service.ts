@@ -1366,11 +1366,6 @@ export const sendMessage = async (
   conversation.updatedAt = new Date();
   await conversation.save();
 
-  emitToUser(userId, "conversation:muted", {
-    conversationId: conversation._id.toString(),
-    mutedUntil,
-  });
-
   const sender = await User.findById(senderId).select("anonimiId username profileImage");
 
   const recipientIds = conversation.participants
@@ -1679,7 +1674,7 @@ export const addMessageReaction = async (
   );
 
   if (existing) {
-    message.reactions.pull(existing._id);
+    (message.reactions as any).pull(existing._id);
     await message.save();
 
     const payload = {
@@ -1702,7 +1697,7 @@ export const addMessageReaction = async (
     emoji,
     userId: new Types.ObjectId(userId),
     createdAt: new Date(),
-  });
+  } as any);
   await message.save();
 
   const added = message.reactions[message.reactions.length - 1];
@@ -1730,7 +1725,7 @@ export const removeMessageReaction = async (
     throw new NotFoundError("Message not found");
   }
 
-  const reaction = message.reactions.id(reactionId);
+  const reaction = (message.reactions as any).id(reactionId);
   if (!reaction) {
     throw new NotFoundError("Reaction not found");
   }
@@ -1739,7 +1734,7 @@ export const removeMessageReaction = async (
     throw new ForbiddenError("Not the owner of this reaction");
   }
 
-  message.reactions.pull(reactionId);
+  (message.reactions as any).pull(reactionId);
   await message.save();
 
   const payload = {

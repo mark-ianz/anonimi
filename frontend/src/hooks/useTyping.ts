@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { shallow } from "zustand/shallow";
 import { getChatSocket } from "@/lib/socket";
 import { useAuthStore } from "@/stores/authStore";
 import { useTypingStore } from "@/stores/typingStore";
@@ -12,8 +11,7 @@ const EMPTY_TYPING_USERS: Array<{ userId: string; username: string; expiresAt: n
 export function useTyping(conversationId: string | null) {
   const { isAuthenticated } = useAuthStore();
   const typingUsersRaw = useTypingStore(
-    (state) => (conversationId ? state.typing[conversationId] ?? EMPTY_TYPING_USERS : EMPTY_TYPING_USERS),
-    shallow
+    (state) => (conversationId ? state.typing[conversationId] ?? EMPTY_TYPING_USERS : EMPTY_TYPING_USERS)
   );
   const isTypingRef = useRef(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);

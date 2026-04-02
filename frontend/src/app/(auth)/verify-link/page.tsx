@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import api from "@/lib/api";
@@ -8,7 +8,7 @@ import { useAuthStore } from "@/stores/authStore";
 import type { AuthUser } from "@/types/user";
 import { clearPendingVerification, savePendingVerification } from "@/lib/verification";
 
-export default function VerifyLinkPage() {
+function VerifyLinkContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { setAuth } = useAuthStore();
@@ -94,5 +94,13 @@ export default function VerifyLinkPage() {
         Please wait while we finish verifying your account.
       </p>
     </div>
+  );
+}
+
+export default function VerifyLinkPage() {
+  return (
+    <Suspense fallback={<div className="h-full flex items-center justify-center">Loading...</div>}>
+      <VerifyLinkContent />
+    </Suspense>
   );
 }

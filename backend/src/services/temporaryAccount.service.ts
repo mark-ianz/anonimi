@@ -41,12 +41,12 @@ export const removeTemporaryAccount = async (userId: string) => {
 
 export const startTemporaryAccountCleanupJob = (intervalMs: number = DEFAULT_INTERVAL_MS) => {
   expireTemporaryAccounts().catch((error) => {
-    logger.error("Failed to expire temporary accounts:", error);
+    logger.error({ err: error }, "Failed to expire temporary accounts");
   });
 
   setInterval(() => {
     expireTemporaryAccounts().catch((error) => {
-      logger.error("Failed to expire temporary accounts:", error);
+      logger.error({ err: error }, "Failed to expire temporary accounts");
     });
   }, intervalMs);
 };

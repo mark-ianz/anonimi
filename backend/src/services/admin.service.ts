@@ -650,6 +650,7 @@ export const resolveReport = async (
 export const dismissReport = async (
   adminId: string,
   reportId: string,
+  notes?: string,
   ipAddress?: string
 ) => {
   const report = await Report.findById(reportId);
@@ -750,15 +751,15 @@ export const getAdminTicketById = async (ticketId: string) => {
   return {
     ticket: {
       id: ticket._id.toString(),
-      userId: ticket.userId?._id?.toString(),
-      username: ticket.userId?.username,
+      userId: (ticket.userId as any)?._id?.toString(),
+      username: (ticket.userId as any)?.username,
       subject: ticket.subject,
       reason: ticket.reason,
       status: ticket.status,
       assignedTo: ticket.assignedTo
         ? {
-            id: ticket.assignedTo?._id?.toString(),
-            username: ticket.assignedTo?.username,
+            id: (ticket.assignedTo as any)?._id?.toString(),
+            username: (ticket.assignedTo as any)?.username,
           }
         : null,
     },
@@ -997,7 +998,7 @@ export const getGroupById = async (groupId: string) => {
     name: group.name,
     image: group.image,
     ownerId: group.ownerId?._id?.toString(),
-    ownerUsername: group.ownerId?.username,
+    ownerUsername: (group.ownerId as any)?.username,
     conversationId: group.conversationId?.toString(),
     settings: group.settings,
     members: members.map((m: any) => ({
@@ -1251,7 +1252,7 @@ export const getAdminLogs = async (
     query.$and = andClauses;
   }
 
-  const sortClause = sort === "oldest" ? { createdAt: 1 } : { createdAt: -1 };
+  const sortClause: Record<string, 1 | -1> = sort === "oldest" ? { createdAt: 1 } : { createdAt: -1 };
 
   const logs = await AdminLog.find(query)
     .populate("adminId", "username role")

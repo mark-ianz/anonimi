@@ -56,7 +56,7 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
   const { typingUsers } = useTyping(conversation.id);
   const bottomRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
-  const scrollIdleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollIdleTimeoutRef = useRef<number | null>(null);
   const searchParams = useSearchParams();
   const targetMessageId = searchParams.get("messageId");
   const isFirstLoad = useRef(true);
@@ -126,7 +126,7 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
   }, [user?.id, user?.username, user?.anonimiId, user?.profileImage, conversation, groupMemberMetaById]);
 
   const displayTypingUsers = useMemo(() => {
-    const filtered = typingUsers.filter((typingUser) => typingUser.userId !== user?.id);
+    const filtered = typingUsers.filter((typingUser: { userId: string }) => typingUser.userId !== user?.id);
     const sorted = [...filtered].sort(
       (a, b) => (b.expiresAt ?? 0) - (a.expiresAt ?? 0)
     );
@@ -136,8 +136,8 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
       let profileImage: string | null = null;
 
       if (conversation.type === "private" && typingUser.userId === conversation.participant?.id) {
-        name = conversation.participant.nickname ?? conversation.participant.username ?? name;
-        profileImage = conversation.participant.profileImage ?? null;
+        name = conversation.participant?.nickname ?? conversation.participant?.username ?? name;
+        profileImage = conversation.participant?.profileImage ?? null;
       } else if (conversation.type === "group") {
         const meta = groupMemberMetaById[typingUser.userId];
         name = meta?.name ?? name;

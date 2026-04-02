@@ -26,7 +26,7 @@ export const uploadMedia = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+): Promise<void | Response> => {
   try {
     if (!req.file) {
       return res.status(400).json({
