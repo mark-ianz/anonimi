@@ -262,7 +262,7 @@ If I'm actively scrolling through the conversation and someone messaged on that 
 -- Done
 On the internet status. Sometimes it just stays on Disconnected or Reconnecting, my web app is not even really trying to reconnect. I have to manually refresh to fix it.
 
---
+-- Done
 Stealth Mode
 
 What is Stealth Mode? 
@@ -301,4 +301,7 @@ Steps:
 - Other users will see if these accounts are temporary.
 - If other users are having a conversation with temporary account, there's a persistent banner on the conversation saying to be careful for these account blah blah blah.
 - I'm saying yet on here BECAUSE, temporary account users could claim this account by having an option to verify/claim account that will require their email and have a verification and  set a password.
-- If they got verified, they can use the app like a normal person now.
+- If they got verified, they can use the app like a normal user now.
+
+--
+Create a guide page for users

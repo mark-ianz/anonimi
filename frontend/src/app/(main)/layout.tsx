@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { 
   MessageCircle, 
@@ -227,7 +228,13 @@ export default function MainLayout({ children }: SidebarProps) {
           isCollapsed && "justify-center px-2"
         )}>
           <div className="grid h-8 w-8 place-items-center rounded-lg border border-border/70 bg-background">
-            <span className="font-display text-base font-semibold">E</span>
+            <Image
+              src="/images/icon/anonimi-logo-no-bg.png"
+              alt="anonimi"
+              width={20}
+              height={20}
+              className="h-5 w-5"
+            />
           </div>
           {!isCollapsed && (
             <span className="text-lg font-semibold tracking-[0.01em]">

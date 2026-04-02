@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { MessageCircle, Github, Twitter } from "lucide-react";
+import Image from "next/image";
+import { Github, Twitter } from "lucide-react";
 
 const productLinks = [
   { href: "/features", label: "Features" },
@@ -21,7 +22,13 @@ export default function MarketingFooter() {
           <div className="md:col-span-2">
             <Link href="/" className="flex items-center gap-3">
               <div className="grid h-9 w-9 place-items-center rounded-xl border border-border/70 bg-background">
-                <MessageCircle className="h-4 w-4 text-foreground" />
+                <Image
+                  src="/images/icon/anonimi-logo-no-bg.png"
+                  alt="anonimi"
+                  width={22}
+                  height={22}
+                  className="h-5 w-5"
+                />
               </div>
               <span className="font-display text-xl font-semibold tracking-[0.02em]">
                 anonimi

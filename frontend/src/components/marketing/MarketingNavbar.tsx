@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
-import { Menu, X, MessageCircle } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const navLinks = [
@@ -21,7 +22,14 @@ export default function MarketingNavbar() {
         <div className="flex items-center gap-8">
           <Link href="/" className="group flex items-center gap-3">
             <div className="grid h-8 w-8 place-items-center rounded-lg border border-border/70 bg-card transition-colors duration-300 group-hover:bg-muted">
-              <MessageCircle className="h-4 w-4 text-foreground" />
+              <Image
+                src="/images/icon/anonimi-logo-no-bg.png"
+                alt="anonimi"
+                width={20}
+                height={20}
+                className="h-5 w-5"
+                priority
+              />
             </div>
             <span className="text-lg font-semibold tracking-[0.01em]">
               anonimi
