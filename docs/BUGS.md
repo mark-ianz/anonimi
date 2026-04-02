@@ -305,3 +305,295 @@ Steps:
 
 --
 Create a guide page for users
+
+--
+Fix the New Support Ticket, make sure it's syncing real time.
+
+If I submit a ticket it should  be visible on support tab and I can message more or reopen it there.
+
+Ny Submitted Ticket will be seen at admin tab and will be shown like a message type where admin can reply and I can talk to them on my Support Tab.
+
+Ticket can have a status.
+
+I can receive notifications from the support if they replied.
+
+The support tab also is where the user reports go, it will be like a ticket too that has a status too.
+
+--
+
+Admin Support Updates:
+
+1. When I sent someone a warning and goes to use their account and I don't see the warning on Support:
+[2026-04-02 13:54:52.711 +0800] ERROR: Cannot read properties of null (reading '_id')
+    err: {
+      "type": "TypeError",
+      "message": "Cannot read properties of null (reading '_id')",
+      "stack":
+          TypeError: Cannot read properties of null (reading '_id')
+              at C:\Users\busti\Desktop\Node\EchoID\backend\src\services\contact.service.ts:63:20
+              at Array.map (<anonymous>)
+              at Object.getIncomingRequests (C:\Users\busti\Desktop\Node\EchoID\backend\src\services\contact.service.ts:60:19)
+              at processTicksAndRejections (node:internal/process/task_queues:105:5)
+              at getIncomingRequests (C:\Users\busti\Desktop\Node\EchoID\backend\src\controllers\contact.controller.ts:36:22)
+    }
+
+2. --
+
+ As admin and I go to /admin/support, the date is Invalid Date and when I open the report it just says User.
+
+3. --
+
+ When I claim the ticket it says:
+ [2026-04-02 13:59:52.932 +0800] ERROR: Cannot read properties of undefined (reading 'map')
+    err: {
+      "type": "TypeError",
+      "message": "Cannot read properties of undefined (reading 'map')",
+      "stack":
+          TypeError: Cannot read properties of undefined (reading 'map')
+              at C:\Users\busti\Desktop\Node\EchoID\backend\src\middleware\validate.middleware.ts:16:38
+              at Layer.handleRequest (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\router\lib\layer.js:152:17)
+              at next (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\router\lib\route.js:157:13)
+              at Route.dispatch (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\router\lib\route.js:117:3)
+              at handle (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\router\index.js:435:11)
+              at Layer.handleRequest (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\router\lib\layer.js:152:17)
+              at C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\router\index.js:295:15  
+              at param (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\router\index.js:600:14)
+              at param (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\router\index.js:610:14)
+              at processParams (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\router\index.js:664:3)
+    }
+
+4. --
+
+On /admin/reports:
+- It also just say User Reported by username.
+- When I claim the report it gives me a toast notification Failed to claim report but no backend error log.
+
+5. --
+
+On /admin/groups/groupid, when I click View Messages it redirects me to /admin/messages?conversationId=undefined
+
+6. --
+
+Going to /admin/bans gives me this:
+[2026-04-02 14:02:25.457 +0800] ERROR: Cannot access 'data' before initialization
+    err: {
+      "type": "ReferenceError",
+      "message": "Cannot access 'data' before initialization",
+      "stack":
+          ReferenceError: Cannot access 'data' before initialization
+              at Object.getBans (C:\Users\busti\Desktop\Node\EchoID\backend\src\services\admin.service.ts:757:49)
+              at processTicksAndRejections (node:internal/process/task_queues:105:5)
+              at getBans (C:\Users\busti\Desktop\Node\EchoID\backend\src\controllers\admin.controller.ts:367:20)
+    }
+[2026-04-02 14:02:26.530 +0800] ERROR: Cannot access 'data' before initialization
+    err: {
+      "type": "ReferenceError",
+      "message": "Cannot access 'data' before initialization",
+      "stack":
+          ReferenceError: Cannot access 'data' before initialization
+              at Object.getBans (C:\Users\busti\Desktop\Node\EchoID\backend\src\services\admin.service.ts:757:49)
+              at processTicksAndRejections (node:internal/process/task_queues:105:5)
+              at getBans (C:\Users\busti\Desktop\Node\EchoID\backend\src\controllers\admin.controller.ts:367:20)
+    }
+[2026-04-02 14:02:28.591 +0800] ERROR: Cannot access 'data' before initialization
+    err: {
+      "type": "ReferenceError",
+      "message": "Cannot access 'data' before initialization",
+      "stack":
+          ReferenceError: Cannot access 'data' before initialization
+              at Object.getBans (C:\Users\busti\Desktop\Node\EchoID\backend\src\services\admin.service.ts:757:49)
+              at processTicksAndRejections (node:internal/process/task_queues:105:5)
+              at getBans (C:\Users\busti\Desktop\Node\EchoID\backend\src\controllers\admin.controller.ts:367:20)
+    }
+
+7. --
+
+Going to /admin/analytics, the TRENDS (30 DAYS) just loads forever.
+
+8. --
+
+If I have any valid admin roles and I logged in, I should see a button below Support on the left side the redirects me to the admin page of my role.
+
+--
+
+Admin Support Updates Test Results:
+1. -- 
+Sending a warning works fine but:
+  - Make it red or color warning for user end.
+  - If I clicke the View Message on warning toast, it does nothing.
+  - I don't see the warning on Support tab either.
+
+2. -- Passed
+
+3. -- 
+No more error on backend console but when I claim it pops up a toast with: Failed to assign ticket
+
+4. --
+Still fail to claim the report with Failed to claim report toast.
+
+5. --
+- When I clicked the View Message on the /admin/groups/id, it redirects me to /admin/messages?conversationId=69cdc10d4c0fc95d2c9b4a1d but it still says Enter a conversation ID above to view messages. It requires me to input the Conversation ID instead of automatically querying.
+- It also says 0 Members, show all and their roles
+
+6. --
+No more errors, but I can't ban someone it gives me an error toast of: Failed to ban user
+
+7. -- Passed
+
+8. -- Passed
+
+--
+Admin Support Updates Test Results v2:
+
+1. -- 
+- When the user receives the warning and view message, they have to manually refresh for message to show up.
+- I should see a warning history of the user or a tabs of people who have warnings.
+
+2. -- Still Passed
+3. -- 
+- Ticket can now be claimed.
+- I should see a tab for a ticket that was assigned to me. Whether it's a Ticket or User Report.
+- Because if there's no claimed section, the ticket will be lost by me since it's gonna be hard to manually find.
+- Also on support chat, the username is just User.
+- Users shouldn't be able to see who's admin claimed their ticket/report. Only other admins can, for example admin 1 claimed the report and admin 2 is browsing, they will see that this report was claimed by admin 1 and they can contribute to it and will be moved to their claimed section. They will be marked as contributor since admin 1 is the one who claimed. If they are contributor, they can send a message now but ofcourse their profile when replied is their username and the user who submitted the report will see him as contributor only.
+4. -- 
+- Still failed to claim report when I Claim Report
+- It gives an error log on backend:
+[2026-04-02 14:46:20.980 +0800] ERROR: Cast to ObjectId failed for value "undefined" (type string) at path "_id" for model "Report"
+    err: {
+      "type": "CastError",
+      "message": "Cast to ObjectId failed for value \"undefined\" (type string) at path \"_id\" for model \"Report\"", 
+      "stack":
+          CastError: Cast to ObjectId failed for value "undefined" (type string) at path "_id" for model "Report"      
+              at SchemaObjectId.cast (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\mongoose\lib\schema\objectId.js:253:11)
+              at SchemaObjectId.SchemaType.applySetters (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\mongoose\lib\schemaType.js:1279:12)
+              at SchemaObjectId.SchemaType.castForQuery (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\mongoose\lib\schemaType.js:1705:17)
+              at cast (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\mongoose\lib\cast.js:386:32)
+              at model.Query.Query.cast (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\mongoose\lib\query.js:5088:12)
+              at model.Query.Query._castConditions (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\mongoose\lib\query.js:2376:10)
+              at model.Query._findOne (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\mongoose\lib\query.js:2716:8)
+              at model.Query.exec (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\mongoose\lib\query.js:4687:80)
+              at processTicksAndRejections (node:internal/process/task_queues:105:5)
+              at Object.claimReport (C:\Users\busti\Desktop\Node\EchoID\backend\src\services\admin.service.ts:278:18)  
+      "stringValue": "\"undefined\"",
+      "kind": "ObjectId",
+      "value": "undefined",
+      "path": "_id",
+      "reason": {
+        "type": "BSONError",
+        "message": "input must be a 24 character hex string, 12 byte Uint8Array, or an integer",
+        "stack":
+            BSONError: input must be a 24 character hex string, 12 byte Uint8Array, or an integer
+                at new ObjectId (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\bson\src\objectid.ts:113:15)  
+                at castObjectId (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\mongoose\lib\cast\objectid.js:25:12)
+                at SchemaObjectId.cast (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\mongoose\lib\schema\objectId.js:251:12)
+                at SchemaObjectId.SchemaType.applySetters (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\mongoose\lib\schemaType.js:1279:12)
+                at SchemaObjectId.SchemaType.castForQuery (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\mongoose\lib\schemaType.js:1705:17)
+                at cast (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\mongoose\lib\cast.js:386:32)
+                at model.Query.Query.cast (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\mongoose\lib\query.js:5088:12)
+                at model.Query.Query._castConditions (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\mongoose\lib\query.js:2376:10)
+                at model.Query._findOne (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\mongoose\lib\query.js:2716:8)
+                at model.Query.exec (C:\Users\busti\Desktop\Node\EchoID\backend\node_modules\mongoose\lib\query.js:4687:80)
+      },
+      "valueType": "string"
+    }
+User connected: PBRv_htm3Ni61EunAAAG, User: 69cd43954e1463f6a58f9a00
+
+5. --
+- Members username is just "@" and nothing more.
+- Works fine except the problem above.
+
+6. --
+- I can ban now successfully.
+- on /admin/bans, the username is just @.
+- Even though the user is still banned, it's counted as Inactive.
+- I should be able to unban them instantly.
+- Also I don't understand the Full History and Active only.
+- When banned users try to logged in, it should display the reason on the login.
+
+7. -- Still Passed
+8. -- Still Passed
+
+--
+Admin Support Updates Test Results v3:
+
+1. --
+On the /admin/warnings, the one who warned has to manually refreshed. It should append to the cache (this doesn't need some socket)
+
+3. --
+- On the person who submitted a ticket, on their /support tab, if they messaged on the ticket or received a message, it should pop up to the very top with a notification of total unread messages. Also if they received a message, the ? Support tab should have a notification if they got warned, received a message or etc.
+
+4. --
+- When I go to /admin/reports/id, Reported By: Unknown
+- On the admin/reports/id, I should have a profile view for the person that is getting reported and reporting. So that I could make an action for both if necessary but mostly on the reported person.
+- Resolving a report pops up a toast: Failed to resolve report but no backend log.
+
+5. --
+- On admin/groups, group photos are empty.
+- /admin/groups/id members photo are empty.
+
+6. --
+- banned person image is empty.
+
+
+--
+Admin Support Updates Test Results v4:
+
+1. --
+- If the admin replies, it will automatically claimed by them.
+- The input on /support/id is not centered vertically on the input container.
+- Users should also be able to send images.
+
+3. -- Passed
+4. -- 
+- On the /admin/reports/id, and the section where it shows Reporting/Reported user. The View Profile text on the button is not centered vertically
+- If I selected on  actions and type a resolution note, it should be saved. For example when I went to View Profile and go back, the input should still be there.
+- There should be a feedback for the one who reported on what has happened on the report not just simple "Resolved"
+--
+5. --
+- If the group has no photo, please use the floating profile pictures.
+
+6. --
+- Unbanning should require a confirmation.
+
+--
+Admin Support Updates Test Results v5:
+
+1. --
+- The text input is still not centered, seems like the height of text area is not taking up the entire container.
+- When I input a text with the media and sent, the text is not getting sent and only the image.
+
+4. --
+- The actions, notes is not getting saved, save it on like localStorage so that when I View their Profile and comeback, the actions and note is not getting reseted.
+- Add an option for the admin to send additional note but for the reporter to see, this is optional by the admin.
+
+5. -- 
+UI Bugged, please use the group photo is it is on the /chats and group photo (if none provided) that is the perfect example.
+
+6. --
+- Put some effort on the confirmation and not just a simple alert.
+
+--
+
+Admin Support Updates Test Results v6:
+
+1. -- Passed
+4. -- 
+- Nothing Changed.
+- More detailed instruction:
+  - When I open a report on /admin/reports/id. I have these Actions:
+    - Resolution Actions
+    - Resolution Notes
+    - Reporter Note
+  
+  - When I select resolution actions, edit notes. It should be writteon on the localStorage with the report id saved too as identified.
+  - The purpose of this is that if I want to View their Profile to verify and come back, the action and notes are not getting resetted since it is saved on the localStorage and just getting autofilled.
+
+5. -- Passed
+6. -- Passed
+
+--
+
+Admin Permissions Update:
+
+- Support Staff and moderator has the admin button but if clicked, nothing happens.

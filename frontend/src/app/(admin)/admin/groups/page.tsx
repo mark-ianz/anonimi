@@ -5,8 +5,10 @@ import { useQuery } from "@tanstack/react-query";
 import AdminRoute from "@/components/shared/AdminRoute";
 import api from "@/lib/api";
 import Link from "next/link";
-import { Users2, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
+import { API_BASE } from "@/lib/constants";
+import GroupAvatar from "@/components/shared/GroupAvatar";
 
 interface AdminGroup {
   id: string;
@@ -14,6 +16,7 @@ interface AdminGroup {
   image: string | null;
   ownerId: string;
   memberCount: number;
+  memberPreview?: Array<{ username: string | null; profileImage: string | null }>;
   createdAt: string;
 }
 
@@ -63,9 +66,15 @@ export default function AdminGroupsPage() {
                 href={`/admin/groups/${group.id}`}
                 className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border/20 last:border-b-0"
               >
-                <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
-                  <Users2 className="w-5 h-5 text-muted-foreground" />
-                </div>
+                <GroupAvatar
+                  imageUrl={group.image ? `${API_BASE.replace("/api", "")}${group.image}` : null}
+                  fallbackProfileImages={(group.memberPreview ?? []).map((m) => m.profileImage)}
+                  name={group.name}
+                  alt={group.name}
+                  className="w-10 h-10"
+                  roundedClassName="rounded-xl"
+                  textClassName="text-xs"
+                />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{group.name}</p>
                   <p className="text-xs text-muted-foreground">

@@ -7,6 +7,7 @@ const statusColors: Record<string, string> = {
   open: "bg-green-500/15 text-green-600 dark:text-green-400",
   assigned: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
   in_progress: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  waiting_on_support: "bg-orange-500/15 text-orange-500",
   waiting_on_user: "bg-orange-500/15 text-orange-500",
   resolved: "bg-muted text-muted-foreground",
   closed: "bg-muted text-muted-foreground",
@@ -16,7 +17,8 @@ const statusLabels: Record<string, string> = {
   open: "Open",
   assigned: "Assigned",
   in_progress: "In Progress",
-  waiting_on_user: "Waiting",
+  waiting_on_support: "Waiting on support",
+  waiting_on_user: "Waiting on user",
   resolved: "Resolved",
   closed: "Closed",
 };
@@ -66,7 +68,7 @@ export default function TicketCard({ ticket, adminView = false }: TicketCardProp
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="w-3 h-3" />
-              {new Date(ticket.updatedAt).toLocaleDateString()}
+              {new Date(ticket.updatedAt ?? ticket.createdAt).toLocaleDateString()}
             </div>
             <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded-full", statusColors[ticket.status])}>
               {statusLabels[ticket.status] ?? ticket.status}

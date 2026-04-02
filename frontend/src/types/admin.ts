@@ -42,11 +42,24 @@ export interface AdminLog {
   createdAt: string;
 }
 
+export interface AdminWarning {
+  id: string;
+  userId: string | null;
+  username: string | null;
+  anonimiId: string | null;
+  profileImage: string | null;
+  adminId: string | null;
+  adminUsername: string | null;
+  message: string | null;
+  createdAt: string;
+}
+
 export interface Ban {
   id: string;
   userId: string;
   username: string;
   anonimiId: string;
+  profileImage?: string | null;
   reason: string;
   bannedBy: string;
   bannedByUsername: string;

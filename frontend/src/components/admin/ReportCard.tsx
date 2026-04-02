@@ -5,6 +5,7 @@ import type { Report } from "@/types/report";
 
 const statusColors: Record<string, string> = {
   pending: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
+  under_review: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
   claimed: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
   resolved: "bg-green-500/15 text-green-600 dark:text-green-400",
   dismissed: "bg-muted text-muted-foreground",
@@ -12,6 +13,7 @@ const statusColors: Record<string, string> = {
 
 const statusLabels: Record<string, string> = {
   pending: "Pending",
+  under_review: "Under Review",
   claimed: "Under Review",
   resolved: "Resolved",
   dismissed: "Dismissed",
@@ -20,7 +22,10 @@ const statusLabels: Record<string, string> = {
 const reasonLabels: Record<string, string> = {
   harassment: "Harassment",
   spam: "Spam",
+  scam: "Scam",
+  impersonation: "Impersonation",
   hate_speech: "Hate Speech",
+  illegal_content: "Illegal Content",
   violence: "Violence",
   explicit_content: "Explicit Content",
   misinformation: "Misinformation",
@@ -57,9 +62,14 @@ export default function ReportCard({ report }: ReportCardProps) {
             </span>
           </div>
           <p className="text-xs text-muted-foreground truncate">
-            Reported by <span className="text-foreground/70">{report.reporterUsername}</span>
+            Reported by <span className="text-foreground/70">{report.reporterUsername ?? "Unknown"}</span>
             {report.description && ` · "${report.description}"`}
           </p>
+          {report.reviewedBy?.username && (
+            <p className="text-[11px] text-muted-foreground">
+              Claimed by <span className="text-foreground/70">{report.reviewedBy.username}</span>
+            </p>
+          )}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="w-3 h-3" />

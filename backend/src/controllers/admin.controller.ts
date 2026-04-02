@@ -153,6 +153,23 @@ export const getReportById = async (
   }
 };
 
+export const claimReport = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { reportId } = req.params;
+    const result = await adminService.claimReport(
+      req.user!._id.toString(),
+      reportId
+    );
+    apiSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const resolveReport = async (
   req: Request,
   res: Response,
@@ -162,11 +179,13 @@ export const resolveReport = async (
     const { reportId } = req.params;
     const resolution = (req.body as any).resolution;
     const resolutionNotes = (req.body as any).resolutionNotes;
+    const reporterNote = (req.body as any).reporterNote;
     const result = await adminService.resolveReport(
       req.user!._id.toString(),
       reportId,
       resolution,
       resolutionNotes,
+      reporterNote,
       req.ip || undefined
     );
     apiSuccess(res, result);
@@ -234,7 +253,7 @@ export const assignTicket = async (
 ): Promise<void> => {
   try {
     const { ticketId } = req.params;
-    const assignedTo = (req.body as any).assignedTo;
+    const assignedTo = (req.body as any).assignedTo ?? req.user!._id.toString();
     const result = await adminService.assignTicket(
       req.user!._id.toString(),
       ticketId,
@@ -272,11 +291,13 @@ export const replyToTicketAsStaff = async (
 ): Promise<void> => {
   try {
     const { ticketId } = req.params;
-    const content = (req.body as any).content;
+    const { content, mediaUrl, type } = req.body as any;
     const result = await adminService.replyToTicketAsStaff(
       req.user!._id.toString(),
       ticketId,
-      content
+      content,
+      mediaUrl,
+      type
     );
     apiSuccess(res, result, 201);
   } catch (error) {
@@ -375,6 +396,25 @@ export const getBans = async (
   }
 };
 
+export const getBanHistory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+    const cursor = req.query.cursor as string | undefined;
+    const result = await adminService.getBans(undefined, limit, cursor);
+    apiPaginated(res, result.bans, {
+      nextCursor: result.nextCursor,
+      hasMore: !!result.nextCursor,
+      limit,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getAnalytics = async (
   req: Request,
   res: Response,
@@ -383,6 +423,32 @@ export const getAnalytics = async (
   try {
     const analytics = await adminService.getAnalytics();
     apiSuccess(res, analytics);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAnalyticsUsers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await adminService.getAnalyticsUsers();
+    apiSuccess(res, data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAnalyticsMessages = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await adminService.getAnalyticsMessages();
+    apiSuccess(res, data);
   } catch (error) {
     next(error);
   }
@@ -400,6 +466,25 @@ export const getAdminLogs = async (
     const cursor = req.query.cursor as string | undefined;
     const result = await adminService.getAdminLogs(adminId, action, limit, cursor);
     apiPaginated(res, result.logs, {
+      nextCursor: result.nextCursor,
+      hasMore: !!result.nextCursor,
+      limit,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getWarnings = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+    const cursor = req.query.cursor as string | undefined;
+    const result = await adminService.getWarnings(limit, cursor);
+    apiPaginated(res, result.warnings, {
       nextCursor: result.nextCursor,
       hasMore: !!result.nextCursor,
       limit,

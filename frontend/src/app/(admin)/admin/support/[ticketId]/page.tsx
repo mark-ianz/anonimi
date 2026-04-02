@@ -6,15 +6,18 @@ import { ArrowLeft, Send } from "lucide-react";
 import AdminRoute from "@/components/shared/AdminRoute";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
+import { getAdminSocket } from "@/lib/socket";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { API_BASE } from "@/lib/constants";
 import type { SupportTicketDetail, SupportMessage } from "@/types/support";
 
 const statusLabels: Record<string, string> = {
   open: "Open",
   assigned: "Assigned",
   in_progress: "In Progress",
-  waiting_on_user: "Waiting",
+  waiting_on_support: "Waiting on Support",
+  waiting_on_user: "Waiting on User",
   resolved: "Resolved",
   closed: "Closed",
 };
@@ -23,6 +26,7 @@ const statusOptions = [
   { value: "open", label: "Open" },
   { value: "assigned", label: "Assigned" },
   { value: "in_progress", label: "In Progress" },
+  { value: "waiting_on_support", label: "Waiting on Support" },
   { value: "waiting_on_user", label: "Waiting on User" },
   { value: "resolved", label: "Resolved" },
   { value: "closed", label: "Closed" },
@@ -30,6 +34,9 @@ const statusOptions = [
 
 function MessageBubble({ msg }: { msg: SupportMessage }) {
   const isStaff = msg.senderRole === "staff";
+  const label = msg.senderUsername ?? "User";
+  const mediaUrl = msg.mediaUrl ? `${API_BASE.replace("/api", "")}${msg.mediaUrl}` : null;
+  const isImage = msg.type === "image" && !!mediaUrl;
   return (
     <div className={cn("flex", isStaff ? "justify-end" : "justify-start")}>
       <div
@@ -41,9 +48,20 @@ function MessageBubble({ msg }: { msg: SupportMessage }) {
         )}
       >
         {!isStaff && (
-          <p className="text-[11px] font-semibold mb-1 opacity-70">User</p>
+          <p className="text-[11px] font-semibold mb-1 opacity-70">{label}</p>
         )}
-        <p className="leading-relaxed whitespace-pre-wrap break-words">{msg.content}</p>
+        {isImage ? (
+          <img
+            src={mediaUrl as string}
+            alt="Support upload"
+            className="max-h-72 rounded-xl object-cover"
+          />
+        ) : null}
+        {msg.content && (
+          <p className="leading-relaxed whitespace-pre-wrap break-words">
+            {msg.content}
+          </p>
+        )}
         <p className={cn("text-[10px] mt-1", isStaff ? "text-primary-foreground/60 text-right" : "text-muted-foreground")}>
           {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </p>
@@ -73,6 +91,27 @@ export default function AdminSupportTicketPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [data?.messages]);
 
+  useEffect(() => {
+    if (!ticketId) return;
+    const socket = getAdminSocket();
+    socket.connect();
+
+    const handleUpdate = (payload?: { ticketId?: string }) => {
+      if (payload?.ticketId && payload.ticketId !== ticketId) return;
+      queryClient.invalidateQueries({ queryKey: ["admin-support-ticket", ticketId] });
+      queryClient.invalidateQueries({ queryKey: ["admin-support-tickets"] });
+    };
+
+    socket.on("admin:support:ticket:updated", handleUpdate);
+    socket.on("admin:support:message:new", handleUpdate);
+
+    return () => {
+      socket.off("admin:support:ticket:updated", handleUpdate);
+      socket.off("admin:support:message:new", handleUpdate);
+      socket.disconnect();
+    };
+  }, [ticketId, queryClient]);
+
   const replyMutation = useMutation({
     mutationFn: async () => {
       await api.post(`/admin/support/tickets/${ticketId}/messages`, { content: reply.trim() });
@@ -99,7 +138,7 @@ export default function AdminSupportTicketPage() {
 
   const assignMutation = useMutation({
     mutationFn: async () => {
-      await api.patch(`/admin/support/tickets/${ticketId}/assign`);
+      await api.patch(`/admin/support/tickets/${ticketId}/assign`, {});
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-support-ticket", ticketId] });
@@ -194,7 +233,7 @@ export default function AdminSupportTicketPage() {
 
         {/* Reply input */}
         <div className="p-3 border-t border-border/30 shrink-0">
-          <div className="flex items-end gap-2 bg-muted/40 border border-border/40 rounded-2xl px-3 py-2">
+          <div className="flex items-center gap-2 bg-muted/40 border border-border/40 rounded-2xl px-3 py-2">
             <textarea
               value={reply}
               onChange={(e) => setReply(e.target.value)}

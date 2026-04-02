@@ -7,25 +7,42 @@ export type ReportReason =
   | "explicit_content"
   | "misinformation"
   | "other";
-export type ReportStatus = "pending" | "claimed" | "resolved" | "dismissed";
+export type ReportStatus = "pending" | "under_review" | "claimed" | "resolved" | "dismissed";
 
 export interface Report {
   id: string;
-  reporterId: string;
-  reporterUsername: string;
+  reporterId: string | null;
+  reporterUsername: string | null;
+  reporter?: {
+    id: string;
+    username: string | null;
+    anonimiId: string | null;
+    profileImage: string | null;
+  } | null;
   targetType: ReportTargetType;
-  targetId: string;
+  targetId: string | null;
+  targetUser?: {
+    id: string;
+    username: string | null;
+    anonimiId: string | null;
+    profileImage: string | null;
+  } | null;
   reason: ReportReason;
   description: string | null;
   status: ReportStatus;
+  reviewedBy?: {
+    id: string;
+    username: string;
+  } | null;
   claimedBy: string | null;
   resolvedAt: string | null;
   createdAt: string;
   messageSnapshot?: {
     content: string | null;
-    senderId: string;
-    senderUsername: string;
+    senderId: string | null;
+    senderUsername: string | null;
     type: string;
     createdAt: string;
+    mediaUrl?: string | null;
   } | null;
 }

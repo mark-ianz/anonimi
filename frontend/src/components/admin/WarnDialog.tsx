@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { toast } from "sonner";
+import { useAuthStore } from "@/stores/authStore";
+import type { AdminWarning } from "@/types/admin";
 
 interface WarnDialogProps {
   userId: string;
@@ -14,6 +16,7 @@ interface WarnDialogProps {
 
 export default function WarnDialog({ userId, username, open, onClose }: WarnDialogProps) {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
   const [message, setMessage] = useState("");
 
   const warnMutation = useMutation({
@@ -22,6 +25,21 @@ export default function WarnDialog({ userId, username, open, onClose }: WarnDial
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-user", userId] });
+      queryClient.setQueryData<AdminWarning[]>(["admin-warnings"], (prev) => {
+        if (!prev) return prev;
+        const newWarning: AdminWarning = {
+          id: `local-${Date.now()}`,
+          userId,
+          username,
+          anonimiId: null,
+          profileImage: null,
+          adminId: user?.id ?? null,
+          adminUsername: user?.username ?? null,
+          message: message.trim(),
+          createdAt: new Date().toISOString(),
+        };
+        return [newWarning, ...prev];
+      });
       toast.success(`Warning sent to @${username}`);
       onClose();
       setMessage("");

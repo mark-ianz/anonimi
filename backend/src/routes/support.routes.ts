@@ -10,5 +10,7 @@ router.post("/tickets", authenticate, validate(createTicketSchema), supportContr
 router.get("/tickets", authenticate, supportController.getTickets);
 router.get("/tickets/:ticketId", authenticate, validate(ticketParamsSchema), supportController.getTicket);
 router.post("/tickets/:ticketId/messages", authenticate, validate(ticketParamsSchema), validate(replyToTicketSchema), supportController.replyToTicket);
+router.patch("/tickets/:ticketId/reopen", authenticate, validate(ticketParamsSchema), supportController.reopenTicket);
+router.get("/reports", authenticate, supportController.getReports);
 
 export default router;

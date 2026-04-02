@@ -38,6 +38,19 @@ interface SocketContextValue {
   chatSocket: Socket | null;
 }
 
+interface SupportTicketEventPayload {
+  ticketId: string;
+}
+
+interface SupportMessageEventPayload {
+  ticketId: string;
+  messageId: string;
+}
+
+interface SupportReportEventPayload {
+  reportId: string;
+}
+
 const SocketContext = createContext<SocketContextValue>({ chatSocket: null });
 
 export function useSocketContext() {
@@ -698,6 +711,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       }
 
       qc.invalidateQueries({ queryKey: ["notifications"] });
+      if (payload.type.toLowerCase().includes("warning")) {
+        qc.invalidateQueries({ queryKey: ["support-overview"] });
+      }
       if (payload.type === "message_request") {
         qc.invalidateQueries({ queryKey: ["message-requests"] });
       }
@@ -710,15 +726,39 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       if (!isAggregatedMessageUpdate && !isActiveMessageNotification) {
         const href = resolveNotificationHref(payload.data);
         const description = payload.body.replace(/\s*Click to view\.?\s*$/i, "").trim();
+        const isMessageType = payload.type === "message_received" || payload.type === "message_request";
+        const actionLabel = isMessageType ? "View message" : "Open";
         toast.info(payload.title, {
           description,
           duration: 4500,
           action: {
-            label: "View message",
+            label: actionLabel,
             onClick: () => router.push(href),
           },
         });
       }
+    });
+
+    socket.on("support:ticket:new", (_payload: SupportTicketEventPayload) => {
+      qc.invalidateQueries({ queryKey: ["support-overview"] });
+    });
+
+    socket.on("support:ticket:updated", (payload: SupportTicketEventPayload) => {
+      qc.invalidateQueries({ queryKey: ["support-overview"] });
+      qc.invalidateQueries({ queryKey: ["support-ticket", payload.ticketId] });
+    });
+
+    socket.on("support:message:new", (payload: SupportMessageEventPayload) => {
+      qc.invalidateQueries({ queryKey: ["support-ticket", payload.ticketId] });
+      qc.invalidateQueries({ queryKey: ["support-overview"] });
+    });
+
+    socket.on("support:report:new", (_payload: SupportReportEventPayload) => {
+      qc.invalidateQueries({ queryKey: ["support-overview"] });
+    });
+
+    socket.on("support:report:updated", (_payload: SupportReportEventPayload) => {
+      qc.invalidateQueries({ queryKey: ["support-overview"] });
     });
 
     return () => {
@@ -748,6 +788,11 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       socket.off("message-request:new");
       socket.off("message-request:accepted");
       socket.off("notification:new");
+      socket.off("support:ticket:new");
+      socket.off("support:ticket:updated");
+      socket.off("support:message:new");
+      socket.off("support:report:new");
+      socket.off("support:report:updated");
     };
   }, [
     isAuthenticated,

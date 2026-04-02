@@ -1,4 +1,11 @@
-export type TicketStatus = "open" | "in_progress" | "resolved" | "closed";
+export type TicketStatus =
+  | "open"
+  | "assigned"
+  | "in_progress"
+  | "waiting_on_support"
+  | "waiting_on_user"
+  | "resolved"
+  | "closed";
 export type TicketReason =
   | "login_issues"
   | "account_recovery"
@@ -13,10 +20,12 @@ export interface SupportTicket {
   subject: string;
   reason: TicketReason;
   status: TicketStatus;
-  assignedTo: {
-    id: string;
-    username: string;
-  } | null;
+  assignedTo:
+    | {
+        id: string;
+        username: string;
+      }
+    | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -24,12 +33,28 @@ export interface SupportTicket {
 export interface SupportMessage {
   id: string;
   senderId: string;
+  senderUsername?: string;
   senderRole: "user" | "staff";
-  content: string;
+  content?: string | null;
+  type?: "text" | "image";
+  mediaUrl?: string | null;
   createdAt: string;
 }
 
 export interface SupportTicketDetail {
   ticket: SupportTicket;
   messages: SupportMessage[];
+}
+
+export type SupportReportStatus = "pending" | "under_review" | "resolved" | "dismissed";
+
+export interface SupportReportItem {
+  id: string;
+  targetType: "message" | "user" | "group";
+  targetId: string;
+  reason: string;
+  description: string | null;
+  status: SupportReportStatus;
+  createdAt: string;
+  updatedAt: string;
 }

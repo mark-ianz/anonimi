@@ -4,6 +4,7 @@ import path from "path";
 import { Types } from "mongoose";
 import { User } from "../models/user.model";
 import { RefreshToken } from "../models/refreshToken.model";
+import { Ban } from "../models/ban.model";
 import { generateAnonimiId } from "../utils/generateId";
 import { hashPassword, comparePassword } from "../utils/hashPassword";
 import {
@@ -533,7 +534,11 @@ export const login = async (
   }
 
   if (user.status === UserStatus.BANNED) {
-    throw new UnauthorizedError("Account is banned");
+    const ban = await Ban.findOne({ userId: user._id, active: true })
+      .sort({ createdAt: -1 })
+      .lean();
+    const reason = ban?.reason ? `: ${ban.reason}` : "";
+    throw new UnauthorizedError(`Account is banned${reason}`);
   }
 
   const tokens = await generateTokens(user._id.toString(), user.anonimiId, user.role);

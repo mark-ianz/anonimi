@@ -28,7 +28,13 @@ export default function BanDialog({ userId, username, open, onClose }: BanDialog
 
   const banMutation = useMutation({
     mutationFn: async () => {
-      await api.post(`/admin/users/${userId}/ban`, { reason, duration });
+      const isPermanent = duration === "permanent";
+      const expiresInDays = isPermanent ? undefined : Number(duration.replace("d", ""));
+      await api.post(`/admin/users/${userId}/ban`, {
+        reason,
+        type: isPermanent ? "permanent" : "temporary",
+        expiresInDays,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-user", userId] });

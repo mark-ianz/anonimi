@@ -4,13 +4,16 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import AdminRoute from "@/components/shared/AdminRoute";
 import ReportDetail from "@/components/admin/ReportDetail";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
+import { getAdminSocket } from "@/lib/socket";
 import type { Report } from "@/types/report";
 
 export default function AdminReportDetailPage() {
   const { reportId } = useParams<{ reportId: string }>();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-report", reportId],
@@ -20,6 +23,25 @@ export default function AdminReportDetailPage() {
     },
     enabled: !!reportId,
   });
+
+  useEffect(() => {
+    if (!reportId) return;
+    const socket = getAdminSocket();
+    socket.connect();
+
+    const handleUpdate = (payload?: { reportId?: string }) => {
+      if (payload?.reportId && payload.reportId !== reportId) return;
+      queryClient.invalidateQueries({ queryKey: ["admin-report", reportId] });
+      queryClient.invalidateQueries({ queryKey: ["admin-reports"] });
+    };
+
+    socket.on("admin:report:updated", handleUpdate);
+
+    return () => {
+      socket.off("admin:report:updated", handleUpdate);
+      socket.disconnect();
+    };
+  }, [reportId, queryClient]);
 
   return (
     <AdminRoute>

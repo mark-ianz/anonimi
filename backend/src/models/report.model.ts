@@ -22,6 +22,7 @@ const reportSchema = new Schema<IReport>(
     reviewedBy: { type: Schema.Types.ObjectId, ref: "User" },
     resolution: { type: String },
     resolutionNotes: { type: String },
+    reporterNote: { type: String },
   },
   { timestamps: true }
 );

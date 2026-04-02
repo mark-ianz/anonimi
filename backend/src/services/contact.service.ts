@@ -57,7 +57,9 @@ export const getIncomingRequests = async (userId: string) => {
     .sort({ createdAt: -1 })
     .lean();
 
-  return contacts.map((c: any) => ({
+  return contacts
+    .filter((c: any) => c.userId)
+    .map((c: any) => ({
     requestId: c._id.toString(),
     from: {
       id: c.userId._id.toString(),

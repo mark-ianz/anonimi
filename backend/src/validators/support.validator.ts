@@ -16,6 +16,11 @@ export const ticketParamsSchema = z.object({
 
 export const replyToTicketSchema = z.object({
   body: z.object({
-    content: z.string().min(1, "Message content is required"),
-  }),
+    content: z.string().trim().optional(),
+    mediaUrl: z.string().trim().optional(),
+    type: z.enum(["text", "image"]).optional(),
+  }).refine(
+    (data) => (data.content && data.content.length > 0) || !!data.mediaUrl,
+    "Message content or media is required"
+  ),
 });

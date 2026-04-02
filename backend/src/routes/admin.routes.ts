@@ -31,6 +31,7 @@ router.patch("/users/:userId/role", validate(adminUserParamsSchema), validate(ch
 
 router.get("/reports", adminController.getReports);
 router.get("/reports/:reportId", validate(reportParamsSchema), adminController.getReportById);
+router.patch("/reports/:reportId/claim", validate(reportParamsSchema), adminController.claimReport);
 router.patch("/reports/:reportId/resolve", validate(reportParamsSchema), validate(resolveReportSchema), adminController.resolveReport);
 router.patch("/reports/:reportId/dismiss", validate(reportParamsSchema), adminController.dismissReport);
 
@@ -47,8 +48,13 @@ router.delete("/groups/:groupId", validate(adminGroupParamsSchema), requireRole(
 router.get("/conversations/:convId/messages", validate(adminConversationParamsSchema), adminController.getConversationMessages);
 
 router.get("/bans", adminController.getBans);
+router.get("/bans/history", adminController.getBanHistory);
 
 router.get("/analytics/overview", adminController.getAnalytics);
+router.get("/analytics/users", requireRole(UserRole.SUPER_ADMIN), adminController.getAnalyticsUsers);
+router.get("/analytics/messages", requireRole(UserRole.SUPER_ADMIN), adminController.getAnalyticsMessages);
+
+router.get("/warnings", adminController.getWarnings);
 
 router.get("/logs", requireRole(UserRole.SUPER_ADMIN), adminController.getAdminLogs);
 

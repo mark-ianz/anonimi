@@ -8,6 +8,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import type { Ban } from "@/types/admin";
 import { cn } from "@/lib/utils";
+import { API_BASE } from "@/lib/constants";
 
 const statusLabels: Record<string, string> = {
   active: "Active",
@@ -18,13 +19,24 @@ const statusLabels: Record<string, string> = {
 function BanRow({ ban, onUnban, canUnban }: { ban: Ban; onUnban: (id: string) => void; canUnban: boolean }) {
   const isPermanent = !ban.expiresAt;
   const isExpired = !ban.active;
+  const profileImage = ban.profileImage
+    ? `${API_BASE.replace("/api", "")}${ban.profileImage}`
+    : null;
 
   return (
     <div className="flex items-start gap-3 px-4 py-3 border-b border-border/20 last:border-b-0">
-      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
-        <span className="text-sm font-semibold text-muted-foreground">
-          {ban.username?.[0]?.toUpperCase() ?? "?"}
-        </span>
+      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+        {profileImage ? (
+          <img
+            src={profileImage}
+            alt={ban.username}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <span className="text-sm font-semibold text-muted-foreground">
+            {ban.username?.[0]?.toUpperCase() ?? "?"}
+          </span>
+        )}
       </div>
       <div className="flex-1 min-w-0 space-y-0.5">
         <div className="flex items-center gap-2">
@@ -65,6 +77,7 @@ export default function AdminBansPage() {
   const queryClient = useQueryClient();
   const isSuperAdmin = user?.role === "super_admin";
   const [showHistory, setShowHistory] = useState(false);
+  const [pendingUnban, setPendingUnban] = useState<Ban | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-bans", showHistory],
@@ -92,48 +105,86 @@ export default function AdminBansPage() {
   const bans = data ?? [];
 
   return (
-    <AdminRoute>
-      <div className="h-full flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-border/30 shrink-0 space-y-3">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-display font-semibold">Bans</h1>
-            {isSuperAdmin && (
-              <button
-                onClick={() => setShowHistory((v) => !v)}
-                className={cn(
-                  "h-7 px-3 rounded-lg text-xs font-medium transition-colors",
-                  showHistory
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted/50 text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {showHistory ? "Active Only" : "Full History"}
-              </button>
+    <>
+      <AdminRoute>
+        <div className="h-full flex flex-col overflow-hidden">
+          <div className="p-4 border-b border-border/30 shrink-0 space-y-3">
+            <div className="flex items-center justify-between">
+              <h1 className="text-xl font-display font-semibold">Bans</h1>
+              {isSuperAdmin && (
+                <button
+                  onClick={() => setShowHistory((v) => !v)}
+                  className={cn(
+                    "h-7 px-3 rounded-lg text-xs font-medium transition-colors",
+                    showHistory
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted/50 text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {showHistory ? "Active Only" : "Full History"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto">
+            {isLoading ? (
+              <div className="flex justify-center py-10">
+                <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+              </div>
+            ) : bans.length === 0 ? (
+              <div className="flex justify-center py-16">
+                <p className="text-sm text-muted-foreground">No bans found</p>
+              </div>
+            ) : (
+              bans.map((ban) => (
+                <BanRow
+                  key={ban.id}
+                  ban={ban}
+                  onUnban={() => setPendingUnban(ban)}
+                  canUnban={true}
+                />
+              ))
             )}
           </div>
         </div>
-
-        <div className="flex-1 overflow-y-auto">
-          {isLoading ? (
-            <div className="flex justify-center py-10">
-              <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      </AdminRoute>
+      {pendingUnban && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setPendingUnban(null)}
+          />
+          <div className="relative z-10 w-full max-w-md bg-background border border-border/40 rounded-2xl shadow-elevated p-5 space-y-4">
+            <div>
+              <h2 className="text-base font-semibold font-display">Confirm Unban</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                You are about to unban <span className="text-foreground font-medium">@{pendingUnban.username}</span>.
+              </p>
             </div>
-          ) : bans.length === 0 ? (
-            <div className="flex justify-center py-16">
-              <p className="text-sm text-muted-foreground">No bans found</p>
+            <div className="rounded-xl border border-border/40 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              This will restore the user’s access immediately.
             </div>
-          ) : (
-            bans.map((ban) => (
-              <BanRow
-                key={ban.id}
-                ban={ban}
-                onUnban={(id) => unbanMutation.mutate(id)}
-                canUnban={true}
-              />
-            ))
-          )}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPendingUnban(null)}
+                className="flex-1 h-10 rounded-xl border border-border/40 text-sm font-medium text-muted-foreground hover:bg-muted/40 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  unbanMutation.mutate(pendingUnban.id);
+                  setPendingUnban(null);
+                }}
+                className="flex-1 h-10 rounded-xl bg-green-500 text-white text-sm font-medium hover:bg-green-500/90 transition-colors"
+              >
+                Unban User
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-    </AdminRoute>
+      )}
+    </>
   );
 }

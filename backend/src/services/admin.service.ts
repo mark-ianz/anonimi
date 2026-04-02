@@ -11,7 +11,7 @@ import { Message } from "../models/message.model";
 import { AdminLog } from "../models/adminLog.model";
 import { NotFoundError, ForbiddenError, ConflictError } from "../utils/apiError";
 import { UserRole, UserStatus } from "../types/enums";
-import { createAndEmitNotification } from "./notification.service";
+import { createAndEmitNotification, emitToAdmins, emitToUser } from "./notification.service";
 
 export const createAdminLog = async (
   adminId: string,
@@ -238,6 +238,7 @@ export const getReports = async (
 
   const reports = await Report.find(query)
     .populate("reporterId", "username anonimiId")
+    .populate("reviewedBy", "username")
     .sort({ createdAt: -1 })
     .limit(limit + 1)
     .lean();
@@ -253,7 +254,14 @@ export const getReports = async (
       targetType: r.targetType,
       targetId: r.targetId.toString(),
       reason: r.reason,
+      description: r.description ?? null,
       status: r.status,
+      reviewedBy: r.reviewedBy
+        ? {
+            id: r.reviewedBy?._id?.toString(),
+            username: r.reviewedBy?.username,
+          }
+        : null,
       createdAt: r.createdAt,
     })),
     nextCursor: hasMore ? data[data.length - 1]._id.toString() : undefined,
@@ -262,7 +270,7 @@ export const getReports = async (
 
 export const getReportById = async (reportId: string) => {
   const report = await Report.findById(reportId)
-    .populate("reporterId", "username anonimiId")
+    .populate("reporterId", "username anonimiId profileImage")
     .populate("reviewedBy", "username")
     .lean();
 
@@ -270,7 +278,154 @@ export const getReportById = async (reportId: string) => {
     throw new NotFoundError("Report not found");
   }
 
-  return report;
+  const reporter = report.reporterId as any;
+  const reporterId = reporter?._id?.toString?.();
+
+  let targetUserId: string | null = null;
+  if (report.targetType === "user") {
+    targetUserId = report.targetId?.toString?.() ?? null;
+  } else if (report.targetType === "message" && report.messageSnapshot?.senderId) {
+    targetUserId = report.messageSnapshot.senderId.toString();
+  }
+
+  const targetUser = targetUserId
+    ? await User.findById(targetUserId).select("username anonimiId profileImage").lean()
+    : null;
+
+  return {
+    id: report._id.toString(),
+    reporterId,
+    reporterUsername: reporter?.username ?? null,
+    reporter: reporterId
+      ? {
+          id: reporterId,
+          username: reporter?.username ?? null,
+          anonimiId: reporter?.anonimiId ?? null,
+          profileImage: reporter?.profileImage ?? null,
+        }
+      : null,
+    targetType: report.targetType,
+    targetId: report.targetId?.toString?.() ?? null,
+    reason: report.reason,
+    description: report.description ?? null,
+    status: report.status,
+    reviewedBy: report.reviewedBy
+      ? {
+          id: (report.reviewedBy as any)?._id?.toString(),
+          username: (report.reviewedBy as any)?.username,
+        }
+      : null,
+    createdAt: report.createdAt,
+    messageSnapshot: report.messageSnapshot
+      ? {
+          content: report.messageSnapshot.content ?? null,
+          senderId: report.messageSnapshot.senderId?.toString?.() ?? null,
+          senderUsername: report.messageSnapshot.senderUsername ?? null,
+          type: report.messageSnapshot.type ?? "text",
+          createdAt: report.messageSnapshot.originalCreatedAt ?? report.createdAt,
+          mediaUrl: report.messageSnapshot.mediaUrl ?? null,
+        }
+      : null,
+    targetUser: targetUser
+      ? {
+          id: targetUser._id.toString(),
+          username: (targetUser as any).username ?? null,
+          anonimiId: (targetUser as any).anonimiId ?? null,
+          profileImage: (targetUser as any).profileImage ?? null,
+        }
+      : null,
+  };
+};
+
+export const claimReport = async (adminId: string, reportId: string) => {
+  const report = await Report.findById(reportId);
+
+  if (!report) {
+    throw new NotFoundError("Report not found");
+  }
+
+  if (report.status === "resolved" || report.status === "dismissed") {
+    throw new ConflictError("Report already closed");
+  }
+
+  report.status = "under_review";
+  report.reviewedBy = new Types.ObjectId(adminId);
+  await report.save();
+
+  await createAdminLog(adminId, "claim_report", "report", reportId, {});
+
+  emitToUser(report.reporterId.toString(), "support:report:updated", {
+    reportId: report._id.toString(),
+    status: report.status,
+    updatedAt: report.updatedAt?.toISOString?.() ?? new Date().toISOString(),
+  });
+  emitToAdmins("admin:report:updated", {
+    reportId: report._id.toString(),
+    status: report.status,
+    updatedAt: report.updatedAt?.toISOString?.() ?? new Date().toISOString(),
+  });
+
+  return { message: "Report claimed" };
+};
+
+const buildDailySeries = async (
+  collection: typeof User | typeof Message,
+  dateField: string,
+  days: number = 30,
+  match: Record<string, unknown> = {}
+) => {
+  const end = new Date();
+  end.setHours(23, 59, 59, 999);
+  const start = new Date(end);
+  start.setDate(start.getDate() - (days - 1));
+  start.setHours(0, 0, 0, 0);
+
+  const rows = await collection.aggregate([
+    {
+      $match: {
+        ...match,
+        [dateField]: { $gte: start, $lte: end },
+      },
+    },
+    {
+      $group: {
+        _id: {
+          $dateToString: { format: "%Y-%m-%d", date: `$${dateField}` },
+        },
+        count: { $sum: 1 },
+      },
+    },
+    { $sort: { _id: 1 } },
+  ]);
+
+  const lookup = new Map(rows.map((r: any) => [r._id, r.count]));
+  const series: Array<{ date: string; value: number }> = [];
+
+  for (let i = 0; i < days; i += 1) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    const key = d.toISOString().slice(0, 10);
+    series.push({ date: d.toISOString(), value: lookup.get(key) ?? 0 });
+  }
+
+  return series;
+};
+
+export const getAnalyticsUsers = async () => {
+  const registrations = await buildDailySeries(User, "createdAt");
+  const dau = await buildDailySeries(
+    User,
+    "lastSeen",
+    30,
+    { lastSeen: { $ne: null } }
+  );
+
+  return { registrations, dau };
+};
+
+export const getAnalyticsMessages = async () => {
+  const daily = await buildDailySeries(Message, "createdAt");
+  return { daily };
 };
 
 export const resolveReport = async (
@@ -278,6 +433,7 @@ export const resolveReport = async (
   reportId: string,
   resolution: string,
   notes?: string,
+  reporterNote?: string,
   ipAddress?: string
 ) => {
   const report = await Report.findById(reportId);
@@ -289,6 +445,7 @@ export const resolveReport = async (
   report.status = "resolved";
   report.resolution = resolution;
   report.resolutionNotes = notes;
+  report.reporterNote = reporterNote;
   report.reviewedBy = new Types.ObjectId(adminId);
   await report.save();
 
@@ -321,12 +478,35 @@ export const resolveReport = async (
     userId: report.reporterId.toString(),
     type: "report_update",
     title: "Report reviewed",
-    body: `Your report was resolved with outcome: ${resolution}.`,
+    body: (() => {
+      const labelMap: Record<string, string> = {
+        warning_issued: "Warning issued",
+        user_banned: "User banned",
+        content_removed: "Content removed",
+        no_action: "No action",
+      };
+      const summary = labelMap[resolution] ?? "Resolved";
+      if (reporterNote && reporterNote.trim()) {
+        return `Outcome: ${summary}. Note: ${reporterNote.trim()}`;
+      }
+      return `Outcome: ${summary}.`;
+    })(),
     data: {
       reportId: report._id.toString(),
       resolution,
       href: "/support",
     },
+  });
+
+  emitToUser(report.reporterId.toString(), "support:report:updated", {
+    reportId: report._id.toString(),
+    status: report.status,
+    updatedAt: report.updatedAt?.toISOString?.() ?? new Date().toISOString(),
+  });
+  emitToAdmins("admin:report:updated", {
+    reportId: report._id.toString(),
+    status: report.status,
+    updatedAt: report.updatedAt?.toISOString?.() ?? new Date().toISOString(),
   });
 
   return { message: "Report resolved" };
@@ -353,12 +533,25 @@ export const dismissReport = async (
     userId: report.reporterId.toString(),
     type: "report_update",
     title: "Report reviewed",
-    body: "Your report was reviewed and dismissed.",
+    body: notes && notes.trim()
+      ? `Outcome: Dismissed. Notes: ${notes.trim()}`
+      : "Outcome: Dismissed.",
     data: {
       reportId: report._id.toString(),
       resolution: "dismissed",
       href: "/support",
     },
+  });
+
+  emitToUser(report.reporterId.toString(), "support:report:updated", {
+    reportId: report._id.toString(),
+    status: report.status,
+    updatedAt: report.updatedAt?.toISOString?.() ?? new Date().toISOString(),
+  });
+  emitToAdmins("admin:report:updated", {
+    reportId: report._id.toString(),
+    status: report.status,
+    updatedAt: report.updatedAt?.toISOString?.() ?? new Date().toISOString(),
   });
 
   return { message: "Report dismissed" };
@@ -392,8 +585,14 @@ export const getAdminTickets = async (
       subject: t.subject,
       reason: t.reason,
       status: t.status,
-      assignedTo: t.assignedTo?._id?.toString(),
+      assignedTo: t.assignedTo
+        ? {
+            id: t.assignedTo?._id?.toString(),
+            username: t.assignedTo?.username,
+          }
+        : null,
       createdAt: t.createdAt,
+      updatedAt: t.updatedAt,
     })),
     nextCursor: hasMore ? data[data.length - 1]._id.toString() : undefined,
   };
@@ -421,7 +620,12 @@ export const getAdminTicketById = async (ticketId: string) => {
       subject: ticket.subject,
       reason: ticket.reason,
       status: ticket.status,
-      assignedTo: ticket.assignedTo?._id?.toString(),
+      assignedTo: ticket.assignedTo
+        ? {
+            id: ticket.assignedTo?._id?.toString(),
+            username: ticket.assignedTo?.username,
+          }
+        : null,
     },
     messages: messages.map((m: any) => ({
       id: m._id.toString(),
@@ -429,6 +633,8 @@ export const getAdminTicketById = async (ticketId: string) => {
       senderUsername: m.senderId?.username,
       senderRole: m.senderRole,
       content: m.content,
+      type: m.type ?? "text",
+      mediaUrl: m.mediaUrl ?? null,
       createdAt: m.createdAt,
     })),
   };
@@ -460,6 +666,17 @@ export const assignTicket = async (
     },
   });
 
+  emitToUser(ticket.userId.toString(), "support:ticket:updated", {
+    ticketId: ticket._id.toString(),
+    status: ticket.status,
+    updatedAt: ticket.updatedAt?.toISOString?.() ?? new Date().toISOString(),
+  });
+  emitToAdmins("admin:support:ticket:updated", {
+    ticketId: ticket._id.toString(),
+    status: ticket.status,
+    updatedAt: ticket.updatedAt?.toISOString?.() ?? new Date().toISOString(),
+  });
+
   return { message: "Ticket assigned" };
 };
 
@@ -489,13 +706,26 @@ export const updateTicketStatus = async (
     },
   });
 
+  emitToUser(ticket.userId.toString(), "support:ticket:updated", {
+    ticketId: ticket._id.toString(),
+    status: ticket.status,
+    updatedAt: ticket.updatedAt?.toISOString?.() ?? new Date().toISOString(),
+  });
+  emitToAdmins("admin:support:ticket:updated", {
+    ticketId: ticket._id.toString(),
+    status: ticket.status,
+    updatedAt: ticket.updatedAt?.toISOString?.() ?? new Date().toISOString(),
+  });
+
   return { message: "Ticket status updated" };
 };
 
 export const replyToTicketAsStaff = async (
   adminId: string,
   ticketId: string,
-  content: string
+  content?: string,
+  mediaUrl?: string,
+  type: "text" | "image" = "text"
 ) => {
   const ticket = await SupportTicket.findById(ticketId);
 
@@ -503,14 +733,20 @@ export const replyToTicketAsStaff = async (
     throw new NotFoundError("Ticket not found");
   }
 
+  if (!ticket.assignedTo) {
+    ticket.assignedTo = new Types.ObjectId(adminId);
+  }
+
   const message = await SupportMessage.create({
     ticketId: ticket._id,
     senderId: new Types.ObjectId(adminId),
     senderRole: "staff",
-    content,
+    type,
+    content: content?.trim() || null,
+    mediaUrl: mediaUrl ?? null,
   });
 
-  ticket.status = "in_progress";
+  ticket.status = "waiting_on_user";
   await ticket.save();
 
   await createAndEmitNotification({
@@ -524,10 +760,34 @@ export const replyToTicketAsStaff = async (
     },
   });
 
+  emitToUser(ticket.userId.toString(), "support:message:new", {
+    ticketId: ticket._id.toString(),
+    messageId: message._id.toString(),
+    createdAt: message.createdAt,
+  });
+  emitToAdmins("admin:support:message:new", {
+    ticketId: ticket._id.toString(),
+    messageId: message._id.toString(),
+    userId: ticket.userId.toString(),
+    createdAt: message.createdAt,
+  });
+  emitToUser(ticket.userId.toString(), "support:ticket:updated", {
+    ticketId: ticket._id.toString(),
+    status: ticket.status,
+    updatedAt: ticket.updatedAt?.toISOString?.() ?? new Date().toISOString(),
+  });
+  emitToAdmins("admin:support:ticket:updated", {
+    ticketId: ticket._id.toString(),
+    status: ticket.status,
+    updatedAt: ticket.updatedAt?.toISOString?.() ?? new Date().toISOString(),
+  });
+
   return {
     messageId: message._id.toString(),
     content: message.content,
     senderRole: message.senderRole,
+    type: message.type,
+    mediaUrl: message.mediaUrl ?? null,
     createdAt: message.createdAt,
   };
 };
@@ -555,6 +815,16 @@ export const getGroups = async (search?: string, limit: number = 20, cursor?: st
   const enriched = await Promise.all(
     data.map(async (g: any) => {
       const memberCount = await GroupMember.countDocuments({ groupId: g._id });
+      const previewMembers = await GroupMember.find({ groupId: g._id })
+        .populate("userId", "username profileImage")
+        .limit(3)
+        .lean();
+
+      const memberPreview = previewMembers.map((m: any) => ({
+        username: m.userId?.username ?? null,
+        profileImage: m.userId?.profileImage ?? null,
+      }));
+
       return {
         id: g._id.toString(),
         name: g.name,
@@ -562,6 +832,7 @@ export const getGroups = async (search?: string, limit: number = 20, cursor?: st
         ownerId: g.ownerId?._id?.toString(),
         ownerUsername: g.ownerId?.username,
         memberCount,
+        memberPreview,
         createdAt: g.createdAt,
       };
     })
@@ -583,7 +854,7 @@ export const getGroupById = async (groupId: string) => {
   }
 
   const members = await GroupMember.find({ groupId: group._id })
-    .populate("userId", "username anonimiId")
+    .populate("userId", "username anonimiId profileImage")
     .lean();
 
   return {
@@ -592,10 +863,13 @@ export const getGroupById = async (groupId: string) => {
     image: group.image,
     ownerId: group.ownerId?._id?.toString(),
     ownerUsername: group.ownerId?.username,
+    conversationId: group.conversationId?.toString(),
     settings: group.settings,
     members: members.map((m: any) => ({
       userId: m.userId?._id?.toString(),
       username: m.userId?.username,
+      anonimiId: m.userId?.anonimiId,
+      profileImage: m.userId?.profileImage ?? null,
       role: m.role,
     })),
     createdAt: group.createdAt,
@@ -660,36 +934,43 @@ export const getConversationMessages = async (
 };
 
 export const getBans = async (
-  active: boolean = true,
+  active?: boolean,
   limit: number = 20,
   cursor?: string
 ) => {
-  const query: Record<string, unknown> = { active };
+  const query: Record<string, unknown> = {};
+
+  if (typeof active === "boolean") {
+    query.active = active;
+  }
 
   if (cursor) {
     query._id = { $lt: new Types.ObjectId(cursor) };
   }
 
   const bans = await Ban.find(query)
-    .populate("userId", "username anonimiId")
+    .populate("userId", "username anonimiId profileImage")
     .populate("bannedBy", "username")
     .sort({ createdAt: -1 })
     .limit(limit + 1)
     .lean();
 
   const hasMore = bans.length > limit;
-  const data = hasMore ? bans.slice(0, limit) : data;
+  const data = hasMore ? bans.slice(0, limit) : bans;
 
   return {
     bans: data.map((b: any) => ({
       id: b._id.toString(),
       userId: b.userId?._id?.toString(),
       username: b.userId?.username,
+      anonimiId: b.userId?.anonimiId,
+      profileImage: b.userId?.profileImage ?? null,
       reason: b.reason,
       type: b.type,
       expiresAt: b.expiresAt,
       bannedBy: b.bannedBy?.username,
       createdAt: b.createdAt,
+      active: b.active,
     })),
     nextCursor: hasMore ? data[data.length - 1]._id.toString() : undefined,
   };
@@ -753,6 +1034,53 @@ export const getAdminLogs = async (
       details: l.details,
       createdAt: l.createdAt,
     })),
+    nextCursor: hasMore ? data[data.length - 1]._id.toString() : undefined,
+  };
+};
+
+export const getWarnings = async (limit: number = 50, cursor?: string) => {
+  const query: Record<string, unknown> = { action: "warn_user" };
+
+  if (cursor) query._id = { $lt: new Types.ObjectId(cursor) };
+
+  const logs = await AdminLog.find(query)
+    .populate("adminId", "username")
+    .sort({ createdAt: -1 })
+    .limit(limit + 1)
+    .lean();
+
+  const hasMore = logs.length > limit;
+  const data = hasMore ? logs.slice(0, limit) : logs;
+
+  const userIds = data
+    .map((log: any) => log.targetId?.toString())
+    .filter((id: string | undefined) => !!id);
+
+  const users = await User.find({ _id: { $in: userIds } })
+    .select("username anonimiId profileImage")
+    .lean();
+
+  const userLookup = new Map(
+    users.map((u: any) => [u._id.toString(), u])
+  );
+
+  return {
+    warnings: data.map((log: any) => {
+      const targetId = log.targetId?.toString();
+      const targetUser = targetId ? userLookup.get(targetId) : null;
+
+      return {
+        id: log._id.toString(),
+        userId: targetId ?? null,
+        username: targetUser?.username ?? null,
+        anonimiId: targetUser?.anonimiId ?? null,
+        profileImage: targetUser?.profileImage ?? null,
+        adminId: log.adminId?._id?.toString(),
+        adminUsername: log.adminId?.username,
+        message: log.details?.message ?? null,
+        createdAt: log.createdAt,
+      };
+    }),
     nextCursor: hasMore ? data[data.length - 1]._id.toString() : undefined,
   };
 };

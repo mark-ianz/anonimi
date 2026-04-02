@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import { API_BASE } from "@/lib/constants";
+import GroupAvatar from "@/components/shared/GroupAvatar";
 import Link from "next/link";
 
 interface GroupMember {
@@ -29,6 +30,7 @@ interface AdminGroupDetail {
   settings: { joinRequestEnabled: boolean };
   myRole: string;
   createdAt: string;
+  members?: GroupMember[];
 }
 
 export default function AdminGroupDetailPage() {
@@ -46,14 +48,7 @@ export default function AdminGroupDetailPage() {
     enabled: !!groupId,
   });
 
-  const { data: members } = useQuery({
-    queryKey: ["admin-group-members", groupId],
-    queryFn: async () => {
-      const res = await api.get(`/groups/${groupId}/members`);
-      return res.data.data as GroupMember[];
-    },
-    enabled: !!groupId,
-  });
+  const members = group?.members ?? [];
 
   const archiveMutation = useMutation({
     mutationFn: async () => {
@@ -96,13 +91,15 @@ export default function AdminGroupDetailPage() {
               {/* Group info */}
               <div className="bg-muted/30 border border-border/30 rounded-2xl p-4 space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
-                    {group.image ? (
-                      <img src={`${API_BASE.replace("/api", "")}${group.image}`} className="w-full h-full rounded-xl object-cover" alt={group.name} />
-                    ) : (
-                      <span className="text-lg font-bold text-muted-foreground">{group.name[0].toUpperCase()}</span>
-                    )}
-                  </div>
+                  <GroupAvatar
+                    imageUrl={group.image ? `${API_BASE.replace("/api", "")}${group.image}` : null}
+                    fallbackProfileImages={members.map((m) => m.profileImage)}
+                    name={group.name}
+                    alt={group.name}
+                    className="w-12 h-12"
+                    roundedClassName="rounded-xl"
+                    textClassName="text-base"
+                  />
                   <div>
                     <p className="font-bold text-base">{group.name}</p>
                     <p className="text-xs text-muted-foreground">{group.memberCount} members · Created {new Date(group.createdAt).toLocaleDateString()}</p>
@@ -147,10 +144,10 @@ export default function AdminGroupDetailPage() {
               {/* Members */}
               <div className="space-y-2">
                 <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  Members ({members?.length ?? 0})
+                  Members ({members.length})
                 </h2>
                 <div className="border border-border/30 rounded-2xl overflow-hidden">
-                  {(members ?? []).map((m) => (
+                  {members.map((m) => (
                     <div key={m.userId} className="flex items-center gap-3 px-3 py-2.5 border-b border-border/20 last:border-b-0">
                       <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
                         {m.profileImage ? (

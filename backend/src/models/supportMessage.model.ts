@@ -6,7 +6,9 @@ const supportMessageSchema = new Schema<ISupportMessage>(
     ticketId: { type: Schema.Types.ObjectId, ref: "SupportTicket", required: true },
     senderId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     senderRole: { type: String, enum: ["user", "staff"], required: true },
-    content: { type: String, required: true },
+    type: { type: String, enum: ["text", "image"], default: "text" },
+    content: { type: String },
+    mediaUrl: { type: String },
   },
   { timestamps: true }
 );

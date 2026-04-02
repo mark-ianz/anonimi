@@ -2,30 +2,42 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Paperclip, Send } from "lucide-react";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useMediaUpload } from "@/hooks/useMediaUpload";
+import { FilePreview } from "@/components/shared/FileUpload";
+import { ALLOWED_IMAGE_TYPES, API_BASE } from "@/lib/constants";
 import type { SupportTicketDetail, SupportMessage } from "@/types/support";
 
 const statusColors: Record<string, string> = {
   open: "bg-green-500/15 text-green-600 dark:text-green-400",
+  assigned: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
   in_progress: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  waiting_on_support: "bg-orange-500/15 text-orange-500",
+  waiting_on_user: "bg-orange-500/15 text-orange-500",
   resolved: "bg-muted text-muted-foreground",
   closed: "bg-muted text-muted-foreground",
 };
 
 const statusLabels: Record<string, string> = {
   open: "Open",
+  assigned: "Assigned",
   in_progress: "In Progress",
+  waiting_on_support: "Waiting on support",
+  waiting_on_user: "Waiting on you",
   resolved: "Resolved",
   closed: "Closed",
 };
 
 function MessageBubble({ msg, isOwn }: { msg: SupportMessage; isOwn: boolean }) {
+  const mediaUrl = msg.mediaUrl ? `${API_BASE.replace("/api", "")}${msg.mediaUrl}` : null;
+  const isImage = msg.type === "image" && !!mediaUrl;
+
   return (
     <div className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
       <div
@@ -39,7 +51,18 @@ function MessageBubble({ msg, isOwn }: { msg: SupportMessage; isOwn: boolean }) 
         {!isOwn && (
           <p className="text-[11px] font-semibold mb-1 opacity-70">Support Team</p>
         )}
-        <p className="leading-relaxed whitespace-pre-wrap break-words">{msg.content}</p>
+        {isImage ? (
+          <img
+            src={mediaUrl as string}
+            alt="Support upload"
+            className="max-h-72 rounded-xl object-cover"
+          />
+        ) : null}
+        {msg.content && (
+          <p className="leading-relaxed whitespace-pre-wrap break-words">
+            {msg.content}
+          </p>
+        )}
         <p className={cn("text-[10px] mt-1", isOwn ? "text-primary-foreground/60 text-right" : "text-muted-foreground")}>
           {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </p>
@@ -54,7 +77,11 @@ export default function SupportTicketPage() {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const [reply, setReply] = useState("");
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const clearedNotificationsRef = useRef<string | null>(null);
+  const { upload, isUploading, progress, cancel } = useMediaUpload();
 
   const { data, isLoading } = useQuery({
     queryKey: ["support-ticket", ticketId],
@@ -69,21 +96,88 @@ export default function SupportTicketPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [data?.messages]);
 
+  useEffect(() => {
+    if (!ticketId || clearedNotificationsRef.current === ticketId) return;
+
+    const clearTicketNotifications = async () => {
+      try {
+        const res = await api.get("/notifications", { params: { limit: 50 } });
+        const notifications = res.data.data.notifications as Array<{
+          id: string;
+          read: boolean;
+          data: Record<string, unknown>;
+        }>;
+
+        const target = notifications.filter(
+          (n) => !n.read && n.data?.ticketId === ticketId
+        );
+
+        if (target.length === 0) {
+          clearedNotificationsRef.current = ticketId;
+          return;
+        }
+
+        await Promise.all(
+          target.map((n) => api.patch(`/notifications/${n.id}/read`))
+        );
+
+        queryClient.invalidateQueries({ queryKey: ["support-overview"] });
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        clearedNotificationsRef.current = ticketId;
+      } catch {
+        // Ignore notification read failures to avoid blocking chat.
+      }
+    };
+
+    void clearTicketNotifications();
+  }, [ticketId, queryClient, data?.messages?.length]);
+
   const replyMutation = useMutation({
-    mutationFn: async () => {
-      await api.post(`/support/tickets/${ticketId}/messages`, { content: reply.trim() });
+    mutationFn: async (payload: { content?: string; mediaUrl?: string; type?: "text" | "image" }) => {
+      await api.post(`/support/tickets/${ticketId}/messages`, payload);
     },
     onSuccess: () => {
       setReply("");
+      setPendingFile(null);
       queryClient.invalidateQueries({ queryKey: ["support-ticket", ticketId] });
+      queryClient.invalidateQueries({ queryKey: ["support-overview"] });
     },
     onError: () => {
       toast.error("Failed to send reply");
     },
   });
 
-  const handleSend = () => {
-    if (reply.trim()) replyMutation.mutate();
+  const reopenMutation = useMutation({
+    mutationFn: async () => {
+      await api.patch(`/support/tickets/${ticketId}/reopen`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["support-ticket", ticketId] });
+      queryClient.invalidateQueries({ queryKey: ["support-overview"] });
+      toast.success("Ticket reopened");
+    },
+    onError: () => toast.error("Failed to reopen ticket"),
+  });
+
+  const handleSend = async () => {
+    const trimmed = reply.trim();
+    if (!trimmed && !pendingFile) return;
+
+    let mediaUrl: string | undefined;
+    let type: "text" | "image" = "text";
+
+    if (pendingFile) {
+      const result = await upload(pendingFile, "message", { source: "file" });
+      if (!result) return;
+      mediaUrl = result.url;
+      type = ALLOWED_IMAGE_TYPES.includes(pendingFile.type) ? "image" : "text";
+    }
+
+    replyMutation.mutate({
+      content: trimmed || undefined,
+      mediaUrl,
+      type,
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -152,22 +246,53 @@ export default function SupportTicketPage() {
         {/* Input */}
         {!isClosed && (
           <div className="p-3 border-t border-border/30 shrink-0">
-            <div className="flex items-end gap-2 bg-muted/40 border border-border/40 rounded-2xl px-3 py-2">
+            {pendingFile && (
+              <div className="mb-2 px-1">
+                <FilePreview
+                  file={pendingFile}
+                  onRemove={() => {
+                    setPendingFile(null);
+                    cancel();
+                  }}
+                  progress={isUploading ? progress : undefined}
+                />
+              </div>
+            )}
+            <div className="flex items-center gap-2 bg-muted/40 border border-border/40 rounded-2xl px-3 py-1.5">
+              <button
+                type="button"
+                disabled={isUploading}
+                onClick={() => fileInputRef.current?.click()}
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted/60 transition-colors shrink-0"
+              >
+                <Paperclip className="w-4 h-4" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ALLOWED_IMAGE_TYPES.join(",")}
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) setPendingFile(file);
+                  event.target.value = "";
+                }}
+              />
               <textarea
                 value={reply}
                 onChange={(e) => setReply(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Write a reply..."
                 rows={1}
-                className="flex-1 resize-none bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none max-h-32 py-0.5"
-                style={{ minHeight: "24px" }}
+                className="flex-1 resize-none bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none max-h-32 leading-relaxed py-0.5"
+                style={{ minHeight: "32px" }}
               />
               <button
                 onClick={handleSend}
-                disabled={!reply.trim() || replyMutation.isPending}
+                disabled={(!reply.trim() && !pendingFile) || replyMutation.isPending || isUploading}
                 className="w-8 h-8 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors shrink-0"
               >
-                {replyMutation.isPending ? (
+                {replyMutation.isPending || isUploading ? (
                   <div className="w-3.5 h-3.5 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />
                 ) : (
                   <Send className="w-3.5 h-3.5" />
@@ -178,8 +303,15 @@ export default function SupportTicketPage() {
         )}
 
         {isClosed && (
-          <div className="p-3 border-t border-border/30 shrink-0 text-center">
+          <div className="p-3 border-t border-border/30 shrink-0 text-center space-y-2">
             <p className="text-xs text-muted-foreground">This ticket is {data?.ticket.status}.</p>
+            <button
+              onClick={() => reopenMutation.mutate()}
+              disabled={reopenMutation.isPending}
+              className="inline-flex items-center justify-center h-8 px-3 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+            >
+              {reopenMutation.isPending ? "Reopening..." : "Reopen ticket"}
+            </button>
           </div>
         )}
       </div>

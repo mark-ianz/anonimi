@@ -35,13 +35,22 @@ export const resolveReportSchema = z.object({
       "no_action",
     ]),
     resolutionNotes: z.string().optional(),
+    reporterNote: z.string().optional(),
   }),
 });
 
 export const updateTicketSchema = z.object({
   body: z.object({
     status: z
-      .enum(["open", "assigned", "in_progress", "waiting_on_user", "resolved", "closed"])
+      .enum([
+        "open",
+        "assigned",
+        "in_progress",
+        "waiting_on_support",
+        "waiting_on_user",
+        "resolved",
+        "closed",
+      ])
       .optional(),
     assignedTo: z.string().optional(),
   }),

@@ -1,35 +1,66 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AdminRoute from "@/components/shared/AdminRoute";
 import TicketCard from "@/components/admin/TicketCard";
 import api from "@/lib/api";
+import { getAdminSocket } from "@/lib/socket";
 import type { SupportTicket, TicketStatus } from "@/types/support";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/stores/authStore";
 
-const statuses: { value: TicketStatus | "all"; label: string }[] = [
+const statuses: { value: TicketStatus | "all" | "mine"; label: string }[] = [
   { value: "all", label: "All" },
+  { value: "mine", label: "Assigned to me" },
   { value: "open", label: "Open" },
+  { value: "assigned", label: "Assigned" },
   { value: "in_progress", label: "In Progress" },
+  { value: "waiting_on_support", label: "Waiting on Support" },
+  { value: "waiting_on_user", label: "Waiting on User" },
   { value: "resolved", label: "Resolved" },
   { value: "closed", label: "Closed" },
 ];
 
 export default function AdminSupportPage() {
-  const [status, setStatus] = useState<TicketStatus | "all">("open");
+  const [status, setStatus] = useState<TicketStatus | "all" | "mine">("open");
+  const queryClient = useQueryClient();
+  const { user } = useAuthStore();
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-support-tickets", status],
     queryFn: async () => {
-      const params = status !== "all" ? { status } : {};
+      const params = status !== "all" && status !== "mine" ? { status } : {};
       const res = await api.get("/admin/support/tickets", { params });
       return res.data.data as SupportTicket[];
     },
     placeholderData: (prev) => prev,
   });
 
-  const tickets = data ?? [];
+  const tickets = (data ?? []).filter((ticket) => {
+    if (status !== "mine") return true;
+    return ticket.assignedTo?.id === user?.id;
+  });
+
+  useEffect(() => {
+    const socket = getAdminSocket();
+    socket.connect();
+
+    const handleUpdate = () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-support-tickets"] });
+    };
+
+    socket.on("admin:support:ticket:new", handleUpdate);
+    socket.on("admin:support:ticket:updated", handleUpdate);
+    socket.on("admin:support:message:new", handleUpdate);
+
+    return () => {
+      socket.off("admin:support:ticket:new", handleUpdate);
+      socket.off("admin:support:ticket:updated", handleUpdate);
+      socket.off("admin:support:message:new", handleUpdate);
+      socket.disconnect();
+    };
+  }, [queryClient]);
 
   return (
     <AdminRoute>

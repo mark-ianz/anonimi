@@ -10,6 +10,7 @@ import {
   UserCircle2, 
   Settings, 
   HelpCircle,
+  ShieldCheck,
   Menu,
   Search,
   Bell,
@@ -102,6 +103,13 @@ export default function MainLayout({ children }: SidebarProps) {
   }, [conversations, unreadCounts]);
 
   const contactRequestCount = requests.length;
+  const supportUnreadCount = useMemo(() => {
+    return notifications.filter((n) => {
+      if (n.read) return false;
+      const type = n.type.toLowerCase();
+      return type.includes("warning") || type.includes("ticket") || type.includes("support") || type.includes("report");
+    }).length;
+  }, [notifications]);
 
   const currentStatus = (user?.onlineStatus ?? "offline") as OnlineStatus;
   const currentAppearance = (user?.appearanceStatus ?? "online") as AppearanceStatus;
@@ -144,7 +152,16 @@ export default function MainLayout({ children }: SidebarProps) {
   const getNotificationMeta = (type: string) => {
     const normalized = type.toLowerCase();
 
-    if (normalized.includes("admin") || normalized.includes("report") || normalized.includes("warning")) {
+    if (normalized.includes("warning")) {
+      return {
+        label: "Warning",
+        chipClass: "bg-destructive/15 text-destructive",
+        dotClass: "bg-destructive",
+        Icon: ShieldAlert,
+      };
+    }
+
+    if (normalized.includes("admin") || normalized.includes("report")) {
       return {
         label: "Moderation",
         chipClass: "bg-amber-500/12 text-amber-700 dark:text-amber-300",
@@ -327,6 +344,8 @@ export default function MainLayout({ children }: SidebarProps) {
         <div className="space-y-1 border-t border-border/50 px-2 py-2">
           {bottomNavItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
+            const badgeCount = item.href === "/support" ? supportUnreadCount : 0;
+            const showBadge = badgeCount > 0;
             
             return (
               <Tooltip key={item.href}>
@@ -346,6 +365,16 @@ export default function MainLayout({ children }: SidebarProps) {
                 {!isCollapsed && (
                   <span className="truncate whitespace-nowrap text-sm font-medium">{item.label}</span>
                 )}
+                {!isCollapsed && showBadge && (
+                  <span className="ml-auto min-w-5 rounded-full bg-destructive px-1.5 py-0.5 text-center text-[10px] font-semibold leading-none text-destructive-foreground">
+                    {badgeCount > 99 ? "99+" : badgeCount}
+                  </span>
+                )}
+                {isCollapsed && showBadge && (
+                  <span className="absolute right-1.5 top-1.5 min-w-4 rounded-full bg-destructive px-1 py-0.5 text-center text-[10px] font-semibold leading-none text-destructive-foreground">
+                    {badgeCount > 99 ? "99+" : badgeCount}
+                  </span>
+                )}
               </Link>
                 </TooltipTrigger>
                 {isCollapsed && (
@@ -356,6 +385,32 @@ export default function MainLayout({ children }: SidebarProps) {
               </Tooltip>
             );
           })}
+          {user?.role && ["super_admin", "moderator", "support_staff"].includes(user.role) && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  href="/admin"
+                  aria-label="Admin"
+                  className={cn(
+                    "flex items-center gap-3 overflow-hidden rounded-lg px-3 py-2.5 transition-all duration-200",
+                    pathname.startsWith("/admin")
+                      ? "bg-primary/12 text-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <ShieldCheck className="w-5 h-5 shrink-0" />
+                  {!isCollapsed && (
+                    <span className="truncate whitespace-nowrap text-sm font-medium">Admin</span>
+                  )}
+                </Link>
+              </TooltipTrigger>
+              {isCollapsed && (
+                <TooltipContent side="right" sideOffset={10}>
+                  Admin
+                </TooltipContent>
+              )}
+            </Tooltip>
+          )}
         </div>
 
         <Tooltip>

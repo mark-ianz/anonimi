@@ -4,6 +4,7 @@ import { Message } from "../models/message.model";
 import { User } from "../models/user.model";
 import { Group } from "../models/group.model";
 import { NotFoundError } from "../utils/apiError";
+import { emitToAdmins, emitToUser } from "./notification.service";
 
 export const createReport = async (
   reporterId: string,
@@ -42,8 +43,38 @@ export const createReport = async (
     status: "pending",
   });
 
+  emitToUser(reporterId, "support:report:new", {
+    reportId: report._id.toString(),
+    status: report.status,
+    updatedAt: report.updatedAt?.toISOString?.() ?? new Date().toISOString(),
+  });
+  emitToAdmins("admin:report:new", {
+    reportId: report._id.toString(),
+    reporterId,
+    targetType,
+    reason,
+    createdAt: report.createdAt,
+  });
+
   return {
     reportId: report._id.toString(),
     message: "Report submitted. Our team will review it.",
   };
+};
+
+export const getReportsByUser = async (userId: string) => {
+  const reports = await Report.find({ reporterId: new Types.ObjectId(userId) })
+    .sort({ updatedAt: -1 })
+    .lean();
+
+  return reports.map((r: any) => ({
+    id: r._id.toString(),
+    targetType: r.targetType,
+    targetId: r.targetId.toString(),
+    reason: r.reason,
+    description: r.description ?? null,
+    status: r.status,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+  }));
 };

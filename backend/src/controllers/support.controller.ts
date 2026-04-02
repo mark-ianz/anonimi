@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import * as supportService from "../services/support.service";
+import * as reportService from "../services/report.service";
 import { apiSuccess } from "../utils/apiResponse";
 
 export const createTicket = async (
@@ -55,13 +56,45 @@ export const replyToTicket = async (
 ): Promise<void> => {
   try {
     const { ticketId } = req.params;
-    const { content } = req.body;
+    const { content, mediaUrl, type } = req.body;
     const result = await supportService.replyToTicket(
       ticketId,
       req.user!._id.toString(),
-      content
+      content,
+      mediaUrl,
+      type
     );
     apiSuccess(res, result, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const reopenTicket = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { ticketId } = req.params;
+    const result = await supportService.reopenTicket(
+      ticketId,
+      req.user!._id.toString()
+    );
+    apiSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getReports = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const reports = await reportService.getReportsByUser(req.user!._id.toString());
+    apiSuccess(res, reports);
   } catch (error) {
     next(error);
   }

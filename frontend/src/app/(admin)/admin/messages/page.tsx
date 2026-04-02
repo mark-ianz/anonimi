@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import AdminRoute from "@/components/shared/AdminRoute";
 import ConversationViewer from "@/components/admin/ConversationViewer";
@@ -19,8 +20,17 @@ interface AdminMessage {
 }
 
 export default function AdminMessagesPage() {
+  const searchParams = useSearchParams();
   const [conversationId, setConversationId] = useState("");
   const [inputValue, setInputValue] = useState("");
+
+  useEffect(() => {
+    const fromQuery = searchParams.get("conversationId");
+    if (fromQuery) {
+      setConversationId(fromQuery);
+      setInputValue(fromQuery);
+    }
+  }, [searchParams]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin-messages", conversationId],

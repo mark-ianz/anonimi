@@ -204,6 +204,7 @@ export interface IReport extends Document {
   reviewedBy?: Types.ObjectId;
   resolution?: string;
   resolutionNotes?: string;
+  reporterNote?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -224,7 +225,9 @@ export interface ISupportMessage extends Document {
   ticketId: Types.ObjectId;
   senderId: Types.ObjectId;
   senderRole: "user" | "staff";
-  content: string;
+  type: "text" | "image";
+  content?: string | null;
+  mediaUrl?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
