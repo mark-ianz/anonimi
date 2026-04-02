@@ -16,6 +16,7 @@ import {
   ScrollText,
   ClipboardCheck,
   LogOut,
+  MessageCircle,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useAuth } from "@/hooks/useAuth";
@@ -153,6 +154,13 @@ export default function AdminSidebar() {
             <p className="font-mono text-[10px] uppercase tracking-[0.06em] text-muted-foreground">{user?.role?.replace("_", " ")}</p>
           </div>
         </div>
+        <Link
+          href="/chat"
+          className="mb-2 flex items-center gap-2 h-8 px-3 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+        >
+          <MessageCircle className="w-3.5 h-3.5" />
+          Back to Chat
+        </Link>
         <button
           onClick={logout}
           className="w-full flex items-center gap-2 h-8 px-3 rounded-lg font-mono text-[0.68rem] uppercase tracking-[0.08em] text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"

@@ -11,6 +11,13 @@ import { ALLOWED_IMAGE_TYPES } from "@/lib/constants";
 import { FilePreview } from "@/components/shared/FileUpload";
 import type { Message, MessageType, ReplyPreview } from "@/types/message";
 import type { UploadSource } from "@/lib/uploadPolicy";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const STEALTH_DURATIONS = [
   "1m",
@@ -288,17 +295,21 @@ export default function MessageInput({
       {stealthEnabled && (
         <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
           <span className="font-medium text-foreground">Stealth duration</span>
-          <select
+          <Select
             value={stealthDuration}
-            onChange={(event) => setStealthDuration(event.target.value as StealthDuration)}
-            className="rounded-lg border border-border/60 bg-background px-2 py-1 text-xs text-foreground"
+            onValueChange={(value) => setStealthDuration(value as StealthDuration)}
           >
-            {STEALTH_DURATIONS.map((duration) => (
-              <option key={duration} value={duration}>
-                {duration}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-8 w-[7.5rem]">
+              <SelectValue placeholder="Duration" />
+            </SelectTrigger>
+            <SelectContent>
+              {STEALTH_DURATIONS.map((duration) => (
+                <SelectItem key={duration} value={duration}>
+                  {duration}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
 

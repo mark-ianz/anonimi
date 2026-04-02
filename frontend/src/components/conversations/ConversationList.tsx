@@ -87,6 +87,7 @@ export default function ConversationList({
   }
 
   if (filtered.length === 0) {
+    const trimmedQuery = searchQuery.trim();
     return (
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {banner}
@@ -104,6 +105,19 @@ export default function ConversationList({
               : conversationType === "unread"
               ? "Unread conversations will appear here."
               : "Start a conversation with a contact."
+          }
+          action={
+            trimmedQuery ? (
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.href = `/search?q=${encodeURIComponent(trimmedQuery)}`;
+                }}
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-border/60 bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                Search globally
+              </button>
+            ) : null
           }
         />
       </div>
