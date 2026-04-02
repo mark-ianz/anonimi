@@ -31,7 +31,7 @@ export default function MarketingNavbar() {
                 priority
               />
             </div>
-            <span className="text-lg font-semibold tracking-[0.01em]">
+            <span className="font-logo text-lg font-semibold">
               anonimi
             </span>
           </Link>

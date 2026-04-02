@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -51,10 +52,16 @@ export default function AdminSidebar() {
     <aside className="h-full w-60 shrink-0 border-r border-border/60 bg-card/45 flex flex-col">
       <div className="flex h-14 items-center gap-2.5 border-b border-border/50 px-4 shrink-0">
         <div className="grid h-7 w-7 place-items-center rounded-lg border border-border/70 bg-background">
-          <span className="font-display text-xs font-semibold">E</span>
+          <Image
+            src="/images/icon/anonimi-logo-no-bg.png"
+            alt="anonimi"
+            width={18}
+            height={18}
+            className="h-4 w-4"
+          />
         </div>
         <div>
-          <p className="text-sm font-semibold">anonimi</p>
+          <p className="font-logo text-sm font-semibold">anonimi</p>
           <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted-foreground leading-none">Admin Panel</p>
         </div>
       </div>

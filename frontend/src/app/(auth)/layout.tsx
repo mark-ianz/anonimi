@@ -12,7 +12,7 @@ export default function AuthLayout({
 
       <div className="relative mx-auto grid min-h-screen w-full max-w-6xl items-center gap-10 px-5 py-10 md:grid-cols-[minmax(0,1.1fr)_minmax(0,420px)] md:px-8">
         <section className="hidden border-l border-border/60 pl-7 md:block">
-          <p className="font-mono text-[0.7rem] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+          <p className="font-logo text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             anonimi Access
           </p>
           <h1 className="mt-4 max-w-[13ch] text-5xl leading-[0.94] font-semibold">

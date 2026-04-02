@@ -30,7 +30,7 @@ export default function MarketingFooter() {
                   className="h-5 w-5"
                 />
               </div>
-              <span className="font-display text-xl font-semibold tracking-[0.02em]">
+              <span className="font-logo text-xl font-semibold">
                 anonimi
               </span>
             </Link>
