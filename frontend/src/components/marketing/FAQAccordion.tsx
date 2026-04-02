@@ -14,6 +14,14 @@ const faqs = [
     answer: "Create a free account with email. You will instantly receive your AID to share with people you trust, or you can accept message requests when you are ready.",
   },
   {
+    question: "What is a temporary account?",
+    answer: "Temporary accounts let you start a 24-hour session without email or password. You can claim the account later to keep your conversations by adding an email and password.",
+  },
+  {
+    question: "How does Stealth Mode work?",
+    answer: "Stealth Mode lets you set a timer per message. When the timer expires, the message content is no longer available and the conversation shows an expired placeholder.",
+  },
+  {
     question: "Is my data private?",
     answer: "Yes. We use encrypted transport and never require phone numbers at signup. You control your identity and who can contact you with requests, block, and report tools.",
   },
