@@ -252,7 +252,7 @@ export default function MessageBubble({
     <>
       <div
         className={cn(
-          "group/message relative flex items-end gap-2 px-4 py-0.5 animate-message-appear hover:z-30",
+          "group/message relative my-1 flex items-end gap-2 px-4 py-0.5 animate-message-appear hover:z-30",
           isMine && "flex-row-reverse"
         )}
         onMouseEnter={() => setShowActions(true)}
