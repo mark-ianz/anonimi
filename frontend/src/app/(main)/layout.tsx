@@ -297,7 +297,6 @@ export default function MainLayout({ children }: SidebarProps) {
                       {user?.username ?? user?.anonimiId ?? "Anonimi User"}
                     </p>
                     <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                      <UserCircle2 className="h-3.5 w-3.5" />
                       <span className="truncate">
                         {user?.anonimiId ? `@${user.anonimiId}` : "@aid_xxxxxx"}
                       </span>
