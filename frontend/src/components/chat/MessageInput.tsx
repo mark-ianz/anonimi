@@ -36,6 +36,8 @@ interface MessageInputProps {
   onEditSaved?: () => void;
 }
 
+const MAX_MESSAGE_LENGTH = 256;
+
 export default function MessageInput({
   conversationId,
   disabled,
@@ -303,8 +305,9 @@ export default function MessageInput({
           ref={textareaRef}
           autoFocus
           value={text}
+          maxLength={MAX_MESSAGE_LENGTH}
           onChange={(e) => {
-            setText(e.target.value);
+            setText(e.target.value.slice(0, MAX_MESSAGE_LENGTH));
             onInputChange();
           }}
           onKeyDown={handleKeyDown}
