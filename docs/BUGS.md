@@ -596,4 +596,30 @@ Admin Support Updates Test Results v6:
 
 Admin Permissions Update:
 
-- Support Staff and moderator has the admin button but if clicked, nothing happens.
+Bug: Support Staff and moderator has the admin button on tabs but if clicked, nothing happens.
+
+
+  - Super Admin:
+    - Only one on the system
+    - Edit all users permission, name, info, etc, delete user. Feels like a god. But all editing requires a confirmation.
+    - Can view the entire Logs
+    - Has access to all, everything.
+  - Moderators:
+    - Can delete user (will be pending) but requires approval by the Super Admin
+    - Has access to:
+      - Dashboard
+      - Users
+      - Reports
+      - Support
+      - Warnings
+      - Groups
+      - Messages
+      (If admins viewed messages of private or group, it will log on the super admin side)
+      - Ban/Unban
+      - Analytics
+      - Logs (only actions taken by Support Staff)
+  - Support Staff
+    - Users Tab (but has no send warning or ban user options when viewing on /admin/users/id)
+    - Reports (full access)
+    - Support (full access)
+    - Warnings (view only? idk if should support staff should have a view permission or send warning please help me decide)
