@@ -76,7 +76,7 @@ export const adminGroupParamsSchema = z.object({
 
 export const createDeleteRequestSchema = z.object({
   body: z.object({
-    reason: z.string().optional(),
+    reason: z.string().min(1, "Reason is required"),
   }),
 });
 

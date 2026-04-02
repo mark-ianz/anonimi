@@ -1153,13 +1153,45 @@ export const getAdminLogs = async (
   adminId?: string,
   action?: string,
   limit: number = 50,
-  cursor?: string
+  cursor?: string,
+  sort: "newest" | "oldest" = "newest",
+  search?: string
 ) => {
   const query: Record<string, unknown> = {};
+  const andClauses: Record<string, unknown>[] = [];
 
-  if (action) query.action = action;
-  if (cursor) query._id = { $lt: new Types.ObjectId(cursor) };
+  if (action) andClauses.push({ action });
+  if (cursor) {
+    andClauses.push({
+      _id: {
+      [sort === "oldest" ? "$gt" : "$lt"]: new Types.ObjectId(cursor),
+      },
+    });
+  }
 
+  const normalizedSearch = search?.trim();
+  let adminSearchIds: string[] = [];
+  let targetUserIds: string[] = [];
+  let searchRegex: RegExp | undefined;
+  if (normalizedSearch) {
+    const escaped = normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    searchRegex = new RegExp(escaped, "i");
+
+    const users = await User.find({
+      $or: [
+        { username: searchRegex },
+        { anonimiId: searchRegex },
+        { email: searchRegex },
+      ],
+    })
+      .select("_id")
+      .lean();
+
+    adminSearchIds = users.map((u: any) => u._id.toString());
+    targetUserIds = adminSearchIds;
+  }
+
+  let adminIdFilter: string[] | undefined;
   if (requesterRole === UserRole.MODERATOR) {
     const supportStaff = await User.find({ role: UserRole.SUPPORT_STAFF })
       .select("_id")
@@ -1170,16 +1202,60 @@ export const getAdminLogs = async (
       return { logs: [], nextCursor: undefined };
     }
 
-    query.adminId = {
-      $in: supportIds.map((id) => new Types.ObjectId(id)),
-    };
+    adminIdFilter = supportIds;
   } else if (adminId) {
-    query.adminId = new Types.ObjectId(adminId);
+    adminIdFilter = [adminId];
   }
+
+  if (adminIdFilter) {
+    if (adminSearchIds.length > 0) {
+      const intersection = adminIdFilter.filter((id) => adminSearchIds.includes(id));
+      if (!intersection.length) {
+        return { logs: [], nextCursor: undefined };
+      }
+      adminIdFilter = intersection;
+    }
+
+    andClauses.push({
+      adminId: { $in: adminIdFilter.map((id) => new Types.ObjectId(id)) },
+    });
+  }
+
+  if (searchRegex) {
+    const orClauses: Record<string, unknown>[] = [
+      { action: searchRegex },
+      { targetType: searchRegex },
+      { "details.message": searchRegex },
+      { "details.reason": searchRegex },
+      { "details.notes": searchRegex },
+      { "details.resolution": searchRegex },
+      { "details.requestId": searchRegex },
+    ];
+
+    if (adminSearchIds.length && !adminIdFilter) {
+      orClauses.push({
+        adminId: { $in: adminSearchIds.map((id) => new Types.ObjectId(id)) },
+      });
+    }
+
+    if (targetUserIds.length) {
+      orClauses.push({
+        targetId: { $in: targetUserIds.map((id) => new Types.ObjectId(id)) },
+      });
+    }
+
+    andClauses.push({ $or: orClauses });
+  }
+
+  if (andClauses.length) {
+    query.$and = andClauses;
+  }
+
+  const sortClause = sort === "oldest" ? { createdAt: 1 } : { createdAt: -1 };
 
   const logs = await AdminLog.find(query)
     .populate("adminId", "username role")
-    .sort({ createdAt: -1 })
+    .sort(sortClause)
     .limit(limit + 1)
     .lean();
 

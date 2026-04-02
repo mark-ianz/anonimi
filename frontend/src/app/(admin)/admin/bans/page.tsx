@@ -22,6 +22,9 @@ function BanRow({ ban, onUnban, canUnban }: { ban: Ban; onUnban: (id: string) =>
   const profileImage = ban.profileImage
     ? `${API_BASE.replace("/api", "")}${ban.profileImage}`
     : null;
+  const formattedExpiry = !ban.expiresAt
+    ? "Permanent"
+    : new Date(ban.expiresAt).toLocaleString();
 
   return (
     <div className="flex items-start gap-3 px-4 py-3 border-b border-border/20 last:border-b-0">
@@ -49,7 +52,7 @@ function BanRow({ ban, onUnban, canUnban }: { ban: Ban; onUnban: (id: string) =>
           <span>·</span>
           <span>{new Date(ban.createdAt).toLocaleDateString()}</span>
           <span>·</span>
-          <span>{isPermanent ? "Permanent" : `Expires ${new Date(ban.expiresAt!).toLocaleDateString()}`}</span>
+          <span>{isPermanent ? "Permanent" : `Expires ${formattedExpiry}`}</span>
         </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">

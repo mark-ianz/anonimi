@@ -7,12 +7,12 @@ import AdminRoute from "@/components/shared/AdminRoute";
 import BanDialog from "@/components/admin/BanDialog";
 import WarnDialog from "@/components/admin/WarnDialog";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
+import UserAvatar from "@/components/shared/UserAvatar";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import type { AdminUser } from "@/types/admin";
-import { API_BASE } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 const statusColors: Record<string, string> = {
@@ -30,6 +30,7 @@ export default function AdminUserDetailPage() {
   const [showWarn, setShowWarn] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showRequestConfirm, setShowRequestConfirm] = useState(false);
+  const [deleteReason, setDeleteReason] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-user", userId],
@@ -53,11 +54,12 @@ export default function AdminUserDetailPage() {
 
   const deleteRequestMutation = useMutation({
     mutationFn: async () => {
-      await api.post(`/admin/users/${userId}/delete-request`, { reason: "" });
+      await api.post(`/admin/users/${userId}/delete-request`, { reason: deleteReason.trim() });
     },
     onSuccess: () => {
       toast.success("Delete request sent to Super Admin");
       setShowRequestConfirm(false);
+      setDeleteReason("");
     },
     onError: () => toast.error("Failed to request delete"),
   });
@@ -105,19 +107,13 @@ export default function AdminUserDetailPage() {
             <div className="p-6 space-y-5 max-w-2xl mx-auto w-full">
               {/* Avatar + name */}
               <div className="flex items-center gap-4">
-                {profile.profileImage ? (
-                  <img
-                    src={`${API_BASE.replace("/api", "")}${profile.profileImage}`}
-                    alt={profile.username}
-                    className="w-16 h-16 rounded-full object-cover shadow-soft"
-                  />
-                ) : (
-                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center shadow-soft">
-                    <span className="text-xl font-bold text-muted-foreground">
-                      {profile.username[0].toUpperCase()}
-                    </span>
-                  </div>
-                )}
+                <UserAvatar
+                  imageUrl={profile.profileImage}
+                  name={profile.username}
+                  alt={profile.username}
+                  className="w-16 h-16"
+                  textClassName="text-xl"
+                />
                 <div>
                   <p className="text-lg font-bold font-display">{profile.username}</p>
                   <p className="text-sm text-muted-foreground">@{profile.anonimiId}</p>
@@ -237,16 +233,6 @@ export default function AdminUserDetailPage() {
             onClose={() => setShowWarn(false)}
           />
           <ConfirmDialog
-            open={showRequestConfirm}
-            onClose={() => setShowRequestConfirm(false)}
-            onConfirm={() => deleteRequestMutation.mutate()}
-            title={`Request deletion for @${profile.username}?`}
-            description="This will send a delete request to the Super Admin for approval."
-            confirmLabel="Send Request"
-            variant="destructive"
-            loading={deleteRequestMutation.isPending}
-          />
-          <ConfirmDialog
             open={showDeleteConfirm}
             onClose={() => setShowDeleteConfirm(false)}
             onConfirm={() => deleteUserMutation.mutate()}
@@ -256,6 +242,49 @@ export default function AdminUserDetailPage() {
             variant="destructive"
             loading={deleteUserMutation.isPending}
           />
+          {showRequestConfirm && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                onClick={() => setShowRequestConfirm(false)}
+              />
+              <div className="relative z-10 w-full max-w-md bg-background border border-border/40 rounded-2xl shadow-elevated p-5 space-y-4">
+                <div>
+                  <h2 className="text-base font-semibold font-display">Request Deletion</h2>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    Send a delete request for <span className="text-foreground font-medium">@{profile.username}</span>.
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Reason / Note
+                  </label>
+                  <textarea
+                    value={deleteReason}
+                    onChange={(e) => setDeleteReason(e.target.value)}
+                    placeholder="Explain why this user should be deleted..."
+                    rows={3}
+                    className="w-full px-3 py-2 rounded-xl bg-muted/40 border border-border/40 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-destructive/30 resize-none"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowRequestConfirm(false)}
+                    className="flex-1 h-10 rounded-xl border border-border/40 text-sm font-medium text-muted-foreground hover:bg-muted/40 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => deleteRequestMutation.mutate()}
+                    disabled={!deleteReason.trim() || deleteRequestMutation.isPending}
+                    className="flex-1 h-10 rounded-xl bg-destructive text-destructive-foreground text-sm font-medium disabled:opacity-50 hover:bg-destructive/90 transition-colors"
+                  >
+                    {deleteRequestMutation.isPending ? "Sending..." : "Send Request"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </AdminRoute>

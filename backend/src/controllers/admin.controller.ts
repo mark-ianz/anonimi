@@ -509,6 +509,8 @@ export const getAdminLogs = async (
   try {
     const adminId = req.query.adminId as string | undefined;
     const action = req.query.action as string | undefined;
+    const search = req.query.q as string | undefined;
+    const sort = (req.query.sort as string | undefined) === "oldest" ? "oldest" : "newest";
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
     const cursor = req.query.cursor as string | undefined;
     const result = await adminService.getAdminLogs(
@@ -516,7 +518,9 @@ export const getAdminLogs = async (
       adminId,
       action,
       limit,
-      cursor
+      cursor,
+      sort,
+      search
     );
     apiPaginated(res, result.logs, {
       nextCursor: result.nextCursor,
