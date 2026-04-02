@@ -77,7 +77,7 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    if (userRole !== "admin" && userRole !== "super_admin") {
+    if (!["super_admin", "moderator", "support_staff"].includes(userRole)) {
       const redirectUrl = new URL("/chat", request.url);
       return NextResponse.redirect(redirectUrl);
     }

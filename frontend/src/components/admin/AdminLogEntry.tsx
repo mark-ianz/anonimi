@@ -16,6 +16,10 @@ const actionLabels: Record<string, string> = {
   resolve_ticket: "Resolved Ticket",
   close_ticket: "Closed Ticket",
   reply_ticket: "Replied to Ticket",
+  request_delete_user: "Requested User Deletion",
+  approve_delete_user: "Approved User Deletion",
+  reject_delete_user: "Rejected User Deletion",
+  delete_user: "Deleted User",
 };
 
 const actionColors: Record<string, string> = {
@@ -26,6 +30,10 @@ const actionColors: Record<string, string> = {
   dismiss_report: "text-muted-foreground",
   delete_group: "text-destructive",
   change_role: "text-blue-600 dark:text-blue-400",
+  request_delete_user: "text-orange-500",
+  approve_delete_user: "text-green-600 dark:text-green-400",
+  reject_delete_user: "text-muted-foreground",
+  delete_user: "text-destructive",
 };
 
 interface AdminLogEntryProps {

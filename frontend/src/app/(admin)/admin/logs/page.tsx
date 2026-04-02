@@ -5,8 +5,10 @@ import AdminRoute from "@/components/shared/AdminRoute";
 import AdminLogEntry from "@/components/admin/AdminLogEntry";
 import api from "@/lib/api";
 import type { AdminLog } from "@/types/admin";
+import { useAuthStore } from "@/stores/authStore";
 
 export default function AdminLogsPage() {
+  const { user } = useAuthStore();
   const { data, isLoading } = useQuery({
     queryKey: ["admin-logs"],
     queryFn: async () => {
@@ -24,7 +26,9 @@ export default function AdminLogsPage() {
         <div className="p-4 border-b border-border/30 shrink-0">
           <h1 className="text-xl font-display font-semibold">Admin Logs</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Audit trail of all admin actions (Super Admin only)
+            {user?.role === "super_admin"
+              ? "Audit trail of all admin actions"
+              : "Audit trail of support staff actions"}
           </p>
         </div>
 

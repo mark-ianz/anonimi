@@ -38,19 +38,22 @@ Super Admin
   └── System configuration
 
 Moderator
-  ├── All Support Staff permissions (read-only on tickets)
+  ├── All Support Staff permissions
   ├── Search users with private fields (email, phone)
   ├── View user conversations (read-only)
   ├── Review and resolve reports
   ├── Warn users
   ├── Ban/unban users
-  └── View basic analytics
+  ├── View basic analytics
+  └── View admin logs (support staff actions only)
 
 Support Staff
   ├── Access admin dashboard
   ├── View and respond to support tickets
   ├── Assign tickets
-  └── View overview analytics
+  ├── View reports
+  ├── View users (read-only)
+  └── View warnings (read-only)
 ```
 
 ---
@@ -69,11 +72,13 @@ The admin dashboard is a dedicated section of the frontend at `/admin/*`, using 
 | **Users** | User search, profiles, management | Moderator, Super Admin |
 | **Reports** | Report queue, review, resolution | Moderator, Super Admin |
 | **Support Tickets** | Ticket queue, assignment, responses | All admin |
+| **Warnings** | Warning history | All admin (Support Staff read-only) |
 | **Groups** | Group browsing, management | Moderator, Super Admin |
 | **Messages** | Conversation browser (read-only) | Moderator, Super Admin |
 | **Bans** | Active ban list, ban history | Moderator (active only), Super Admin (full history) |
-| **Analytics** | Metrics, charts, trends | All admin (overview), Super Admin (full) |
-| **Logs** | Admin activity audit trail | Super Admin only |
+| **Analytics** | Metrics, charts, trends | Moderator, Super Admin |
+| **Logs** | Admin activity audit trail | Moderator (support staff actions only), Super Admin (all actions) |
+| **Approvals** | Deletion approvals queue | Super Admin only |
 
 ---
 
@@ -153,6 +158,8 @@ Admin user profile shows **all** fields including private data:
 | **Ban User** | Temporary or permanent ban | Moderator+ |
 | **Unban User** | Lift an active ban | Moderator+ |
 | **Change Role** | Promote/demote to admin roles | Super Admin only |
+| **Request Delete** | Request user deletion approval | Moderator only |
+| **Delete User** | Permanently delete user | Super Admin only |
 
 ### Warning System
 
@@ -162,6 +169,13 @@ Warnings are delivered as:
 3. The warning appears in the user's notification center with the reason.
 
 Warnings are informational — they do not restrict the user's account. Multiple warnings may escalate to a ban at the moderator's discretion.
+
+### Deletion Approval Workflow
+
+- Moderators can request deletion for a user (pending approval).
+- Super Admins review requests in the **Approvals** tab and can approve or reject.
+- Approving a request permanently deletes the user and creates an admin log entry.
+- All Super Admin deletion actions require confirmation.
 
 ### Ban Dialog
 

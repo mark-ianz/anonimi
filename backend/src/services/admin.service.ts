@@ -9,6 +9,11 @@ import { GroupMember } from "../models/groupMember.model";
 import { Conversation } from "../models/conversation.model";
 import { Message } from "../models/message.model";
 import { AdminLog } from "../models/adminLog.model";
+import { UserDeletionRequest } from "../models/userDeletionRequest.model";
+import { RefreshToken } from "../models/refreshToken.model";
+import { Contact } from "../models/contact.model";
+import { Block } from "../models/block.model";
+import { Notification } from "../models/notification.model";
 import { NotFoundError, ForbiddenError, ConflictError } from "../utils/apiError";
 import { UserRole, UserStatus } from "../types/enums";
 import { createAndEmitNotification, emitToAdmins, emitToUser } from "./notification.service";
@@ -29,6 +34,25 @@ export const createAdminLog = async (
     details,
     ipAddress,
   });
+};
+
+const removeUserData = async (userId: string) => {
+  const id = new Types.ObjectId(userId);
+
+  await RefreshToken.deleteMany({ userId: id });
+  await Contact.deleteMany({
+    $or: [{ userId: id }, { contactId: id }],
+  });
+  await Block.deleteMany({
+    $or: [{ blockerId: id }, { blockedId: id }],
+  });
+  await GroupMember.deleteMany({ userId: id });
+  await SupportMessage.deleteMany({ senderId: id });
+  await SupportTicket.deleteMany({ userId: id });
+  await Notification.deleteMany({ userId: id });
+  await Ban.deleteMany({ userId: id });
+
+  await User.deleteOne({ _id: id });
 };
 
 export const getUsers = async (
@@ -246,6 +270,70 @@ export const unbanUser = async (
   await createAdminLog(adminId, "unban_user", "user", userId, {}, ipAddress);
 
   return { message: "User unbanned" };
+};
+
+export const requestUserDeletion = async (
+  adminId: string,
+  userId: string,
+  reason?: string
+) => {
+  const user = await User.findById(userId).select("role");
+
+  if (!user) {
+    throw new NotFoundError("User not found");
+  }
+
+  if (user.role === UserRole.SUPER_ADMIN) {
+    throw new ForbiddenError("Cannot delete a super admin");
+  }
+
+  const existing = await UserDeletionRequest.findOne({
+    userId: user._id,
+    status: "pending",
+  }).lean();
+
+  if (existing) {
+    throw new ConflictError("Delete request already pending");
+  }
+
+  const request = await UserDeletionRequest.create({
+    userId: user._id,
+    requestedBy: new Types.ObjectId(adminId),
+    status: "pending",
+    reason: reason?.trim() || undefined,
+  });
+
+  await createAdminLog(adminId, "request_delete_user", "user", userId, {
+    requestId: request._id.toString(),
+    reason: reason?.trim() || null,
+  });
+
+  return {
+    id: request._id.toString(),
+    status: request.status,
+  };
+};
+
+export const deleteUser = async (
+  adminId: string,
+  userId: string,
+  ipAddress?: string
+) => {
+  const user = await User.findById(userId).select("role");
+
+  if (!user) {
+    throw new NotFoundError("User not found");
+  }
+
+  if (user.role === UserRole.SUPER_ADMIN) {
+    throw new ForbiddenError("Cannot delete a super admin");
+  }
+
+  await removeUserData(userId);
+
+  await createAdminLog(adminId, "delete_user", "user", userId, {}, ipAddress);
+
+  return { message: "User deleted" };
 };
 
 export const changeUserRole = async (
@@ -940,9 +1028,11 @@ export const deleteGroup = async (adminId: string, groupId: string, ipAddress?: 
 };
 
 export const getConversationMessages = async (
+  adminId: string,
   conversationId: string,
   limit: number = 50,
-  cursor?: string
+  cursor?: string,
+  ipAddress?: string
 ) => {
   const conversation = await Conversation.findById(conversationId);
 
@@ -965,6 +1055,15 @@ export const getConversationMessages = async (
 
   const hasMore = messages.length > limit;
   const data = hasMore ? messages.slice(0, limit) : messages;
+
+  await createAdminLog(
+    adminId,
+    "view_conversation",
+    "conversation",
+    conversationId,
+    { limit, cursor: cursor ?? null },
+    ipAddress
+  );
 
   return {
     messages: data.map((m: any) => ({
@@ -1050,6 +1149,7 @@ export const getAnalytics = async () => {
 };
 
 export const getAdminLogs = async (
+  requesterRole: UserRole,
   adminId?: string,
   action?: string,
   limit: number = 50,
@@ -1057,12 +1157,28 @@ export const getAdminLogs = async (
 ) => {
   const query: Record<string, unknown> = {};
 
-  if (adminId) query.adminId = new Types.ObjectId(adminId);
   if (action) query.action = action;
   if (cursor) query._id = { $lt: new Types.ObjectId(cursor) };
 
+  if (requesterRole === UserRole.MODERATOR) {
+    const supportStaff = await User.find({ role: UserRole.SUPPORT_STAFF })
+      .select("_id")
+      .lean();
+    const supportIds = supportStaff.map((u: any) => u._id.toString());
+
+    if (adminId && !supportIds.includes(adminId)) {
+      return { logs: [], nextCursor: undefined };
+    }
+
+    query.adminId = {
+      $in: supportIds.map((id) => new Types.ObjectId(id)),
+    };
+  } else if (adminId) {
+    query.adminId = new Types.ObjectId(adminId);
+  }
+
   const logs = await AdminLog.find(query)
-    .populate("adminId", "username")
+    .populate("adminId", "username role")
     .sort({ createdAt: -1 })
     .limit(limit + 1)
     .lean();
@@ -1083,6 +1199,124 @@ export const getAdminLogs = async (
     })),
     nextCursor: hasMore ? data[data.length - 1]._id.toString() : undefined,
   };
+};
+
+export const getDeletionRequests = async (
+  status: "pending" | "approved" | "rejected" | undefined,
+  limit: number = 50,
+  cursor?: string
+) => {
+  const query: Record<string, unknown> = {};
+
+  if (status) query.status = status;
+  if (cursor) query._id = { $lt: new Types.ObjectId(cursor) };
+
+  const requests = await UserDeletionRequest.find(query)
+    .populate("userId", "username anonimiId profileImage role")
+    .populate("requestedBy", "username")
+    .populate("decidedBy", "username")
+    .sort({ createdAt: -1 })
+    .limit(limit + 1)
+    .lean();
+
+  const hasMore = requests.length > limit;
+  const data = hasMore ? requests.slice(0, limit) : requests;
+
+  return {
+    requests: data.map((r: any) => ({
+      id: r._id.toString(),
+      status: r.status,
+      reason: r.reason ?? null,
+      createdAt: r.createdAt,
+      decidedAt: r.decidedAt ?? null,
+      user: r.userId
+        ? {
+            id: r.userId?._id?.toString(),
+            username: r.userId?.username,
+            anonimiId: r.userId?.anonimiId,
+            profileImage: r.userId?.profileImage ?? null,
+            role: r.userId?.role ?? null,
+          }
+        : null,
+      requestedBy: r.requestedBy
+        ? {
+            id: r.requestedBy?._id?.toString(),
+            username: r.requestedBy?.username,
+          }
+        : null,
+      decidedBy: r.decidedBy
+        ? {
+            id: r.decidedBy?._id?.toString(),
+            username: r.decidedBy?.username,
+          }
+        : null,
+    })),
+    nextCursor: hasMore ? data[data.length - 1]._id.toString() : undefined,
+  };
+};
+
+export const approveDeletionRequest = async (
+  adminId: string,
+  requestId: string,
+  ipAddress?: string
+) => {
+  const request = await UserDeletionRequest.findOne({
+    _id: new Types.ObjectId(requestId),
+    status: "pending",
+  });
+
+  if (!request) {
+    throw new NotFoundError("Delete request not found");
+  }
+
+  const user = await User.findById(request.userId).select("role");
+  if (!user) {
+    throw new NotFoundError("User not found");
+  }
+
+  if (user.role === UserRole.SUPER_ADMIN) {
+    throw new ForbiddenError("Cannot delete a super admin");
+  }
+
+  await removeUserData(user._id.toString());
+
+  request.status = "approved";
+  request.decidedBy = new Types.ObjectId(adminId);
+  request.decidedAt = new Date();
+  await request.save();
+
+  await createAdminLog(adminId, "approve_delete_user", "user", user._id.toString(), {
+    requestId,
+  }, ipAddress);
+  await createAdminLog(adminId, "delete_user", "user", user._id.toString(), {}, ipAddress);
+
+  return { message: "User deleted" };
+};
+
+export const rejectDeletionRequest = async (
+  adminId: string,
+  requestId: string,
+  ipAddress?: string
+) => {
+  const request = await UserDeletionRequest.findOne({
+    _id: new Types.ObjectId(requestId),
+    status: "pending",
+  });
+
+  if (!request) {
+    throw new NotFoundError("Delete request not found");
+  }
+
+  request.status = "rejected";
+  request.decidedBy = new Types.ObjectId(adminId);
+  request.decidedAt = new Date();
+  await request.save();
+
+  await createAdminLog(adminId, "reject_delete_user", "user", request.userId.toString(), {
+    requestId,
+  }, ipAddress);
+
+  return { message: "Delete request rejected" };
 };
 
 export const getWarnings = async (limit: number = 50, cursor?: string) => {

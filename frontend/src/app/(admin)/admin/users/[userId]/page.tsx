@@ -6,6 +6,7 @@ import { ArrowLeft, AlertTriangle, Ban as BanIcon, ShieldOff } from "lucide-reac
 import AdminRoute from "@/components/shared/AdminRoute";
 import BanDialog from "@/components/admin/BanDialog";
 import WarnDialog from "@/components/admin/WarnDialog";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
@@ -27,6 +28,8 @@ export default function AdminUserDetailPage() {
   const { user: me } = useAuthStore();
   const [showBan, setShowBan] = useState(false);
   const [showWarn, setShowWarn] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showRequestConfirm, setShowRequestConfirm] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-user", userId],
@@ -48,8 +51,32 @@ export default function AdminUserDetailPage() {
     onError: () => toast.error("Failed to unban user"),
   });
 
+  const deleteRequestMutation = useMutation({
+    mutationFn: async () => {
+      await api.post(`/admin/users/${userId}/delete-request`, { reason: "" });
+    },
+    onSuccess: () => {
+      toast.success("Delete request sent to Super Admin");
+      setShowRequestConfirm(false);
+    },
+    onError: () => toast.error("Failed to request delete"),
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async () => {
+      await api.delete(`/admin/users/${userId}`);
+    },
+    onSuccess: () => {
+      toast.success("User deleted");
+      router.replace("/admin/users");
+    },
+    onError: () => toast.error("Failed to delete user"),
+  });
+
   const profile = data;
   const isSuperAdmin = me?.role === "super_admin";
+  const isModerator = me?.role === "moderator";
+  const canModerate = isSuperAdmin || isModerator;
 
   return (
     <AdminRoute>
@@ -123,47 +150,73 @@ export default function AdminUserDetailPage() {
               </div>
 
               {/* Actions */}
-              <div className="space-y-2">
-                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  Moderation Actions
-                </h2>
-                <div className="flex flex-col gap-2">
-                  <button
-                    onClick={() => setShowWarn(true)}
-                    className="flex items-center gap-2.5 h-10 px-4 rounded-xl bg-orange-500/10 text-orange-500 text-sm font-medium hover:bg-orange-500/20 transition-colors"
-                  >
-                    <AlertTriangle className="w-4 h-4" />
-                    Send Warning
-                  </button>
+              {canModerate ? (
+                <div className="space-y-2">
+                  <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Moderation Actions
+                  </h2>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => setShowWarn(true)}
+                      className="flex items-center gap-2.5 h-10 px-4 rounded-xl bg-orange-500/10 text-orange-500 text-sm font-medium hover:bg-orange-500/20 transition-colors"
+                    >
+                      <AlertTriangle className="w-4 h-4" />
+                      Send Warning
+                    </button>
 
-                  {profile.status !== "banned" ? (
-                    <button
-                      onClick={() => setShowBan(true)}
-                      className="flex items-center gap-2.5 h-10 px-4 rounded-xl bg-destructive/10 text-destructive text-sm font-medium hover:bg-destructive/20 transition-colors"
-                    >
-                      <BanIcon className="w-4 h-4" />
-                      Ban User
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => unbanMutation.mutate()}
-                      disabled={unbanMutation.isPending}
-                      className="flex items-center gap-2.5 h-10 px-4 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400 text-sm font-medium hover:bg-green-500/20 disabled:opacity-50 transition-colors"
-                    >
-                      <ShieldOff className="w-4 h-4" />
-                      {unbanMutation.isPending ? "Unbanning..." : "Unban User"}
-                    </button>
-                  )}
+                    {profile.status !== "banned" ? (
+                      <button
+                        onClick={() => setShowBan(true)}
+                        className="flex items-center gap-2.5 h-10 px-4 rounded-xl bg-destructive/10 text-destructive text-sm font-medium hover:bg-destructive/20 transition-colors"
+                      >
+                        <BanIcon className="w-4 h-4" />
+                        Ban User
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => unbanMutation.mutate()}
+                        disabled={unbanMutation.isPending}
+                        className="flex items-center gap-2.5 h-10 px-4 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400 text-sm font-medium hover:bg-green-500/20 disabled:opacity-50 transition-colors"
+                      >
+                        <ShieldOff className="w-4 h-4" />
+                        {unbanMutation.isPending ? "Unbanning..." : "Unban User"}
+                      </button>
+                    )}
+
+                    {isModerator && !isSuperAdmin && profile.role !== "super_admin" && (
+                      <button
+                        onClick={() => setShowRequestConfirm(true)}
+                        className="flex items-center gap-2.5 h-10 px-4 rounded-xl bg-destructive/10 text-destructive text-sm font-medium hover:bg-destructive/20 transition-colors"
+                      >
+                        Request Delete User
+                      </button>
+                    )}
+
+                    {isSuperAdmin && profile.role !== "super_admin" && (
+                      <button
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="flex items-center gap-2.5 h-10 px-4 rounded-xl bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 transition-colors"
+                      >
+                        Delete User
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="rounded-xl border border-border/40 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                  Support staff have view-only access for user profiles.
+                </div>
+              )}
 
               {/* View conversations link */}
-              <a
-                href={`/admin/messages?userId=${profile.id}`}
-                className="flex items-center justify-center gap-2 h-10 rounded-xl border border-border/40 text-sm text-muted-foreground hover:bg-muted/40 transition-colors"
-              >
-                View Conversations
-              </a>
+              {canModerate && (
+                <a
+                  href={`/admin/messages?userId=${profile.id}`}
+                  className="flex items-center justify-center gap-2 h-10 rounded-xl border border-border/40 text-sm text-muted-foreground hover:bg-muted/40 transition-colors"
+                >
+                  View Conversations
+                </a>
+              )}
             </div>
           )}
         </div>
@@ -182,6 +235,26 @@ export default function AdminUserDetailPage() {
             username={profile.username}
             open={showWarn}
             onClose={() => setShowWarn(false)}
+          />
+          <ConfirmDialog
+            open={showRequestConfirm}
+            onClose={() => setShowRequestConfirm(false)}
+            onConfirm={() => deleteRequestMutation.mutate()}
+            title={`Request deletion for @${profile.username}?`}
+            description="This will send a delete request to the Super Admin for approval."
+            confirmLabel="Send Request"
+            variant="destructive"
+            loading={deleteRequestMutation.isPending}
+          />
+          <ConfirmDialog
+            open={showDeleteConfirm}
+            onClose={() => setShowDeleteConfirm(false)}
+            onConfirm={() => deleteUserMutation.mutate()}
+            title={`Delete @${profile.username}?`}
+            description="This action is permanent and cannot be undone."
+            confirmLabel="Delete User"
+            variant="destructive"
+            loading={deleteUserMutation.isPending}
           />
         </>
       )}

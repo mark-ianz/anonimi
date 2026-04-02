@@ -103,6 +103,43 @@ export const unbanUser = async (
   }
 };
 
+export const requestUserDeletion = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { userId } = req.params;
+    const { reason } = req.body as any;
+    const result = await adminService.requestUserDeletion(
+      req.user!._id.toString(),
+      userId,
+      reason
+    );
+    apiSuccess(res, result, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { userId } = req.params;
+    const result = await adminService.deleteUser(
+      req.user!._id.toString(),
+      userId,
+      req.ip || undefined
+    );
+    apiSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const changeUserRole = async (
   req: Request,
   res: Response,
@@ -370,7 +407,13 @@ export const getConversationMessages = async (
     const { convId } = req.params;
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
     const cursor = req.query.cursor as string | undefined;
-    const result = await adminService.getConversationMessages(convId, limit, cursor);
+    const result = await adminService.getConversationMessages(
+      req.user!._id.toString(),
+      convId,
+      limit,
+      cursor,
+      req.ip || undefined
+    );
     apiPaginated(res, result.messages, {
       nextCursor: result.nextCursor,
       hasMore: !!result.nextCursor,
@@ -468,12 +511,74 @@ export const getAdminLogs = async (
     const action = req.query.action as string | undefined;
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
     const cursor = req.query.cursor as string | undefined;
-    const result = await adminService.getAdminLogs(adminId, action, limit, cursor);
+    const result = await adminService.getAdminLogs(
+      req.user!.role as any,
+      adminId,
+      action,
+      limit,
+      cursor
+    );
     apiPaginated(res, result.logs, {
       nextCursor: result.nextCursor,
       hasMore: !!result.nextCursor,
       limit,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getDeletionRequests = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const status = req.query.status as any;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+    const cursor = req.query.cursor as string | undefined;
+    const result = await adminService.getDeletionRequests(status, limit, cursor);
+    apiPaginated(res, result.requests, {
+      nextCursor: result.nextCursor,
+      hasMore: !!result.nextCursor,
+      limit,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const approveDeletionRequest = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { requestId } = req.params;
+    const result = await adminService.approveDeletionRequest(
+      req.user!._id.toString(),
+      requestId,
+      req.ip || undefined
+    );
+    apiSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const rejectDeletionRequest = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { requestId } = req.params;
+    const result = await adminService.rejectDeletionRequest(
+      req.user!._id.toString(),
+      requestId,
+      req.ip || undefined
+    );
+    apiSuccess(res, result);
   } catch (error) {
     next(error);
   }

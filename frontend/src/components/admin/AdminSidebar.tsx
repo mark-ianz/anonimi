@@ -14,6 +14,7 @@ import {
   Ban,
   BarChart2,
   ScrollText,
+  ClipboardCheck,
   LogOut,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
@@ -28,17 +29,21 @@ interface NavItem {
   roles?: string[];
 }
 
+const ADMIN_ROLES = ["support_staff", "moderator", "super_admin"];
+const MOD_ROLES = ["moderator", "super_admin"];
+
 const navItems: NavItem[] = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/users", label: "Users", icon: Users, roles: ["moderator", "super_admin"] },
-  { href: "/admin/reports", label: "Reports", icon: Flag, roles: ["moderator", "super_admin"] },
-  { href: "/admin/support", label: "Support", icon: LifeBuoy },
-  { href: "/admin/warnings", label: "Warnings", icon: AlertTriangle },
-  { href: "/admin/groups", label: "Groups", icon: Users2, roles: ["moderator", "super_admin"] },
-  { href: "/admin/messages", label: "Messages", icon: MessageSquare, roles: ["moderator", "super_admin"] },
-  { href: "/admin/bans", label: "Bans", icon: Ban, roles: ["moderator", "super_admin"] },
-  { href: "/admin/analytics", label: "Analytics", icon: BarChart2 },
-  { href: "/admin/logs", label: "Logs", icon: ScrollText, roles: ["super_admin"] },
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, roles: ADMIN_ROLES },
+  { href: "/admin/users", label: "Users", icon: Users, roles: ADMIN_ROLES },
+  { href: "/admin/reports", label: "Reports", icon: Flag, roles: ADMIN_ROLES },
+  { href: "/admin/support", label: "Support", icon: LifeBuoy, roles: ADMIN_ROLES },
+  { href: "/admin/warnings", label: "Warnings", icon: AlertTriangle, roles: ADMIN_ROLES },
+  { href: "/admin/groups", label: "Groups", icon: Users2, roles: MOD_ROLES },
+  { href: "/admin/messages", label: "Messages", icon: MessageSquare, roles: MOD_ROLES },
+  { href: "/admin/bans", label: "Bans", icon: Ban, roles: MOD_ROLES },
+  { href: "/admin/analytics", label: "Analytics", icon: BarChart2, roles: MOD_ROLES },
+  { href: "/admin/logs", label: "Logs", icon: ScrollText, roles: MOD_ROLES },
+  { href: "/admin/approvals", label: "Approvals", icon: ClipboardCheck, roles: ["super_admin"] },
 ];
 
 export default function AdminSidebar() {

@@ -58,6 +58,29 @@ export interface AdminWarning {
   createdAt: string;
 }
 
+export interface AdminDeletionRequest {
+  id: string;
+  status: "pending" | "approved" | "rejected";
+  reason: string | null;
+  createdAt: string;
+  decidedAt: string | null;
+  user: {
+    id: string;
+    username: string | null;
+    anonimiId: string | null;
+    profileImage: string | null;
+    role: string | null;
+  } | null;
+  requestedBy: {
+    id: string;
+    username: string | null;
+  } | null;
+  decidedBy: {
+    id: string;
+    username: string | null;
+  } | null;
+}
+
 export interface Ban {
   id: string;
   userId: string;

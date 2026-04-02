@@ -243,6 +243,18 @@ export interface IAdminLog extends Document {
   createdAt: Date;
 }
 
+export interface IUserDeletionRequest extends Document {
+  _id: Types.ObjectId;
+  userId: Types.ObjectId;
+  requestedBy: Types.ObjectId;
+  status: "pending" | "approved" | "rejected";
+  reason?: string | null;
+  decidedBy?: Types.ObjectId | null;
+  decidedAt?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface IBan extends Document {
   _id: Types.ObjectId;
   userId: Types.ObjectId;

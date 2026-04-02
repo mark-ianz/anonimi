@@ -73,3 +73,15 @@ export const adminGroupParamsSchema = z.object({
     groupId: z.string(),
   }),
 });
+
+export const createDeleteRequestSchema = z.object({
+  body: z.object({
+    reason: z.string().optional(),
+  }),
+});
+
+export const adminDeleteRequestParamsSchema = z.object({
+  params: z.object({
+    requestId: z.string(),
+  }),
+});
