@@ -655,3 +655,9 @@ Add a reply functionality, this allows the users to reply to any other messages 
 Mute conversation feature: User should be able to mute the converastion, they won't receive a notification or notification count won't count on the muted conversation
 
 --
+
+stealth-setup-preview: setting up the timer for stealth.
+stealth-preview: preview message of stealth mode with a ticking time.
+stealthy-message-preview: preview of an expired message.
+
+temporary-account-conversation-preview: conversation to someone with temp account
