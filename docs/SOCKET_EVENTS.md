@@ -263,7 +263,18 @@ Acknowledgment that a sent message was persisted.
   "tempId": "client-generated-uuid",
   "messageId": "60d5ecb54b24a1001c8e4b52",
   "conversationId": "60d5ecb54b24a1001c8e4b3f",
-  "timestamp": "2026-03-08T11:50:00.000Z"
+  "timestamp": "2026-03-08T11:50:00.000Z",
+  "replyToId": "60d5ecb54b24a1001c8e4b50",
+  "replyPreview": {
+    "messageId": "60d5ecb54b24a1001c8e4b50",
+    "senderId": "60d5ecb54b24a1001c8e4b3b",
+    "senderUsername": "jane_smith",
+    "type": "text",
+    "content": "Earlier message snippet",
+    "mediaUrl": null,
+    "fileName": null,
+    "createdAt": "2026-03-08T11:49:00.000Z"
+  }
 }
 ```
 
@@ -287,10 +298,26 @@ A new message was received in a conversation.
   "senderProfileImage": "/uploads/avatars/uuid.jpg",
   "type": "text",
   "content": "Hello there!",
+  "replyToId": "60d5ecb54b24a1001c8e4b50",
+  "replyPreview": {
+    "messageId": "60d5ecb54b24a1001c8e4b50",
+    "senderId": "60d5ecb54b24a1001c8e4b3b",
+    "senderUsername": "jane_smith",
+    "type": "text",
+    "content": "Earlier message snippet",
+    "mediaUrl": null,
+    "fileName": null,
+    "createdAt": "2026-03-08T11:49:00.000Z"
+  },
+  "isStealth": false,
+  "stealthExpiresAt": null,
+  "stealthExpiredAt": null,
+  "stealthContentLength": null,
   "mediaUrl": null,
   "fileName": null,
   "fileSize": null,
-  "timestamp": "2026-03-08T11:50:00.000Z"
+  "timestamp": "2026-03-08T11:50:00.000Z",
+  "suppressUnread": false
 }
 ```
 
@@ -317,6 +344,72 @@ A message was unsent by its sender.
 {
   "messageId": "60d5ecb54b24a1001c8e4b50",
   "conversationId": "60d5ecb54b24a1001c8e4b3f"
+}
+```
+
+---
+
+### `message:stealth:expired`
+
+Stealth message expiration update.
+
+**Payload:**
+```json
+{
+  "conversationId": "60d5ecb54b24a1001c8e4b3f",
+  "messageId": "60d5ecb54b24a1001c8e4b50",
+  "stealthExpiredAt": "2026-03-08T11:55:00.000Z",
+  "stealthContentLength": 42
+}
+```
+
+---
+
+### `conversation:muted`
+
+Conversation-level mute update.
+
+**Payload:**
+```json
+{
+  "conversationId": "60d5ecb54b24a1001c8e4b3f",
+  "mutedUntil": "2026-03-08T12:30:00.000Z"
+}
+```
+
+---
+
+### `conversation:unmuted`
+
+**Payload:**
+```json
+{
+  "conversationId": "60d5ecb54b24a1001c8e4b3f"
+}
+```
+
+---
+
+### `group:member-muted`
+
+**Payload:**
+```json
+{
+  "groupId": "60d5ecb54b24a1001c8e4b70",
+  "userId": "60d5ecb54b24a1001c8e4b3b",
+  "mutedUntil": "2026-03-08T12:30:00.000Z"
+}
+```
+
+---
+
+### `group:member-unmuted`
+
+**Payload:**
+```json
+{
+  "groupId": "60d5ecb54b24a1001c8e4b70",
+  "userId": "60d5ecb54b24a1001c8e4b3b"
 }
 ```
 

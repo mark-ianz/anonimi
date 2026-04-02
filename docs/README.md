@@ -10,6 +10,8 @@ anonimi is an enterprise SaaS-style web application built around a real-time mes
 - **Authentication system** — Registration, login, password recovery flows
 - **Authenticated application** — Dashboard with chat (primary feature), groups, contacts, profile, settings
 - **Admin panel** — User management, reports, analytics, system settings
+- **Privacy features** — Stealth Mode (timed, encrypted messages), per-conversation mute, group member mute
+- **Temporary access** — 24-hour temporary accounts with claim-to-keep flow
 
 The backend is designed as a standalone REST + WebSocket API that can serve both the web frontend and a future mobile application without modification.
 
@@ -29,6 +31,8 @@ The backend is designed as a standalone REST + WebSocket API that can serve both
 | [ANONIMI_RENAME_PLAN.md](./ANONIMI_RENAME_PLAN.md) | Full anonimi -> anonimi rebrand and identifier migration plan |
 | [SECURITY_MODEL.md](./SECURITY_MODEL.md) | Authentication, authorization, rate limiting, input validation |
 | [ADMIN_SYSTEM.md](./ADMIN_SYSTEM.md) | Admin dashboard design, roles, permissions, workflows |
+| [SUPPORT_SYSTEM.md](./SUPPORT_SYSTEM.md) | Support tickets, report lifecycle, and admin workflows |
+| [GROUP_CHAT_FEATURE.md](./GROUP_CHAT_FEATURE.md) | Group chat roles, invite links, join requests, and moderation |
 | [FOLDER_STRUCTURE.md](./FOLDER_STRUCTURE.md) | Complete project folder layout and organization conventions |
 
 ---

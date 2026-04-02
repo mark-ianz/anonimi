@@ -84,6 +84,7 @@ These are implemented as **Next.js route groups** with separate layouts, sharing
 ```
 /login                      → Login form
 /register                   → Registration form
+/temporary                  → Temporary account entry
 /forgot-password            → Password reset request
 /reset-password             → Password reset with token
 /verify                     → Email verification
@@ -161,7 +162,7 @@ Middleware Logic:
    - If authenticated → redirect to /chat
    - If NOT authenticated → allow access (show marketing page)
 
-3. If path matches AUTH routes (/login, /register, /forgot-password, /reset-password, /verify, /verify-link):
+3. If path matches AUTH routes (/login, /register, /temporary, /forgot-password, /reset-password, /verify, /verify-link):
    - If authenticated → redirect to /chat
    - If NOT authenticated → allow access (show auth page)
 
@@ -425,7 +426,22 @@ All authentication pages use the **Auth Layout** (centered card).
 **Footer:**
 - "Already have an account? Log in" → `/login`
 
-### 7.3 Forgot Password Page (`/forgot-password`)
+### 7.3 Temporary Account Page (`/temporary`)
+
+**Purpose:**
+- Start a 24-hour session without email/password.
+- Users can claim the account later to keep access.
+
+**Actions:**
+- Submit → `POST /api/auth/temporary`
+- On success → redirect to `/chat`
+- Secondary action → route to `/register`
+
+**Notes:**
+- Some actions are restricted until claimed (guarded by `requireFullAccount`).
+- Countdown to expiration is shown in profile once active.
+
+### 7.4 Forgot Password Page (`/forgot-password`)
 
 **Form fields:**
 - Email — email input
@@ -438,7 +454,7 @@ All authentication pages use the **Auth Layout** (centered card).
 **Footer:**
 - "Back to login" → `/login`
 
-### 7.4 Reset Password Page (`/reset-password`)
+### 7.5 Reset Password Page (`/reset-password`)
 
 Accessed via email link with `?token=xxx` query parameter.
 
@@ -451,7 +467,7 @@ Accessed via email link with `?token=xxx` query parameter.
 - On success → redirect to `/login` with success message
 - On error → display error (invalid/expired token)
 
-### 7.5 Email Verification Page (`/verify`)
+### 7.6 Email Verification Page (`/verify`)
 
 **Display:**
 - OTP code input (6 digits)
@@ -674,6 +690,11 @@ Accepting a contact request within the chat immediately upgrades `requestStatus`
 - Username field (with availability check; manual change allowed once ever)
 - Phone number field (optional; recommended for account recovery)
 - Password change section (current password + new password)
+
+**Temporary account state:**
+- Shows countdown to expiration.
+- Claim form (email + password + confirm) posts to `POST /api/auth/temporary/claim`.
+- Resend verification flow available if claim is pending.
 
 ### 8.7 User Profile (`/user/[anonimiId]`)
 

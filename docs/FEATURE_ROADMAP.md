@@ -25,6 +25,10 @@ This document defines the phased implementation plan for anonimi. Each phase bui
 - Password reset emails are delivered via SMTP with auto-login on success.
 - Web Push notifications are available with a Settings toggle.
 - Chat list now supports All/Unread/Private/Groups tabs (groups live in Chats).
+- Temporary accounts enable 24-hour sessions with claim-to-keep flow.
+- Stealth Mode supports timed messages with encrypted-at-rest content and expiry updates.
+- Conversation mute and group member mute controls are available.
+- Reply previews are included in real-time payloads and message history.
 
 ---
 

@@ -13,7 +13,7 @@ export default function PrivacyPage() {
         
         <div className="mt-8 prose prose-lg dark:prose-invert">
           <p className="text-lg text-muted-foreground">
-            Last updated: {new Date().toLocaleDateString()}
+            Last updated: April 3, 2026
           </p>
 
           <h2 className="text-2xl font-semibold mt-12">1. Introduction</h2>
@@ -31,6 +31,7 @@ export default function PrivacyPage() {
             <li>Profile information (display name, avatar)</li>
             <li>Messages and content you send</li>
             <li>Contact information you choose to share</li>
+            <li>Temporary session metadata (temporary username, expiration time)</li>
           </ul>
 
           <h2 className="text-2xl font-semibold mt-12">3. How We Use Your Information</h2>
@@ -50,13 +51,25 @@ export default function PrivacyPage() {
             your personal information against unauthorized access, alteration, disclosure, or destruction.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-12">5. Your Rights</h2>
+          <h2 className="text-2xl font-semibold mt-12">5. Stealth Messages</h2>
+          <p className="mt-4">
+            Stealth Mode messages are designed to expire on a timer. Once expired, the content is no longer
+            available and only an expired placeholder remains in the conversation.
+          </p>
+
+          <h2 className="text-2xl font-semibold mt-12">6. Temporary Accounts</h2>
+          <p className="mt-4">
+            Temporary accounts expire after 24 hours unless claimed. Expired temporary accounts and related
+            session data are removed as part of automated cleanup.
+          </p>
+
+          <h2 className="text-2xl font-semibold mt-12">7. Your Rights</h2>
           <p className="mt-4">
             You have the right to access, update, or delete your personal information at any time. 
             You can also opt out of certain communications from us.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-12">6. Contact Us</h2>
+          <h2 className="text-2xl font-semibold mt-12">8. Contact Us</h2>
           <p className="mt-4">
             If you have any questions about this Privacy Policy, please contact us at support@anonimi.app.
           </p>

@@ -55,9 +55,14 @@ Collection: users
   phone:            String | null,     // "+1234567890" — optional, private, recovery-only
   passwordHash:     String,            // bcrypt hash
   profileImage:     String | null,     // URL/path to avatar
+  isTemporary:      Boolean,           // True for temporary accounts
+  tempCreatedAt:    Date | null,       // Temp account creation time
+  tempExpiresAt:    Date | null,       // Temp account expiry
+  tempMediaCount:   Number,            // Temp upload count (guardrails)
   role:             String,            // "user" | "super_admin" | "moderator" | "support_staff"
   status:           String,            // "pending" | "active" | "banned"
-  onlineStatus:     String,            // "online" | "offline"
+  appearanceStatus: String,            // "online" | "away" | "dnd" | "invisible"
+  onlineStatus:     String,            // "online" | "away" | "dnd" | "offline"
   lastSeen:         Date | null,       // Last activity timestamp
   emailVerified:    Boolean,           // Email verification status
   phoneVerified:    Boolean,           // Phone verification status (if phone added later)
@@ -109,6 +114,12 @@ Collection: conversations
   _id:              ObjectId,
   type:             String,            // "private" | "group"
   participants:     [ObjectId],        // Array of user _ids (both for private, all members for group)
+  mutedUsers: [                        // Per-user mute settings
+    {
+      userId:        ObjectId,
+      mutedUntil:    Date | null
+    }
+  ],
   lastMessage: {                       // Denormalized for conversation list display
     content:        String | null,     // Preview text (truncated)
     senderId:       ObjectId,
@@ -163,8 +174,35 @@ Collection: messages
   mediaUrl:         String | null,     // Path/URL for image or file
   fileName:         String | null,     // Original filename for file messages
   fileSize:         Number | null,     // File size in bytes
+  replyTo:          ObjectId | null,   // ref: messages
+  replyPreview: {                      // Inline preview snapshot
+    messageId:      ObjectId,
+    senderId:       ObjectId,
+    senderUsername: String | null,
+    type:           String,
+    content:        String | null,
+    mediaUrl:       String | null,
+    fileName:       String | null,
+    createdAt:      Date
+  } | null,
   readBy:           [ObjectId],        // Array of user _ids who have read this message
   readByAt:         Map<String, Date>, // Per-user read timestamp map (key: userId)
+  reactions: [                          // Message reactions
+    {
+      emoji:        String,
+      userId:       ObjectId,
+      createdAt:    Date
+    }
+  ],
+  editHistory: [                        // Previous versions
+    {
+      content:      String,
+      editedAt:     Date,
+      editedBy:     ObjectId
+    }
+  ],
+  editedAt:         Date | null,
+  editedBy:         ObjectId | null,
   deletedFor:       [ObjectId],        // Array of user _ids — message hidden from these users
   unsent:           Boolean,           // True if sender unsent the message
   createdAt:        Date,

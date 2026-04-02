@@ -21,6 +21,8 @@ anonimi/
 │   ├── FEATURE_ROADMAP.md
 │   ├── SECURITY_MODEL.md
 │   ├── ADMIN_SYSTEM.md
+│   ├── SUPPORT_SYSTEM.md
+│   ├── GROUP_CHAT_FEATURE.md
 │   └── FOLDER_STRUCTURE.md     # (this file)
 ├── .gitignore
 └── .git/

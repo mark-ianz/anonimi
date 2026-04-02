@@ -8,7 +8,7 @@ This document provides detailed design specifications for every core subsystem o
 
 ### anonimi Generation
 
-Every user receives a permanent anonimientifier at account creation. This ID is the primary mechanism for user discovery and contact sharing.
+Every user receives a permanent anonimi identifier at account creation. This ID is the primary mechanism for user discovery and contact sharing.
 
 **Format:** `aid_` + 8 URL-safe alphanumeric characters  
 **Example:** `aid_a8F3kP29`  
@@ -144,6 +144,38 @@ Client                          Server
 6. Server returns access + refresh tokens for auto-login
 ```
 
+### Temporary Account Flow
+
+Temporary accounts allow instant access without email/password. They expire after 24 hours unless claimed.
+
+```
+Client                          Server
+  │                               │
+  │  POST /api/auth/temporary     │
+  │──────────────────────────────▶│
+  │                               │── Create temporary user
+  │                               │── Generate temp username (temp_xxxxxx)
+  │                               │── Set tempExpiresAt (+24h)
+  │                               │── Issue access + refresh tokens
+  │
+  │  { accessToken, refreshToken, user } 
+  │◀──────────────────────────────│
+  │
+  │  POST /api/auth/temporary/claim
+  │  { email, password }          │
+  │──────────────────────────────▶│
+  │                               │── Attach email + password
+  │                               │── Send verification code
+  │                               │── Mark as pending verification
+  │
+  │  { message: "Verification sent" }
+  │◀──────────────────────────────│
+```
+
+**Restrictions:**
+- Temporary accounts cannot access guarded actions (contact add, block/report, group creation) until claimed.
+- Background cleanup deletes expired temporary accounts and related session data.
+
 ---
 
 ## 3. Messaging System
@@ -182,6 +214,25 @@ Sender Client              Server                    Recipient Client
 7. Emit message event only to recipients that are allowed to receive it.
 8. If recipient is offline and delivery is allowed, the message persists in DB and is fetched on next login.
 
+### Reply Messages
+
+Replying to a message stores a lightweight preview on the new message for fast rendering.
+
+**Rules:**
+- Client sends `replyToId` with the new message.
+- Server validates the reply target is in the same conversation.
+- Server stores `replyTo` (ObjectId) plus a `replyPreview` object (sender, type, snippet, media info).
+- Socket payloads include `replyToId` and `replyPreview` for both sender ack and recipient delivery.
+
+### Conversation Mute
+
+Users can mute a conversation to suppress notifications and unread increments.
+
+**Rules:**
+- Stored per conversation as `mutedUsers: [{ userId, mutedUntil }]`.
+- Mute duration is optional; `mutedUntil` can be null for indefinite mute.
+- Muted conversations still receive messages but do not increment unread counts.
+
 ### Stealth Mode (Ephemeral Text)
 
 Stealth messages are encrypted at rest and automatically expire after a fixed duration.
@@ -204,8 +255,10 @@ Stealth messages are encrypted at rest and automatically expire after a fixed du
 
 | Type | Content Field | Media Field | Notes |
 |------|---------------|-------------|-------|
-| `text` | Text string (max 5000 chars) | `null` | Standard text message |
+| `text` | Text string (max 256 chars) | `null` | Standard text message |
 | `image` | Optional caption | `mediaUrl` pointing to uploaded image | Upload via REST first, then send message with URL |
+| `video` | Optional caption | `mediaUrl` pointing to uploaded video | Upload via REST first, then send message with URL |
+| `audio` | Optional caption | `mediaUrl` pointing to uploaded audio | Upload via REST first, then send message with URL |
 | `file` | Optional description | `mediaUrl` + `fileName` + `fileSize` | Same upload-first pattern |
 | `system` | System message text | `null` | Auto-generated (e.g., "User changed nickname") |
 

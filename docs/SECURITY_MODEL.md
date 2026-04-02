@@ -65,6 +65,14 @@ All refresh tokens for a user are invalidated when:
 - Replay attack detected
 - Admin forces session invalidation
 
+### Temporary Accounts
+
+Temporary accounts use standard JWT tokens but are constrained by policy:
+
+- Temporary sessions expire after 24 hours and are removed by a cleanup job.
+- Sensitive actions are gated by `requireFullAccount` middleware until claimed.
+- Claiming attaches email/password and triggers verification before full access.
+
 ### Password Security
 
 | Parameter | Value |
@@ -156,8 +164,8 @@ Layer 3: Database (unique indexes as final safety net)
 
 | Field | Rules |
 |-------|-------|
-| `content` | Max 5,000 characters for text messages, max 500 characters for captions |
-| `type` | Enum: `"text"`, `"image"`, `"file"`, `"system"` |
+| `content` | Max 256 characters for text messages and captions |
+| `type` | Enum: `"text"`, `"image"`, `"video"`, `"audio"`, `"file"`, `"system"` |
 | `conversationId` | Valid MongoDB ObjectId |
 | `mediaUrl` | Valid URL path, must match known upload patterns |
 

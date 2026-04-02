@@ -260,7 +260,9 @@ Login with email or phone number and password.
       "role": "user",
       "status": "active",
       "onlineStatus": "online",
-      "lastSeen": "2026-03-08T12:00:00Z"
+      "lastSeen": "2026-03-08T12:00:00Z",
+      "isTemporary": false,
+      "tempExpiresAt": null
     }
   }
 }
@@ -269,6 +271,62 @@ Login with email or phone number and password.
 **Errors:**
 - `401` — Invalid credentials
 - `401` — Account banned or pending verification
+
+---
+
+### POST /api/auth/temporary 🔓
+
+Create a temporary 24-hour account without email/password.
+
+**Request Body:**
+```json
+{}
+```
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+    "refreshToken": "dGhpcyBpcyBhIHJlZnJl...",
+    "user": {
+      "id": "60d5ecb54b24a1001c8e4b3a",
+      "anonimiId": "aid_temp1234",
+      "username": "temp_xxxxxx",
+      "profileImage": null,
+      "role": "user",
+      "status": "active",
+      "isTemporary": true,
+      "tempExpiresAt": "2026-04-04T11:50:00.000Z"
+    }
+  }
+}
+```
+
+---
+
+### POST /api/auth/temporary/claim
+
+Claim a temporary account by attaching email + password.
+
+**Request Body:**
+```json
+{
+  "email": "john@example.com",
+  "password": "SecurePass123!"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Verification code sent. Please verify your account."
+  }
+}
+```
 
 ---
 
@@ -909,7 +967,8 @@ List the authenticated user's conversations.
         "blockId": null,
         "blockedByMe": false,
         "profileImage": "/uploads/avatars/uuid2.jpg",
-        "onlineStatus": "online"
+        "onlineStatus": "online",
+        "isTemporary": false
       },
       "lastMessage": {
         "content": "Hey, are you free tonight?",
@@ -918,6 +977,8 @@ List the authenticated user's conversations.
         "timestamp": "2026-03-08T11:45:00Z"
       },
       "unreadCount": 3,
+      "isMuted": false,
+      "mutedUntil": null,
       "requestStatus": null,
       "updatedAt": "2026-03-08T11:45:00Z"
     },
@@ -937,6 +998,8 @@ List the authenticated user's conversations.
         "timestamp": "2026-03-08T11:30:00Z"
       },
       "unreadCount": 0,
+      "isMuted": false,
+      "mutedUntil": null,
       "requestStatus": null,
       "updatedAt": "2026-03-08T11:30:00Z"
     }
@@ -1000,8 +1063,51 @@ Get conversation details.
     "id": "60d5ecb54b24a1001c8e4b3f",
     "type": "private",
     "participant": { ... },
+    "isMuted": false,
+    "mutedUntil": null,
     "requestStatus": null,
     "createdAt": "2025-06-15T09:00:00Z"
+  }
+}
+```
+
+---
+
+### POST /api/conversations/:conversationId/mute
+
+Mute a conversation. Optional duration in minutes.
+
+**Request Body:**
+```json
+{
+  "durationMinutes": 60
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "conversationId": "60d5ecb54b24a1001c8e4b3f",
+    "mutedUntil": "2026-04-03T12:30:00.000Z"
+  }
+}
+```
+
+---
+
+### DELETE /api/conversations/:conversationId/mute
+
+Unmute a conversation.
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "conversationId": "60d5ecb54b24a1001c8e4b3f",
+    "muted": false
   }
 }
 ```
@@ -1039,6 +1145,8 @@ Fetch messages for a conversation with cursor-based pagination.
       "mediaUrl": null,
       "fileName": null,
       "fileSize": null,
+      "replyToId": null,
+      "replyPreview": null,
       "readBy": ["60d5ecb54b24a1001c8e4b3a", "60d5ecb54b24a1001c8e4b3b"],
       "readByAt": {
         "60d5ecb54b24a1001c8e4b3a": "2026-03-08T11:40:02Z",
@@ -1082,6 +1190,7 @@ Notes:
 - Stealth messages include `isStealth: true`. If expired, `content: null` and `stealthExpiredAt` is set.
 - Messages in the user's `deletedFor` array are excluded.
 - `readByAt` maps `userId -> ISO timestamp` for when each user read the message.
+- Reply metadata is returned via `replyToId` and `replyPreview` for fast rendering.
 
 ---
 
@@ -1147,6 +1256,9 @@ Send a message via REST (alternative to WebSocket for reliability).
   "type": "text",
   "content": "Hello there!",
   "mediaUrl": null,
+  "fileName": null,
+  "fileSize": null,
+  "replyToId": "60d5ecb54b24a1001c8e4b50",
   "stealthDuration": "30m"
 }
 ```
@@ -1154,6 +1266,8 @@ Send a message via REST (alternative to WebSocket for reliability).
 Notes:
 - `stealthDuration` is optional and only valid for `type: "text"`.
 - Allowed values: `"1m"`, `"5m"`, `"15m"`, `"30m"`, `"1h"`, `"3h"`, `"6h"`, `"12h"`, `"24h"`.
+- `replyToId` is optional and must reference a message in the same conversation.
+- Allowed `type` values: `"text"`, `"image"`, `"video"`, `"audio"`, `"file"`.
 
 **Response (201):**
 ```json
@@ -1169,6 +1283,17 @@ Notes:
     "stealthExpiresAt": null,
     "stealthExpiredAt": null,
     "stealthContentLength": null,
+    "replyToId": "60d5ecb54b24a1001c8e4b50",
+    "replyPreview": {
+      "messageId": "60d5ecb54b24a1001c8e4b50",
+      "senderId": "60d5ecb54b24a1001c8e4b3b",
+      "senderUsername": "jane_smith",
+      "type": "text",
+      "content": "Earlier message snippet",
+      "mediaUrl": null,
+      "fileName": null,
+      "createdAt": "2026-03-08T11:49:00Z"
+    },
     "readBy": ["60d5ecb54b24a1001c8e4b3a"],
     "readByAt": {
       "60d5ecb54b24a1001c8e4b3a": "2026-03-08T11:50:00Z"
@@ -1513,6 +1638,46 @@ Change a member's role.
 - Owner can promote/demote anyone.
 - Admin can promote members to admin.
 - Transferring ownership (`"role": "owner"`) requires current owner auth.
+
+---
+
+### POST /api/groups/:groupId/members/:userId/mute
+
+Mute a group member (owner/admin only).
+
+**Request Body:**
+```json
+{
+  "durationMinutes": 60
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Member muted",
+    "mutedUntil": "2026-04-03T12:30:00.000Z"
+  }
+}
+```
+
+---
+
+### DELETE /api/groups/:groupId/members/:userId/mute
+
+Unmute a group member.
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Member unmuted"
+  }
+}
+```
 
 ---
 
