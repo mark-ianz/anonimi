@@ -33,11 +33,13 @@ import {
 } from "@/components/ui/tooltip";
 import { useAuthStore } from "@/stores/authStore";
 import { useAuth } from "@/hooks/useAuth";
+import { useTempCountdown } from "@/hooks/useTempCountdown";
 import { getChatSocket } from "@/lib/socket";
 import type { AppearanceStatus, OnlineStatus } from "@/types/user";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useContacts } from "@/hooks/useContacts";
 import { useChatStore } from "@/stores/chatStore";
+import TemporaryAccountBadge from "@/components/shared/TemporaryAccountBadge";
 
 const navItems = [
   { href: "/chat", icon: MessageCircle, label: "Chats" },
@@ -74,6 +76,8 @@ export default function MainLayout({ children }: SidebarProps) {
   const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
   const [sidebarSearch, setSidebarSearch] = useState("");
   const { user } = useAuthStore();
+  const { remainingLabel: tempRemaining } = useTempCountdown(user?.tempExpiresAt ?? null);
+  const isTempUser = !!user?.isTemporary;
   const { conversations, unreadCounts } = useChatStore();
   const { requests } = useContacts();
   const { updateProfile, isUpdatingProfile } = useAuth();
@@ -466,6 +470,15 @@ export default function MainLayout({ children }: SidebarProps) {
           </div>
 
           <div className="flex items-center gap-3">
+            {isTempUser && tempRemaining && (
+              <Link
+                href="/profile"
+                className="hidden md:inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300"
+              >
+                <TemporaryAccountBadge className="bg-transparent px-0 py-0 text-[9px]" />
+                <span>Expires in {tempRemaining}</span>
+              </Link>
+            )}
             <div className="relative" ref={statusMenuRef}>
               <button
                 onClick={() => setStatusMenuOpen((prev) => !prev)}

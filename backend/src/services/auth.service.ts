@@ -11,11 +11,12 @@ import {
   generateRefreshToken as generateRefreshTokenUtil,
   verifyRefreshToken,
 } from "../utils/jwt";
-import { ConflictError, UnauthorizedError, NotFoundError } from "../utils/apiError";
+import { ConflictError, UnauthorizedError, NotFoundError, ForbiddenError } from "../utils/apiError";
 import { AppearanceStatus, OnlineStatus, UserRole, UserStatus } from "../types/enums";
 import { createAdminLog } from "./admin.service";
 import { env } from "../config/env";
 import { sendPasswordResetEmail, sendVerificationEmail } from "./email.service";
+import { removeTemporaryAccount } from "./temporaryAccount.service";
 
 interface RegisterResult {
   message: string;
@@ -36,6 +37,8 @@ interface LoginResult {
     appearanceStatus: string;
     onlineStatus: string;
     lastSeen: Date | null;
+    isTemporary: boolean;
+    tempExpiresAt: Date | null;
   };
 }
 
@@ -53,6 +56,7 @@ interface ResendVerificationResult {
 
 const USERNAME_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
 const EMAIL_VERIFICATION_TTL_MS = 15 * 60 * 1000;
+const TEMP_ACCOUNT_TTL_MS = 24 * 60 * 60 * 1000;
 
 const generateCryptoUsername = (): string => {
   const bytes = crypto.randomBytes(6);
@@ -63,6 +67,25 @@ const generateCryptoUsername = (): string => {
   }
 
   return `anon_${suffix}`;
+};
+
+const generateTempUsername = async (): Promise<string> => {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const bytes = crypto.randomBytes(6);
+    let suffix = "";
+
+    for (const byte of bytes) {
+      suffix += USERNAME_ALPHABET[byte % USERNAME_ALPHABET.length];
+    }
+
+    const candidate = `temp_${suffix}`;
+    const existing = await User.findOne({ username: candidate }).select("_id");
+    if (!existing) {
+      return candidate;
+    }
+  }
+
+  throw new ConflictError("Unable to generate temporary username. Please try again.");
 };
 
 const resolveUniqueUsername = async (preferredUsername?: string): Promise<string> => {
@@ -116,6 +139,47 @@ const buildPasswordResetLink = (token: string): string => {
   const url = new URL(baseUrl);
   url.searchParams.set("token", token);
   return url.toString();
+};
+
+const isTemporaryExpired = (user: { isTemporary?: boolean; tempExpiresAt?: Date | null }) => {
+  if (!user.isTemporary || !user.tempExpiresAt) return false;
+  return user.tempExpiresAt.getTime() <= Date.now();
+};
+
+export const createTemporaryAccount = async (): Promise<LoginResult> => {
+  const tempUsername = await generateTempUsername();
+  const now = new Date();
+  const tempExpiresAt = new Date(now.getTime() + TEMP_ACCOUNT_TTL_MS);
+
+  const user = await User.create({
+    anonimiId: generateAnonimiId(),
+    username: tempUsername,
+    role: UserRole.USER,
+    status: UserStatus.ACTIVE,
+    isTemporary: true,
+    tempCreatedAt: now,
+    tempExpiresAt,
+  });
+
+  const tokens = await generateTokens(user._id.toString(), user.anonimiId, user.role);
+
+  return {
+    ...tokens,
+    user: {
+      id: user._id.toString(),
+      anonimiId: user.anonimiId,
+      username: user.username,
+      profileImage: user.profileImage,
+      role: user.role,
+      status: user.status,
+      usernameCanEdit: !user.usernameChangedAt && !user.isTemporary,
+      appearanceStatus: user.appearanceStatus,
+      onlineStatus: user.onlineStatus,
+      lastSeen: user.lastSeen,
+      isTemporary: true,
+      tempExpiresAt,
+    },
+  };
 };
 
 export const register = async (
@@ -181,6 +245,12 @@ export const verifyEmail = async (
   }
 
   user.emailVerified = true;
+  if (user.isTemporary) {
+    user.isTemporary = false;
+    user.tempCreatedAt = undefined;
+    user.tempExpiresAt = undefined;
+    user.tempMediaCount = 0;
+  }
   user.verificationCode = undefined;
   user.verificationCodeExpiresAt = undefined;
   user.emailVerificationTokenHash = undefined;
@@ -199,10 +269,12 @@ export const verifyEmail = async (
       profileImage: user.profileImage,
       role: user.role,
       status: user.status,
-      usernameCanEdit: !user.usernameChangedAt,
+      usernameCanEdit: !user.usernameChangedAt && !user.isTemporary,
       appearanceStatus: user.appearanceStatus,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
+      isTemporary: !!user.isTemporary,
+      tempExpiresAt: user.tempExpiresAt ?? null,
     },
   };
 };
@@ -231,6 +303,12 @@ export const verifyEmailLink = async (token: string): Promise<LoginResult> => {
   }
 
   user.emailVerified = true;
+  if (user.isTemporary) {
+    user.isTemporary = false;
+    user.tempCreatedAt = undefined;
+    user.tempExpiresAt = undefined;
+    user.tempMediaCount = 0;
+  }
   user.verificationCode = undefined;
   user.verificationCodeExpiresAt = undefined;
   user.emailVerificationTokenHash = undefined;
@@ -249,10 +327,12 @@ export const verifyEmailLink = async (token: string): Promise<LoginResult> => {
       profileImage: user.profileImage,
       role: user.role,
       status: user.status,
-      usernameCanEdit: !user.usernameChangedAt,
+      usernameCanEdit: !user.usernameChangedAt && !user.isTemporary,
       appearanceStatus: user.appearanceStatus,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
+      isTemporary: !!user.isTemporary,
+      tempExpiresAt: user.tempExpiresAt ?? null,
     },
   };
 };
@@ -272,6 +352,12 @@ export const verifyPhone = async (
   }
 
   user.phoneVerified = true;
+  if (user.isTemporary) {
+    user.isTemporary = false;
+    user.tempCreatedAt = undefined;
+    user.tempExpiresAt = undefined;
+    user.tempMediaCount = 0;
+  }
   user.verificationCode = undefined;
   user.verificationCodeExpiresAt = undefined;
   user.status = UserStatus.ACTIVE;
@@ -288,10 +374,12 @@ export const verifyPhone = async (
       profileImage: user.profileImage,
       role: user.role,
       status: user.status,
-      usernameCanEdit: !user.usernameChangedAt,
+      usernameCanEdit: !user.usernameChangedAt && !user.isTemporary,
       appearanceStatus: user.appearanceStatus,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
+      isTemporary: !!user.isTemporary,
+      tempExpiresAt: user.tempExpiresAt ?? null,
     },
   };
 };
@@ -440,6 +528,10 @@ export const login = async (
     throw new UnauthorizedError("Account not verified");
   }
 
+  if (user.isTemporary) {
+    throw new UnauthorizedError("Temporary accounts cannot be accessed after logout. Claim your account to keep it.");
+  }
+
   if (user.status === UserStatus.BANNED) {
     throw new UnauthorizedError("Account is banned");
   }
@@ -455,10 +547,12 @@ export const login = async (
       profileImage: user.profileImage,
       role: user.role,
       status: user.status,
-      usernameCanEdit: !user.usernameChangedAt,
+      usernameCanEdit: !user.usernameChangedAt && !user.isTemporary,
       appearanceStatus: user.appearanceStatus,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
+      isTemporary: !!user.isTemporary,
+      tempExpiresAt: user.tempExpiresAt ?? null,
     },
   };
 };
@@ -486,6 +580,11 @@ export const refreshToken = async (refreshToken: string) => {
     throw new UnauthorizedError("User not found");
   }
 
+  if (isTemporaryExpired(user)) {
+    await removeTemporaryAccount(user._id.toString());
+    throw new UnauthorizedError("Temporary session expired");
+  }
+
   if (user.status === UserStatus.BANNED) {
     throw new UnauthorizedError("Account is banned");
   }
@@ -511,6 +610,65 @@ export const forgotPassword = async (email: string): Promise<string> => {
   }
 
   return "If an account with this email exists, a reset link has been sent.";
+};
+
+export const claimTemporaryAccount = async (
+  userId: string,
+  email: string,
+  password: string
+): Promise<RegisterResult> => {
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new NotFoundError("User not found");
+  }
+
+  if (!user.isTemporary) {
+    throw new ConflictError("Account is already claimed");
+  }
+
+  if (user.email) {
+    throw new ConflictError("Account is already claimed");
+  }
+
+  if (isTemporaryExpired(user)) {
+    await removeTemporaryAccount(user._id.toString());
+    throw new UnauthorizedError("Temporary session expired");
+  }
+
+  const existingUser = await User.findOne({ email: normalizedEmail }).select("_id");
+  if (existingUser) {
+    throw new ConflictError("Email already in use");
+  }
+
+  const emailVerification = createEmailVerificationPayload();
+
+  user.email = normalizedEmail;
+  user.passwordHash = await hashPassword(password);
+  user.verificationCode = emailVerification.code;
+  user.verificationCodeExpiresAt = emailVerification.expiresAt;
+  user.emailVerificationTokenHash = emailVerification.tokenHash;
+  user.emailVerificationTokenExpiresAt = emailVerification.expiresAt;
+  user.emailVerified = false;
+  user.status = UserStatus.PENDING;
+  await user.save();
+
+  const verificationLink = buildEmailVerificationLink(
+    emailVerification.token,
+    normalizedEmail
+  );
+
+  await sendVerificationEmail({
+    to: normalizedEmail,
+    code: emailVerification.code,
+    link: verificationLink,
+  });
+
+  return {
+    message: "Verification code sent. Please verify your account.",
+    verificationTarget: "email",
+  };
 };
 
 export const resetPassword = async (
@@ -548,6 +706,8 @@ export const resetPassword = async (
       appearanceStatus: user.appearanceStatus,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
+      isTemporary: !!user.isTemporary,
+      tempExpiresAt: user.tempExpiresAt ?? null,
     },
   };
 };
@@ -556,6 +716,12 @@ export const logout = async (
   userId: string,
   refreshToken: string
 ): Promise<void> => {
+  const user = await User.findById(userId).select("isTemporary");
+  if (user?.isTemporary) {
+    await removeTemporaryAccount(userId);
+    return;
+  }
+
   await RefreshToken.deleteOne({
     userId: new Types.ObjectId(userId),
     token: refreshToken,
@@ -603,6 +769,9 @@ export const updateProfile = async (
   }
 
   if (updates.username && updates.username !== user.username) {
+    if (user.isTemporary) {
+      throw new ForbiddenError("Temporary accounts cannot change username");
+    }
     const existingUser = await User.findOne({
       username: updates.username,
       _id: { $ne: userId },

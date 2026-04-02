@@ -102,6 +102,19 @@ export const login = async (
   }
 };
 
+export const createTemporaryAccount = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const result = await authService.createTemporaryAccount();
+    apiSuccess(res, result, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const refreshToken = async (
   req: Request,
   res: Response,
@@ -158,6 +171,24 @@ export const logout = async (
   }
 };
 
+export const claimTemporaryAccount = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { email, password } = req.body;
+    const result = await authService.claimTemporaryAccount(
+      req.user!._id.toString(),
+      email,
+      password
+    );
+    apiSuccess(res, result, 200);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getProfile = async (
   req: Request,
   res: Response,
@@ -169,9 +200,9 @@ export const getProfile = async (
       id: user._id.toString(),
       anonimiId: user.anonimiId,
       username: user.username,
-      usernameCanEdit: !user.usernameChangedAt,
-      email: user.email,
-      phone: user.phone,
+      usernameCanEdit: !user.usernameChangedAt && !user.isTemporary,
+      email: user.email ?? null,
+      phone: user.phone ?? null,
       profileImage: user.profileImage,
       role: user.role,
       status: user.status,
@@ -180,6 +211,8 @@ export const getProfile = async (
       lastSeen: user.lastSeen,
       emailVerified: user.emailVerified,
       phoneVerified: user.phoneVerified,
+      isTemporary: !!user.isTemporary,
+      tempExpiresAt: user.tempExpiresAt ?? null,
       createdAt: user.createdAt,
     });
   } catch (error) {
@@ -203,9 +236,9 @@ export const updateProfile = async (
       id: user._id.toString(),
       anonimiId: user.anonimiId,
       username: user.username,
-      usernameCanEdit: !user.usernameChangedAt,
-      email: user.email,
-      phone: user.phone,
+      usernameCanEdit: !user.usernameChangedAt && !user.isTemporary,
+      email: user.email ?? null,
+      phone: user.phone ?? null,
       profileImage: user.profileImage,
       role: user.role,
       status: user.status,
@@ -214,6 +247,8 @@ export const updateProfile = async (
       lastSeen: user.lastSeen,
       emailVerified: user.emailVerified,
       phoneVerified: user.phoneVerified,
+      isTemporary: !!user.isTemporary,
+      tempExpiresAt: user.tempExpiresAt ?? null,
       createdAt: user.createdAt,
     });
   } catch (error) {

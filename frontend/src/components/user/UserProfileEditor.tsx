@@ -172,6 +172,8 @@ export default function UserProfileEditor({ pendingAvatar, pendingAvatarRemoval,
         <p className="text-xs text-muted-foreground">
           {canEditUsername
             ? "For better anonymity, avoid using your real name. Username can be changed once."
+            : user?.isTemporary
+            ? "Claim your account to change your username."
             : "Username change already used. You can only change username once."}
         </p>
       </div>
@@ -195,7 +197,11 @@ export default function UserProfileEditor({ pendingAvatar, pendingAvatarRemoval,
           disabled
           className="w-full h-10 px-3 rounded-xl bg-muted/30 border-0 text-sm text-muted-foreground cursor-not-allowed"
         />
-        <p className="text-xs text-muted-foreground">Email cannot be changed after registration.</p>
+        <p className="text-xs text-muted-foreground">
+          {user?.isTemporary
+            ? "Claim your account to add an email address."
+            : "Email cannot be changed after registration."}
+        </p>
       </div>
 
       <div className="space-y-1.5">

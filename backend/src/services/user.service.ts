@@ -11,6 +11,7 @@ interface SearchResult {
   username: string;
   profileImage: string | null;
   onlineStatus: string;
+  isTemporary: boolean;
 }
 
 const GENERIC_SEARCH_TOKENS = new Set([
@@ -56,10 +57,11 @@ export const searchUsers = async (
 
   const searchQuery = {
     $or: orConditions,
+    isTemporary: { $ne: true },
   };
 
   const users = await User.find(searchQuery)
-    .select("anonimiId username profileImage onlineStatus")
+    .select("anonimiId username profileImage onlineStatus isTemporary")
     .limit(limit + 1)
     .sort({ username: 1 })
     .lean();
@@ -75,6 +77,7 @@ export const searchUsers = async (
       username: u.username,
       profileImage: u.profileImage,
       onlineStatus: u.onlineStatus,
+      isTemporary: !!u.isTemporary,
     })),
     nextCursor,
   };
@@ -85,7 +88,7 @@ export const getUserByAnonimiId = async (
   currentUserId: string
 ) => {
   const user = await User.findOne({ anonimiId }).select(
-    "anonimiId username profileImage onlineStatus lastSeen createdAt"
+    "anonimiId username profileImage onlineStatus lastSeen createdAt isTemporary"
   );
 
   if (!user) {
@@ -145,6 +148,7 @@ export const getUserByAnonimiId = async (
     onlineStatus: user.onlineStatus,
     lastSeen: user.lastSeen,
     createdAt: user.createdAt,
+    isTemporary: !!user.isTemporary,
     isContact,
     pendingOutgoingRequestId,
     pendingIncomingRequestId,

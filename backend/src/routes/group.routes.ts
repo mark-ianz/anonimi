@@ -1,6 +1,7 @@
 import { Router } from "express";
 import * as groupController from "../controllers/group.controller";
 import { authenticate } from "../middleware/auth.middleware";
+import { requireFullAccount } from "../middleware/requireFullAccount.middleware";
 import { validate } from "../middleware/validate.middleware";
 import {
   createGroupSchema,
@@ -21,7 +22,13 @@ import {
 
 const router = Router();
 
-router.post("/", authenticate, validate(createGroupSchema), groupController.createGroup);
+router.post(
+  "/",
+  authenticate,
+  requireFullAccount,
+  validate(createGroupSchema),
+  groupController.createGroup
+);
 router.get("/join/:token", validate(inviteTokenParamsSchema), groupController.getGroupInfoByToken);
 router.post("/join/:token", authenticate, validate(inviteTokenParamsSchema), groupController.joinByInviteToken);
 router.get("/:groupId", authenticate, validate(groupParamsSchema), groupController.getGroup);

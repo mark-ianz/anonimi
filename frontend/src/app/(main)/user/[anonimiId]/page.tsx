@@ -12,6 +12,8 @@ import type { ReportReason } from "@/types/report";
 import { API_BASE } from "@/lib/constants";
 import OnlineIndicator from "@/components/user/OnlineIndicator";
 import { useEffect, useRef, useState } from "react";
+import TemporaryAccountBadge from "@/components/shared/TemporaryAccountBadge";
+import TemporaryAccountModal from "@/components/shared/TemporaryAccountModal";
 
 export default function UserProfilePage() {
   const { anonimiId } = useParams<{ anonimiId: string }>();
@@ -22,6 +24,7 @@ export default function UserProfilePage() {
   const [reportDescription, setReportDescription] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [tempGateOpen, setTempGateOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const lookupId = `/users/${anonimiId}`;
@@ -135,6 +138,8 @@ export default function UserProfilePage() {
   });
 
   const profile = data;
+  const isTempUser = !!me?.isTemporary;
+  const isTempProfile = !!profile?.isTemporary;
   const isMe = profile?.id === me?.id;
   const isContact = !!profile?.isContact;
   const hasOutgoingRequest = !!profile?.pendingOutgoingRequestId;
@@ -243,6 +248,10 @@ export default function UserProfilePage() {
                             disabled={blockMutation.isPending || !!profile.isBlocked}
                             onClick={() => {
                               setMenuOpen(false);
+                              if (isTempUser) {
+                                setTempGateOpen(true);
+                                return;
+                              }
                               blockMutation.mutate();
                             }}
                             className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
@@ -254,6 +263,10 @@ export default function UserProfilePage() {
                             type="button"
                             onClick={() => {
                               setMenuOpen(false);
+                              if (isTempUser) {
+                                setTempGateOpen(true);
+                                return;
+                              }
                               setReportModalOpen(true);
                             }}
                             className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-amber-700 transition-colors hover:bg-amber-500/10 dark:text-amber-300"
@@ -285,7 +298,10 @@ export default function UserProfilePage() {
                       </div>
                     </div>
 
-                    <h2 className="mt-4 font-display text-3xl font-semibold leading-none">{profile.username}</h2>
+                    <div className="mt-4 flex items-center gap-2">
+                      <h2 className="font-display text-3xl font-semibold leading-none">{profile.username}</h2>
+                      {isTempProfile && <TemporaryAccountBadge />}
+                    </div>
                     <p className="mt-1 text-sm text-muted-foreground">@{profile.anonimiId}</p>
                     {profile.contactNickname ? (
                       <p className="mt-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
@@ -424,6 +440,11 @@ export default function UserProfilePage() {
             </div>
           </div>
         )}
+
+        <TemporaryAccountModal
+          open={tempGateOpen}
+          onClose={() => setTempGateOpen(false)}
+        />
       </div>
     </ProtectedRoute>
   );

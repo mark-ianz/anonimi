@@ -14,6 +14,8 @@ export interface User {
   onlineStatus: OnlineStatus;
   lastSeen: string;
   createdAt: string;
+  isTemporary?: boolean;
+  tempExpiresAt?: string | null;
 }
 
 export interface AuthUser extends User {
@@ -22,6 +24,8 @@ export interface AuthUser extends User {
   usernameCanEdit: boolean;
   emailVerified: boolean;
   phoneVerified: boolean;
+  isTemporary?: boolean;
+  tempExpiresAt?: string | null;
 }
 
 export interface PublicUser {
@@ -37,6 +41,7 @@ export interface PublicUser {
   pendingIncomingRequestId?: string | null;
   isBlocked?: boolean;
   contactNickname?: string | null;
+  isTemporary?: boolean;
 }
 
 export interface SearchUser {
@@ -45,4 +50,5 @@ export interface SearchUser {
   username: string;
   profileImage: string | null;
   onlineStatus: OnlineStatus;
+  isTemporary?: boolean;
 }

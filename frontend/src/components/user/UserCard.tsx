@@ -6,6 +6,7 @@ import { UserPlus, MessageCircle } from "lucide-react";
 import type { SearchUser, PublicUser } from "@/types/user";
 import OnlineIndicator from "./OnlineIndicator";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
+import TemporaryAccountBadge from "@/components/shared/TemporaryAccountBadge";
 
 interface UserCardProps {
   user: SearchUser | PublicUser;
@@ -24,6 +25,7 @@ export default function UserCard({
 }: UserCardProps) {
   const router = useRouter();
   const isContact = "isContact" in user ? user.isContact : false;
+  const isTemporary = "isTemporary" in user ? !!user.isTemporary : false;
 
   return (
     <div
@@ -60,9 +62,12 @@ export default function UserCard({
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="truncate text-sm font-medium hover:underline">
-          {user.username}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="truncate text-sm font-medium hover:underline">
+            {user.username}
+          </p>
+          {isTemporary && <TemporaryAccountBadge />}
+        </div>
         <p className="text-xs text-muted-foreground">@{user.anonimiId}</p>
       </div>
 

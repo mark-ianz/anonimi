@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { verifyAccessToken } from "../utils/jwt";
 import { User } from "../models/user.model";
 import { UnauthorizedError } from "../utils/apiError";
+import { removeTemporaryAccount } from "../services/temporaryAccount.service";
 
 export const authenticate = async (
   req: Request,
@@ -22,6 +23,11 @@ export const authenticate = async (
 
     if (!user) {
       throw new UnauthorizedError("User not found");
+    }
+
+    if (user.isTemporary && user.tempExpiresAt && user.tempExpiresAt < new Date()) {
+      await removeTemporaryAccount(user._id.toString());
+      throw new UnauthorizedError("Temporary session expired");
     }
 
     if (user.status === "banned") {

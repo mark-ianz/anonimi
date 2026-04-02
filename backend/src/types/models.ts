@@ -5,10 +5,14 @@ export interface IUser extends Document {
   _id: Types.ObjectId;
   anonimiId: string;
   username: string;
-  email: string;
+  email?: string | null;
   phone?: string;
-  passwordHash: string;
+  passwordHash?: string;
   profileImage?: string;
+  isTemporary?: boolean;
+  tempCreatedAt?: Date;
+  tempExpiresAt?: Date;
+  tempMediaCount?: number;
   role: UserRole;
   status: UserStatus;
   appearanceStatus: AppearanceStatus;

@@ -24,10 +24,13 @@ interface ConversationParticipant {
   anonimiId: string;
   username: string;
   nickname?: string;
+  contactId?: string | null;
   blockId?: string | null;
   blockedByMe?: boolean;
   profileImage: string | null;
   onlineStatus: string;
+  isTemporary?: boolean;
+  isDeleted?: boolean;
 }
 
 interface LastMessage {
@@ -234,28 +237,48 @@ export const getConversationRequests = async (userId: string) => {
     toUserId: new Types.ObjectId(userId),
     status: "pending",
   })
-    .populate("fromUserId", "anonimiId username profileImage onlineStatus")
+    .populate("fromUserId", "anonimiId username profileImage onlineStatus isTemporary")
     .populate("conversationId", "_id updatedAt lastMessage")
     .sort({ createdAt: -1 })
     .lean();
 
-  return (requests as any[]).map((r) => ({
-    id: r.conversationId._id.toString(),
-    type: "private" as const,
-    participant: {
-      id: r.fromUserId._id.toString(),
-      anonimiId: r.fromUserId.anonimiId,
-      username: r.fromUserId.username,
-      nickname: null,
-      profileImage: r.fromUserId.profileImage ?? null,
-      onlineStatus: r.fromUserId.onlineStatus ?? "offline",
-    },
-    lastMessage: r.conversationId.lastMessage ?? null,
-    requestStatus: "pending",
-    requestId: r._id.toString(),
-    unreadCount: 0,
-    updatedAt: r.conversationId.updatedAt,
-  }));
+  return (requests as any[]).map((r) => {
+    const fromUser = r.fromUserId ?? null;
+    const fallbackFromUserId = r.fromUserId?.toString?.() ?? "";
+
+    const participant = fromUser
+      ? {
+          id: fromUser._id.toString(),
+          anonimiId: fromUser.anonimiId,
+          username: fromUser.username,
+          nickname: null,
+          profileImage: fromUser.profileImage ?? null,
+          onlineStatus: fromUser.onlineStatus ?? "offline",
+          isTemporary: !!fromUser.isTemporary,
+          isDeleted: false,
+        }
+      : {
+          id: fallbackFromUserId,
+          anonimiId: "deleted",
+          username: "Deleted temporary user",
+          nickname: null,
+          profileImage: null,
+          onlineStatus: "offline",
+          isTemporary: true,
+          isDeleted: true,
+        };
+
+    return {
+      id: r.conversationId._id.toString(),
+      type: "private" as const,
+      participant,
+      lastMessage: r.conversationId.lastMessage ?? null,
+      requestStatus: "pending",
+      requestId: r._id.toString(),
+      unreadCount: 0,
+      updatedAt: r.conversationId.updatedAt,
+    };
+  });
 };
 
 export const getConversations = async (
@@ -330,7 +353,7 @@ export const getConversations = async (
       if (conv.type === "private") {
         const otherUserId = otherParticipants[0];
         const user = await User.findById(otherUserId).select(
-          "anonimiId username profileImage onlineStatus"
+          "anonimiId username profileImage onlineStatus isTemporary"
         );
 
         const contact = await Contact.findOne({
@@ -364,21 +387,39 @@ export const getConversations = async (
           ? await User.findById(latestVisibleMessage.senderId).select("username").lean()
           : null;
 
+        const participant: ConversationParticipant = user
+          ? {
+              id: user._id.toString(),
+              anonimiId: user.anonimiId,
+              username: user.username,
+              nickname: contact?.nickname,
+              contactId: contact?._id.toString() ?? null,
+              blockId: myBlock?._id.toString() ?? null,
+              blockedByMe: !!myBlock,
+              profileImage: user.profileImage,
+              onlineStatus: user.onlineStatus,
+              isTemporary: !!user.isTemporary,
+              isDeleted: false,
+            }
+          : {
+              id: otherUserId?.toString?.() ?? "",
+              anonimiId: "deleted",
+              username: "Deleted temporary user",
+              nickname: null,
+              contactId: null,
+              blockId: null,
+              blockedByMe: false,
+              profileImage: null,
+              onlineStatus: "offline",
+              isTemporary: true,
+              isDeleted: true,
+            };
+
         return {
           id: conv._id.toString(),
           type: conv.type,
           isArchived: archivedConvIdSet.has(conv._id.toString()),
-          participant: {
-            id: user?._id.toString(),
-            anonimiId: user?.anonimiId,
-            username: user?.username,
-            nickname: contact?.nickname,
-            contactId: contact?._id.toString() ?? null,
-            blockId: myBlock?._id.toString() ?? null,
-            blockedByMe: !!myBlock,
-            profileImage: user?.profileImage,
-            onlineStatus: user?.onlineStatus,
-          },
+          participant,
           lastMessage: latestVisibleMessage
             ? {
                 content: latestVisibleMessage.content,
@@ -493,7 +534,7 @@ export const getConversation = async (
       (p) => p.toString() !== userId
     );
     const user = await User.findById(otherParticipant).select(
-      "anonimiId username profileImage onlineStatus"
+      "anonimiId username profileImage onlineStatus isTemporary"
     );
 
     const contact = await Contact.findOne({
@@ -516,21 +557,39 @@ export const getConversation = async (
       userId: new Types.ObjectId(userId),
     }).select("_id");
 
+    const participant: ConversationParticipant = user
+      ? {
+          id: user._id.toString(),
+          anonimiId: user.anonimiId,
+          username: user.username,
+          nickname: contact?.nickname,
+          contactId: contact?._id.toString() ?? null,
+          blockId: myBlock?._id.toString() ?? null,
+          blockedByMe: !!myBlock,
+          profileImage: user.profileImage,
+          onlineStatus: user.onlineStatus,
+          isTemporary: !!user.isTemporary,
+          isDeleted: false,
+        }
+      : {
+          id: otherParticipant?.toString?.() ?? "",
+          anonimiId: "deleted",
+          username: "Deleted temporary user",
+          nickname: null,
+          contactId: null,
+          blockId: null,
+          blockedByMe: false,
+          profileImage: null,
+          onlineStatus: "offline",
+          isTemporary: true,
+          isDeleted: true,
+        };
+
     return {
       id: conversation._id.toString(),
       type: conversation.type,
       isArchived: !!archivedRow,
-      participant: {
-        id: user?._id.toString(),
-        anonimiId: user?.anonimiId,
-        username: user?.username,
-        nickname: contact?.nickname,
-        contactId: contact?._id.toString() ?? null,
-        blockId: myBlock?._id.toString() ?? null,
-        blockedByMe: !!myBlock,
-        profileImage: user?.profileImage,
-        onlineStatus: user?.onlineStatus,
-      },
+      participant,
       requestStatus: conversation.requestStatus ?? null,
       requestId: messageRequest?._id.toString() ?? null,
       requestFromUserId: messageRequest?.fromUserId.toString() ?? null,

@@ -33,15 +33,27 @@ export const getMessageRequests = async (
           .sort({ createdAt: -1 })
           .lean();
 
+        const fromUser = r.fromUserId ?? null;
+        const fallbackFromUserId = r.fromUserId?.toString?.() ?? "";
+
         return {
           id: r._id.toString(),
           conversationId: r.conversationId._id.toString(),
-          from: {
-            id: r.fromUserId._id.toString(),
-            anonimiId: r.fromUserId.anonimiId,
-            username: r.fromUserId.username,
-            profileImage: r.fromUserId.profileImage,
-          },
+          from: fromUser
+            ? {
+                id: fromUser._id.toString(),
+                anonimiId: fromUser.anonimiId,
+                username: fromUser.username,
+                profileImage: fromUser.profileImage,
+                isDeleted: false,
+              }
+            : {
+                id: fallbackFromUserId,
+                anonimiId: "deleted",
+                username: "Deleted temporary user",
+                profileImage: null,
+                isDeleted: true,
+              },
           lastMessage: lastMessage
             ? {
                 content: lastMessage.content,

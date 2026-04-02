@@ -29,6 +29,7 @@ let failedQueue: Array<{
 const NON_REFRESHABLE_AUTH_PATHS = [
   "/auth/login",
   "/auth/register",
+  "/auth/temporary",
   "/auth/verify-email",
   "/auth/verify-phone",
   "/auth/forgot-password",

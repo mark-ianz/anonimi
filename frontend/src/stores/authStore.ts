@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { AuthUser } from "@/types/user";
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/lib/constants";
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, TEMP_SESSION_KEY } from "@/lib/constants";
 
 interface AuthState {
   user: AuthUser | null;
@@ -29,6 +29,11 @@ export const useAuthStore = create<AuthState>()(
         if (typeof window !== "undefined") {
           localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
           localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+          if (user.isTemporary) {
+            sessionStorage.setItem(TEMP_SESSION_KEY, Date.now().toString());
+          } else {
+            sessionStorage.removeItem(TEMP_SESSION_KEY);
+          }
           // Write cookie so Next.js middleware can detect authentication server-side.
           // Max-age matches refresh token lifetime (7 days) so the cookie persists
           // for the full session; actual JWT validation still happens server-side.
@@ -43,6 +48,7 @@ export const useAuthStore = create<AuthState>()(
         if (typeof window !== "undefined") {
           localStorage.removeItem(ACCESS_TOKEN_KEY);
           localStorage.removeItem(REFRESH_TOKEN_KEY);
+          sessionStorage.removeItem(TEMP_SESSION_KEY);
           // Clear the authentication cookie used by Next.js middleware.
           document.cookie = "access_token=; path=/; max-age=0; SameSite=Lax";
         }
@@ -62,6 +68,12 @@ export const useAuthStore = create<AuthState>()(
       // After Zustand rehydrates persisted state from localStorage, clear the
       // loading flag so ProtectedRoute doesn't spin indefinitely.
       onRehydrateStorage: () => (state) => {
+        if (typeof window !== "undefined" && state?.user?.isTemporary) {
+          const hasSession = !!sessionStorage.getItem(TEMP_SESSION_KEY);
+          if (!hasSession) {
+            state.clearAuth();
+          }
+        }
         state?.setLoading(false);
       },
     }

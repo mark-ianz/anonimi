@@ -66,6 +66,8 @@ export default function ConversationItem({
   const isGroup = conversation.type === "group";
   const isArchived = !!conversation.isArchived;
   const participantId = conversation.participant?.id;
+  const isTempParticipant = !isGroup && !!conversation.participant?.isTemporary;
+  const isDeletedParticipant = !isGroup && !!conversation.participant?.isDeleted;
   const { status: presenceStatus } = usePresence(
     isGroup ? null : participantId,
     conversation.participant?.onlineStatus ?? "offline"
@@ -89,7 +91,9 @@ export default function ConversationItem({
     : conversation.lastMessage?.senderUsername ?? "Member";
   const basePreview = getLastMessagePreview(conversation);
   const isSystemMessage = conversation.lastMessage?.type === "system";
-  const preview = isPending
+  const preview = isDeletedParticipant
+    ? "Deleted temporary user"
+    : isPending
     ? "Pending request..."
     : isSystemMessage
     ? basePreview
@@ -287,6 +291,11 @@ export default function ConversationItem({
             >
               {displayName}
             </span>
+            {isTempParticipant && !isDeletedParticipant && (
+              <span className="ml-2 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-700 dark:text-amber-300">
+                Temporary
+              </span>
+            )}
             {timestamp && (
               <DateDisplay
                 date={timestamp}

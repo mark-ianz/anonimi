@@ -16,6 +16,8 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
   logoutSchema,
+  createTemporaryAccountSchema,
+  claimTemporaryAccountSchema,
 } from "../validators/auth.validator";
 import {
   updateProfileSchema,
@@ -30,10 +32,18 @@ router.get("/verify-email-link", validate(verifyEmailLinkSchema), authController
 router.get("/verification-status", validate(verificationStatusSchema), authController.getVerificationStatus);
 router.post("/resend-verification", authLimiter, validate(resendVerificationSchema), authController.resendVerification);
 router.post("/login", authLimiter, validate(loginSchema), authController.login);
+router.post("/temporary", authLimiter, validate(createTemporaryAccountSchema), authController.createTemporaryAccount);
 router.post("/refresh-token", validate(refreshTokenSchema), authController.refreshToken);
 router.post("/forgot-password", authLimiter, validate(forgotPasswordSchema), authController.forgotPassword);
 router.post("/reset-password", validate(resetPasswordSchema), authController.resetPassword);
 router.post("/logout", authenticate, validate(logoutSchema), authController.logout);
+
+router.post(
+  "/temporary/claim",
+  authenticate,
+  validate(claimTemporaryAccountSchema),
+  authController.claimTemporaryAccount
+);
 
 router.get("/me", authenticate, authController.getProfile);
 router.patch("/me", authenticate, validate(updateProfileSchema), authController.updateProfile);

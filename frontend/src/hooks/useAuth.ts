@@ -109,6 +109,23 @@ export function useAuth() {
 
   const logout = useCallback(() => logoutMutation.mutate(), [logoutMutation]);
 
+  const claimTemporaryAccountMutation = useMutation({
+    mutationFn: async (payload: { email: string; password: string }) => {
+      const res = await api.post("/auth/temporary/claim", payload);
+      return res.data.data as { message: string; verificationTarget: string };
+    },
+    onError: (err: unknown) => {
+      const responseError = (err as {
+        response?: {
+          data?: { error?: { message?: string } };
+        };
+      })?.response?.data?.error;
+
+      const msg = responseError?.message ?? "Failed to claim account.";
+      toast.error(msg);
+    },
+  });
+
   return {
     user: user ?? profile,
     isAuthenticated,
@@ -120,7 +137,10 @@ export function useAuth() {
     updateProfile: updateProfileMutation.mutate,
     updateProfileAsync: (patch: Partial<Pick<AuthUser, "username" | "phone" | "appearanceStatus">>) =>
       updateProfileMutation.mutateAsync(patch),
+    claimTemporaryAccountAsync: (payload: { email: string; password: string }) =>
+      claimTemporaryAccountMutation.mutateAsync(payload),
     isUpdatingAvatar: updateAvatarMutation.isPending || removeAvatarMutation.isPending,
     isUpdatingProfile: updateProfileMutation.isPending,
+    isClaimingTemporary: claimTemporaryAccountMutation.isPending,
   };
 }

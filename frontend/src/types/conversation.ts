@@ -13,6 +13,8 @@ export interface ConversationParticipant {
   blockedByMe?: boolean;
   profileImage: string | null;
   onlineStatus: OnlineStatus;
+  isTemporary?: boolean;
+  isDeleted?: boolean;
 }
 
 export interface ConversationGroup {

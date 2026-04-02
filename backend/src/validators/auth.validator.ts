@@ -94,3 +94,20 @@ export const logoutSchema = z.object({
     refreshToken: z.string().min(1, "Refresh token is required"),
   }),
 });
+
+export const createTemporaryAccountSchema = z.object({
+  body: z.object({}).optional(),
+});
+
+export const claimTemporaryAccountSchema = z.object({
+  body: z.object({
+    email: z.string().email(),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+        "Password must contain at least one uppercase, lowercase, and number"
+      ),
+  }),
+});

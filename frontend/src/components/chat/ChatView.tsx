@@ -20,6 +20,8 @@ import ConnectionStatus from "@/components/shared/ConnectionStatus";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import GroupAvatar from "@/components/shared/GroupAvatar";
 import UserAvatar from "@/components/shared/UserAvatar";
+import TemporaryAccountBadge from "@/components/shared/TemporaryAccountBadge";
+import TemporaryAccountModal from "@/components/shared/TemporaryAccountModal";
 
 interface ChatViewProps {
   conversation: Conversation;
@@ -44,10 +46,14 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
   const [reportDescription, setReportDescription] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
   const [editTarget, setEditTarget] = useState<{ id: string; content: string } | null>(null);
+  const [tempGateOpen, setTempGateOpen] = useState(false);
 
   const isGroup = conversation.type === "group";
   const isGroupDisbanded = isGroup && !!conversation.group?.disbandedAt;
   const participantId = conversation.participant?.id;
+  const isTempParticipant = !isGroup && !!conversation.participant?.isTemporary;
+  const isDeletedParticipant = !isGroup && !!conversation.participant?.isDeleted;
+  const isTempUser = !!currentUser?.isTemporary;
   const { status: presenceStatus, lastSeen } = usePresence(
     participantId,
     conversation.participant?.onlineStatus ?? "offline"
@@ -394,7 +400,12 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm leading-tight truncate">{displayName}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-medium text-sm leading-tight truncate">{displayName}</p>
+                {isTempParticipant && !isDeletedParticipant && (
+                  <TemporaryAccountBadge />
+                )}
+              </div>
               <p className="text-xs text-muted-foreground leading-tight">{getStatusText()}</p>
             </div>
           </>
@@ -429,7 +440,13 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
                   <Link
                     href={`/user/${conversation.participant?.anonimiId}`}
                     className="flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
-                    onClick={() => setMenuOpen(false)}
+                    onClick={(event) => {
+                      if (isDeletedParticipant) {
+                        event.preventDefault();
+                        return;
+                      }
+                      setMenuOpen(false);
+                    }}
                   >
                     <User className="w-4 h-4 text-muted-foreground shrink-0" />
                     View profile
@@ -502,7 +519,14 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
                       </button>
                     ) : (
                       <button
-                        onClick={() => { setMenuOpen(false); setConfirmBlock(true); }}
+                        onClick={() => {
+                          setMenuOpen(false);
+                          if (isTempUser) {
+                            setTempGateOpen(true);
+                            return;
+                          }
+                          setConfirmBlock(true);
+                        }}
                         className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
                       >
                         <ShieldBan className="w-4 h-4 shrink-0" />
@@ -510,7 +534,14 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
                       </button>
                     )}
                     <button
-                      onClick={() => { setMenuOpen(false); setShowReportForm(true); }}
+                      onClick={() => {
+                        setMenuOpen(false);
+                        if (isTempUser) {
+                          setTempGateOpen(true);
+                          return;
+                        }
+                        setShowReportForm(true);
+                      }}
                       className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
                     >
                       <Flag className="w-4 h-4 shrink-0" />
@@ -579,6 +610,24 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
           </div>
         </div>
       </header>
+
+      {!isGroup && isTempParticipant && !isDeletedParticipant && (
+        <div className="mx-4 mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 shrink-0">
+          <p className="text-sm font-medium text-foreground">Temporary account</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Be cautious when sharing sensitive details. This account can be deleted after 24 hours.
+          </p>
+        </div>
+      )}
+
+      {!isGroup && isDeletedParticipant && (
+        <div className="mx-4 mt-3 rounded-xl border border-border/60 bg-muted/50 px-4 py-3 shrink-0">
+          <p className="text-sm font-medium text-foreground">Deleted temporary user</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            This temporary account has been deleted. Message history is still visible.
+          </p>
+        </div>
+      )}
 
       {/* Non-contact notice banner - recipient view */}
       {isRecipient && (
@@ -682,7 +731,13 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
               {unblockMutation.isPending ? "Unblocking..." : "Unblock"}
             </button>
             <button
-              onClick={() => setShowReportForm(true)}
+              onClick={() => {
+                if (isTempUser) {
+                  setTempGateOpen(true);
+                  return;
+                }
+                setShowReportForm(true);
+              }}
               className="h-8 px-3 rounded-lg bg-muted text-foreground text-xs font-medium hover:bg-muted/80 transition-colors"
             >
               Report
@@ -865,6 +920,11 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
           </div>
         </div>
       )}
+
+      <TemporaryAccountModal
+        open={tempGateOpen}
+        onClose={() => setTempGateOpen(false)}
+      />
     </div>
   );
 }

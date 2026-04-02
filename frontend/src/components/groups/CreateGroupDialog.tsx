@@ -7,6 +7,8 @@ import { useContacts } from "@/hooks/useContacts";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
+import { useAuthStore } from "@/stores/authStore";
+import TemporaryAccountModal from "@/components/shared/TemporaryAccountModal";
 
 interface CreateGroupDialogProps {
   open: boolean;
@@ -17,6 +19,9 @@ export default function CreateGroupDialog({ open, onClose }: CreateGroupDialogPr
   const router = useRouter();
   const { createGroup, isCreating } = useGroups();
   const { contacts } = useContacts();
+  const { user } = useAuthStore();
+  const isTempUser = !!user?.isTemporary;
+  const [tempGateOpen, setTempGateOpen] = useState(false);
 
   const [name, setName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,6 +41,10 @@ export default function CreateGroupDialog({ open, onClose }: CreateGroupDialogPr
 
   function handleCreate() {
     if (selectedIds.length === 0) return;
+    if (isTempUser) {
+      setTempGateOpen(true);
+      return;
+    }
     const trimmedName = name.trim();
     createGroup(
       {
@@ -168,6 +177,11 @@ export default function CreateGroupDialog({ open, onClose }: CreateGroupDialogPr
           </button>
         </div>
       </div>
+
+      <TemporaryAccountModal
+        open={tempGateOpen}
+        onClose={() => setTempGateOpen(false)}
+      />
     </div>
   );
 }

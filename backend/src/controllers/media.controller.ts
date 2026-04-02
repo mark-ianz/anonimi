@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import path from "path";
 import { apiSuccess } from "../utils/apiResponse";
 import { env } from "../config/env";
+import { User } from "../models/user.model";
 
 const resolveFolder = (category: unknown): "avatars" | "groups" | "messages" => {
   if (category === "avatar") return "avatars";
@@ -32,6 +33,26 @@ export const uploadMedia = async (
         success: false,
         error: { code: "NO_FILE", message: "No file uploaded" },
       });
+    }
+
+    const category = req.body?.category;
+    if (req.user?.isTemporary && category === "message") {
+      const currentCount = req.user.tempMediaCount ?? 0;
+      if (currentCount >= 1) {
+        res.status(403).json({
+          success: false,
+          error: {
+            code: "TEMP_MEDIA_LIMIT",
+            message: "Temporary accounts can only upload one media file.",
+          },
+        });
+        return;
+      }
+
+      await User.updateOne(
+        { _id: req.user._id },
+        { $inc: { tempMediaCount: 1 } }
+      );
     }
 
     const folder = resolveFolderFromSavedFile(req.file.path) ?? resolveFolder(req.body.category);

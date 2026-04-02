@@ -10,12 +10,17 @@ import { useMediaUpload } from "@/hooks/useMediaUpload";
 import { cn } from "@/lib/utils";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
 import { UploadSource, validateUploadFile } from "@/lib/uploadPolicy";
+import { useAuthStore } from "@/stores/authStore";
+import TemporaryAccountModal from "@/components/shared/TemporaryAccountModal";
 
 export default function CreateGroupPage() {
   const router = useRouter();
   const { createGroup, isCreating } = useGroups();
   const { contacts } = useContacts();
   const { upload, isUploading } = useMediaUpload();
+  const { user } = useAuthStore();
+  const isTempUser = !!user?.isTemporary;
+  const [tempGateOpen, setTempGateOpen] = useState(false);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -81,6 +86,10 @@ export default function CreateGroupPage() {
 
   async function handleCreate() {
     if (selectedIds.length === 0) return;
+    if (isTempUser) {
+      setTempGateOpen(true);
+      return;
+    }
 
     let image: string | undefined;
 
@@ -451,6 +460,11 @@ export default function CreateGroupPage() {
           </div>
         </div>
       </div>
+
+      <TemporaryAccountModal
+        open={tempGateOpen}
+        onClose={() => setTempGateOpen(false)}
+      />
     </ProtectedRoute>
   );
 }

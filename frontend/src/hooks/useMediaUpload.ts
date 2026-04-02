@@ -53,7 +53,13 @@ export function useMediaUpload() {
         return res.data.data as UploadResult;
       } catch (err: unknown) {
         if ((err as { name?: string })?.name !== "CanceledError") {
-          toast.error("Upload failed. Please try again.");
+          const apiError = (err as { response?: { data?: { error?: { code?: string; message?: string } } } })
+            ?.response?.data?.error;
+          const msg =
+            apiError?.code === "TEMP_MEDIA_LIMIT"
+              ? apiError?.message
+              : apiError?.message ?? "Upload failed. Please try again.";
+          toast.error(msg);
         }
         return null;
       } finally {

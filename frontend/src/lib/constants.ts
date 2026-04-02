@@ -10,6 +10,7 @@ export const SOCKET_URL =
 export const ACCESS_TOKEN_KEY = "anonimi_access_token";
 export const REFRESH_TOKEN_KEY = "anonimi_refresh_token";
 export const PENDING_VERIFICATION_KEY = "anonimi_pending_verification";
+export const TEMP_SESSION_KEY = "anonimi_temp_session";
 
 export const MESSAGES_PER_PAGE = 30;
 export const CONVERSATIONS_PER_PAGE = 20;

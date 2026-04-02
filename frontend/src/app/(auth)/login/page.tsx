@@ -171,6 +171,14 @@ export default function LoginPage() {
           </div>
         )}
 
+        <button
+          type="button"
+          onClick={() => router.push("/temporary")}
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 text-sm font-semibold text-amber-700 transition-colors hover:bg-amber-500/15"
+        >
+          Continue as temporary
+        </button>
+
         {pendingVerification && (
           <button
             type="button"
