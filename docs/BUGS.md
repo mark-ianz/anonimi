@@ -643,3 +643,5 @@ Bug: Support Staff and moderator has the admin button on tabs but if clicked, no
       - The search bar at the top (beside the notification bell) will be a Search Icon only and the input will pop up if the icon was clicked.
       - When navigating to sidebar navigations, automatically close it if I click for other tabs. For example my sidebar is open and I clicked to contacts, my sidebar will automatically close for better user experience.
 --
+
+Group owners can mute members.
