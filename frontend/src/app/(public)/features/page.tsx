@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { MessageCircle, Shield, Users, Zap, Lock, Bell, Image } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import ScrollToHash from "@/components/marketing/ScrollToHash";
 
 export const metadata: Metadata = {
   title: "anonimi Features",
@@ -259,6 +260,7 @@ function FeatureMock({ kind }: { kind: MockKind }) {
 export default function FeaturesPage() {
   return (
     <div className="relative overflow-hidden pb-20 pt-24 md:pb-24">
+      <ScrollToHash />
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-124 bg-[radial-gradient(circle_at_8%_16%,rgba(12,55,80,0.14),transparent_42%),radial-gradient(circle_at_92%_20%,rgba(36,107,124,0.14),transparent_45%)]" />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -312,6 +314,131 @@ export default function FeaturesPage() {
             </div>
           ))}
         </div>
+
+        <section id="temporary-access" className="mt-20 scroll-mt-28">
+          <div className="grid gap-8 rounded-[2.2rem] border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-background to-background p-8 shadow-soft lg:grid-cols-[1.1fr_0.9fr]">
+            <div>
+              <p className="inline-flex rounded-full border border-amber-500/30 bg-amber-500/15 px-3 py-1 font-mono text-[0.66rem] uppercase tracking-[0.16em] text-amber-700 dark:text-amber-200">
+                Temporary Access
+              </p>
+              <h2 className="mt-4 text-3xl font-display font-bold sm:text-4xl">Start now, decide later.</h2>
+              <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+                Temporary Access unlocks a full 24-hour session without permanent commitment. The benefit is speed: start a
+                conversation immediately, then claim it only when you want to keep the history.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2 text-xs font-semibold text-amber-800 dark:text-amber-200">
+                <span className="rounded-full border border-amber-500/40 bg-amber-500/15 px-3 py-1">Session-only</span>
+                <span className="rounded-full border border-amber-500/40 bg-amber-500/15 px-3 py-1">Claim to keep</span>
+                <span className="rounded-full border border-amber-500/40 bg-amber-500/15 px-3 py-1">24h expiration</span>
+              </div>
+              <div className="mt-7 flex flex-wrap items-center gap-3">
+                <Link
+                  href="/temporary"
+                  className="inline-flex h-10 items-center rounded-full bg-amber-600 px-5 text-xs font-semibold text-white shadow-soft transition-colors hover:bg-amber-600/90"
+                >
+                  Start temporary session
+                </Link>
+                <Link
+                  href="/register"
+                  className="inline-flex h-10 items-center rounded-full border border-amber-500/40 px-5 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-500/10 dark:text-amber-200"
+                >
+                  Create account
+                </Link>
+              </div>
+            </div>
+            <div className="grid gap-4">
+              <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-5">
+                <p className="text-xs font-semibold text-foreground">Why it helps</p>
+                <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                  <li>Start chats instantly for new contacts.</li>
+                  <li>Keep control before committing an identity.</li>
+                  <li>Convert to a full account when it matters.</li>
+                </ul>
+              </div>
+              <div className="rounded-2xl border border-amber-500/20 bg-background/70 p-5">
+                <p className="text-xs font-semibold text-foreground">Example</p>
+                <div className="mt-3 space-y-3 text-sm">
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2">
+                    <p className="text-[0.65rem] font-mono uppercase tracking-[0.14em] text-amber-700">Temporary Session</p>
+                    <p className="mt-2 font-semibold text-foreground">temp_q7n2</p>
+                    <p className="text-xs text-muted-foreground">Expires in 23:54:12</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    You can chat immediately and claim later if the conversation becomes long-term.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="stealth-mode" className="mt-16 scroll-mt-28">
+          <div className="grid gap-8 rounded-[2.2rem] border border-cyan-500/25 bg-gradient-to-br from-cyan-500/10 via-background to-background p-8 shadow-soft lg:grid-cols-[0.9fr_1.1fr]">
+            <div className="rounded-2xl border border-cyan-500/25 bg-cyan-500/10 p-5">
+              <p className="inline-flex rounded-full border border-cyan-500/30 bg-cyan-500/15 px-3 py-1 font-mono text-[0.66rem] uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-200">
+                Stealth Mode
+              </p>
+              <h2 className="mt-4 text-2xl font-display font-bold sm:text-3xl">Control the trail, not the thread.</h2>
+              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+                Set a lifespan for each message so sensitive details fade away. The benefit is confidence: share quickly without
+                leaving a long-term trail.
+              </p>
+              <div className="mt-5 space-y-3 text-sm text-muted-foreground">
+                <div className="flex items-center gap-3">
+                  <span className="h-2 w-2 rounded-full bg-cyan-500" />
+                  <span>Timed expiration</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="h-2 w-2 rounded-full bg-cyan-500" />
+                  <span>Per-message control</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="h-2 w-2 rounded-full bg-cyan-500" />
+                  <span>No history linger</span>
+                </div>
+              </div>
+              <div className="mt-5 rounded-xl border border-cyan-500/20 bg-background/70 p-4">
+                <p className="text-[0.65rem] font-mono uppercase tracking-[0.14em] text-cyan-700">Example</p>
+                <div className="mt-3 space-y-2 text-sm">
+                  <div className="rounded-lg border border-cyan-500/25 bg-cyan-500/10 px-3 py-2">
+                    <p className="text-xs text-muted-foreground">Stealth timer</p>
+                    <p className="text-sm font-semibold text-foreground">5 minutes</p>
+                  </div>
+                  <div className="rounded-lg border border-cyan-500/15 bg-background px-3 py-2">
+                    <p className="text-xs text-muted-foreground">Message</p>
+                    <p className="text-sm text-foreground">Gate code: 4903</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-3xl font-display font-bold sm:text-4xl">Stealth Mode keeps sensitive updates temporary.</h3>
+              <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+                Use it for access codes, quick location drops, or time-boxed updates. Messages disappear on schedule while the
+                conversation stays intact.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2 text-xs font-semibold text-cyan-800 dark:text-cyan-200">
+                <span className="rounded-full border border-cyan-500/40 bg-cyan-500/15 px-3 py-1">Timed expiration</span>
+                <span className="rounded-full border border-cyan-500/40 bg-cyan-500/15 px-3 py-1">Per-message control</span>
+                <span className="rounded-full border border-cyan-500/40 bg-cyan-500/15 px-3 py-1">No history linger</span>
+              </div>
+              <div className="mt-7 flex flex-wrap items-center gap-3">
+                <Link
+                  href="/register"
+                  className="inline-flex h-10 items-center rounded-full bg-cyan-600 px-5 text-xs font-semibold text-white shadow-soft transition-colors hover:bg-cyan-600/90"
+                >
+                  Create account
+                </Link>
+                <Link
+                  href="/contact"
+                  className="inline-flex h-10 items-center rounded-full border border-cyan-500/40 px-5 text-xs font-semibold text-cyan-700 transition-colors hover:bg-cyan-500/10 dark:text-cyan-200"
+                >
+                  Ask about stealth
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <div className="mt-24 text-center">
           <h2 className="text-2xl font-semibold">Ready to try anonimi?</h2>

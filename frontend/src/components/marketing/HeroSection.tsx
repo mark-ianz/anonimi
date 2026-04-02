@@ -38,14 +38,6 @@ export default function HeroSection() {
               >
                 <Link href="/features">Explore Features</Link>
               </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="h-11 rounded-full border-amber-500/40 bg-amber-500/10 px-7 text-sm font-semibold text-amber-700"
-                asChild
-              >
-                <Link href="/temporary">Try Temporary</Link>
-              </Button>
             </div>
 
             <div className="mt-10 grid max-w-2xl grid-cols-1 gap-2 font-mono text-[0.72rem] uppercase tracking-[0.08em] text-muted-foreground sm:grid-cols-3">
