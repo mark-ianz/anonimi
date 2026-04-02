@@ -4,9 +4,13 @@ export interface AdminUser {
   id: string;
   anonimiId: string;
   username: string;
-  email: string;
+  email: string | null;
   phone: string | null;
   profileImage: string | null;
+  isTemporary?: boolean;
+  tempCreatedAt?: string | null;
+  tempExpiresAt?: string | null;
+  tempState?: "active" | "expired" | null;
   role: UserRole;
   status: string;
   onlineStatus: string;

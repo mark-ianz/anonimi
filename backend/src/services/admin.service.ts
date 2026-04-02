@@ -34,6 +34,10 @@ export const createAdminLog = async (
 export const getUsers = async (
   search?: string,
   status?: string,
+  role?: string,
+  tempState?: string,
+  verified?: string,
+  sort?: string,
   limit: number = 20,
   cursor?: string
 ) => {
@@ -51,12 +55,43 @@ export const getUsers = async (
     query.status = status;
   }
 
+  if (role) {
+    query.role = role;
+  }
+
+  const now = new Date();
+  if (tempState === "active") {
+    query.isTemporary = true;
+    query.$or = [
+      ...(query.$or ? (query.$or as Array<Record<string, unknown>>) : []),
+    ];
+    query.tempExpiresAt = { $gt: now };
+  }
+
+  if (tempState === "expired") {
+    query.isTemporary = true;
+    query.tempExpiresAt = { $lte: now };
+  }
+
+  if (verified === "true") {
+    query.emailVerified = true;
+  }
+
   if (cursor) {
     query._id = { $lt: new Types.ObjectId(cursor) };
   }
 
+  const sortMap: Record<string, Record<string, 1 | -1>> = {
+    newest: { createdAt: -1 },
+    oldest: { createdAt: 1 },
+    last_seen: { lastSeen: -1, createdAt: -1 },
+    username: { username: 1 },
+  };
+
+  const sortClause = sortMap[sort ?? "newest"] ?? sortMap.newest;
+
   const users = await User.find(query)
-    .sort({ createdAt: -1 })
+    .sort(sortClause)
     .limit(limit + 1)
     .lean();
 
@@ -68,10 +103,22 @@ export const getUsers = async (
       id: u._id.toString(),
       anonimiId: u.anonimiId,
       username: u.username,
-      email: u.email,
+      email: u.email ?? null,
       phone: u.phone,
+      profileImage: u.profileImage ?? null,
+      isTemporary: !!u.isTemporary,
+      tempCreatedAt: u.tempCreatedAt ?? null,
+      tempExpiresAt: u.tempExpiresAt ?? null,
+      tempState:
+        u.isTemporary && u.tempExpiresAt
+          ? new Date(u.tempExpiresAt).getTime() <= now.getTime()
+            ? "expired"
+            : "active"
+          : null,
       role: u.role,
       status: u.status,
+      emailVerified: !!u.emailVerified,
+      phoneVerified: !!u.phoneVerified,
       createdAt: u.createdAt,
     })),
     nextCursor: hasMore ? data[data.length - 1]._id.toString() : undefined,

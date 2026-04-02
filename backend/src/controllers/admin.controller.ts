@@ -10,9 +10,13 @@ export const getUsers = async (
   try {
     const search = req.query.q as string | undefined;
     const status = req.query.status as string | undefined;
+    const role = req.query.role as string | undefined;
+    const temp = req.query.temp as string | undefined;
+    const verified = req.query.verified as string | undefined;
+    const sort = req.query.sort as string | undefined;
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
     const cursor = req.query.cursor as string | undefined;
-    const result = await adminService.getUsers(search, status, limit, cursor);
+    const result = await adminService.getUsers(search, status, role, temp, verified, sort, limit, cursor);
     apiPaginated(res, result.users, {
       nextCursor: result.nextCursor,
       hasMore: !!result.nextCursor,
