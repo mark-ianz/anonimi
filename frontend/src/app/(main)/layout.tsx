@@ -657,7 +657,20 @@ export default function MainLayout({ children }: SidebarProps) {
                 </div>
               )}
             </div>
-            <form
+          
+          </div>
+
+          <div className="flex items-center gap-3">
+            {isTempUser && tempRemaining && (
+              <Link
+                href="/profile"
+                className="hidden md:inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300"
+              >
+                <TemporaryAccountBadge className="bg-transparent px-0 py-0 text-[9px]" />
+                <span>Expires in {tempRemaining}</span>
+              </Link>
+            )}
+              <form
               onSubmit={handleSidebarSearchSubmit}
               className="relative hidden min-w-[18rem] max-w-[28rem] flex-1 md:flex"
             >
@@ -683,21 +696,6 @@ export default function MainLayout({ children }: SidebarProps) {
               aria-label="Open search"
             >
               <Search className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {isTempUser && tempRemaining && (
-              <Link
-                href="/profile"
-                className="hidden md:inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300"
-              >
-                <TemporaryAccountBadge className="bg-transparent px-0 py-0 text-[9px]" />
-                <span>Expires in {tempRemaining}</span>
-              </Link>
-            )}
-            <button className="flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-card text-sm font-medium text-foreground">
-              U
             </button>
           </div>
         </header>
