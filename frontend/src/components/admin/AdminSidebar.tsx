@@ -29,21 +29,46 @@ interface NavItem {
   roles?: string[];
 }
 
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
 const ADMIN_ROLES = ["support_staff", "moderator", "super_admin"];
 const MOD_ROLES = ["moderator", "super_admin"];
 
-const navItems: NavItem[] = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, roles: ADMIN_ROLES },
-  { href: "/admin/users", label: "Users", icon: Users, roles: ADMIN_ROLES },
-  { href: "/admin/reports", label: "Reports", icon: Flag, roles: ADMIN_ROLES },
-  { href: "/admin/support", label: "Support", icon: LifeBuoy, roles: ADMIN_ROLES },
-  { href: "/admin/warnings", label: "Warnings", icon: AlertTriangle, roles: ADMIN_ROLES },
-  { href: "/admin/groups", label: "Groups", icon: Users2, roles: MOD_ROLES },
-  { href: "/admin/messages", label: "Messages", icon: MessageSquare, roles: MOD_ROLES },
-  { href: "/admin/bans", label: "Bans", icon: Ban, roles: MOD_ROLES },
-  { href: "/admin/analytics", label: "Analytics", icon: BarChart2, roles: MOD_ROLES },
-  { href: "/admin/logs", label: "Logs", icon: ScrollText, roles: MOD_ROLES },
-  { href: "/admin/approvals", label: "Approvals", icon: ClipboardCheck, roles: ["super_admin"] },
+const navSections: NavSection[] = [
+  {
+    title: "Overview",
+    items: [
+      { href: "/admin", label: "Dashboard", icon: LayoutDashboard, roles: ADMIN_ROLES },
+      { href: "/admin/analytics", label: "Analytics", icon: BarChart2, roles: MOD_ROLES },
+    ],
+  },
+  {
+    title: "Users & Content",
+    items: [
+      { href: "/admin/users", label: "Users", icon: Users, roles: ADMIN_ROLES },
+      { href: "/admin/groups", label: "Groups", icon: Users2, roles: MOD_ROLES },
+      { href: "/admin/messages", label: "Messages", icon: MessageSquare, roles: MOD_ROLES },
+    ],
+  },
+  {
+    title: "Support & Moderation",
+    items: [
+      { href: "/admin/support", label: "Support Tickets", icon: LifeBuoy, roles: ADMIN_ROLES },
+      { href: "/admin/reports", label: "Reports", icon: Flag, roles: ADMIN_ROLES },
+      { href: "/admin/warnings", label: "Warnings", icon: AlertTriangle, roles: ADMIN_ROLES },
+      { href: "/admin/bans", label: "Bans", icon: Ban, roles: MOD_ROLES },
+    ],
+  },
+  {
+    title: "System",
+    items: [
+      { href: "/admin/approvals", label: "Approvals", icon: ClipboardCheck, roles: ["super_admin"] },
+      { href: "/admin/logs", label: "Logs", icon: ScrollText, roles: MOD_ROLES },
+    ],
+  },
 ];
 
 export default function AdminSidebar() {
@@ -51,9 +76,14 @@ export default function AdminSidebar() {
   const { user } = useAuthStore();
   const { logout } = useAuth();
 
-  const visible = navItems.filter(
-    (item) => !item.roles || (user?.role && item.roles.includes(user.role))
-  );
+  const visibleSections = navSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(
+        (item) => !item.roles || (user?.role && item.roles.includes(user.role))
+      ),
+    }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <aside className="h-full w-60 shrink-0 border-r border-border/60 bg-card/45 flex flex-col">
@@ -73,25 +103,34 @@ export default function AdminSidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
-        {visible.map(({ href, label, icon: Icon }) => {
-          const isActive = href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                "flex h-9 items-center gap-2.5 rounded-lg px-3 text-sm transition-colors",
-                isActive
-                  ? "bg-primary/12 text-foreground font-medium"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              )}
-            >
-              <Icon className="w-4 h-4 shrink-0" />
-              {label}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 overflow-y-auto py-3 px-2">
+        {visibleSections.map((section, sectionIndex) => (
+          <div key={section.title} className={cn(sectionIndex > 0 && "mt-3")}> 
+            <p className="px-3 pb-1 text-[10px] font-mono uppercase tracking-[0.12em] text-muted-foreground/70">
+              {section.title}
+            </p>
+            <div className="space-y-0.5">
+              {section.items.map(({ href, label, icon: Icon }) => {
+                const isActive = href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      "flex h-9 items-center gap-2.5 rounded-lg px-3 text-sm transition-colors",
+                      isActive
+                        ? "bg-primary/12 text-foreground font-medium"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    )}
+                  >
+                    <Icon className="w-4 h-4 shrink-0" />
+                    {label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
       <div className="border-t border-border/50 p-3 shrink-0">
