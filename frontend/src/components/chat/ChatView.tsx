@@ -415,10 +415,16 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
 
         {/* Actions */}
         <div className="flex items-center gap-1">
-          <button className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors">
+          <button
+            onClick={() => toast.info("Calling is not implemented yet.")}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
+          >
             <Phone className="w-4 h-4" />
           </button>
-          <button className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors">
+          <button
+            onClick={() => toast.info("Video calls are not implemented yet.")}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
+          >
             <Video className="w-4 h-4" />
           </button>
 
