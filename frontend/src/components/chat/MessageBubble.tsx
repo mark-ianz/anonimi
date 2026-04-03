@@ -143,9 +143,7 @@ export default function MessageBubble({
       }[timestampBubblePosition];
 
   const tooltipPositionClass = isMine
-    ? (message.unsent
-      ? "right-[calc(100%+8px)] top-1/2 -translate-y-1/2"
-      : "left-[calc(100%+8px)] top-1/2 -translate-y-1/2")
+    ? "right-[calc(100%+8px)] top-1/2 -translate-y-1/2"
     : "left-[calc(100%+8px)] top-1/2 -translate-y-1/2";
 
   const updateAvatarMenuPosition = useCallback(() => {
