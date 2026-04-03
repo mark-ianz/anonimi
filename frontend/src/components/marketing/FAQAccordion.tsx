@@ -3,68 +3,242 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence, useInView } from "framer-motion";
+import { useRef } from "react";
 
-const faqs = [
+interface FAQ {
+  question: string;
+  answer: string;
+}
+
+interface FAQCategory {
+  id: string;
+  title: string;
+  icon: string;
+  color: string;
+  faqs: FAQ[];
+}
+
+const faqCategories: FAQCategory[] = [
   {
-    question: "What is anonimi?",
-    answer: "anonimi is a privacy-first messaging platform that gives you a unique AID without requiring phone numbers or personal data. Your AID is generated for you so you can chat without exposing contact info.",
+    id: "getting-started",
+    title: "Getting Started",
+    icon: "rocket",
+    color: "emerald",
+    faqs: [
+      {
+        question: "What is anonimi?",
+        answer:
+          "anonimi is a privacy-first messaging platform that gives you a unique AID without requiring phone numbers or personal data. Your AID is generated for you so you can chat without exposing contact info.",
+      },
+      {
+        question: "How do I get started?",
+        answer:
+          "Create a free account with email. You will instantly receive your AID to share with people you trust, or you can accept message requests when you are ready.",
+      },
+      {
+        question: "Is anonimi free to use?",
+        answer:
+          "Yes, anonimi is completely free to use. We offer all core messaging features at no cost, including unlimited messages, group chats, and privacy features.",
+      },
+    ],
   },
   {
-    question: "How do I get started?",
-    answer: "Create a free account with email. You will instantly receive your AID to share with people you trust, or you can accept message requests when you are ready.",
+    id: "identity-privacy",
+    title: "Identity & Privacy",
+    icon: "shield",
+    color: "violet",
+    faqs: [
+      {
+        question: "What is an AID?",
+        answer:
+          "An AID (Anonymous Identity) is your unique identifier on anonimi. It's a randomly generated string that lets others find and message you without needing your phone number, email, or real name.",
+      },
+      {
+        question: "Can I change my AID?",
+        answer:
+          "Your AID is unique and stays stable so people can reliably find you. You can update your profile details and username in settings, but the AID itself remains permanent.",
+      },
+      {
+        question: "Is my data private?",
+        answer:
+          "Yes. We use encrypted transport and never require phone numbers at signup. You control your identity and who can contact you with requests, block, and report tools.",
+      },
+      {
+        question: "Does anonimi sell my data?",
+        answer:
+          "No. We never sell your data to third parties. Your privacy is our priority, and we only collect the minimum data necessary to provide the service.",
+      },
+    ],
   },
   {
-    question: "What is a temporary account?",
-    answer: "Temporary accounts let you start a 24-hour session without email or password. You can claim the account later to keep your conversations by adding an email and password.",
+    id: "features",
+    title: "Features",
+    icon: "sparkles",
+    color: "blue",
+    faqs: [
+      {
+        question: "What is a temporary account?",
+        answer:
+          "Temporary accounts let you start a 24-hour session without email or password. You can claim the account later to keep your conversations by adding an email and password.",
+      },
+      {
+        question: "How does Stealth Mode work?",
+        answer:
+          "Stealth Mode lets you set a timer per message. When the timer expires, the message content is no longer available and the conversation shows an expired placeholder.",
+      },
+      {
+        question: "How do group chats work?",
+        answer:
+          "You can create groups with friends, family, or colleagues. Groups support multiple roles (owner, admin, member), custom nicknames, and various settings to manage who can send messages or add new members.",
+      },
+      {
+        question: "Can I send images and files?",
+        answer:
+          "Yes, you can share images, documents, and other files directly in your conversations. We support common formats like JPG, PNG, GIF, PDF, and DOC with fast upload speeds.",
+      },
+    ],
   },
   {
-    question: "How does Stealth Mode work?",
-    answer: "Stealth Mode lets you set a timer per message. When the timer expires, the message content is no longer available and the conversation shows an expired placeholder.",
-  },
-  {
-    question: "Is my data private?",
-    answer: "Yes. We use encrypted transport and never require phone numbers at signup. You control your identity and who can contact you with requests, block, and report tools.",
-  },
-  {
-    question: "Can I change my AID?",
-    answer: "Your AID is unique and stays stable so people can reliably find you. You can update your profile details and username in settings.",
-  },
-  {
-    question: "How do group chats work?",
-    answer: "You can create groups with friends, family, or colleagues. Groups support multiple roles (owner, admin, member), custom nicknames, and various settings to manage who can send messages or add new members.",
-  },
-  {
-    question: "How do I block or report a user?",
-    answer: "You can block any user by visiting their profile and clicking the block button. This will prevent them from contacting you. If you encounter behavior that violates our terms, please use the report feature so our moderation team can investigate.",
+    id: "safety",
+    title: "Safety & Moderation",
+    icon: "lock",
+    color: "rose",
+    faqs: [
+      {
+        question: "How do I block or report a user?",
+        answer:
+          "You can block any user by visiting their profile and clicking the block button. This will prevent them from contacting you. If you encounter behavior that violates our terms, please use the report feature so our moderation team can investigate.",
+      },
+      {
+        question: "What happens when I block someone?",
+        answer:
+          "When you block someone, they can no longer send you messages or see your online status. Existing conversations are hidden, and they won't be notified that you blocked them.",
+      },
+      {
+        question: "How long does moderation review take?",
+        answer:
+          "Our moderation team reviews reports within 24-48 hours. For urgent safety concerns, reports are prioritized and may be addressed sooner.",
+      },
+    ],
   },
 ];
 
-export default function FAQAccordion() {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+function FAQItem({ faq, index, isOpen, onToggle }: { faq: FAQ; index: number; isOpen: boolean; onToggle: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: false, margin: "-20px" });
 
   return (
-    <div className="divide-y divide-border/55 border-y border-border/55">
-      {faqs.map((faq, index) => (
-        <div 
-          key={index} 
-          className="overflow-hidden"
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 15 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
+      transition={{ duration: 0.35, delay: index * 0.05, ease: [0.25, 0.4, 0.25, 1] }}
+      className="overflow-hidden"
+    >
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between py-5 text-left font-medium transition-colors hover:text-primary"
+      >
+        <span className="text-base md:text-lg pr-4">{faq.question}</span>
+        <motion.div
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          transition={{ duration: 0.25, ease: [0.25, 0.4, 0.25, 1] }}
         >
-          <button
-            onClick={() => setOpenIndex(openIndex === index ? null : index)}
-            className="w-full flex items-center justify-between py-5 text-left font-medium transition-colors hover:text-primary"
+          <ChevronDown className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+        </motion.div>
+      </button>
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.25, 0.4, 0.25, 1] }}
           >
-            <span className="text-base md:text-lg">{faq.question}</span>
-            <ChevronDown className={cn(
-              "w-5 h-5 text-muted-foreground transition-transform",
-              openIndex === index && "rotate-180"
-            )} />
-          </button>
-          {openIndex === index && (
             <div className="pb-5 pr-10 text-sm leading-relaxed text-muted-foreground md:text-base">
               {faq.answer}
             </div>
-          )}
-        </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+function CategorySection({ category, categoryIndex }: { category: FAQCategory; categoryIndex: number }) {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: false, margin: "-50px" });
+
+  const colorClasses: Record<string, { bg: string; border: string; text: string }> = {
+    emerald: {
+      bg: "bg-emerald-500/10",
+      border: "border-emerald-500/25",
+      text: "text-emerald-700 dark:text-emerald-300",
+    },
+    violet: {
+      bg: "bg-violet-500/10",
+      border: "border-violet-500/25",
+      text: "text-violet-700 dark:text-violet-300",
+    },
+    blue: {
+      bg: "bg-blue-500/10",
+      border: "border-blue-500/25",
+      text: "text-blue-700 dark:text-blue-300",
+    },
+    rose: {
+      bg: "bg-rose-500/10",
+      border: "border-rose-500/25",
+      text: "text-rose-700 dark:text-rose-300",
+    },
+  };
+
+  const colors = colorClasses[category.color] || colorClasses.emerald;
+
+  return (
+    <motion.div
+      ref={ref}
+      id={category.id}
+      initial={{ opacity: 0, y: 30 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+      transition={{ duration: 0.5, delay: categoryIndex * 0.1, ease: [0.25, 0.4, 0.25, 1] }}
+      className={cn(
+        "scroll-mt-28 rounded-2xl border p-6 md:p-8",
+        colors.bg,
+        colors.border
+      )}
+    >
+      <motion.div
+        initial={{ opacity: 0, x: -15 }}
+        animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -15 }}
+        transition={{ duration: 0.4, delay: categoryIndex * 0.1 + 0.1, ease: [0.25, 0.4, 0.25, 1] }}
+        className="mb-4"
+      >
+        <h2 className={cn("text-xl font-bold md:text-2xl", colors.text)}>
+          {category.title}
+        </h2>
+      </motion.div>
+      <div className="divide-y divide-border/40">
+        {category.faqs.map((faq, index) => (
+          <FAQItem
+            key={index}
+            faq={faq}
+            index={index}
+            isOpen={openIndex === index}
+            onToggle={() => setOpenIndex(openIndex === index ? null : index)}
+          />
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+export default function FAQAccordion() {
+  return (
+    <div className="space-y-8">
+      {faqCategories.map((category, index) => (
+        <CategorySection key={category.title} category={category} categoryIndex={index} />
       ))}
     </div>
   );
