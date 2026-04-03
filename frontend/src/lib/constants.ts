@@ -1,11 +1,11 @@
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api";
+  process.env.NEXT_PUBLIC_API_URL ?? "https://anonimi-backend.vercel.app/api";
 
 // Alias for convenience
 export const API_BASE = API_BASE_URL;
 
 export const SOCKET_URL =
-  process.env.NEXT_PUBLIC_SOCKET_URL ?? "http://localhost:5000";
+  process.env.NEXT_PUBLIC_SOCKET_URL ?? "https://anonimi-backend.vercel.app";
 
 export const ACCESS_TOKEN_KEY = "anonimi_access_token";
 export const REFRESH_TOKEN_KEY = "anonimi_refresh_token";

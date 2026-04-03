@@ -10,12 +10,12 @@ const envSchema = z.object({
   STEALTH_SECRET: z.string().min(32),
   JWT_EXPIRES_IN: z.string().default("15m"),
   JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),
-  CORS_ORIGIN: z.string().default("http://localhost:3000"),
+  CORS_ORIGIN: z.string().default("https://anonimi-messaging.vercel.app0"),
   UPLOAD_DIR: z.string().default("./uploads"),
   DELETE_AVATAR_FILE_ON_REMOVE: z.coerce.boolean().default(false),
   MAX_FILE_SIZE: z.string().default("10485760"),
-  FRONTEND_URL: z.string().default("http://localhost:3000"),
-  BACKEND_URL: z.string().default("http://localhost:5000"),
+  FRONTEND_URL: z.string().default("https://anonimi-messaging.vercel.app0"),
+  BACKEND_URL: z.string().default("https://anonimi-backend.vercel.app"),
   VAPID_PUBLIC_KEY: z.string().default(""),
   VAPID_PRIVATE_KEY: z.string().default(""),
   VAPID_SUBJECT: z.string().default(""),
@@ -26,8 +26,8 @@ const envSchema = z.object({
   SMTP_PASS: z.string().default(""),
   SMTP_FROM_NAME: z.string().default("anonimi"),
   SMTP_FROM_EMAIL: z.string().default(""),
-  EMAIL_VERIFY_URL: z.string().default("http://localhost:3000/verify-link"),
-  RESET_PASSWORD_URL: z.string().default("http://localhost:3000/reset-password"),
+  EMAIL_VERIFY_URL: z.string().default("https://anonimi-messaging.vercel.app0/verify-link"),
+  RESET_PASSWORD_URL: z.string().default("https://anonimi-messaging.vercel.app0/reset-password"),
 });
 
 export type Env = z.infer<typeof envSchema>;
