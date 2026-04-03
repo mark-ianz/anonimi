@@ -27,10 +27,10 @@ export default function ContactForm() {
         </div>
         <h3 className="mt-4 text-xl font-semibold">Message sent!</h3>
         <p className="mt-2 text-muted-foreground">
-          Thank you for reaching out. We'll get back to you as soon as possible.
+          Thank you for reaching out. We&apos;ll get back to you as soon as possible.
         </p>
         <Button 
-          className="mt-6" 
+          className="mt-6 p-5 cursor-pointer" 
           variant="outline" 
           onClick={() => setSubmitted(false)}
         >
@@ -88,7 +88,7 @@ export default function ContactForm() {
         />
       </div>
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
+      <Button type="submit" className="cursor-pointer p-5 w-full" disabled={isLoading}>
         {isLoading ? "Sending..." : "Send Message"}
       </Button>
     </form>
