@@ -48,7 +48,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <h3 className="font-medium">Email</h3>
-                <p className="text-muted-foreground">support@anonimi.app</p>
+                <p className="text-muted-foreground">anonimi.main@gmail.com</p>
               </div>
             </div>
 

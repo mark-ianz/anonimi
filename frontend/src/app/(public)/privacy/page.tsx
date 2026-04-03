@@ -109,7 +109,7 @@ export default function PrivacyPage() {
 
           <h2 className="text-2xl font-semibold mt-12">13. Contact Us</h2>
           <p className="mt-4">
-            If you have any questions about this Privacy Policy, please contact us at support@anonimi.app.
+            If you have any questions about this Privacy Policy, please contact us at anonimi.main@gmail.com.
           </p>
         </div>
       </div>
