@@ -5,7 +5,7 @@ import { Sun, Moon, Monitor } from "lucide-react";
 
 type Theme = "light" | "dark" | "system";
 
-const STORAGE_KEY = "anonimi:theme";
+const STORAGE_KEY = "anonimi-ui"; // store full ui JSON: { state: { theme, ... }, version }
 
 export default function ThemeToggle() {
   // Start as `system` for SSR parity. Read stored preference after mount.
@@ -14,11 +14,14 @@ export default function ThemeToggle() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw === "light" || raw === "dark" || raw === "system") {
-        setTheme(raw as Theme);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      const storedTheme = parsed?.state?.theme;
+      if (storedTheme === "light" || storedTheme === "dark" || storedTheme === "system") {
+        setTheme(storedTheme as Theme);
       }
     } catch {
-      // ignore
+      // ignore malformed storage
     }
   }, []);
 
@@ -49,7 +52,20 @@ export default function ThemeToggle() {
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, theme);
+      // preserve other ui state keys, write state.theme
+      const raw = localStorage.getItem(STORAGE_KEY);
+      let parsed: any = {};
+      if (raw) {
+        try {
+          parsed = JSON.parse(raw) || {};
+        } catch {
+          parsed = {};
+        }
+      }
+      parsed.state = parsed.state || {};
+      parsed.state.theme = theme;
+      if (typeof parsed.version === "undefined") parsed.version = 0;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
     } catch {}
   }, [theme]);
 
