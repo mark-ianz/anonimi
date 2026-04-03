@@ -47,10 +47,10 @@ export default function FeaturesPage() {
           </AnimatedText>
         </AnimatedSection>
 
-        <div className="space-y-16 md:space-y-20">
-          {/* Real-time Messaging */}
+        <div className="space-y-24 md:space-y-32">
+          {/* Real-time Messaging - OPEN LAYOUT (no container box) */}
           <AnimatedSection direction="up">
-            <section className="grid gap-8 rounded-[2.4rem] border border-emerald-500/25 bg-gradient-to-br from-emerald-500/10 via-background to-background p-8 shadow-soft lg:grid-cols-[1.1fr_0.9fr]">
+            <section className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
               <div>
                 <AnimatedElement delay={0.05}>
                   <p className="inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 font-mono text-[0.66rem] uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">
@@ -58,17 +58,17 @@ export default function FeaturesPage() {
                   </p>
                 </AnimatedElement>
                 <AnimatedText delay={0.1}>
-                  <h2 className="mt-4 text-3xl font-bold sm:text-4xl">
+                  <h2 className="mt-4 text-4xl font-bold sm:text-5xl">
                     Real-time Messaging
                   </h2>
                 </AnimatedText>
                 <AnimatedText delay={0.15}>
-                  <p className="mt-4 text-base leading-relaxed text-muted-foreground md:text-lg">
+                  <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
                     Fast delivery, read state, and reactions that stay in sync
                     across every device. Messages arrive instantly with end-to-end reliability.
                   </p>
                 </AnimatedText>
-                <AnimatedElement delay={0.2} className="mt-6 flex flex-wrap gap-2 text-xs font-semibold text-emerald-800 dark:text-emerald-200">
+                <AnimatedElement delay={0.2} className="mt-8 flex flex-wrap gap-2 text-xs font-semibold text-emerald-800 dark:text-emerald-200">
                   <AnimatedBadge delay={0.25} className="rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3 py-1">
                     Typing indicators
                   </AnimatedBadge>
@@ -79,162 +79,103 @@ export default function FeaturesPage() {
                     Reactions
                   </AnimatedBadge>
                 </AnimatedElement>
-                <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                  <AnimatedCard delay={0.25} className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-5">
-                    <p className="text-xs font-semibold text-foreground">
-                      Why it matters
-                    </p>
-                    <AnimatedList className="mt-3 space-y-2 text-sm text-muted-foreground">
-                      <AnimatedListItem>Instant delivery across all devices</AnimatedListItem>
-                      <AnimatedListItem>Know when messages are read</AnimatedListItem>
-                      <AnimatedListItem>React without typing</AnimatedListItem>
-                    </AnimatedList>
-                  </AnimatedCard>
-                  <AnimatedCard delay={0.3} className="rounded-2xl border border-emerald-500/20 bg-background/70 p-5">
-                    <p className="text-xs font-semibold text-foreground">
-                      Technical
-                    </p>
-                    <AnimatedList className="mt-3 space-y-2 text-sm text-muted-foreground">
-                      <AnimatedListItem>
-                        <div className="flex items-center gap-3">
-                          <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                          <span>WebSocket connections</span>
-                        </div>
-                      </AnimatedListItem>
-                      <AnimatedListItem>
-                        <div className="flex items-center gap-3">
-                          <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                          <span>Optimistic updates</span>
-                        </div>
-                      </AnimatedListItem>
-                      <AnimatedListItem>
-                        <div className="flex items-center gap-3">
-                          <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                          <span>Offline queue</span>
-                        </div>
-                      </AnimatedListItem>
-                    </AnimatedList>
-                  </AnimatedCard>
-                </div>
+                <AnimatedList className="mt-8 space-y-3 text-muted-foreground" staggerDelay={0.06}>
+                  <AnimatedListItem>
+                    <div className="flex items-center gap-3">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                      <span>WebSocket connections for instant delivery</span>
+                    </div>
+                  </AnimatedListItem>
+                  <AnimatedListItem>
+                    <div className="flex items-center gap-3">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                      <span>Optimistic updates for snappy UI</span>
+                    </div>
+                  </AnimatedListItem>
+                  <AnimatedListItem>
+                    <div className="flex items-center gap-3">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                      <span>Offline queue for reliability</span>
+                    </div>
+                  </AnimatedListItem>
+                </AnimatedList>
               </div>
-              <AnimatedImage delay={0.2} className="overflow-hidden rounded-2xl border border-emerald-500/20 bg-card/70 p-2">
+              <AnimatedImage delay={0.2} className="overflow-hidden rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-transparent p-3">
                 <Image
                   src="/images/stock/real-time-messaging-section-image.png"
                   alt="Real-time messaging preview"
                   width={720}
                   height={720}
-                  className="h-full w-full rounded-xl object-cover"
+                  className="w-full rounded-2xl object-cover"
                 />
-                <AnimatedElement delay={0.35}>
-                  <p className="mt-2 px-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-emerald-700/80 dark:text-emerald-200/80">
-                    Live conversation
-                  </p>
-                </AnimatedElement>
               </AnimatedImage>
             </section>
           </AnimatedSection>
 
-          {/* Privacy-First Identity */}
+          {/* Privacy-First Identity - BOXED CARD LAYOUT */}
           <AnimatedSection direction="up">
-            <section className="grid gap-8 rounded-[2.4rem] border border-violet-500/25 bg-gradient-to-br from-violet-500/10 via-background to-background p-8 shadow-soft lg:grid-cols-[0.9fr_1.1fr]">
-              <AnimatedCard delay={0.05} className="rounded-2xl border border-violet-500/25 bg-violet-500/10 p-5">
-                <AnimatedElement delay={0.1}>
-                  <p className="inline-flex rounded-full border border-violet-500/30 bg-violet-500/15 px-3 py-1 font-mono text-[0.66rem] uppercase tracking-[0.16em] text-violet-700 dark:text-violet-200">
-                    Identity Layer
-                  </p>
-                </AnimatedElement>
-                <AnimatedText delay={0.15}>
-                  <h2 className="mt-4 text-2xl font-bold sm:text-3xl">
-                    Your identity, your control.
-                  </h2>
-                </AnimatedText>
-                <AnimatedText delay={0.2}>
-                  <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-                    Your AID is generated automatically so you can share a private
-                    identity without revealing personal contact data.
-                  </p>
-                </AnimatedText>
-                <AnimatedList className="mt-5 space-y-3 text-sm text-muted-foreground" staggerDelay={0.06}>
-                  <AnimatedListItem>
-                    <div className="flex items-center gap-3">
-                      <span className="h-2 w-2 rounded-full bg-violet-500" />
-                      <span>Unique generated AID</span>
-                    </div>
-                  </AnimatedListItem>
-                  <AnimatedListItem>
-                    <div className="flex items-center gap-3">
-                      <span className="h-2 w-2 rounded-full bg-violet-500" />
-                      <span>Email-only signup</span>
-                    </div>
-                  </AnimatedListItem>
-                  <AnimatedListItem>
-                    <div className="flex items-center gap-3">
-                      <span className="h-2 w-2 rounded-full bg-violet-500" />
-                      <span>Optional usernames</span>
-                    </div>
-                  </AnimatedListItem>
-                </AnimatedList>
-                <AnimatedElement delay={0.35} className="mt-5 rounded-xl border border-violet-500/20 bg-background/70 p-4">
-                  <p className="text-[0.65rem] font-mono uppercase tracking-[0.14em] text-violet-700 dark:text-violet-200">
-                    Example AID
-                  </p>
-                  <div className="mt-3 space-y-2 text-sm">
-                    <div className="rounded-lg border border-violet-500/25 bg-violet-500/10 px-3 py-2">
-                      <p className="text-xs text-muted-foreground">Your AID</p>
-                      <p className="text-sm font-semibold font-mono text-foreground">
-                        anon_8x7k2m
-                      </p>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Share this instead of your email or phone number.
-                    </p>
-                  </div>
-                </AnimatedElement>
-              </AnimatedCard>
-              <div>
-                <AnimatedText delay={0.1}>
-                  <h3 className="text-3xl font-bold sm:text-4xl">
-                    Privacy-First Identity
-                  </h3>
-                </AnimatedText>
-                <AnimatedText delay={0.15}>
-                  <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-                    Share your AID confidently knowing your personal information stays private. Control what others see and when.
-                  </p>
-                </AnimatedText>
-                <AnimatedElement delay={0.2} className="mt-6 flex flex-wrap gap-2 text-xs font-semibold text-violet-800 dark:text-violet-200">
-                  <AnimatedBadge delay={0.25} className="rounded-full border border-violet-500/40 bg-violet-500/15 px-3 py-1">
-                    No phone required
-                  </AnimatedBadge>
-                  <AnimatedBadge delay={0.3} className="rounded-full border border-violet-500/40 bg-violet-500/15 px-3 py-1">
-                    Pseudonymous by default
-                  </AnimatedBadge>
-                  <AnimatedBadge delay={0.35} className="rounded-full border border-violet-500/40 bg-violet-500/15 px-3 py-1">
-                    Reveal on your terms
-                  </AnimatedBadge>
-                </AnimatedElement>
-                <AnimatedImage delay={0.25} className="mt-6 overflow-hidden rounded-2xl border border-violet-500/20 bg-card/70 p-2">
+            <section className="rounded-[2.4rem] border border-violet-500/25 bg-gradient-to-br from-violet-500/8 via-background to-background p-8 md:p-12 shadow-soft">
+              <div className="grid items-center gap-10 lg:grid-cols-[1fr_1.2fr] lg:gap-16">
+                <AnimatedImage delay={0.1} className="order-2 lg:order-1 overflow-hidden rounded-2xl">
                   <Image
                     src="/images/stock/privacy-first-identity-no-bg-2.png"
                     alt="Privacy-first identity"
                     width={720}
-                    height={420}
-                    className="h-56 w-full rounded-xl object-cover"
+                    height={520}
+                    className="w-full rounded-xl object-contain"
                   />
-                  <AnimatedElement delay={0.4}>
-                    <p className="mt-2 px-1 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-violet-700/80 dark:text-violet-200/80">
-                      Protected identity
+                </AnimatedImage>
+                <div className="order-1 lg:order-2">
+                  <AnimatedElement delay={0.05}>
+                    <p className="inline-flex rounded-full border border-violet-500/30 bg-violet-500/15 px-3 py-1 font-mono text-[0.66rem] uppercase tracking-[0.16em] text-violet-700 dark:text-violet-200">
+                      Identity Layer
                     </p>
                   </AnimatedElement>
-                </AnimatedImage>
+                  <AnimatedText delay={0.1}>
+                    <h2 className="mt-4 text-4xl font-bold sm:text-5xl">
+                      Privacy-First Identity
+                    </h2>
+                  </AnimatedText>
+                  <AnimatedText delay={0.15}>
+                    <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
+                      Your AID is generated automatically so you can share a private
+                      identity without revealing personal contact data.
+                    </p>
+                  </AnimatedText>
+                  <AnimatedElement delay={0.2} className="mt-8 flex flex-wrap gap-2 text-xs font-semibold text-violet-800 dark:text-violet-200">
+                    <AnimatedBadge delay={0.25} className="rounded-full border border-violet-500/40 bg-violet-500/15 px-3 py-1">
+                      No phone required
+                    </AnimatedBadge>
+                    <AnimatedBadge delay={0.3} className="rounded-full border border-violet-500/40 bg-violet-500/15 px-3 py-1">
+                      Pseudonymous by default
+                    </AnimatedBadge>
+                    <AnimatedBadge delay={0.35} className="rounded-full border border-violet-500/40 bg-violet-500/15 px-3 py-1">
+                      Reveal on your terms
+                    </AnimatedBadge>
+                  </AnimatedElement>
+                  <AnimatedCard delay={0.3} className="mt-8 rounded-xl border border-violet-500/20 bg-background/70 p-5">
+                    <p className="text-xs font-mono uppercase tracking-wide text-violet-700 dark:text-violet-200">
+                      Example AID
+                    </p>
+                    <div className="mt-3 rounded-lg border border-violet-500/25 bg-violet-500/10 px-4 py-3">
+                      <p className="text-xs text-muted-foreground">Your AID</p>
+                      <p className="text-lg font-semibold font-mono text-foreground">
+                        anon_8x7k2m
+                      </p>
+                    </div>
+                    <p className="mt-3 text-sm text-muted-foreground">
+                      Share this instead of your email or phone number.
+                    </p>
+                  </AnimatedCard>
+                </div>
               </div>
             </section>
           </AnimatedSection>
 
-          {/* Group Chats */}
+          {/* Group Chats - OPEN LAYOUT with accent cards */}
           <AnimatedSection direction="up">
             <section id="group-chats" className="scroll-mt-28">
-              <div className="grid gap-8 rounded-[2.2rem] border border-blue-500/25 bg-gradient-to-br from-blue-500/10 via-background to-background p-8 shadow-soft lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="grid items-start gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
                 <div>
                   <AnimatedElement delay={0.05}>
                     <p className="inline-flex rounded-full border border-blue-500/30 bg-blue-500/15 px-3 py-1 font-mono text-[0.66rem] uppercase tracking-[0.16em] text-blue-700 dark:text-blue-200">
@@ -242,17 +183,17 @@ export default function FeaturesPage() {
                     </p>
                   </AnimatedElement>
                   <AnimatedText delay={0.1}>
-                    <h2 className="mt-4 text-3xl font-bold sm:text-4xl">
+                    <h2 className="mt-4 text-4xl font-bold sm:text-5xl">
                       Group Chats
                     </h2>
                   </AnimatedText>
                   <AnimatedText delay={0.15}>
-                    <p className="mt-4 text-base leading-relaxed text-muted-foreground md:text-lg">
+                    <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
                       Build teams and communities with roles, nicknames, and join
                       requests that keep groups organized.
                     </p>
                   </AnimatedText>
-                  <AnimatedElement delay={0.2} className="mt-6 flex flex-wrap gap-2 text-xs font-semibold text-blue-800 dark:text-blue-200">
+                  <AnimatedElement delay={0.2} className="mt-8 flex flex-wrap gap-2 text-xs font-semibold text-blue-800 dark:text-blue-200">
                     <AnimatedBadge delay={0.25} className="rounded-full border border-blue-500/40 bg-blue-500/15 px-3 py-1">
                       Role-based permissions
                     </AnimatedBadge>
@@ -263,11 +204,11 @@ export default function FeaturesPage() {
                       Join requests
                     </AnimatedBadge>
                   </AnimatedElement>
-                  <AnimatedElement delay={0.25} className="mt-7 flex flex-wrap items-center gap-3">
+                  <AnimatedElement delay={0.25} className="mt-8 flex flex-wrap items-center gap-3">
                     <AnimatedButton>
                       <Link
                         href="/register"
-                        className="inline-flex h-10 items-center rounded-full bg-blue-600 px-5 text-xs font-semibold text-white shadow-soft transition-colors hover:bg-blue-600/90"
+                        className="inline-flex h-11 items-center rounded-full bg-blue-600 px-6 text-sm font-semibold text-white shadow-soft transition-colors hover:bg-blue-600/90"
                       >
                         Start a group
                       </Link>
@@ -275,373 +216,223 @@ export default function FeaturesPage() {
                     <AnimatedButton delay={0.05}>
                       <Link
                         href="/contact"
-                        className="inline-flex h-10 items-center rounded-full border border-blue-500/40 px-5 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-500/10 dark:text-blue-200"
+                        className="inline-flex h-11 items-center rounded-full border border-blue-500/40 px-6 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-500/10 dark:text-blue-200"
                       >
                         Learn more
                       </Link>
                     </AnimatedButton>
                   </AnimatedElement>
 
-                  <div className="grid gap-4 mt-6">
+                  <div className="grid gap-4 mt-10 sm:grid-cols-2">
                     <AnimatedCard delay={0.3} className="rounded-2xl border border-blue-500/25 bg-blue-500/10 p-5">
-                      <p className="text-xs font-semibold text-foreground">
+                      <p className="text-sm font-semibold text-foreground">
                         Group features
                       </p>
-                      <AnimatedList className="mt-3 space-y-2 text-sm text-muted-foreground">
+                      <AnimatedList className="mt-4 space-y-2 text-sm text-muted-foreground">
                         <AnimatedListItem>Assign admin and moderator roles</AnimatedListItem>
                         <AnimatedListItem>Set custom nicknames per group</AnimatedListItem>
                         <AnimatedListItem>Approve join requests before entry</AnimatedListItem>
                       </AnimatedList>
                     </AnimatedCard>
-                    <AnimatedCard delay={0.35} className="rounded-2xl border border-blue-500/20 bg-background/70 p-5">
-                      <p className="text-xs font-semibold text-foreground">
+                    <AnimatedCard delay={0.35} className="rounded-2xl border border-border/50 bg-card/50 p-5">
+                      <p className="text-sm font-semibold text-foreground">
                         Rich settings
                       </p>
-                      <AnimatedList className="mt-3 space-y-2 text-sm text-muted-foreground">
-                        <AnimatedListItem>
-                          <div className="flex items-center gap-3">
-                            <span className="h-2 w-2 rounded-full bg-blue-500" />
-                            <span>Group descriptions</span>
-                          </div>
-                        </AnimatedListItem>
-                        <AnimatedListItem>
-                          <div className="flex items-center gap-3">
-                            <span className="h-2 w-2 rounded-full bg-blue-500" />
-                            <span>Member limits</span>
-                          </div>
-                        </AnimatedListItem>
-                        <AnimatedListItem>
-                          <div className="flex items-center gap-3">
-                            <span className="h-2 w-2 rounded-full bg-blue-500" />
-                            <span>Invite links</span>
-                          </div>
-                        </AnimatedListItem>
+                      <AnimatedList className="mt-4 space-y-2 text-sm text-muted-foreground">
+                        <AnimatedListItem>Group descriptions</AnimatedListItem>
+                        <AnimatedListItem>Member limits</AnimatedListItem>
+                        <AnimatedListItem>Invite links</AnimatedListItem>
                       </AnimatedList>
                     </AnimatedCard>
                   </div>
                 </div>
-                <AnimatedImage delay={0.2} className="flex flex-col justify-center rounded-2xl border border-blue-500/20 bg-card/70 p-2">
+                <AnimatedImage delay={0.2} className="sticky top-28 rounded-3xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-transparent p-3">
                   <Image
                     src="/images/stock/group-chat-image.png"
                     alt="Group chat preview"
                     width={720}
                     height={720}
-                    className="w-full rounded-xl object-contain"
+                    className="w-full rounded-2xl object-contain"
                   />
-                  <AnimatedElement delay={0.35}>
-                    <p className="mt-2 px-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-blue-700/80 dark:text-blue-200/80">
-                      Team conversation
-                    </p>
-                  </AnimatedElement>
                 </AnimatedImage>
               </div>
             </section>
           </AnimatedSection>
 
-          {/* Media Sharing */}
+          {/* Media Sharing - FULL WIDTH BANNER style */}
           <AnimatedSection direction="up">
-            <section className="grid gap-8 rounded-[2.4rem] border border-rose-500/25 bg-gradient-to-br from-rose-500/10 via-background to-background p-8 shadow-soft lg:grid-cols-[0.9fr_1.1fr]">
-              <div className="flex flex-col gap-4">
-                <AnimatedCard delay={0.05} className="rounded-2xl border border-rose-500/25 bg-rose-500/10 p-5">
-                  <AnimatedElement delay={0.1}>
+            <section className="relative overflow-hidden rounded-[2.4rem] bg-gradient-to-r from-rose-500/10 via-rose-500/5 to-transparent py-16 md:py-20">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(244,63,94,0.1),transparent_50%)]" />
+              <div className="relative grid items-center gap-12 px-8 md:px-12 lg:grid-cols-2 lg:gap-16">
+                <div>
+                  <AnimatedElement delay={0.05}>
                     <p className="inline-flex rounded-full border border-rose-500/30 bg-rose-500/15 px-3 py-1 font-mono text-[0.66rem] uppercase tracking-[0.16em] text-rose-700 dark:text-rose-200">
                       Media Layer
                     </p>
                   </AnimatedElement>
-                  <AnimatedText delay={0.15}>
-                    <h2 className="mt-4 text-2xl font-bold sm:text-3xl">
-                      Share moments instantly.
+                  <AnimatedText delay={0.1}>
+                    <h2 className="mt-4 text-4xl font-bold sm:text-5xl">
+                      Media Sharing
                     </h2>
                   </AnimatedText>
-                  <AnimatedText delay={0.2}>
-                    <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+                  <AnimatedText delay={0.15}>
+                    <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
                       Share images and files with clean previews and reliable
-                      delivery, even on busy threads.
+                      delivery, even on busy threads. Rich media that loads fast and looks great.
                     </p>
                   </AnimatedText>
-                  <AnimatedList className="mt-5 space-y-3 text-sm text-muted-foreground" staggerDelay={0.06}>
-                    <AnimatedListItem>
-                      <div className="flex items-center gap-3">
-                        <span className="h-2 w-2 rounded-full bg-rose-500" />
-                        <span>Image sharing with compression</span>
-                      </div>
-                    </AnimatedListItem>
-                    <AnimatedListItem>
-                      <div className="flex items-center gap-3">
-                        <span className="h-2 w-2 rounded-full bg-rose-500" />
-                        <span>File attachments up to 5MB</span>
-                      </div>
-                    </AnimatedListItem>
-                    <AnimatedListItem>
-                      <div className="flex items-center gap-3">
-                        <span className="h-2 w-2 rounded-full bg-rose-500" />
-                        <span>Inline preview support</span>
-                      </div>
-                    </AnimatedListItem>
-                    <AnimatedListItem>
-                      <div className="flex items-center gap-3">
-                        <span className="h-2 w-2 rounded-full bg-rose-500" />
-                        <span>Download to device</span>
-                      </div>
-                    </AnimatedListItem>
-                  </AnimatedList>
-                </AnimatedCard>
-                <AnimatedCard delay={0.25} className="rounded-xl border border-rose-500/20 bg-background/70 p-4">
-                  <p className="text-[0.65rem] font-mono uppercase tracking-[0.14em] text-rose-700 dark:text-rose-200">
-                    Supported formats
-                  </p>
-                  <AnimatedElement delay={0.3} className="mt-3 flex flex-wrap gap-2">
+                  <AnimatedElement delay={0.2} className="mt-8 flex flex-wrap gap-2 text-xs font-semibold text-rose-800 dark:text-rose-200">
+                    <AnimatedBadge delay={0.25} className="rounded-full border border-rose-500/40 bg-rose-500/15 px-3 py-1">
+                      Fast uploads
+                    </AnimatedBadge>
+                    <AnimatedBadge delay={0.3} className="rounded-full border border-rose-500/40 bg-rose-500/15 px-3 py-1">
+                      Rich previews
+                    </AnimatedBadge>
+                    <AnimatedBadge delay={0.35} className="rounded-full border border-rose-500/40 bg-rose-500/15 px-3 py-1">
+                      Reliable delivery
+                    </AnimatedBadge>
+                  </AnimatedElement>
+                  <AnimatedElement delay={0.3} className="mt-10 flex flex-wrap gap-2">
                     {["JPG", "PNG", "GIF", "PDF", "DOC", "MP4", "MP3"].map((format, i) => (
                       <AnimatedBadge
                         key={format}
                         delay={0.32 + i * 0.04}
-                        className="rounded-lg border border-rose-500/25 bg-rose-500/10 px-2 py-1 text-xs font-mono text-foreground"
+                        className="rounded-lg border border-rose-500/25 bg-background/80 px-3 py-1.5 text-xs font-mono text-foreground"
                       >
                         {format}
                       </AnimatedBadge>
                     ))}
                   </AnimatedElement>
-                </AnimatedCard>
-                <AnimatedCard delay={0.35} className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4">
-                  <p className="text-[0.65rem] font-mono uppercase tracking-[0.14em] text-rose-700 dark:text-rose-200">
-                    Performance
-                  </p>
-                  <div className="mt-3 grid grid-cols-2 gap-3">
-                    <AnimatedElement delay={0.4} className="text-center">
-                      <p className="text-2xl font-bold text-rose-600 dark:text-rose-400">5MB</p>
-                      <p className="text-xs text-muted-foreground">Max file size</p>
+                  <div className="mt-10 grid grid-cols-2 gap-6">
+                    <AnimatedElement delay={0.4}>
+                      <p className="text-3xl font-bold text-rose-600 dark:text-rose-400">5MB</p>
+                      <p className="text-sm text-muted-foreground">Max file size</p>
                     </AnimatedElement>
-                    <AnimatedElement delay={0.45} className="text-center">
-                      <p className="text-2xl font-bold text-rose-600 dark:text-rose-400">{"<"}2s</p>
-                      <p className="text-xs text-muted-foreground">Upload speed</p>
+                    <AnimatedElement delay={0.45}>
+                      <p className="text-3xl font-bold text-rose-600 dark:text-rose-400">{"<"}2s</p>
+                      <p className="text-sm text-muted-foreground">Upload speed</p>
                     </AnimatedElement>
                   </div>
-                </AnimatedCard>
-              </div>
-              <div>
-                <AnimatedText delay={0.1}>
-                  <h3 className="text-3xl font-bold sm:text-4xl">
-                    Media Sharing
-                  </h3>
-                </AnimatedText>
-                <AnimatedText delay={0.15}>
-                  <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-                    Rich media previews that load fast and look great. Share photos, documents, and files without leaving the conversation.
-                  </p>
-                </AnimatedText>
-                <AnimatedElement delay={0.2} className="mt-6 flex flex-wrap gap-2 text-xs font-semibold text-rose-800 dark:text-rose-200">
-                  <AnimatedBadge delay={0.25} className="rounded-full border border-rose-500/40 bg-rose-500/15 px-3 py-1">
-                    Fast uploads
-                  </AnimatedBadge>
-                  <AnimatedBadge delay={0.3} className="rounded-full border border-rose-500/40 bg-rose-500/15 px-3 py-1">
-                    Rich previews
-                  </AnimatedBadge>
-                  <AnimatedBadge delay={0.35} className="rounded-full border border-rose-500/40 bg-rose-500/15 px-3 py-1">
-                    Reliable delivery
-                  </AnimatedBadge>
-                </AnimatedElement>
-                <AnimatedImage delay={0.25} className="mt-6 rounded-2xl border border-rose-500/20 bg-card/70 p-2">
+                </div>
+                <AnimatedImage delay={0.2} className="rounded-2xl border border-rose-500/20 bg-card/70 p-2">
                   <Image
                     src="/images/stock/sending-media-image.png"
                     alt="Sending media preview"
                     width={720}
-                    height={420}
+                    height={520}
                     className="w-full rounded-xl object-contain"
                   />
-                  <AnimatedElement delay={0.4}>
-                    <p className="mt-2 px-1 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-rose-700/80 dark:text-rose-200/80">
-                      Sharing photos
-                    </p>
-                  </AnimatedElement>
                 </AnimatedImage>
               </div>
             </section>
           </AnimatedSection>
 
-          {/* Block & Report */}
+          {/* Block & Report + Admin - SPLIT TWO-COLUMN CARDS */}
           <AnimatedSection direction="up">
-            <section className="grid gap-8 rounded-[2.4rem] border border-orange-500/25 bg-gradient-to-br from-orange-500/10 via-background to-background p-8 shadow-soft lg:grid-cols-[1.1fr_0.9fr]">
-              <div>
-                <AnimatedElement delay={0.05}>
+            <section className="grid gap-8 lg:grid-cols-2">
+              {/* Block & Report */}
+              <AnimatedCard delay={0.1} className="rounded-[2rem] border border-orange-500/25 bg-gradient-to-br from-orange-500/8 to-transparent p-8">
+                <AnimatedElement delay={0.15}>
                   <p className="inline-flex rounded-full border border-orange-500/30 bg-orange-500/15 px-3 py-1 font-mono text-[0.66rem] uppercase tracking-[0.16em] text-orange-700 dark:text-orange-200">
                     Safety Controls
                   </p>
                 </AnimatedElement>
-                <AnimatedText delay={0.1}>
-                  <h2 className="mt-4 text-3xl font-bold sm:text-4xl">
-                    Block & Report System
+                <AnimatedText delay={0.2}>
+                  <h2 className="mt-4 text-2xl font-bold sm:text-3xl">
+                    Block & Report
                   </h2>
                 </AnimatedText>
-                <AnimatedText delay={0.15}>
-                  <p className="mt-4 text-base leading-relaxed text-muted-foreground md:text-lg">
+                <AnimatedText delay={0.25}>
+                  <p className="mt-4 text-muted-foreground">
                     Decide who reaches you with requests, blocks, and reporting
                     tools that keep your space calm.
                   </p>
                 </AnimatedText>
-                <AnimatedElement delay={0.2} className="mt-6 flex flex-wrap gap-2 text-xs font-semibold text-orange-800 dark:text-orange-200">
-                  <AnimatedBadge delay={0.25} className="rounded-full border border-orange-500/40 bg-orange-500/15 px-3 py-1">
-                    Message requests
-                  </AnimatedBadge>
-                  <AnimatedBadge delay={0.3} className="rounded-full border border-orange-500/40 bg-orange-500/15 px-3 py-1">
-                    Block users
-                  </AnimatedBadge>
-                  <AnimatedBadge delay={0.35} className="rounded-full border border-orange-500/40 bg-orange-500/15 px-3 py-1">
-                    Report violations
-                  </AnimatedBadge>
-                </AnimatedElement>
-                <div className="grid gap-4 mt-6">
-                  <AnimatedCard delay={0.25} className="rounded-2xl border border-orange-500/25 bg-orange-500/10 p-5">
-                    <p className="text-xs font-semibold text-foreground">
-                      Protection features
-                    </p>
-                    <AnimatedList className="mt-3 space-y-2 text-sm text-muted-foreground">
-                      <AnimatedListItem>Block unwanted contacts instantly</AnimatedListItem>
-                      <AnimatedListItem>Report violations to moderators</AnimatedListItem>
-                      <AnimatedListItem>Control who can message you</AnimatedListItem>
-                    </AnimatedList>
-                  </AnimatedCard>
-                  <AnimatedCard delay={0.3} className="rounded-2xl border border-orange-500/20 bg-background/70 p-5">
-                    <p className="text-xs font-semibold text-foreground">
-                      Privacy controls
-                    </p>
-                    <AnimatedList className="mt-3 space-y-2 text-sm text-muted-foreground">
-                      <AnimatedListItem>
-                        <div className="flex items-center gap-3">
-                          <span className="h-2 w-2 rounded-full bg-orange-500" />
-                          <span>Message request filtering</span>
-                        </div>
-                      </AnimatedListItem>
-                      <AnimatedListItem>
-                        <div className="flex items-center gap-3">
-                          <span className="h-2 w-2 rounded-full bg-orange-500" />
-                          <span>Block without notification</span>
-                        </div>
-                      </AnimatedListItem>
-                      <AnimatedListItem>
-                        <div className="flex items-center gap-3">
-                          <span className="h-2 w-2 rounded-full bg-orange-500" />
-                          <span>Anonymous reporting</span>
-                        </div>
-                      </AnimatedListItem>
-                    </AnimatedList>
-                  </AnimatedCard>
-                </div>
-              </div>
-              <AnimatedImage delay={0.2} className="overflow-hidden rounded-2xl border border-orange-500/20 bg-card/70 p-2">
-                <Image
-                  src="/images/stock/blocking-image.png"
-                  alt="Safety controls preview"
-                  width={720}
-                  height={720}
-                  className="h-full w-full rounded-xl object-cover"
-                />
-                <AnimatedElement delay={0.35}>
-                  <p className="mt-2 px-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-orange-700/80 dark:text-orange-200/80">
-                    Block controls
-                  </p>
-                </AnimatedElement>
-              </AnimatedImage>
-            </section>
-          </AnimatedSection>
+                <AnimatedList className="mt-6 space-y-3 text-sm text-muted-foreground" staggerDelay={0.06}>
+                  <AnimatedListItem>
+                    <div className="flex items-center gap-3">
+                      <span className="h-2 w-2 rounded-full bg-orange-500" />
+                      <span>Block unwanted contacts instantly</span>
+                    </div>
+                  </AnimatedListItem>
+                  <AnimatedListItem>
+                    <div className="flex items-center gap-3">
+                      <span className="h-2 w-2 rounded-full bg-orange-500" />
+                      <span>Report violations to moderators</span>
+                    </div>
+                  </AnimatedListItem>
+                  <AnimatedListItem>
+                    <div className="flex items-center gap-3">
+                      <span className="h-2 w-2 rounded-full bg-orange-500" />
+                      <span>Control who can message you</span>
+                    </div>
+                  </AnimatedListItem>
+                </AnimatedList>
+                <AnimatedImage delay={0.35} className="mt-6 overflow-hidden rounded-xl">
+                  <Image
+                    src="/images/stock/blocking-image.png"
+                    alt="Safety controls preview"
+                    width={400}
+                    height={300}
+                    className="w-full rounded-xl object-cover"
+                  />
+                </AnimatedImage>
+              </AnimatedCard>
 
-          {/* Admin & Moderation */}
-          <AnimatedSection direction="up">
-            <section className="grid gap-8 rounded-[2.4rem] border border-slate-500/25 bg-gradient-to-br from-slate-500/10 via-background to-background p-8 shadow-soft lg:grid-cols-[0.9fr_1.1fr]">
-              <AnimatedCard delay={0.05} className="rounded-2xl border border-slate-500/25 bg-slate-500/10 p-5">
-                <AnimatedElement delay={0.1}>
+              {/* Admin & Moderation */}
+              <AnimatedCard delay={0.15} className="rounded-[2rem] border border-slate-500/25 bg-gradient-to-br from-slate-500/8 to-transparent p-8">
+                <AnimatedElement delay={0.2}>
                   <p className="inline-flex rounded-full border border-slate-500/30 bg-slate-500/15 px-3 py-1 font-mono text-[0.66rem] uppercase tracking-[0.16em] text-slate-700 dark:text-slate-200">
                     Platform Layer
                   </p>
                 </AnimatedElement>
-                <AnimatedText delay={0.15}>
+                <AnimatedText delay={0.25}>
                   <h2 className="mt-4 text-2xl font-bold sm:text-3xl">
-                    Keep the platform safe.
+                    Admin & Moderation
                   </h2>
                 </AnimatedText>
-                <AnimatedText delay={0.2}>
-                  <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+                <AnimatedText delay={0.3}>
+                  <p className="mt-4 text-muted-foreground">
                     A dedicated moderation layer keeps the platform safe without
                     slowing down the experience.
                   </p>
                 </AnimatedText>
-                <AnimatedList className="mt-5 space-y-3 text-sm text-muted-foreground" staggerDelay={0.06}>
+                <AnimatedList className="mt-6 space-y-3 text-sm text-muted-foreground" staggerDelay={0.06}>
                   <AnimatedListItem>
                     <div className="flex items-center gap-3">
                       <span className="h-2 w-2 rounded-full bg-slate-500" />
-                      <span>Report queue</span>
+                      <span>Real-time report queue</span>
                     </div>
                   </AnimatedListItem>
                   <AnimatedListItem>
                     <div className="flex items-center gap-3">
                       <span className="h-2 w-2 rounded-full bg-slate-500" />
-                      <span>User bans</span>
+                      <span>User bans and suspensions</span>
                     </div>
                   </AnimatedListItem>
                   <AnimatedListItem>
                     <div className="flex items-center gap-3">
                       <span className="h-2 w-2 rounded-full bg-slate-500" />
-                      <span>Activity logs</span>
+                      <span>Full activity audit logs</span>
                     </div>
                   </AnimatedListItem>
                 </AnimatedList>
-                <AnimatedElement delay={0.35} className="mt-5 rounded-xl border border-slate-500/20 bg-background/70 p-4">
-                  <p className="text-[0.65rem] font-mono uppercase tracking-[0.14em] text-slate-700 dark:text-slate-200">
-                    Admin tools
-                  </p>
-                  <div className="mt-3 space-y-2">
-                    {["Dashboard", "Audit logs", "User management"].map((tool, i) => (
-                      <AnimatedElement key={tool} delay={0.4 + i * 0.05}>
-                        <div className="rounded-lg border border-slate-500/25 bg-slate-500/10 px-3 py-2 text-sm text-foreground">
-                          {tool}
-                        </div>
-                      </AnimatedElement>
-                    ))}
-                  </div>
-                </AnimatedElement>
-              </AnimatedCard>
-              <div>
-                <AnimatedText delay={0.1}>
-                  <h3 className="text-3xl font-bold sm:text-4xl">
-                    Admin & Moderation
-                  </h3>
-                </AnimatedText>
-                <AnimatedText delay={0.15}>
-                  <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-                    Comprehensive tools for platform administrators to maintain community standards and handle issues efficiently.
-                  </p>
-                </AnimatedText>
-                <AnimatedElement delay={0.2} className="mt-6 flex flex-wrap gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200">
-                  <AnimatedBadge delay={0.25} className="rounded-full border border-slate-500/40 bg-slate-500/15 px-3 py-1">
-                    Real-time monitoring
-                  </AnimatedBadge>
-                  <AnimatedBadge delay={0.3} className="rounded-full border border-slate-500/40 bg-slate-500/15 px-3 py-1">
-                    Quick actions
-                  </AnimatedBadge>
-                  <AnimatedBadge delay={0.35} className="rounded-full border border-slate-500/40 bg-slate-500/15 px-3 py-1">
-                    Full audit trail
-                  </AnimatedBadge>
-                </AnimatedElement>
-                <AnimatedImage delay={0.25} className="mt-6 overflow-hidden rounded-2xl border border-slate-500/20 bg-card/70 p-2">
+                <AnimatedImage delay={0.4} className="mt-6 overflow-hidden rounded-xl">
                   <Image
                     src="/images/stock/admin.png"
                     alt="Moderation overview"
-                    width={720}
-                    height={420}
-                    className="h-56 w-full rounded-xl object-cover"
+                    width={400}
+                    height={300}
+                    className="w-full rounded-xl object-cover"
                   />
-                  <AnimatedElement delay={0.4}>
-                    <p className="mt-2 px-1 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-slate-700/80 dark:text-slate-200/80">
-                      Admin dashboard
-                    </p>
-                  </AnimatedElement>
                 </AnimatedImage>
-              </div>
+              </AnimatedCard>
             </section>
           </AnimatedSection>
         </div>
 
-        {/* Temporary Access Section */}
-        <AnimatedSection delay={0.1} direction="up" className="mt-20">
+        {/* Temporary Access Section - BOXED HERO CARD */}
+        <AnimatedSection delay={0.1} direction="up" className="mt-24 md:mt-32">
           <section id="temporary-access" className="scroll-mt-28">
             <div className="grid gap-8 rounded-[2.2rem] border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-background to-background p-8 shadow-soft lg:grid-cols-[1.1fr_0.9fr]">
               <div>
@@ -709,32 +500,28 @@ export default function FeaturesPage() {
                       Example
                     </p>
                     <AnimatedElement delay={0.4} className="mt-3 space-y-3 text-sm">
-                      <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2">
-                        <p className="text-[0.65rem] font-mono uppercase tracking-[0.14em] text-amber-700 dark:text-amber-200">
-                          Temporary Session
+                      <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4">
+                        <p className="text-xs text-amber-700 dark:text-amber-300 font-medium">
+                          Temporary AID
                         </p>
-                        <p className="mt-2 font-semibold text-foreground">
-                          temp_q7n2
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Expires in 23:54:12
+                        <p className="text-base font-mono font-semibold mt-1">
+                          temp_9f3xk2
                         </p>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        You can chat immediately and claim later if the
-                        conversation becomes long-term.
+                      <p className="text-muted-foreground text-xs">
+                        Use this to chat now. Claim it within 24 hours to keep your history.
                       </p>
                     </AnimatedElement>
                   </AnimatedCard>
                 </div>
               </div>
-              <AnimatedImage delay={0.2} className="overflow-hidden rounded-2xl border border-amber-500/20 bg-card/70 p-2">
+              <AnimatedImage delay={0.2} className="flex flex-col justify-center rounded-2xl border border-amber-500/20 bg-card/70 p-2">
                 <Image
                   src="/images/features/temporary-account-conversation-preview.png"
-                  alt="Temporary account conversation preview"
+                  alt="Temporary access preview"
                   width={720}
-                  height={420}
-                  className="w-full rounded-xl object-cover"
+                  height={720}
+                  className="w-full rounded-xl object-contain"
                 />
                 <AnimatedElement delay={0.35}>
                   <p className="mt-2 px-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-amber-700/80 dark:text-amber-200/80">
@@ -746,10 +533,10 @@ export default function FeaturesPage() {
           </section>
         </AnimatedSection>
 
-        {/* Stealth Mode Section */}
+        {/* Stealth Mode Section - OPEN LAYOUT */}
         <AnimatedSection delay={0.1} direction="up" className="mt-16">
           <section id="stealth-mode" className="scroll-mt-28">
-            <div className="grid gap-8 rounded-[2.2rem] border border-cyan-500/25 bg-gradient-to-br from-cyan-500/10 via-background to-background p-8 shadow-soft lg:grid-cols-[0.9fr_1.1fr]">
+            <div className="grid gap-8 rounded-[2.2rem] from-cyan-500/10 via-background to-background  lg:grid-cols-[0.9fr_1.1fr]">
               <AnimatedCard delay={0.05} className="rounded-2xl border border-cyan-500/25 bg-cyan-500/10 p-5">
                 <AnimatedElement delay={0.1}>
                   <p className="inline-flex rounded-full border border-cyan-500/30 bg-cyan-500/15 px-3 py-1 font-mono text-[0.66rem] uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-200">
@@ -903,18 +690,20 @@ export default function FeaturesPage() {
           </section>
         </AnimatedSection>
 
-        <AnimatedSection delay={0.15} direction="up" className="mt-24 text-center">
-          <AnimatedText>
-            <h2 className="text-2xl font-semibold">Ready to try anonimi?</h2>
-          </AnimatedText>
-          <AnimatedText delay={0.1}>
-            <p className="mt-4 text-muted-foreground">
-              Join early adopters who want private-first messaging built around
-              AID.
+        {/* CTA Section */}
+        <AnimatedSection delay={0.15} direction="up" className="mt-24 text-center md:mt-32">
+          <AnimatedElement delay={0.1}>
+            <p className="text-sm font-medium text-muted-foreground">
+              Ready to try anonimi?
             </p>
+          </AnimatedElement>
+          <AnimatedText delay={0.15}>
+            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">
+              Start messaging privately today.
+            </h2>
           </AnimatedText>
-          <AnimatedButton delay={0.2} className="mt-8">
-            <Button size="lg" asChild>
+          <AnimatedButton delay={0.2}>
+            <Button className="mt-8" size="lg" asChild>
               <Link href="/register">Get Started Free</Link>
             </Button>
           </AnimatedButton>
