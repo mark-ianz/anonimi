@@ -8,14 +8,19 @@ type Theme = "light" | "dark" | "system";
 const STORAGE_KEY = "anonimi:theme";
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>(() => {
+  // Start as `system` for SSR parity. Read stored preference after mount.
+  const [theme, setTheme] = useState<Theme>("system");
+
+  useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      return (raw as Theme) || "system";
+      if (raw === "light" || raw === "dark" || raw === "system") {
+        setTheme(raw as Theme);
+      }
     } catch {
-      return "system";
+      // ignore
     }
-  });
+  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
