@@ -3,11 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Edit, Plus } from "lucide-react";
+import { Edit, Plus, UserPlus } from "lucide-react";
 import SearchInput from "@/components/shared/SearchInput";
 import ConversationList from "./ConversationList";
 import type { ConversationListFilter } from "@/hooks/useConversations";
 import { cn } from "@/lib/utils";
+import JoinGroupDialog from "@/components/groups/JoinGroupDialog";
 
 interface ConversationSearchProps {
   activeConversationId?: string;
@@ -21,6 +22,7 @@ export default function ConversationSearch({
   filter = "active",
 }: ConversationSearchProps) {
   const [query, setQuery] = useState("");
+  const [joinDialogOpen, setJoinDialogOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -136,13 +138,22 @@ export default function ConversationSearch({
             </div>
 
             {conversationType === "groups" && (
-              <Link
-                href="/groups/create"
-                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-border/70 bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-              >
-                <Plus className="h-4 w-4" />
-                New group
-              </Link>
+              <div className="flex gap-2">
+                <Link
+                  href="/groups/create"
+                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-border/70 bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                >
+                  <Plus className="h-4 w-4" />
+                  New group
+                </Link>
+                <button
+                  onClick={() => setJoinDialogOpen(true)}
+                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-border/70 bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Join group
+                </button>
+              </div>
             )}
           </div>
         )}
@@ -154,6 +165,8 @@ export default function ConversationSearch({
         filter={filter}
         conversationType={canShowTabs ? conversationType : "all"}
       />
+
+      <JoinGroupDialog open={joinDialogOpen} onClose={() => setJoinDialogOpen(false)} />
     </div>
   );
 }
