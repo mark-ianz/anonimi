@@ -65,7 +65,7 @@ export default function MessageReactionPicker({
         type="button"
         onClick={() => setPickerOpen((prev) => !prev)}
         className={cn(
-          "flex h-7 w-7 items-center justify-center rounded-full border border-border/60 text-muted-foreground transition hover:text-foreground",
+          "cursor-pointer flex h-7 w-7 items-center justify-center rounded-full border border-border/60 text-muted-foreground transition hover:text-foreground",
           showOnHover && !hasReactions ? "opacity-0 group-hover/message:opacity-100" : "opacity-100"
         )}
       >

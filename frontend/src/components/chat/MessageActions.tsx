@@ -52,7 +52,7 @@ export default function MessageActions({
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setOpen((v) => !v)}
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          className="cursor-pointer w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
         >
           <MoreHorizontal className="w-4 h-4" />
         </button>
