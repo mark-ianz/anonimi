@@ -5,6 +5,7 @@
 /backend/.env
 /backend/.env.local
 /backend/.env.prod
+/backend/.env.production
 /backend/.env.development
 /backend/.env.example
 /backend/dist
@@ -16,6 +17,7 @@
 /frontend/.env.development
 /frontend/.env.example
 /frontend/.env.prod
+/frontend/.env.production
 /frontend/.next/
 
 /prompts
