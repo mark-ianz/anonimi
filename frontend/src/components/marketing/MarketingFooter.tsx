@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Github, Twitter } from "lucide-react";
+import { Github } from "lucide-react";
 
 const productLinks = [
   { href: "/features", label: "Features" },
@@ -37,12 +37,15 @@ export default function MarketingFooter() {
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
               Private messaging, reimagined. A secure, real-time chat platform with privacy-first identity.
             </p>
-            <div className="mt-6 flex gap-4">
-              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-                <Twitter className="w-5 h-5" />
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-                <Github className="w-5 h-5" />
+<div className="mt-6">
+              <a
+                href="https://github.com/mark-ianz"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-background/50 px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
+              >
+                <Github className="size-4" />
+                <span>GitHub</span>
               </a>
             </div>
           </div>
@@ -78,9 +81,12 @@ export default function MarketingFooter() {
           </div>
         </div>
 
-        <div className="mt-12 border-t border-border/60 pt-8">
-          <p className="text-center text-sm text-muted-foreground">
+<div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border/60 pt-8 sm:flex-row">
+          <p className="text-sm text-muted-foreground">
             © {new Date().getFullYear()} anonimi. All rights reserved.
+          </p>
+          <p className="text-xs text-muted-foreground/70">
+            Built with privacy in mind
           </p>
         </div>
       </div>
