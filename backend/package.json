@@ -4,10 +4,10 @@
   "description": "anonimi - Real-time chat application backend",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "dev": "ts-node-dev --respawn --transpile-only index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "lint": "eslint src/**/*.ts"
+    "lint": "eslint **/*.ts"
   },
   "keywords": [],
   "author": "",

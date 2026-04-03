@@ -9,7 +9,7 @@ The Next.js frontend consumes this API from all four route groups (marketing con
 ## Base URL
 
 ```
-Development: http://localhost:5000/api
+Development: https://anonimi-backend.vercel.app/api
 Production:  https://api.anonimi.com/api
 ```
 

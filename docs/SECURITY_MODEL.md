@@ -344,7 +344,7 @@ Cache-Control: public, max-age=31536000 (for immutable media)
 
 ```javascript
 {
-  origin: ["http://localhost:3000"],     // Next.js dev server
+  origin: ["https://anonimi-messaging.vercel.app"],     // Next.js dev server
   credentials: true,                     // Allow cookies
   methods: ["GET", "POST", "PATCH", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"]
@@ -514,7 +514,7 @@ All secrets and configuration are stored in environment variables, never committ
 | `JWT_REFRESH_SECRET` | Refresh token signing secret | 64+ random chars |
 | `JWT_ACCESS_EXPIRY` | Access token lifetime | `15m` |
 | `JWT_REFRESH_EXPIRY` | Refresh token lifetime | `7d` |
-| `CORS_ORIGINS` | Allowed origins (comma-separated) | `http://localhost:3000` |
+| `CORS_ORIGINS` | Allowed origins (comma-separated) | `https://anonimi-messaging.vercel.app` |
 | `STORAGE_ADAPTER` | Media storage type | `local` / `s3` |
 | `UPLOAD_DIR` | Local upload directory | `./uploads` |
 | `MAX_FILE_SIZE_MB` | Max upload size | `25` |
