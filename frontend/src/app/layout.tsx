@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Manrope, Fira_Mono, Sora } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { ThemeProvider } from "@/providers/ThemeProvider";
@@ -48,6 +49,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <Analytics />
       <body
         className={`${display.variable} ${manrope.variable} ${firaMono.variable} ${logoFont.variable} antialiased`}
       >
