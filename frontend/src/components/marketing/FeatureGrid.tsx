@@ -1,41 +1,184 @@
-import { MessageCircle, Shield, Users, Zap, Lock, Bell } from "lucide-react";
-import FeatureCard from "./FeatureCard";
+"use client";
 
-const features = [
+import { cn } from "@/lib/utils";
+import { motion, useInView } from "framer-motion";
+import { useRef } from "react";
+import {
+  MessageCircle,
+  Shield,
+  Users,
+  Zap,
+  Bell,
+  Image as ImageIcon,
+  FileText,
+} from "lucide-react";
+
+type IconName =
+  | "MessageCircle"
+  | "Shield"
+  | "Users"
+  | "Zap"
+  | "Bell"
+  | "ImageIcon"
+  | "FileText";
+
+const iconMap = {
+  MessageCircle,
+  Shield,
+  Users,
+  Zap,
+  Bell,
+  ImageIcon,
+  FileText,
+};
+
+interface FeatureCardProps {
+  iconName: IconName;
+  title: string;
+  description: string;
+  size?: "small" | "medium" | "large" | "wide" | "tall";
+  className?: string;
+  index: number;
+  isInView: boolean;
+}
+
+function FeatureCard({
+  iconName,
+  title,
+  description,
+  size = "medium",
+  className,
+  index,
+  isInView,
+}: FeatureCardProps) {
+  const Icon = iconMap[iconName];
+  const isLarge = size === "large";
+  const isTall = size === "tall";
+  const isWide = size === "wide";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+      animate={
+        isInView
+          ? { opacity: 1, y: 0, scale: 1 }
+          : { opacity: 0, y: 30, scale: 0.95 }
+      }
+      transition={{
+        duration: 0.5,
+        delay: index * 0.1,
+        ease: [0.25, 0.46, 0.45, 0.94],
+      }}
+      className={cn(
+        "group relative flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-border/50 bg-card/80 p-5 backdrop-blur-sm transition-all duration-300 hover:border-border hover:bg-card",
+        isLarge && "p-7",
+        isTall && "p-6",
+        isWide && "p-6",
+        className
+      )}
+    >
+      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+      <div>
+        <div
+          className={cn(
+            "mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/15",
+            isLarge && "mb-5 h-12 w-12",
+            isTall && "mb-5 h-11 w-11"
+          )}
+        >
+          <Icon className={cn("h-5 w-5", (isLarge || isTall) && "h-6 w-6")} />
+        </div>
+
+        <h3
+          className={cn(
+            "mb-2 text-base font-semibold text-foreground",
+            isLarge && "mb-3 text-xl",
+            isTall && "mb-3 text-lg",
+            isWide && "text-lg"
+          )}
+        >
+          {title}
+        </h3>
+
+        <p
+          className={cn(
+            "text-sm leading-relaxed text-muted-foreground",
+            isLarge && "text-base",
+            isTall && "text-[0.9rem]"
+          )}
+        >
+          {description}
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
+const features: {
+  iconName: IconName;
+  title: string;
+  description: string;
+  size: "small" | "medium" | "large" | "wide" | "tall";
+}[] = [
   {
-    icon: MessageCircle,
+    iconName: "MessageCircle",
     title: "Real-time Messaging",
-    description: "Instant delivery with typing indicators and read receipts. Conversations stay fluid across devices.",
+    description:
+      "Instant delivery with typing indicators and read receipts. Conversations stay fluid across all your devices with seamless sync.",
+    size: "large",
   },
   {
-    icon: Shield,
+    iconName: "Shield",
     title: "Privacy-First Identity",
-    description: "Your AID is generated for you with email-only signup and optional usernames. No phone required.",
+    description:
+      "Your AID is generated for you with email-only signup. No phone required, no tracking, just secure communication.",
+    size: "tall",
   },
   {
-    icon: Users,
+    iconName: "Users",
     title: "Group Chats",
-    description: "Create groups with roles, nicknames, and rich settings. Perfect for teams, friends, and communities.",
+    description:
+      "Create groups with roles, nicknames, and rich settings. Perfect for teams, friends, and communities of any size.",
+    size: "medium",
   },
   {
-    icon: Lock,
-    title: "Secure Transport",
-    description: "Messages move through encrypted channels with safety controls like requests, block, and report.",
-  },
-  {
-    icon: Zap,
+    iconName: "Zap",
     title: "Low-Latency Sync",
-    description: "Built for real-time delivery and quick catch-up when you return to a conversation.",
+    description:
+      "Built for real-time delivery and quick catch-up across devices.",
+    size: "medium",
   },
   {
-    icon: Bell,
+    iconName: "Bell",
     title: "Smart Notifications",
-    description: "Customize your notification preferences. Stay informed without being overwhelmed.",
+    description:
+      "Customize your notification preferences per chat. Stay informed without being overwhelmed by noise.",
+    size: "wide",
+  },
+  {
+    iconName: "ImageIcon",
+    title: "Media Resilience",
+    description:
+      "Reliable media delivery with previews and automatic retries even on flaky networks.",
+    size: "medium",
+  },
+  {
+    iconName: "FileText",
+    title: "Audit Logs",
+    description:
+      "Immutable audit trails and moderation logs for compliance and admin workflows.",
+    size: "medium",
   },
 ];
 
 export default function FeatureGrid() {
-  const [coreFeature, ...secondaryFeatures] = features;
+  const gridRef = useRef<HTMLDivElement>(null);
+  const isInView = useInView(gridRef, {
+    once: false,
+    amount: 0.2,
+    margin: "-50px",
+  });
 
   return (
     <section className="relative py-20 md:py-24">
@@ -46,81 +189,109 @@ export default function FeatureGrid() {
           <p className="inline-flex rounded-full border border-border/70 bg-card/70 px-3 py-1 font-mono text-[0.68rem] font-medium uppercase tracking-[0.14em] text-muted-foreground">
             Feature Set
           </p>
-          <h2 className="mt-4 max-w-3xl text-3xl leading-[0.98] font-semibold sm:text-4xl md:text-[2.95rem]">
+          <h2 className="mt-4 max-w-3xl text-balance text-3xl font-semibold leading-tight sm:text-4xl md:text-[2.95rem]">
             Private chat primitives, composed like a system.
           </h2>
-          <p className="mt-4 max-w-2xl text-base text-muted-foreground md:text-lg">
-            A bento layout built around identity safety, speed, and control, not decorative filler.
+          <p className="mt-4 max-w-2xl text-pretty text-base text-muted-foreground md:text-lg">
+            A bento layout built around identity safety, speed, and control—not
+            decorative filler.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:gap-5">
-          <div className="md:col-span-8">
+        {/* Bento Grid - 7 cards */}
+        <div
+          ref={gridRef}
+          className="grid auto-rows-[minmax(160px,auto)] grid-cols-2 gap-3 md:grid-cols-4 md:gap-4 lg:grid-cols-6"
+        >
+          {/* Large - Real-time Messaging (2x2) */}
+          <div className="col-span-2 row-span-2">
             <FeatureCard
-              icon={coreFeature.icon}
-              title={coreFeature.title}
-              description={coreFeature.description}
-              delay={0}
-              emphasized
-              size="feature"
+              iconName={features[0].iconName}
+              title={features[0].title}
+              description={features[0].description}
+              size="large"
+              className="h-full"
+              index={0}
+              isInView={isInView}
             />
           </div>
 
-          <div className="grid gap-4 md:col-span-4">
-            {secondaryFeatures.slice(0, 2).map((feature, index) => (
-              <FeatureCard
-                key={feature.title}
-                icon={feature.icon}
-                title={feature.title}
-                description={feature.description}
-                delay={(index + 1) * 90}
-                size="compact"
-              />
-            ))}
+          {/* Tall - Privacy-First Identity (1x2) */}
+          <div className="col-span-2 row-span-2 lg:col-span-2">
+            <FeatureCard
+              iconName={features[1].iconName}
+              title={features[1].title}
+              description={features[1].description}
+              size="tall"
+              className="h-full"
+              index={1}
+              isInView={isInView}
+            />
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:col-span-7 md:grid-cols-2 md:gap-5">
-            {secondaryFeatures.slice(2, 4).map((feature, index) => (
-              <FeatureCard
-                key={feature.title}
-                icon={feature.icon}
-                title={feature.title}
-                description={feature.description}
-                delay={(index + 3) * 90}
-                emphasized={index === 0}
-              />
-            ))}
+          {/* Medium - Group Chats */}
+          <div className="col-span-2 lg:col-span-2">
+            <FeatureCard
+              iconName={features[2].iconName}
+              title={features[2].title}
+              description={features[2].description}
+              size="medium"
+              className="h-full"
+              index={2}
+              isInView={isInView}
+            />
           </div>
 
-          <div className="rounded-3xl border border-border/70 bg-card/70 p-6 shadow-soft md:col-span-5 md:p-7">
-            <p className="font-mono text-[0.68rem] uppercase tracking-[0.12em] text-muted-foreground">Design Principle</p>
-            <h3 className="mt-3 text-2xl leading-tight font-semibold">Identity needs a recovery path.</h3>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              anonimi includes verification resume, resend with cooldown, and pending-account continuation from login.
-            </p>
-            <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-2xl border border-border/65 bg-background/70 p-3">
-                <p className="font-mono text-[0.65rem] uppercase tracking-[0.08em] text-muted-foreground">Recovery</p>
-                <p className="mt-1 font-medium">Resume + resend</p>
-              </div>
-              <div className="rounded-2xl border border-border/65 bg-background/70 p-3">
-                <p className="font-mono text-[0.65rem] uppercase tracking-[0.08em] text-muted-foreground">Routing</p>
-                <p className="mt-1 font-medium">Guarded verify flow</p>
-              </div>
-            </div>
+          {/* Medium - Low-Latency Sync */}
+          <div className="col-span-2 lg:col-span-2">
+            <FeatureCard
+              iconName={features[3].iconName}
+              title={features[3].title}
+              description={features[3].description}
+              size="medium"
+              className="h-full"
+              index={3}
+              isInView={isInView}
+            />
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:col-span-12 md:grid-cols-2 md:gap-5">
-            {secondaryFeatures.slice(4).map((feature, index) => (
-              <FeatureCard
-                key={feature.title}
-                icon={feature.icon}
-                title={feature.title}
-                description={feature.description}
-                delay={(index + 7) * 90}
-                size="compact"
-              />
-            ))}
+          {/* Wide - Smart Notifications */}
+          <div className="col-span-2 lg:col-span-3">
+            <FeatureCard
+              iconName={features[4].iconName}
+              title={features[4].title}
+              description={features[4].description}
+              size="wide"
+              className="h-full"
+              index={4}
+              isInView={isInView}
+            />
+          </div>
+
+          {/* Medium - Media Resilience */}
+          <div className="col-span-2 lg:col-span-2">
+            <FeatureCard
+              iconName={features[5].iconName}
+              title={features[5].title}
+              description={features[5].description}
+              size="medium"
+              className="h-full"
+              index={5}
+              isInView={isInView}
+            />
+          </div>
+
+          {/* Medium - Audit Logs */}
+          <div className="col-span-2 lg:col-span-1">
+            <FeatureCard
+              iconName={features[6].iconName}
+              title={features[6].title}
+              description={features[6].description}
+              size="medium"
+              className="h-full"
+              index={6}
+              isInView={isInView}
+            />
           </div>
         </div>
       </div>
