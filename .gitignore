@@ -4,6 +4,7 @@
 /backend/node_modules
 /backend/.env
 /backend/.env.local
+/backend/.env.prod
 /backend/.env.development
 /backend/.env.example
 /backend/dist
