@@ -32,6 +32,8 @@ const actionOptions = [
   { value: "approve_delete_user", label: "Approved Deletion" },
   { value: "reject_delete_user", label: "Rejected Deletion" },
   { value: "delete_user", label: "Deleted User" },
+  { value: "update_contact_message_status", label: "Updated Contact Message" },
+  { value: "delete_contact_message", label: "Deleted Contact Message" },
 ];
 
 export default function AdminLogsPage() {

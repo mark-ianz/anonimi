@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import * as adminService from "../services/admin.service";
+import * as contactMessageService from "../services/contactMessage.service";
 import { apiSuccess, apiPaginated } from "../utils/apiResponse";
 
 export const getUsers = async (
@@ -602,6 +603,81 @@ export const getWarnings = async (
       hasMore: !!result.nextCursor,
       limit,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getContactMessages = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const status = req.query.status as string | undefined;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+    const cursor = req.query.cursor as string | undefined;
+    const result = await contactMessageService.getContactMessages(
+      { status, limit, cursor },
+      req.user!.role as string
+    );
+    apiPaginated(res, result.messages, {
+      nextCursor: result.nextCursor,
+      hasMore: !!result.nextCursor,
+      limit,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getContactMessageById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { messageId } = req.params;
+    const message = await contactMessageService.getContactMessageById(messageId);
+    apiSuccess(res, message);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateContactMessageStatus = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { messageId } = req.params;
+    const { status } = req.body as any;
+    const result = await contactMessageService.updateContactMessageStatus(
+      messageId,
+      status,
+      req.user!._id.toString(),
+      req.ip || undefined
+    );
+    apiSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteContactMessage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { messageId } = req.params;
+    const result = await contactMessageService.deleteContactMessage(
+      messageId,
+      req.user!._id.toString(),
+      req.ip || undefined
+    );
+    apiSuccess(res, result);
   } catch (error) {
     next(error);
   }

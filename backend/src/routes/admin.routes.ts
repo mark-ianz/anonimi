@@ -16,6 +16,8 @@ import {
   updateTicketSchema,
   adminDeleteRequestParamsSchema,
   createDeleteRequestSchema,
+  contactMessageParamsSchema,
+  updateContactMessageStatusSchema,
 } from "../validators/admin.validator";
 import { replyToTicketSchema } from "../validators/support.validator";
 
@@ -72,6 +74,11 @@ router.get("/support/tickets/:ticketId", adminController.getAdminTicketById);
 router.patch("/support/tickets/:ticketId/assign", validate(updateTicketSchema), adminController.assignTicket);
 router.patch("/support/tickets/:ticketId/status", validate(updateTicketSchema), adminController.updateTicketStatus);
 router.post("/support/tickets/:ticketId/messages", validate(replyToTicketSchema), adminController.replyToTicketAsStaff);
+
+router.get("/contact-messages", requireRole(UserRole.MODERATOR, UserRole.SUPER_ADMIN, UserRole.SUPPORT_STAFF), adminController.getContactMessages);
+router.get("/contact-messages/:messageId", validate(contactMessageParamsSchema), requireRole(UserRole.MODERATOR, UserRole.SUPER_ADMIN, UserRole.SUPPORT_STAFF), adminController.getContactMessageById);
+router.patch("/contact-messages/:messageId/status", validate(contactMessageParamsSchema), validate(updateContactMessageStatusSchema), requireRole(UserRole.MODERATOR, UserRole.SUPER_ADMIN, UserRole.SUPPORT_STAFF), adminController.updateContactMessageStatus);
+router.delete("/contact-messages/:messageId", validate(contactMessageParamsSchema), requireRole(UserRole.MODERATOR, UserRole.SUPER_ADMIN, UserRole.SUPPORT_STAFF), adminController.deleteContactMessage);
 
 router.get("/groups", requireRole(UserRole.MODERATOR, UserRole.SUPER_ADMIN), adminController.getGroups);
 router.get(

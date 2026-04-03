@@ -2,19 +2,45 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import api from "@/lib/api";
 
 export default function ContactForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setError(null);
+
+    const formData = new FormData(e.currentTarget);
+    const phoneNumber = formData.get("phone_number");
+
+    if (phoneNumber && phoneNumber.toString().trim().length > 0) {
+      return;
+    }
+
     setIsLoading(true);
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setIsLoading(false);
-    setSubmitted(true);
+
+    try {
+      const name = formData.get("name") as string;
+      const email = formData.get("email") as string;
+      const subject = formData.get("subject") as string;
+      const message = formData.get("message") as string;
+
+      await api.post("/contact", {
+        name,
+        email,
+        subject,
+        message,
+      });
+
+      setIsLoading(false);
+      setSubmitted(true);
+    } catch (err: any) {
+      setIsLoading(false);
+      setError(err.response?.data?.message || "Failed to send message. Please try again.");
+    }
   }
 
   if (submitted) {
@@ -42,6 +68,16 @@ export default function ContactForm() {
 
   return (
     <form onSubmit={onSubmit} className="mt-6 space-y-4">
+      <input
+        type="text"
+        name="phone_number"
+        id="phone_number"
+        className="absolute -left-[9999px] top-0"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+      />
+      
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <label htmlFor="name" className="text-sm font-medium">Name</label>
@@ -87,6 +123,12 @@ export default function ContactForm() {
           required 
         />
       </div>
+
+      {error && (
+        <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+          {error}
+        </div>
+      )}
 
       <Button type="submit" className="cursor-pointer p-5 w-full" disabled={isLoading}>
         {isLoading ? "Sending..." : "Send Message"}

@@ -20,6 +20,8 @@ const actionLabels: Record<string, string> = {
   approve_delete_user: "Approved User Deletion",
   reject_delete_user: "Rejected User Deletion",
   delete_user: "Deleted User",
+  update_contact_message_status: "Updated Contact Message Status",
+  delete_contact_message: "Deleted Contact Message",
 };
 
 const actionColors: Record<string, string> = {
@@ -34,6 +36,8 @@ const actionColors: Record<string, string> = {
   approve_delete_user: "text-green-600 dark:text-green-400",
   reject_delete_user: "text-muted-foreground",
   delete_user: "text-destructive",
+  update_contact_message_status: "text-blue-600 dark:text-blue-400",
+  delete_contact_message: "text-destructive",
 };
 
 interface AdminLogEntryProps {

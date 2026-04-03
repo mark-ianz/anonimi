@@ -85,3 +85,15 @@ export const adminDeleteRequestParamsSchema = z.object({
     requestId: z.string(),
   }),
 });
+
+export const contactMessageParamsSchema = z.object({
+  params: z.object({
+    messageId: z.string(),
+  }),
+});
+
+export const updateContactMessageStatusSchema = z.object({
+  body: z.object({
+    status: z.enum(["unread", "read", "in_progress", "resolved", "spam"]),
+  }),
+});

@@ -17,6 +17,8 @@ import {
   ClipboardCheck,
   LogOut,
   MessageCircle,
+  Mail,
+  MessageCircleMore,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useAuth } from "@/hooks/useAuth";
@@ -58,6 +60,7 @@ const navSections: NavSection[] = [
     title: "Support & Moderation",
     items: [
       { href: "/admin/support", label: "Support Tickets", icon: LifeBuoy, roles: ADMIN_ROLES },
+      { href: "/admin/contact-messages", label: "Contact Messages", icon: Mail, roles: ADMIN_ROLES },
       { href: "/admin/reports", label: "Reports", icon: Flag, roles: ADMIN_ROLES },
       { href: "/admin/warnings", label: "Warnings", icon: AlertTriangle, roles: ADMIN_ROLES },
       { href: "/admin/bans", label: "Bans", icon: Ban, roles: MOD_ROLES },

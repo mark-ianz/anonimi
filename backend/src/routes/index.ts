@@ -12,6 +12,7 @@ import supportRoutes from "./support.routes";
 import mediaRoutes from "./media.routes";
 import adminRoutes from "./admin.routes";
 import notificationRoutes from "./notification.routes";
+import publicRoutes from "./public.routes";
 
 const router = Router();
 
@@ -28,6 +29,7 @@ router.use("/support", supportRoutes);
 router.use("/media", mediaRoutes);
 router.use("/admin", adminRoutes);
 router.use("/notifications", notificationRoutes);
+router.use("/contact", publicRoutes);
 
 router.get("/health", (req, res) => {
   res.json({
