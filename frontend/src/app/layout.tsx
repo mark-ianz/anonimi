@@ -36,8 +36,8 @@ export const metadata: Metadata = {
   title: "anonimi - Real-time Chat",
   description: "A modern real-time messaging platform",
   icons: {
-    icon: "/images/icon/anonimi-logo-no-bg.png",
-    apple: "/images/icon/anonimi-logo-no-bg.png",
+    icon: "/images/icon/favicon.ico",
+    apple: "/images/icon/favicon.ico",
   },
 };
 
