@@ -592,7 +592,7 @@ Admin Support Updates Test Results v6:
 5. -- Passed
 6. -- Passed
 
---
+-- Done
 
 Admin Permissions Update:
 
@@ -624,7 +624,7 @@ Bug: Support Staff and moderator has the admin button on tabs but if clicked, no
     - Support (full access)
     - Warnings (view only? idk if should support staff should have a view permission or send warning please help me decide)
 
---
+-- Done
   UI Updates:
     - If the call or video call icon was clicked, show a toast saying something similar to that this is not implemented yet or soon.
     - Move the global search from the sidebar to the very top and with the same container of the notification bell but they will be space-between.
@@ -646,18 +646,30 @@ Bug: Support Staff and moderator has the admin button on tabs but if clicked, no
 
 Group owners can mute members. If member is muted, they can't be able to send message and will have a banner on the conversation saying that they are muted
 
---
+-- Done
 
 Add a reply functionality, this allows the users to reply to any other messages even if it's media. Reply works on both private and group.
 
---
+-- Done
 
 Mute conversation feature: User should be able to mute the converastion, they won't receive a notification or notification count won't count on the muted conversation
 
---
+-- Done
 
 stealth-setup-preview: setting up the timer for stealth.
 stealth-preview: preview message of stealth mode with a ticking time.
 stealthy-message-preview: preview of an expired message.
 
 temporary-account-conversation-preview: conversation to someone with temp account
+
+--
+
+Make the /contact page functional. This is for non-logged in user to send us a message. Since this is a public input, add a honeypot with an id/name of "phone_number" the frontend will check this and if it somehow has a value, it will not send the request but for somehow it goes through and the backend reads that has a value, automatically invalidate the message.
+
+If the message is valid, this will go through the admin panel. Only moderator and super_admin can view this. It will be under the Support & Moderation section with it's own tab called Messages. The tab will be under Support Tickets.
+
+Moderator and Super admin can put status to this, read, resolved, spam, etc...
+
+If moderator acted or change status, it will be log on Logs. 
+
+Note: Only super_admin can view the log that admin took action.
