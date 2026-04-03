@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import ThemeToggle from "@/components/marketing/ThemeToggle";
 import { Button } from "@/components/ui/button";
 
 const navLinks = [
@@ -31,9 +32,7 @@ export default function MarketingNavbar() {
                 priority
               />
             </div>
-            <span className="font-logo text-lg font-semibold">
-              anonimi
-            </span>
+            <span className="font-logo text-lg font-semibold">anonimi</span>
           </Link>
 
           <nav className="hidden items-center gap-7 lg:flex">
@@ -52,15 +51,29 @@ export default function MarketingNavbar() {
         </div>
 
         <div className="hidden items-center gap-2 sm:flex">
-          <Button variant="ghost" className="h-9 rounded-full px-4 font-mono text-[0.68rem] font-medium uppercase tracking-[0.08em]" asChild>
-            <Link href="/features" className="lg:hidden">Features</Link>
+          <Button
+            variant="ghost"
+            className="h-9 rounded-full px-4 font-mono text-[0.68rem] font-medium uppercase tracking-[0.08em]"
+            asChild
+          >
+            <Link href="/features" className="lg:hidden">
+              Features
+            </Link>
           </Button>
-          <Button variant="ghost" className="h-9 rounded-full px-4 font-mono text-[0.68rem] font-medium uppercase tracking-[0.08em]" asChild>
-              <Link href="/login">Log in</Link>
-            </Button>
-          <Button className="h-9 rounded-full px-4 font-mono text-[0.68rem] font-medium uppercase tracking-[0.08em]" asChild>
-              <Link href="/register">Get Started</Link>
-            </Button>
+          <Button
+            variant="ghost"
+            className="h-9 rounded-full px-4 font-mono text-[0.68rem] font-medium uppercase tracking-[0.08em]"
+            asChild
+          >
+            <Link href="/login">Log in</Link>
+          </Button>
+          <Button
+            className="h-9 rounded-full px-4 font-mono text-[0.68rem] font-medium uppercase tracking-[0.08em]"
+            asChild
+          >
+            <Link href="/register">Get Started</Link>
+          </Button>
+          <ThemeToggle />
         </div>
 
         <button
@@ -86,10 +99,17 @@ export default function MarketingNavbar() {
               </Link>
             ))}
             <div className="mt-3 flex gap-2 border-t border-border/60 pt-3">
-              <Button variant="ghost" className="h-9 flex-1 font-mono text-[0.68rem] font-medium uppercase tracking-[0.08em]" asChild>
+              <Button
+                variant="ghost"
+                className="h-9 flex-1 font-mono text-[0.68rem] font-medium uppercase tracking-[0.08em]"
+                asChild
+              >
                 <Link href="/login">Log in</Link>
               </Button>
-              <Button className="h-9 flex-1 font-mono text-[0.68rem] font-medium uppercase tracking-[0.08em]" asChild>
+              <Button
+                className="h-9 flex-1 font-mono text-[0.68rem] font-medium uppercase tracking-[0.08em]"
+                asChild
+              >
                 <Link href="/register">Get Started</Link>
               </Button>
             </div>
