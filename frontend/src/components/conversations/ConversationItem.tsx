@@ -223,19 +223,6 @@ export default function ConversationItem({
       qc.invalidateQueries({ queryKey: ["conversation", conversation.id] });
 
 
-          <button
-            onClick={() => {
-              if (isConversationMuted) {
-                unmuteConversationMutation.mutate();
-              } else {
-                muteConversationMutation.mutate();
-              }
-            }}
-            className="flex items-center gap-2.5 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
-          >
-            <BellOff className="w-4 h-4 text-muted-foreground shrink-0" />
-            {isConversationMuted ? "Unmute" : "Mute"}
-          </button>
       if (isActive) {
         const fallback = pathname?.startsWith("/archive") ? "/archive" : "/chat";
         router.push(fallback);
@@ -349,6 +336,9 @@ export default function ConversationItem({
             >
               {displayName}
             </span>
+            {isConversationMuted && (
+              <BellOff className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60 ml-1" />
+            )}
             {isTempParticipant && !isDeletedParticipant && (
               <span className="ml-2 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-700 dark:text-amber-300">
                 Temporary
@@ -415,13 +405,16 @@ export default function ConversationItem({
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                setMenuOpen(false);
-                toast.info("Mute is coming soon.");
+                if (isConversationMuted) {
+                  unmuteConversationMutation.mutate();
+                } else {
+                  muteConversationMutation.mutate();
+                }
               }}
               className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted/60"
             >
               <BellOff className="h-4 w-4 text-muted-foreground" />
-              Mute
+              {isConversationMuted ? "Unmute" : "Mute"}
             </button>
             <button
               type="button"
