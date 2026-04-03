@@ -58,14 +58,14 @@ export default function ContactPage() {
               </div>
               <div>
                 <h3 className="font-medium">Location</h3>
-                <p className="text-muted-foreground">San Francisco, CA</p>
+                <p className="text-muted-foreground">Metro Manila, PH</p>
               </div>
             </div>
 
             <div className="pt-6 border-t border-border/45">
               <h3 className="font-medium">Support Hours</h3>
               <p className="text-muted-foreground mt-2">
-                Monday - Friday: 9am - 6pm PST<br />
+                Monday - Friday: 9am - 6pm UTC+8<br />
                 Saturday - Sunday: Closed
               </p>
             </div>
