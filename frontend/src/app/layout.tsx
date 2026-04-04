@@ -6,6 +6,7 @@ import "./globals.css";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { Toaster } from "sonner";
+import { baseMetadata } from "@/lib/metadata";
 
 const display = Fraunces({
   variable: "--font-editorial",
@@ -34,14 +35,7 @@ const logoFont = Sora({
   weight: ["500", "600", "700"],
 });
 
-export const metadata: Metadata = {
-  title: "anonimi - Real-time Chat",
-  description: "A modern real-time messaging platform",
-  icons: {
-    icon: "/images/icon/favicon.ico",
-    apple: "/images/icon/favicon.ico",
-  },
-};
+export const metadata: Metadata = baseMetadata;
 
 export default function RootLayout({
   children,

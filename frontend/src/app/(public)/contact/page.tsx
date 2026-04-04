@@ -3,8 +3,11 @@ import ContactForm from "@/components/marketing/ContactForm";
 import { Mail, MapPin } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Contact anonimi",
+  title: "Contact",
   description: "Get in touch with the anonimi team.",
+  alternates: {
+    canonical: "/contact",
+  },
 };
 
 export default function ContactPage() {

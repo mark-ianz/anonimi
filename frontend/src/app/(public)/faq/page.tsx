@@ -13,8 +13,11 @@ import {
 import { MessageCircle, Mail, FileText } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "FAQ — anonimi",
+  title: "FAQ",
   description: "Frequently asked questions about anonimi.",
+  alternates: {
+    canonical: "/faq",
+  },
 };
 
 export default function FAQPage() {

@@ -18,6 +18,9 @@ import {
 export const metadata: Metadata = {
   title: "About anonimi",
   description: "Learn about the anonimi platform and our mission to create identity-safe conversations.",
+  alternates: {
+    canonical: "/about",
+  },
 };
 
 export default function AboutPage() {

@@ -16,9 +16,12 @@ import {
 } from "@/components/marketing/AnimatedSection";
 
 export const metadata: Metadata = {
-  title: "anonimi Features",
+  title: "Features",
   description:
     "Explore anonimi's messaging, groups, privacy, and moderation features.",
+  alternates: {
+    canonical: "/features",
+  },
 };
 
 export default function FeaturesPage() {

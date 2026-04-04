@@ -4,6 +4,10 @@ import { SocketProvider } from "@/providers/SocketProvider";
 
 export const metadata: Metadata = {
   title: "anonimi Admin",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 function AdminLayoutWithSocket({ children }: { children: React.ReactNode }) {

@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
+import { baseMetadata } from "@/lib/metadata";
 import MarketingNavbar from "@/components/marketing/MarketingNavbar";
 import MarketingFooter from "@/components/marketing/MarketingFooter";
 import BackToTop from "@/components/marketing/BackToTop";
 
 export const metadata: Metadata = {
+  ...baseMetadata,
   title: "anonimi — Private Messaging, Reimagined",
-  description: "Secure, real-time messaging with AID-first identity. Sign up free.",
   openGraph: {
+    ...baseMetadata.openGraph,
     title: "anonimi — Private Messaging, Reimagined",
-    description: "Secure, real-time messaging with AID-first identity. Sign up free.",
-    type: "website",
+  },
+  twitter: {
+    ...baseMetadata.twitter,
+    title: "anonimi — Private Messaging, Reimagined",
   },
 };
 
