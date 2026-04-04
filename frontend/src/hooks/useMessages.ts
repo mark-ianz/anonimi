@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   useInfiniteQuery,
   useMutation,
@@ -20,6 +20,8 @@ import type {
   ReplyPreview,
 } from "@/types/message";
 import { MESSAGES_PER_PAGE } from "@/lib/constants";
+import { encryptMessage, decryptMessage, importKeyFromBase64 } from "@/lib/e2eeCrypto";
+import { getConversationKey as getConvKeyFromStore } from "@/lib/e2eeKeyStore";
 
 const STEALTH_DURATIONS_MS: Record<string, number> = {
   "1m": 60 * 1000,
@@ -139,11 +141,37 @@ export function useMessages(conversationId: string | null) {
   const messages = [...queryMessages, ...extraMessages];
 
   const sendMessage = useCallback(
-    (payload: Omit<SendMessagePayload, "tempId"> & { replyPreview?: ReplyPreview | null }) => {
+    async (payload: Omit<SendMessagePayload, "tempId"> & { replyPreview?: ReplyPreview | null }) => {
       if (!user) return;
       const tempId = uuidv4();
       const isStealth = !!payload.stealthDuration;
       const stealthExpiresAt = getStealthExpiresAt(payload.stealthDuration);
+
+      let e2eeCipher: string | undefined;
+      let e2eeIv: string | undefined;
+      let e2eeTag: string | undefined;
+      let contentToSend = payload.content;
+
+      if (payload.content && !isStealth) {
+        try {
+          const convKeyData = await getConvKeyFromStore(payload.conversationId);
+          if (convKeyData) {
+            console.log("[E2EE] Encrypting message for conversation", payload.conversationId);
+            const aesKey = await importKeyFromBase64(convKeyData.key);
+            const encrypted = await encryptMessage(payload.content, aesKey);
+            e2eeCipher = encrypted.cipherText;
+            e2eeIv = encrypted.iv;
+            e2eeTag = encrypted.tag;
+            contentToSend = null;
+          } else {
+            console.warn("[E2EE] No conversation key found for", payload.conversationId, "- sending plaintext");
+          }
+        } catch (err) {
+          console.error("[E2EE] Encryption failed, falling back to plaintext:", err);
+          contentToSend = payload.content;
+        }
+      }
+
       const optimistic: Message = {
         id: tempId,
         conversationId: payload.conversationId,
@@ -154,6 +182,10 @@ export function useMessages(conversationId: string | null) {
         stealthExpiresAt,
         stealthExpiredAt: null,
         stealthContentLength: isStealth ? (payload.content ?? "").length : null,
+        isE2ee: !!e2eeCipher,
+        e2eeCipher: e2eeCipher ?? null,
+        e2eeIv: e2eeIv ?? null,
+        e2eeTag: e2eeTag ?? null,
         mediaUrl: payload.mediaUrl ?? null,
         fileName: payload.fileName ?? null,
         fileSize: payload.fileSize ?? null,
@@ -170,20 +202,32 @@ export function useMessages(conversationId: string | null) {
 
       addMessage(payload.conversationId, optimistic);
       updateConversationLastMessage(payload.conversationId, {
-        content: isStealth ? "[Stealth]" : payload.content,
+        content: isStealth ? "[Stealth]" : (e2eeCipher ? "[Encrypted]" : payload.content),
         senderId: user.id,
         type: payload.type,
         timestamp: optimistic.createdAt,
       });
 
       const { replyPreview, ...payloadToSend } = payload;
+      const socketPayload: Record<string, unknown> = {
+        ...payloadToSend,
+        tempId,
+        content: contentToSend,
+      };
+
+      if (e2eeCipher) {
+        socketPayload.e2eeCipher = e2eeCipher;
+        socketPayload.e2eeIv = e2eeIv;
+        socketPayload.e2eeTag = e2eeTag;
+      }
+
       const socket = getChatSocket();
       if (socket.connected) {
-        socket.emit("message:send", { ...payloadToSend, tempId });
+        socket.emit("message:send", socketPayload);
       } else {
         // Fallback to REST
         api
-          .post("/messages", { ...payloadToSend })
+          .post("/messages", socketPayload)
           .then((res) => {
             replaceTempMessage(
               payload.conversationId,
@@ -377,6 +421,73 @@ export function useMessages(conversationId: string | null) {
     },
     onError: () => toast.error("Failed to remove reaction."),
   });
+
+  const decryptedIds = useRef(new Set<string>());
+  const processingRef = useRef(false);
+
+  useEffect(() => {
+    if (!conversationId || messages.length === 0 || processingRef.current) return;
+
+    const e2eeMessages = messages.filter(
+      (m) => m.isE2ee && m.e2eeCipher && m.e2eeIv && m.e2eeTag && !decryptedIds.current.has(m.id) && !m.content
+    );
+
+    if (e2eeMessages.length === 0) return;
+
+    processingRef.current = true;
+
+    getConvKeyFromStore(conversationId).then((keyData) => {
+      if (!keyData) {
+        processingRef.current = false;
+        return;
+      }
+
+      return importKeyFromBase64(keyData.key).then((aesKey) => {
+        const updates: Record<string, string> = {};
+
+        const decryptNext = async (index: number) => {
+          if (index >= e2eeMessages.length) {
+            if (Object.keys(updates).length > 0) {
+              for (const [id, content] of Object.entries(updates)) {
+                updateMessage(conversationId, id, { content });
+              }
+              qc.setQueryData(
+                ["messages", conversationId],
+                (old: { pages: { data: Message[] }[] } | undefined) => {
+                  if (!old) return old;
+                  return {
+                    ...old,
+                    pages: old.pages.map((page) => ({
+                      ...page,
+                      data: page.data.map((m) =>
+                        updates[m.id] ? { ...m, content: updates[m.id] } : m
+                      ),
+                    })),
+                  };
+                }
+              );
+            }
+            processingRef.current = false;
+            return;
+          }
+
+          const msg = e2eeMessages[index];
+          try {
+            const decrypted = await decryptMessage(msg.e2eeCipher!, msg.e2eeIv!, msg.e2eeTag!, aesKey);
+            updates[msg.id] = decrypted;
+            decryptedIds.current.add(msg.id);
+          } catch {
+            // Skip failed
+          }
+          await decryptNext(index + 1);
+        };
+
+        return decryptNext(0);
+      });
+    }).catch(() => {
+      processingRef.current = false;
+    });
+  }, [conversationId, messages]);
 
   return {
     messages,

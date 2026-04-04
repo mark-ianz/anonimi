@@ -17,13 +17,16 @@ interface MessageSendPayload {
   stealthDuration?: "1m" | "5m" | "15m" | "30m" | "1h" | "3h" | "6h" | "12h" | "24h";
   replyToId?: string;
   tempId: string;
+  e2eeCipher?: string;
+  e2eeIv?: string;
+  e2eeTag?: string;
 }
 
 export const setupChatHandler = (io: Server, socket: Socket): void => {
   socket.data.activeConversationId = null;
 
   socket.on("message:send", async (payload: MessageSendPayload) => {
-    const { conversationId, type, content, mediaUrl, fileName, fileSize, stealthDuration, replyToId, tempId } = payload;
+    const { conversationId, type, content, mediaUrl, fileName, fileSize, stealthDuration, replyToId, tempId, e2eeCipher, e2eeIv, e2eeTag } = payload;
     try {
       const userId = socket.data.user?.userId;
 
@@ -54,7 +57,6 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
         }
       }
 
-      // Delegate to service — handles blocks, message requests, auto-accept, and notifications
       const result = await chatService.sendMessage(
         userId,
         conversationId,
@@ -63,10 +65,9 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
         mediaUrl,
         fileName,
         fileSize,
-        { suppressNotificationUserIds, stealthDuration, replyToId }
+        { suppressNotificationUserIds, stealthDuration, replyToId, e2eeCipher, e2eeIv, e2eeTag }
       );
 
-      // Acknowledge to sender
       socket.emit("message:ack", {
         tempId,
         messageId: result.message.id,
@@ -96,6 +97,10 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
           stealthExpiresAt: result.message.stealthExpiresAt,
           stealthExpiredAt: result.message.stealthExpiredAt,
           stealthContentLength: result.message.stealthContentLength,
+          isE2ee: result.message.isE2ee,
+          e2eeCipher: result.message.e2eeCipher,
+          e2eeIv: result.message.e2eeIv,
+          e2eeTag: result.message.e2eeTag,
           mediaUrl: result.message.mediaUrl,
           fileName: result.message.fileName,
           fileSize: result.message.fileSize,

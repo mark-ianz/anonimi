@@ -15,7 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import api from "@/lib/api";
-import { EyeOff, MessageCircle, Pencil, User, X } from "lucide-react";
+import { EyeOff, MessageCircle, Pencil, User, X, Lock } from "lucide-react";
 
 interface MessageBubbleProps {
   message: Message;
@@ -525,6 +525,9 @@ export default function MessageBubble({
               ) : message.content ? (
                 <p className="whitespace-pre-wrap break-all">
                   {message.content}
+                  {message.isE2ee && (
+                    <Lock className="inline-block ml-1 h-3 w-3 opacity-50" />
+                  )}
                 </p>
               ) : null}
 

@@ -13,6 +13,7 @@ import mediaRoutes from "./media.routes";
 import adminRoutes from "./admin.routes";
 import notificationRoutes from "./notification.routes";
 import publicRoutes from "./public.routes";
+import e2eeRoutes from "./e2ee.routes";
 
 const router = Router();
 
@@ -30,6 +31,7 @@ router.use("/media", mediaRoutes);
 router.use("/admin", adminRoutes);
 router.use("/notifications", notificationRoutes);
 router.use("/contact", publicRoutes);
+router.use("/e2ee", e2eeRoutes);
 
 router.get("/health", (req, res) => {
   res.json({

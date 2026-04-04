@@ -125,6 +125,16 @@ const serializeStealth = (message: any) => {
     };
   }
 
+  if (message.isE2ee) {
+    return {
+      isStealth: true,
+      content: null,
+      stealthExpiresAt: message.stealthExpiresAt ? new Date(message.stealthExpiresAt) : null,
+      stealthExpiredAt: message.stealthExpiredAt ?? null,
+      stealthContentLength: message.stealthContentLength ?? 0,
+    };
+  }
+
   const expiresAt = message.stealthExpiresAt ? new Date(message.stealthExpiresAt) : null;
   const expired = !!message.stealthExpiredAt || (expiresAt ? expiresAt.getTime() <= Date.now() : true);
 
@@ -319,7 +329,9 @@ export const getConversationRequests = async (userId: string) => {
     .sort({ createdAt: -1 })
     .lean();
 
-  return (requests as any[]).map((r) => {
+  return (requests as any[])
+    .filter((r) => r.conversationId)
+    .map((r) => {
     const fromUser = r.fromUserId ?? null;
     const fallbackFromUserId = r.fromUserId?.toString?.() ?? "";
 
@@ -789,6 +801,10 @@ export const getMessages = async (
         stealthExpiresAt: stealth.stealthExpiresAt,
         stealthExpiredAt: stealth.stealthExpiredAt,
         stealthContentLength: stealth.stealthContentLength,
+        isE2ee: m.isE2ee ?? false,
+        e2eeCipher: m.e2eeCipher ?? null,
+        e2eeIv: m.e2eeIv ?? null,
+        e2eeTag: m.e2eeTag ?? null,
         mediaUrl: m.mediaUrl,
         fileName: m.fileName,
         fileSize: m.fileSize,
@@ -850,6 +866,7 @@ export const searchMessages = async (
     deletedFor: { $ne: userObjectId },
     unsent: false,
     isStealth: { $ne: true },
+    isE2ee: { $ne: true },
     type: "text",
     content: { $regex: queryRegex },
   };
@@ -1034,6 +1051,9 @@ export const sendMessage = async (
     suppressNotificationUserIds?: string[];
     stealthDuration?: string;
     replyToId?: string;
+    e2eeCipher?: string;
+    e2eeIv?: string;
+    e2eeTag?: string;
   }
 ) => {
   const conversation = await Conversation.findById(conversationId);
@@ -1198,13 +1218,18 @@ export const sendMessage = async (
 
     const stealthExpiresAt = isStealth ? new Date(Date.now() + stealthDurationMs!) : undefined;
     const stealthPayload = isStealth ? encryptStealthContent(trimmedContent) : null;
+    const isE2ee = !!options?.e2eeCipher;
 
     const message = await Message.create({
       conversationId: conversation._id,
       senderId: new Types.ObjectId(senderId),
       type,
-      content: isStealth ? undefined : content,
+      content: isStealth || isE2ee ? undefined : content,
       isStealth,
+      isE2ee,
+      e2eeCipher: options?.e2eeCipher,
+      e2eeIv: options?.e2eeIv,
+      e2eeTag: options?.e2eeTag,
       stealthExpiresAt,
       stealthContentCipher: stealthPayload?.cipherText,
       stealthContentIv: stealthPayload?.iv,
@@ -1270,7 +1295,7 @@ export const sendMessage = async (
       });
     }
 
-    const responseContent = isStealth ? trimmedContent : content;
+    const responseContent = isE2ee ? null : (isStealth ? trimmedContent : content);
 
     return {
       message: {
@@ -1280,6 +1305,10 @@ export const sendMessage = async (
         type: message.type,
         content: responseContent,
         isStealth,
+        isE2ee,
+        e2eeCipher: message.e2eeCipher ?? null,
+        e2eeIv: message.e2eeIv ?? null,
+        e2eeTag: message.e2eeTag ?? null,
         stealthExpiresAt: stealthExpiresAt ?? null,
         stealthExpiredAt: null,
         stealthContentLength: isStealth ? trimmedContent.length : null,
@@ -1335,13 +1364,18 @@ export const sendMessage = async (
 
   const stealthExpiresAt = isStealth ? new Date(Date.now() + stealthDurationMs!) : undefined;
   const stealthPayload = isStealth ? encryptStealthContent(trimmedContent) : null;
+  const isE2ee = !!options?.e2eeCipher;
 
   const message = await Message.create({
     conversationId: conversation._id,
     senderId: new Types.ObjectId(senderId),
     type,
-    content: isStealth ? undefined : content,
+    content: isStealth || isE2ee ? undefined : content,
     isStealth,
+    isE2ee,
+    e2eeCipher: options?.e2eeCipher,
+    e2eeIv: options?.e2eeIv,
+    e2eeTag: options?.e2eeTag,
     stealthExpiresAt,
     stealthContentCipher: stealthPayload?.cipherText,
     stealthContentIv: stealthPayload?.iv,
@@ -1404,7 +1438,7 @@ export const sendMessage = async (
     });
   }
 
-  const responseContent = isStealth ? trimmedContent : content;
+  const responseContent = isE2ee ? null : (isStealth ? trimmedContent : content);
 
   return {
     message: {
@@ -1414,6 +1448,10 @@ export const sendMessage = async (
       type: message.type,
       content: responseContent,
       isStealth,
+      isE2ee,
+      e2eeCipher: message.e2eeCipher ?? null,
+      e2eeIv: message.e2eeIv ?? null,
+      e2eeTag: message.e2eeTag ?? null,
       stealthExpiresAt: stealthExpiresAt ?? null,
       stealthExpiredAt: null,
       stealthContentLength: isStealth ? trimmedContent.length : null,

@@ -24,6 +24,8 @@ import GroupAvatar from "@/components/shared/GroupAvatar";
 import UserAvatar from "@/components/shared/UserAvatar";
 import TemporaryAccountBadge from "@/components/shared/TemporaryAccountBadge";
 import TemporaryAccountModal from "@/components/shared/TemporaryAccountModal";
+import { useE2EEKeyExchange } from "@/hooks/useE2EEKeyExchange";
+import { useGroupKeyExchange, useGroupKeyReception } from "@/hooks/useGroupKeyExchange";
 
 interface ChatViewProps {
   conversation: Conversation;
@@ -61,6 +63,16 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
   const { status: presenceStatus, lastSeen } = usePresence(
     participantId,
     conversation.participant?.onlineStatus ?? "offline"
+  );
+
+  useE2EEKeyExchange(
+    conversation.id,
+    isGroup ? null : (participantId ?? null)
+  );
+
+  useGroupKeyExchange(
+    isGroup ? conversation.id : null,
+    isGroup ? groupId : null
   );
 
   const displayName = isGroup

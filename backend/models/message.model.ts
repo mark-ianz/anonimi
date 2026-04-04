@@ -49,6 +49,11 @@ const messageSchema = new Schema<IMessage>(
     editedBy: { type: Schema.Types.ObjectId, ref: "User" },
     deletedFor: [{ type: Schema.Types.ObjectId, ref: "User" }],
     unsent: { type: Boolean, default: false },
+    isE2ee: { type: Boolean, default: false },
+    e2eeCipher: { type: String },
+    e2eeIv: { type: String },
+    e2eeTag: { type: String },
+    e2eeKeyId: { type: String },
   },
   { timestamps: true }
 );

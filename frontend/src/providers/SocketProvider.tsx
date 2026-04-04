@@ -9,11 +9,14 @@ import type { Conversation } from "@/types/conversation";
 import { toast } from "sonner";
 import { getChatSocket, disconnectSockets } from "@/lib/socket";
 import api from "@/lib/api";
+import { decryptMessage, importKeyFromBase64, importPrivateKey, deriveSharedSecret, exportKeyAsBase64, decryptKeyWithSharedSecret } from "@/lib/e2eeCrypto";
+import { getConversationKey, getUserKeyPair, saveConversationKey } from "@/lib/e2eeKeyStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useSocketStore } from "@/stores/socketStore";
 import { useChatStore } from "@/stores/chatStore";
 import { usePresenceStore } from "@/stores/presenceStore";
 import { useTypingStore } from "@/stores/typingStore";
+import { useE2EEKeyRegistration } from "@/hooks/useE2EEKeyRegistration";
 import type {
   MessageAckPayload,
   MessageReceivePayload,
@@ -63,7 +66,7 @@ export function useSocketContext() {
 
 export function SocketProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const { setChatStatus, setConnectedFeedbackUntil } = useSocketStore();
   const qc = useQueryClient();
   const {
@@ -77,8 +80,72 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   } = useChatStore();
   const { setPresence } = usePresenceStore();
   const { setTyping } = useTypingStore();
+  useE2EEKeyRegistration();
   const socketRef = useRef<Socket | null>(null);
   const hadOfflineRef = useRef(false);
+  const e2eeRegistered = useRef(false);
+
+  const registerE2EEKeys = async () => {
+    if (e2eeRegistered.current || !user) return;
+    e2eeRegistered.current = true;
+
+    try {
+      const { getUserKeyPair, saveUserKeyPair, markSessionInitialized, needsMigration, clearAllKeys, markMigrationComplete } = await import("@/lib/e2eeKeyStore");
+
+      // Migration: clear stale IndexedDB data from pre-E2EE sessions
+      const shouldMigrate = await needsMigration();
+      if (shouldMigrate) {
+        console.log("[E2EE-socket] Running migration v1 - clearing stale IndexedDB");
+        await clearAllKeys();
+        await markMigrationComplete();
+      }
+
+      console.log("[E2EE-socket] Checking keys for user", user.id);
+      const serverRes = await api.get(`/e2ee/keys/${user.id}`).catch(() => null);
+
+      if (serverRes?.data?.data) {
+        console.log("[E2EE-socket] Keys already exist on server");
+        const localKeys = await getUserKeyPair();
+        if (!localKeys) {
+          await saveUserKeyPair({
+            publicKey: serverRes.data.data.publicKey,
+            encryptedPrivateKey: "",
+            iv: "",
+            tag: "",
+          });
+        }
+        await markSessionInitialized();
+        return;
+      }
+
+      console.log("[E2EE-socket] Generating new key pair");
+      const { generateKeyPair, exportPublicKey, exportPrivateKey } = await import("@/lib/e2eeCrypto");
+
+      const keyPair = await generateKeyPair();
+      const publicKey = await exportPublicKey(keyPair.publicKey);
+      const privateKey = await exportPrivateKey(keyPair.privateKey);
+
+      await saveUserKeyPair({
+        publicKey,
+        encryptedPrivateKey: privateKey,
+        iv: "",
+        tag: "",
+      });
+
+      await api.post("/e2ee/keys/register", {
+        publicKey,
+        encryptedPrivateKey: privateKey,
+        iv: "",
+        tag: "",
+      });
+
+      console.log("[E2EE-socket] Registration complete for user", user.id);
+      await markSessionInitialized();
+    } catch (error: any) {
+      console.error("[E2EE-socket] Registration failed:", error?.response?.data ?? error.message);
+      e2eeRegistered.current = false;
+    }
+  };
 
   const baseTitleRef = useRef("anonimi - Real-time Chat");
   const [contactRequestUnread, setContactRequestUnread] = useState(0);
@@ -149,6 +216,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         setConnectedFeedbackUntil(Date.now() + 3500);
         hadOfflineRef.current = false;
       }
+      // Ensure E2EE keys are registered on every connect
+      registerE2EEKeys();
     };
 
     const handleDisconnect = () => {
@@ -221,21 +290,50 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     });
 
     // New message from another user
-    socket.on("message:receive", (payload: MessageReceivePayload) => {
+    socket.on("message:receive", async (payload: MessageReceivePayload) => {
       const { conversations } = useChatStore.getState();
       const suppressUnread = !!payload.suppressUnread;
+
+      let decryptedContent: string | null = payload.content;
+      if (payload.isE2ee && payload.e2eeCipher && payload.e2eeIv && payload.e2eeTag) {
+        try {
+          const convKeyData = await getConversationKey(payload.conversationId);
+          if (convKeyData) {
+            console.log("[E2EE] Decrypting incoming message for", payload.conversationId);
+            const aesKey = await importKeyFromBase64(convKeyData.key);
+            decryptedContent = await decryptMessage(
+              payload.e2eeCipher,
+              payload.e2eeIv,
+              payload.e2eeTag,
+              aesKey
+            );
+            console.log("[E2EE] Decrypted successfully, content length:", decryptedContent.length);
+          } else {
+            console.warn("[E2EE] No conversation key for", payload.conversationId, "- cannot decrypt");
+            decryptedContent = null;
+          }
+        } catch (err) {
+          console.error("[E2EE] Decryption failed:", err);
+          decryptedContent = null;
+        }
+      }
+
       const msg: Message = {
         id: payload.messageId,
         conversationId: payload.conversationId,
         senderId: payload.senderId,
         type: payload.type,
-        content: payload.content,
+        content: decryptedContent,
         replyToId: payload.replyToId ?? null,
         replyPreview: payload.replyPreview ?? null,
         isStealth: payload.isStealth ?? false,
         stealthExpiresAt: payload.stealthExpiresAt ?? null,
         stealthExpiredAt: payload.stealthExpiredAt ?? null,
         stealthContentLength: payload.stealthContentLength ?? null,
+        isE2ee: payload.isE2ee ?? false,
+        e2eeCipher: payload.e2eeCipher ?? null,
+        e2eeIv: payload.e2eeIv ?? null,
+        e2eeTag: payload.e2eeTag ?? null,
         mediaUrl: payload.mediaUrl,
         fileName: payload.fileName,
         fileSize: payload.fileSize,
@@ -247,7 +345,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       };
       addMessage(payload.conversationId, msg);
       updateConversationLastMessage(payload.conversationId, {
-        content: payload.isStealth ? "[Stealth]" : payload.content,
+        content: payload.isStealth ? "[Stealth]" : (payload.isE2ee ? "[Encrypted]" : decryptedContent),
         senderId: payload.senderId,
         senderUsername: payload.senderUsername,
         type: payload.type,
@@ -795,26 +893,134 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       qc.invalidateQueries({ queryKey: ["conversations"] });
     });
 
-    socket.on("support:ticket:new", (_payload: SupportTicketEventPayload) => {
-      qc.invalidateQueries({ queryKey: ["support-overview"] });
+    socket.on("e2ee:message:receive", async (payload: {
+      messageId: string;
+      conversationId: string;
+      senderId: string;
+      senderUsername: string;
+      senderProfileImage: string | null;
+      type: string;
+      cipherText: string;
+      iv: string;
+      tag: string;
+      isStealth?: boolean;
+      stealthExpiresAt?: string | null;
+      stealthContentLength?: number | null;
+      mediaUrl: string | null;
+      fileName: string | null;
+      fileSize: number | null;
+      timestamp: string;
+    }) => {
+      let decryptedContent: string | null = null;
+      try {
+        const convKeyData = await getConversationKey(payload.conversationId);
+        if (convKeyData) {
+          const aesKey = await importKeyFromBase64(convKeyData.key);
+          decryptedContent = await decryptMessage(payload.cipherText, payload.iv, payload.tag, aesKey);
+        }
+      } catch {
+        // Leave as null — MessageBubble will handle
+      }
+
+      const msg: Message = {
+        id: payload.messageId,
+        conversationId: payload.conversationId,
+        senderId: payload.senderId,
+        type: payload.type as Message["type"],
+        content: decryptedContent,
+        isStealth: payload.isStealth ?? false,
+        stealthExpiresAt: payload.stealthExpiresAt ?? null,
+        stealthExpiredAt: null,
+        stealthContentLength: payload.stealthContentLength ?? null,
+        isE2ee: true,
+        e2eeCipher: payload.cipherText,
+        e2eeIv: payload.iv,
+        e2eeTag: payload.tag,
+        mediaUrl: payload.mediaUrl,
+        fileName: payload.fileName,
+        fileSize: payload.fileSize,
+        readBy: [],
+        readByAt: {},
+        reactions: [],
+        unsent: false,
+        createdAt: payload.timestamp,
+      };
+      addMessage(payload.conversationId, msg);
+      updateConversationLastMessage(payload.conversationId, {
+        content: payload.isStealth ? "[Stealth]" : "[Encrypted]",
+        senderId: payload.senderId,
+        senderUsername: payload.senderUsername,
+        type: payload.type as Message["type"],
+        timestamp: payload.timestamp,
+      });
+
+      const { activeConversationId: currentActiveConversationId } = useChatStore.getState();
+      const canAutoRead =
+        currentActiveConversationId === payload.conversationId &&
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible" &&
+        document.hasFocus();
+
+      if (!canAutoRead) {
+        incrementUnread(payload.conversationId);
+      } else {
+        socket.emit("message:read", {
+          conversationId: payload.conversationId,
+          messageIds: [payload.messageId],
+        });
+      }
     });
 
-    socket.on("support:ticket:updated", (payload: SupportTicketEventPayload) => {
-      qc.invalidateQueries({ queryKey: ["support-overview"] });
-      qc.invalidateQueries({ queryKey: ["support-ticket", payload.ticketId] });
+    socket.on("e2ee:group:key:distributed", async (payload: { groupId: string; conversationId: string; keyVersion: number; encryptedKey: string; senderId: string }) => {
+      try {
+        const userKeys = await getUserKeyPair();
+        if (!userKeys) return;
+
+        const senderKeyRes = await api.get(`/e2ee/keys/${payload.senderId}`).catch(() => null);
+        if (!senderKeyRes?.data?.data) return;
+
+        const senderPublicKey = senderKeyRes.data.data.publicKey;
+
+        const decryptedKeyBase64 = await decryptKeyWithSharedSecret(
+          payload.encryptedKey,
+          userKeys.encryptedPrivateKey,
+          senderPublicKey
+        );
+
+        await saveConversationKey({
+          conversationId: payload.conversationId,
+          key: decryptedKeyBase64,
+          keyVersion: payload.keyVersion,
+        });
+      } catch (error) {
+        console.error("Failed to process group key distribution:", error);
+      }
     });
 
-    socket.on("support:message:new", (payload: SupportMessageEventPayload) => {
-      qc.invalidateQueries({ queryKey: ["support-ticket", payload.ticketId] });
-      qc.invalidateQueries({ queryKey: ["support-overview"] });
-    });
+    socket.on("e2ee:group:key:rotated", async (payload: { groupId: string; conversationId: string; keyVersion: number; encryptedKey: string; senderId: string }) => {
+      try {
+        const userKeys = await getUserKeyPair();
+        if (!userKeys) return;
 
-    socket.on("support:report:new", (_payload: SupportReportEventPayload) => {
-      qc.invalidateQueries({ queryKey: ["support-overview"] });
-    });
+        const senderKeyRes = await api.get(`/e2ee/keys/${payload.senderId}`).catch(() => null);
+        if (!senderKeyRes?.data?.data) return;
 
-    socket.on("support:report:updated", (_payload: SupportReportEventPayload) => {
-      qc.invalidateQueries({ queryKey: ["support-overview"] });
+        const senderPublicKey = senderKeyRes.data.data.publicKey;
+
+        const decryptedKeyBase64 = await decryptKeyWithSharedSecret(
+          payload.encryptedKey,
+          userKeys.encryptedPrivateKey,
+          senderPublicKey
+        );
+
+        await saveConversationKey({
+          conversationId: payload.conversationId,
+          key: decryptedKeyBase64,
+          keyVersion: payload.keyVersion,
+        });
+      } catch (error) {
+        console.error("Failed to process group key rotation:", error);
+      }
     });
 
     return () => {
@@ -854,6 +1060,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       socket.off("support:message:new");
       socket.off("support:report:new");
       socket.off("support:report:updated");
+      socket.off("e2ee:message:receive");
+      socket.off("e2ee:group:key:distributed");
+      socket.off("e2ee:group:key:rotated");
     };
   }, [
     isAuthenticated,

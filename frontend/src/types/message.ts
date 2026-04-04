@@ -49,6 +49,10 @@ export interface Message {
   editedBy?: string | null;
   unsent: boolean;
   unsentAt?: string | null;
+  isE2ee?: boolean;
+  e2eeCipher?: string | null;
+  e2eeIv?: string | null;
+  e2eeTag?: string | null;
   createdAt: string;
   // Optimistic UI fields
   tempId?: string;

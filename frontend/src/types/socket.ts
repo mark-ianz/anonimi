@@ -82,6 +82,10 @@ export interface MessageReceivePayload {
   fileSize: number | null;
   timestamp: string;
   suppressUnread?: boolean;
+  isE2ee?: boolean;
+  e2eeCipher?: string | null;
+  e2eeIv?: string | null;
+  e2eeTag?: string | null;
 }
 
 export interface MessageStealthExpiredPayload {
@@ -263,4 +267,37 @@ export interface SocketError {
   code: string;
   message: string;
   event: string;
+}
+
+export interface E2EEReceivePayload {
+  messageId: string;
+  conversationId: string;
+  senderId: string;
+  senderUsername: string;
+  senderProfileImage: string | null;
+  type: MessageType;
+  cipherText: string;
+  iv: string;
+  tag: string;
+  isStealth?: boolean;
+  stealthExpiresAt?: string | null;
+  stealthContentLength?: number | null;
+  mediaUrl: string | null;
+  fileName: string | null;
+  fileSize: number | null;
+  timestamp: string;
+}
+
+export interface E2EEGroupKeyDistributedPayload {
+  groupId: string;
+  conversationId: string;
+  keyVersion: number;
+  encryptedKey: string;
+}
+
+export interface E2EEGroupKeyRotatedPayload {
+  groupId: string;
+  conversationId: string;
+  keyVersion: number;
+  encryptedKey: string;
 }

@@ -217,3 +217,63 @@ export interface ErrorPayload {
   message: string;
   event?: string;
 }
+
+export interface E2EEKeyRegisterPayload {
+  publicKey: string;
+  encryptedPrivateKey: string;
+  iv: string;
+  tag: string;
+}
+
+export interface E2EEKeyResponse {
+  userId: string;
+  publicKey: string;
+  keyVersion: number;
+}
+
+export interface E2EESendPayload {
+  conversationId: string;
+  type: "text" | "image" | "video" | "audio" | "file";
+  cipherText: string;
+  iv: string;
+  tag: string;
+  mediaUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  replyToId?: string;
+  stealthDuration?: "1m" | "5m" | "15m" | "30m" | "1h" | "3h" | "6h" | "12h" | "24h";
+  tempId: string;
+}
+
+export interface E2EEReceivePayload {
+  messageId: string;
+  conversationId: string;
+  senderId: string;
+  senderUsername: string;
+  senderProfileImage?: string;
+  type: string;
+  cipherText: string;
+  iv: string;
+  tag: string;
+  isStealth?: boolean;
+  stealthExpiresAt?: string;
+  stealthContentLength?: number;
+  mediaUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  timestamp: string;
+}
+
+export interface GroupKeyRotatedPayload {
+  groupId: string;
+  conversationId: string;
+  keyVersion: number;
+  encryptedKey: string;
+}
+
+export interface GroupKeyDistributedPayload {
+  groupId: string;
+  conversationId: string;
+  keyVersion: number;
+  encryptedKey: string;
+}

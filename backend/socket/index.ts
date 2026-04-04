@@ -5,6 +5,7 @@ import { setupPresenceHandler } from "./presence.handler";
 import { setupGroupHandler } from "./group.handler";
 import { setupNotificationHandler } from "./notification.handler";
 import { setupAdminNamespace } from "./admin.handler";
+import { setupE2EEHandler } from "./e2ee.handler";
 import { setSocketIO } from "../services/notification.service";
 
 export const setupSocket = (io: Server): void => {
@@ -21,6 +22,7 @@ export const setupSocket = (io: Server): void => {
     setupPresenceHandler(io, socket);
     setupGroupHandler(io, socket);
     setupNotificationHandler(io, socket);
+    setupE2EEHandler(io, socket);
 
     socket.on("disconnect", () => {
       console.log(`User disconnected: ${socket.id}`);

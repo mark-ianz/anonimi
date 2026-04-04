@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Send, Paperclip, X, Eye, EyeOff } from "lucide-react";
+import { Send, Paperclip, X, Eye, EyeOff, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMessages } from "@/hooks/useMessages";
 import { useTyping } from "@/hooks/useTyping";
@@ -327,6 +327,15 @@ export default function MessageInput({
       )}
 
       <div className="flex min-w-0 items-end gap-1.5 sm:gap-2">
+        {/* E2EE indicator */}
+        <div
+          className="shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center mb-0.5 text-emerald-600/70 dark:text-emerald-400/70"
+          title="End-to-end encrypted"
+        >
+          <Lock className="w-4 h-4" />
+        </div>
+
+        {/* Stealth toggle */}
         <button
           type="button"
           disabled={disabled || isUploading || !!editMessageId || stealthEnabled}

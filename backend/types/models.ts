@@ -104,6 +104,11 @@ export interface IMessage extends Document {
   editedBy?: Types.ObjectId;
   deletedFor: Types.ObjectId[];
   unsent: boolean;
+  isE2ee?: boolean;
+  e2eeCipher?: string;
+  e2eeIv?: string;
+  e2eeTag?: string;
+  e2eeKeyId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -317,6 +322,32 @@ export interface IPushSubscription extends Document {
   userAgent?: string;
   revokedAt?: Date;
   lastUsedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IE2EEKey extends Document {
+  _id: Types.ObjectId;
+  userId: Types.ObjectId;
+  publicKey: string;
+  encryptedPrivateKey: string;
+  iv: string;
+  tag: string;
+  algorithm: string;
+  keyVersion: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IConversationKey extends Document {
+  _id: Types.ObjectId;
+  conversationId: Types.ObjectId;
+  keyVersion: number;
+  encryptedKeys: Array<{
+    userId: Types.ObjectId;
+    encryptedKey: string;
+  }>;
+  createdBy: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
