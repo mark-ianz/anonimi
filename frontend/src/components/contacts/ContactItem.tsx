@@ -9,9 +9,9 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { usePresence } from "@/hooks/usePresence";
 import api from "@/lib/api";
-import { resolveMediaUrl } from "@/lib/mediaUrl";
 import type { Contact } from "@/types/contact";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
+import UserAvatar from "@/components/shared/UserAvatar";
 
 interface ContactItemProps {
   contact: Contact;
@@ -99,14 +99,12 @@ export default function ContactItem({ contact, onRemove }: ContactItemProps) {
       >
         {/* Avatar */}
         <div className="relative shrink-0">
-          <div className="w-11 h-11 rounded-xl overflow-hidden bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-medium text-sm">
-            {contact.profileImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={resolveMediaUrl(contact.profileImage)} alt={contact.username} className="w-full h-full object-cover" />
-            ) : (
-              contact.username[0].toUpperCase()
-            )}
-          </div>
+          <UserAvatar
+            imageUrl={contact.profileImage}
+            name={contact.username}
+            className="w-11 h-11"
+            roundedClassName="rounded-xl"
+          />
           <span
             className={cn(
               "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-background",

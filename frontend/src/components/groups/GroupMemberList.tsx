@@ -11,7 +11,7 @@ import LoadingSkeleton from "@/components/shared/LoadingSkeleton";
 import type { Group, GroupMember } from "@/types/group";
 import { Search, UserPlus } from "lucide-react";
 import api from "@/lib/api";
-import { resolveMediaUrl } from "@/lib/mediaUrl";
+import UserAvatar from "@/components/shared/UserAvatar";
 
 interface GroupMemberListProps {
   groupId: string;
@@ -178,14 +178,12 @@ function AddMembersModal({
                   isSelected ? "bg-primary/10" : "hover:bg-muted/50"
                 }`}
               >
-                <div className="w-9 h-9 rounded-lg overflow-hidden bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-xs font-medium shrink-0">
-                  {contact.profileImage ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={resolveMediaUrl(contact.profileImage)} alt={contact.username} className="w-full h-full object-cover" />
-                  ) : (
-                    contact.username[0]?.toUpperCase() ?? "U"
-                  )}
-                </div>
+                <UserAvatar
+                  imageUrl={contact.profileImage}
+                  name={contact.username}
+                  className="w-9 h-9"
+                  roundedClassName="rounded-lg"
+                />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate">{contact.nickname ?? contact.username}</p>
                   <p className="text-xs text-muted-foreground truncate">@{contact.anonimiId}</p>

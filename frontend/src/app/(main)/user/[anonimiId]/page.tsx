@@ -9,8 +9,8 @@ import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import type { PublicUser } from "@/types/user";
 import type { ReportReason } from "@/types/report";
-import { API_BASE } from "@/lib/constants";
 import OnlineIndicator from "@/components/user/OnlineIndicator";
+import UserAvatar from "@/components/shared/UserAvatar";
 import { useEffect, useRef, useState } from "react";
 import TemporaryAccountBadge from "@/components/shared/TemporaryAccountBadge";
 import TemporaryAccountModal from "@/components/shared/TemporaryAccountModal";
@@ -281,18 +281,13 @@ export default function UserProfilePage() {
 
                   <div className="mx-auto flex w-full max-w-md flex-col items-center text-center">
                     <div className="relative">
-                      {profile.profileImage ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={`${API_BASE.replace("/api", "")}${profile.profileImage}`}
-                          alt={profile.username}
-                          className="h-28 w-28 rounded-full object-cover shadow-elevated"
-                        />
-                      ) : (
-                        <div className="grid h-28 w-28 place-items-center rounded-full bg-linear-to-br from-cyan-500 to-blue-600 text-4xl font-bold text-white shadow-elevated">
-                          {profile.username[0].toUpperCase()}
-                        </div>
-                      )}
+                      <UserAvatar
+                        imageUrl={profile.profileImage}
+                        name={profile.username}
+                        className="h-28 w-28 shadow-elevated"
+                        roundedClassName="rounded-full"
+                        textClassName="text-4xl"
+                      />
                       <div className="absolute -bottom-1 -right-1">
                         <OnlineIndicator status={profile.onlineStatus} size="md" />
                       </div>

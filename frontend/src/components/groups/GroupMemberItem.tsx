@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Shield, Crown, MoreVertical, UserMinus, VolumeX, Volume2, User, MessageCircle, Pencil, ShieldBan } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { resolveMediaUrl } from "@/lib/mediaUrl";
 import type { GroupMember, GroupRole } from "@/types/group";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
+import UserAvatar from "@/components/shared/UserAvatar";
 
 interface GroupMemberItemProps {
   member: GroupMember;
@@ -94,14 +94,12 @@ export default function GroupMemberItem({
     <>
       <div className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors group border-b border-border/20">
         {/* Avatar */}
-        <div className="w-10 h-10 rounded-xl overflow-hidden bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-sm font-medium shrink-0">
-          {member.profileImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={resolveMediaUrl(member.profileImage)} alt={member.username} className="w-full h-full object-cover" />
-          ) : (
-            member.username[0].toUpperCase()
-          )}
-        </div>
+        <UserAvatar
+          imageUrl={member.profileImage}
+          name={member.username}
+          className="w-10 h-10"
+          roundedClassName="rounded-xl"
+        />
 
         {/* Info */}
         <div className="flex-1 min-w-0">

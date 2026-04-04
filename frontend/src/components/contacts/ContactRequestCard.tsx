@@ -4,7 +4,7 @@ import { Check, X, UserCircle2 } from "lucide-react";
 import Link from "next/link";
 import type { ContactRequest } from "@/types/contact";
 import DateDisplay from "@/components/shared/DateDisplay";
-import { resolveMediaUrl } from "@/lib/mediaUrl";
+import UserAvatar from "@/components/shared/UserAvatar";
 
 interface ContactRequestCardProps {
   request: ContactRequest;
@@ -20,14 +20,12 @@ export default function ContactRequestCard({
   return (
     <div className="flex items-center gap-3 px-4 py-3 border-b border-border/20 animate-fade-in">
       {/* Avatar */}
-      <div className="w-11 h-11 rounded-xl overflow-hidden bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-medium text-sm shrink-0">
-        {request.from.profileImage ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={resolveMediaUrl(request.from.profileImage)} alt={request.from.username} className="w-full h-full object-cover" />
-        ) : (
-          request.from.username[0].toUpperCase()
-        )}
-      </div>
+      <UserAvatar
+        imageUrl={request.from.profileImage}
+        name={request.from.username}
+        className="w-11 h-11"
+        roundedClassName="rounded-xl"
+      />
 
       {/* Info */}
       <div className="flex-1 min-w-0">
