@@ -28,6 +28,9 @@ const envSchema = z.object({
   SMTP_FROM_EMAIL: z.string().default(""),
   EMAIL_VERIFY_URL: z.string().default("https://anonimi-messaging.vercel.app0/verify-link"),
   RESET_PASSWORD_URL: z.string().default("https://anonimi-messaging.vercel.app0/reset-password"),
+  RESEND_API_KEY: z.string().default(""),
+  EMAIL_PROVIDER: z.enum(["SMTP", "RESEND"]),
+  RESEND_FROM_EMAIL: z.string().default(""),
 });
 
 export type Env = z.infer<typeof envSchema>;
