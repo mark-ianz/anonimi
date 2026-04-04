@@ -31,7 +31,7 @@ export default function ConversationPage() {
         </div>
 
         {/* Chat view */}
-        <div className="relative z-10 flex-1 flex flex-col overflow-visible">
+        <div className="relative z-10 flex-1 flex flex-col overflow-hidden">
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />

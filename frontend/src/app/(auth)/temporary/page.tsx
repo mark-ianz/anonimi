@@ -84,14 +84,14 @@ export default function TemporaryAccountPage() {
             type="button"
             onClick={handleStartTemporary}
             disabled={isCreating}
-            className="flex h-11 flex-1 items-center justify-center rounded-xl bg-amber-600 text-sm font-semibold text-white transition-colors hover:bg-amber-600/90 disabled:opacity-60"
+            className="flex flex-1 items-center justify-center rounded-xl bg-amber-600 text-sm font-semibold text-white transition-colors hover:bg-amber-600/90 disabled:opacity-60 py-3 md:py-4 cursor-pointer"
           >
             {isCreating ? "Starting..." : "Start temporary session"}
           </button>
           <button
             type="button"
             onClick={() => router.push("/register")}
-            className="flex h-11 flex-1 items-center justify-center rounded-xl border border-border/70 text-sm font-semibold text-foreground hover:bg-muted transition-colors"
+            className="flex flex-1 items-center justify-center rounded-xl border border-border/70 text-sm font-semibold text-foreground hover:bg-muted transition-colors py-3 md:py-4 cursor-pointer"
           >
             Create full account
           </button>

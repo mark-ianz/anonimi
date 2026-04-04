@@ -244,7 +244,7 @@ export default function MessageInput({
   const canSend = (text.trim().length > 0 || pendingFile !== null) && !disabled && !isEditingMessage;
 
   return (
-    <div className="border-t border-border/50 p-3 bg-background">
+      <div className="overflow-hidden border-t border-border/50 p-2 sm:p-3 bg-background">
       {replyTo && (
         <div className="mb-2 flex items-center justify-between rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
           <div className="min-w-0">
@@ -312,7 +312,7 @@ export default function MessageInput({
             value={stealthDuration}
             onValueChange={(value) => setStealthDuration(value as StealthDuration)}
           >
-            <SelectTrigger className="h-8 w-[7.5rem]">
+            <SelectTrigger className="h-8 w-[7.5rem] max-w-full">
               <SelectValue placeholder="Duration" />
             </SelectTrigger>
             <SelectContent>
@@ -326,15 +326,14 @@ export default function MessageInput({
         </div>
       )}
 
-      <div className="flex items-end gap-2">
-        {/* Attach */}
+      <div className="flex min-w-0 items-end gap-1.5 sm:gap-2">
         <button
           type="button"
           disabled={disabled || isUploading || !!editMessageId || stealthEnabled}
           onClick={() => fileInputRef.current?.click()}
-          className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50 mb-0.5"
+          className="shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50 mb-0.5"
         >
-          <Paperclip className="w-5 h-5" />
+          <Paperclip className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
         <button
           type="button"
@@ -350,7 +349,7 @@ export default function MessageInput({
             setStealthEnabled(true);
           }}
           className={cn(
-            "shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-colors mb-0.5",
+            "shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-colors mb-0.5",
             stealthEnabled
               ? "bg-amber-100/60 text-amber-700/80 dark:bg-amber-400/10 dark:text-amber-200/80"
               : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -388,7 +387,7 @@ export default function MessageInput({
           placeholder={placeholder}
           rows={1}
           className={cn(
-            "flex-1 resize-none rounded-xl bg-muted/50 border-0 px-3 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all max-h-30 leading-relaxed",
+            "flex-1 min-w-0 resize-none rounded-xl bg-muted/50 border-0 px-2.5 sm:px-3 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all max-h-30 leading-relaxed",
             disabled && "opacity-50 cursor-not-allowed"
           )}
         />
@@ -399,7 +398,7 @@ export default function MessageInput({
           disabled={!canSend || isUploading}
           onClick={handleSend}
           className={cn(
-            "shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all mb-0.5",
+            "shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all mb-0.5",
             canSend
               ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
               : "bg-muted text-muted-foreground cursor-not-allowed"

@@ -62,6 +62,7 @@ export default function MessageBubble({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [mobileSelected, setMobileSelected] = useState(false);
   const [avatarMenuPosition, setAvatarMenuPosition] = useState({
     top: 0,
     left: 0,
@@ -161,8 +162,8 @@ export default function MessageBubble({
     ? "right-[calc(100%+8px)] top-1/2 -translate-y-1/2"
     : "left-[calc(100%+8px)] top-1/2 -translate-y-1/2";
   const sideControlPositionClass = isMine
-    ? "right-[calc(100%+8px)] top-1/2 -translate-y-1/2"
-    : "left-[calc(100%+8px)] top-1/2 -translate-y-1/2";
+    ? "right-[calc(100%+8px)] top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0"
+    : "left-[calc(100%+8px)] top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0";
 
   const updateAvatarMenuPosition = useCallback(() => {
     const trigger = avatarTriggerRef.current;
@@ -285,75 +286,77 @@ export default function MessageBubble({
         }}
       >
         {/* Avatar */}
-        <div className="w-8 shrink-0">
-          {showAvatar && !isMine && (
-            <>
-              <button
-                ref={avatarTriggerRef}
-                type="button"
-                onClick={() => {
-                  if (!senderAnonimiId) return;
-                  setAvatarMenuOpen((prev) => !prev);
-                }}
-                className={cn(
-                  "rounded-full",
-                  senderAnonimiId ? "cursor-pointer" : "cursor-default",
-                )}
-                aria-haspopup="menu"
-                aria-expanded={avatarMenuOpen}
-                aria-label="Sender actions"
-              >
-                <UserAvatar
-                  imageUrl={senderImage}
-                  name={senderName}
-                  alt={senderName ?? "Sender"}
-                  className="w-8 h-8"
-                  textClassName="text-xs"
-                />
-              </button>
+        {!isMine && (
+          <div className="w-8 shrink-0">
+            {showAvatar && (
+              <>
+                <button
+                  ref={avatarTriggerRef}
+                  type="button"
+                  onClick={() => {
+                    if (!senderAnonimiId) return;
+                    setAvatarMenuOpen((prev) => !prev);
+                  }}
+                  className={cn(
+                    "rounded-full",
+                    senderAnonimiId ? "cursor-pointer" : "cursor-default",
+                  )}
+                  aria-haspopup="menu"
+                  aria-expanded={avatarMenuOpen}
+                  aria-label="Sender actions"
+                >
+                  <UserAvatar
+                    imageUrl={senderImage}
+                    name={senderName}
+                    alt={senderName ?? "Sender"}
+                    className="w-8 h-8"
+                    textClassName="text-xs"
+                  />
+                </button>
 
-              {canUsePortal &&
-                avatarMenuOpen &&
-                senderAnonimiId &&
-                createPortal(
-                  <div
-                    ref={avatarMenuRef}
-                    className="fixed z-120 w-40 rounded-xl border border-border/60 bg-card/95 p-1 shadow-elevated backdrop-blur-sm animate-fade-in"
-                    style={{
-                      top: avatarMenuPosition.top,
-                      left: avatarMenuPosition.left,
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAvatarMenuOpen(false);
-                        router.push(`/user/${senderAnonimiId}`);
+                {canUsePortal &&
+                  avatarMenuOpen &&
+                  senderAnonimiId &&
+                  createPortal(
+                    <div
+                      ref={avatarMenuRef}
+                      className="fixed z-120 w-40 rounded-xl border border-border/60 bg-card/95 p-1 shadow-elevated backdrop-blur-sm animate-fade-in"
+                      style={{
+                        top: avatarMenuPosition.top,
+                        left: avatarMenuPosition.left,
                       }}
-                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/70"
                     >
-                      <User className="h-4 w-4" />
-                      View profile
-                    </button>
-
-                    {conversationType === "group" && (
                       <button
                         type="button"
-                        onClick={handleSendMessage}
+                        onClick={() => {
+                          setAvatarMenuOpen(false);
+                          router.push(`/user/${senderAnonimiId}`);
+                        }}
                         className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/70"
                       >
-                        <MessageCircle className="h-4 w-4" />
-                        Send message
+                        <User className="h-4 w-4" />
+                        View profile
                       </button>
-                    )}
-                  </div>,
-                  document.body,
-                )}
-            </>
-          )}
-        </div>
 
-        <div className={cn("flex flex-col max-w-[70%]", isMine && "items-end")}>
+                      {conversationType === "group" && (
+                        <button
+                          type="button"
+                          onClick={handleSendMessage}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/70"
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                          Send message
+                        </button>
+                      )}
+                    </div>,
+                    document.body,
+                  )}
+              </>
+            )}
+          </div>
+        )}
+
+        <div className={cn("flex flex-col min-w-0 max-w-[78%] md:max-w-[70%]", isMine && "items-end")}>
           {/* Sender name for groups */}
           {isFirst && !isMine && senderName && (
             <span className="text-xs text-muted-foreground mb-1 ml-1">
@@ -387,11 +390,12 @@ export default function MessageBubble({
             </div>
           )}
 
-          <div className="flex gap-2 relative">
+          <div className="flex min-w-0 gap-2 relative">
             {/* Bubble */}
             <div
+              onClick={() => setMobileSelected((prev) => !prev)}
               className={cn(
-                "group/bubble relative px-3 py-2 text-sm leading-relaxed transition-colors duration-700",
+                "group/bubble relative min-w-0 px-3 py-2 text-sm leading-relaxed transition-colors duration-700",
                 bubbleShapeClass,
                 isStealth
                   ? stealthExpired
@@ -430,10 +434,10 @@ export default function MessageBubble({
                   )}
                 </div>
               )}
-              {/* Hover timestamp tooltip */}
+              {/* Hover timestamp tooltip (desktop) */}
               <div
                 className={cn(
-                  "pointer-events-none absolute z-80 hidden whitespace-nowrap rounded-md border border-border/60 bg-background px-3 py-2 text-[11px] text-background shadow-soft group-hover/bubble:block",
+                  "pointer-events-none absolute z-80 hidden whitespace-nowrap rounded-md border border-border/60 bg-background px-3 py-2 text-[11px] text-background shadow-soft group-hover/bubble:block md:group-hover/bubble:block",
                   tooltipPositionClass,
                 )}
               >
@@ -465,6 +469,47 @@ export default function MessageBubble({
                 )}
               </div>
 
+              {/* Mobile inline timestamp */}
+              {mobileSelected && (
+                <div
+                  className={cn(
+                    "absolute z-80 whitespace-nowrap rounded-md border border-border/60 bg-background px-3 py-2 text-[11px] text-background shadow-soft md:hidden",
+                    isMine
+                      ? "right-[calc(100%+8px)] top-1/2 -translate-y-1/2"
+                      : "left-[calc(100%+8px)] top-1/2 -translate-y-1/2",
+                  )}
+                >
+                  {message.unsent ? (
+                    <div className="space-y-0.5">
+                      <div>
+                        <span className="text-muted-foreground/80">Sent: </span>
+                        <DateDisplay
+                          date={message.createdAt}
+                          format="time"
+                          className="text-[11px] text-muted-foreground inline"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground/80">
+                          Unsent:{" "}
+                        </span>
+                        <DateDisplay
+                          date={message.unsentAt ?? message.createdAt}
+                          format="time"
+                          className="text-[11px] text-muted-foreground inline"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <DateDisplay
+                      date={message.createdAt}
+                      format="time"
+                      className="text-[11px] text-muted-foreground"
+                    />
+                  )}
+                </div>
+              )}
+
               {/* Media content */}
               {!message.unsent &&
                 message.type !== "text" &&
@@ -474,11 +519,11 @@ export default function MessageBubble({
               {message.unsent ? (
                 <p className="italic text-current">Message was unsent</p>
               ) : isStealth && stealthExpired ? (
-                <p className="whitespace-pre-wrap wrap-break-word text-transparent select-none">
+                <p className="whitespace-pre-wrap break-all text-transparent select-none">
                   {"█".repeat(stealthPlaceholderLength)}
                 </p>
               ) : message.content ? (
-                <p className="whitespace-pre-wrap wrap-break-word">
+                <p className="whitespace-pre-wrap break-all">
                   {message.content}
                 </p>
               ) : null}
@@ -498,8 +543,10 @@ export default function MessageBubble({
             {/* Side controls */}
             <div
               className={cn(
-                "absolute self-center flex items-center gap-1.5 transition-opacity",
-                showActions || dialogOpen ? "opacity-100" : "opacity-0",
+                "flex items-center gap-1.5 transition-opacity",
+                "absolute md:self-center",
+                "md:opacity-0",
+                (showActions || dialogOpen) && "md:opacity-100",
                 sideControlPositionClass,
               )}
             >
@@ -508,6 +555,7 @@ export default function MessageBubble({
                 isMine={isMine}
                 showOnHover
                 hasReactions={(message.reactions ?? []).length > 0}
+                forceVisible
               />
               <MessageActions
                 message={message}
@@ -607,7 +655,7 @@ export default function MessageBubble({
                             className="text-[11px] text-muted-foreground"
                           />
                         </div>
-                        <p className="mt-2 whitespace-pre-wrap wrap-break-word text-sm text-foreground">
+                        <p className="mt-2 whitespace-pre-wrap break-all text-sm text-foreground">
                           {entry.content}
                         </p>
                       </div>
