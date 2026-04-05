@@ -466,6 +466,16 @@ export function useMessages(conversationId: string | null) {
                   };
                 }
               );
+
+              const latestMsg = e2eeMessages[e2eeMessages.length - 1];
+              if (updates[latestMsg.id]) {
+                updateConversationLastMessage(conversationId, {
+                  content: updates[latestMsg.id],
+                  senderId: latestMsg.senderId ?? "",
+                  type: latestMsg.type,
+                  timestamp: latestMsg.createdAt,
+                });
+              }
             }
             processingRef.current = false;
             return;

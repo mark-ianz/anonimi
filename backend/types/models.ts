@@ -44,6 +44,10 @@ export interface IConversation extends Document {
     senderId: Types.ObjectId;
     type: string;
     timestamp: Date;
+    isE2ee?: boolean;
+    e2eeCipher?: string;
+    e2eeIv?: string;
+    e2eeTag?: string;
   };
   requestStatus?: string;
   createdAt: Date;

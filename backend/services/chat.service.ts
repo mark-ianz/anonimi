@@ -1248,10 +1248,14 @@ export const sendMessage = async (
 
     if (!isShadowDelivery) {
       conversation.lastMessage = {
-        content: isStealth ? "[Stealth]" : (content || (mediaUrl ? "[Media]" : "[Message]")),
+        content: isE2ee ? null : (isStealth ? "[Stealth]" : (content || (mediaUrl ? "[Media]" : "[Message]"))),
         senderId: new Types.ObjectId(senderId),
         type,
         timestamp: message.createdAt,
+        isE2ee,
+        e2eeCipher: isE2ee ? message.e2eeCipher : undefined,
+        e2eeIv: isE2ee ? message.e2eeIv : undefined,
+        e2eeTag: isE2ee ? message.e2eeTag : undefined,
       };
       conversation.updatedAt = new Date();
       await conversation.save();
@@ -1392,10 +1396,14 @@ export const sendMessage = async (
   });
 
   conversation.lastMessage = {
-    content: isStealth ? "[Stealth]" : (content || (mediaUrl ? "[Media]" : "[Message]")),
+    content: isE2ee ? null : (isStealth ? "[Stealth]" : (content || (mediaUrl ? "[Media]" : "[Message]"))),
     senderId: new Types.ObjectId(senderId),
     type,
     timestamp: message.createdAt,
+    isE2ee,
+    e2eeCipher: isE2ee ? message.e2eeCipher : undefined,
+    e2eeIv: isE2ee ? message.e2eeIv : undefined,
+    e2eeTag: isE2ee ? message.e2eeTag : undefined,
   };
   conversation.updatedAt = new Date();
   await conversation.save();

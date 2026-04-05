@@ -345,11 +345,15 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       };
       addMessage(payload.conversationId, msg);
       updateConversationLastMessage(payload.conversationId, {
-        content: payload.isStealth ? "[Stealth]" : (payload.isE2ee ? "[Encrypted]" : decryptedContent),
+        content: payload.isStealth ? "[Stealth]" : decryptedContent,
         senderId: payload.senderId,
         senderUsername: payload.senderUsername,
         type: payload.type,
         timestamp: payload.timestamp,
+        isE2ee: payload.isE2ee,
+        e2eeCipher: payload.e2eeCipher,
+        e2eeIv: payload.e2eeIv,
+        e2eeTag: payload.e2eeTag,
       });
 
       if (!conversations.some((conv) => conv.id === payload.conversationId)) {
@@ -947,11 +951,15 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       };
       addMessage(payload.conversationId, msg);
       updateConversationLastMessage(payload.conversationId, {
-        content: payload.isStealth ? "[Stealth]" : "[Encrypted]",
+        content: payload.isStealth ? "[Stealth]" : decryptedContent,
         senderId: payload.senderId,
         senderUsername: payload.senderUsername,
         type: payload.type as Message["type"],
         timestamp: payload.timestamp,
+        isE2ee: true,
+        e2eeCipher: payload.cipherText,
+        e2eeIv: payload.iv,
+        e2eeTag: payload.tag,
       });
 
       const { activeConversationId: currentActiveConversationId } = useChatStore.getState();

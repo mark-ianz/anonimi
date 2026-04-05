@@ -32,6 +32,10 @@ export interface LastMessage {
   senderUsername?: string;
   type: MessageType;
   timestamp: string;
+  isE2ee?: boolean;
+  e2eeCipher?: string | null;
+  e2eeIv?: string | null;
+  e2eeTag?: string | null;
 }
 
 export interface Conversation {

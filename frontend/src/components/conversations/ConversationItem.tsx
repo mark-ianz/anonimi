@@ -16,6 +16,8 @@ import type { Conversation } from "@/types/conversation";
 import DateDisplay from "@/components/shared/DateDisplay";
 import GroupAvatar from "@/components/shared/GroupAvatar";
 import UserAvatar from "@/components/shared/UserAvatar";
+import { decryptMessage, importKeyFromBase64 } from "@/lib/e2eeCrypto";
+import { getConversationKey } from "@/lib/e2eeKeyStore";
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -29,9 +31,10 @@ type ConversationsInfiniteCache = {
   pageParams: unknown[];
 };
 
-function getLastMessagePreview(conversation: Conversation): string {
+function getLastMessagePreview(conversation: Conversation, decryptedPreview?: string | null): string {
   const lm = conversation.lastMessage;
   if (!lm) return "No messages yet";
+  if (lm.isE2ee && !lm.content) return decryptedPreview ?? "";
   if (lm.type === "image") return "📷 Photo";
   if (lm.type === "video") return "🎥 Video";
   if (lm.type === "audio") return "🎵 Audio";
@@ -74,6 +77,28 @@ export default function ConversationItem({
     conversation.participant?.onlineStatus ?? "offline"
   );
 
+  const [decryptedPreview, setDecryptedPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    const lm = conversation.lastMessage;
+    if (!lm?.isE2ee || lm.content || !lm.e2eeCipher || !lm.e2eeIv || !lm.e2eeTag) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const keyData = await getConversationKey(conversation.id);
+        if (!keyData || cancelled) return;
+        const aesKey = await importKeyFromBase64(keyData.key);
+        if (cancelled) return;
+        const content = await decryptMessage(lm.e2eeCipher!, lm.e2eeIv!, lm.e2eeTag!, aesKey);
+        if (!cancelled) setDecryptedPreview(content);
+      } catch {
+        // silent
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [conversation.id, conversation.lastMessage]);
+
   const unread = unreadCounts[conversation.id] ?? conversation.unreadCount ?? 0;
   const hasUnread = unread > 0;
 
@@ -90,7 +115,7 @@ export default function ConversationItem({
   const lastSenderLabel = lastSenderIsMe
     ? "You"
     : conversation.lastMessage?.senderUsername ?? "Member";
-  const basePreview = getLastMessagePreview(conversation);
+  const basePreview = getLastMessagePreview(conversation, decryptedPreview);
   const isSystemMessage = conversation.lastMessage?.type === "system";
   const preview = isDeletedParticipant
     ? "Deleted temporary user"
