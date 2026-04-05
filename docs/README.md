@@ -21,19 +21,19 @@ The backend is designed as a standalone REST + WebSocket API that can serve both
 
 | Document | Purpose |
 |----------|---------|
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | High-level system architecture, service boundaries, middleware pipeline |
-| [FRONTEND_DESIGN.md](./FRONTEND_DESIGN.md) | **Complete frontend architecture** — routing, layouts, pages, component hierarchy, auth flow |
-| [SYSTEM_DESIGN.md](./SYSTEM_DESIGN.md) | Detailed subsystem designs for identity, messaging, pagination, blocks, groups, etc. |
-| [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md) | MongoDB collection schemas, field types, indexes, and relationships |
-| [API_DESIGN.md](./API_DESIGN.md) | Complete REST API specification organized by domain |
-| [SOCKET_EVENTS.md](./SOCKET_EVENTS.md) | All Socket.IO events with payload schemas and lifecycle |
-| [FEATURE_ROADMAP.md](./FEATURE_ROADMAP.md) | Phased implementation plan with dependencies and scope |
-| [ANONIMI_RENAME_PLAN.md](./ANONIMI_RENAME_PLAN.md) | Full anonimi -> anonimi rebrand and identifier migration plan |
-| [SECURITY_MODEL.md](./SECURITY_MODEL.md) | Authentication, authorization, rate limiting, input validation |
-| [ADMIN_SYSTEM.md](./ADMIN_SYSTEM.md) | Admin dashboard design, roles, permissions, workflows |
-| [SUPPORT_SYSTEM.md](./SUPPORT_SYSTEM.md) | Support tickets, report lifecycle, and admin workflows |
-| [GROUP_CHAT_FEATURE.md](./GROUP_CHAT_FEATURE.md) | Group chat roles, invite links, join requests, and moderation |
-| [FOLDER_STRUCTURE.md](./FOLDER_STRUCTURE.md) | Complete project folder layout and organization conventions |
+| [ARCHITECTURE.md](./architecture/ARCHITECTURE.md) | High-level system architecture, service boundaries, middleware pipeline |
+| [FRONTEND_DESIGN.md](./architecture/FRONTEND_DESIGN.md) | **Complete frontend architecture** — routing, layouts, pages, component hierarchy, auth flow |
+| [SYSTEM_DESIGN.md](./architecture/SYSTEM_DESIGN.md) | Detailed subsystem designs for identity, messaging, pagination, blocks, groups, etc. |
+| [DATABASE_SCHEMA.md](./architecture/DATABASE_SCHEMA.md) | MongoDB collection schemas, field types, indexes, and relationships |
+| [API_DESIGN.md](./api/API_DESIGN.md) | Complete REST API specification organized by domain |
+| [SOCKET_EVENTS.md](./api/SOCKET_EVENTS.md) | All Socket.IO events with payload schemas and lifecycle |
+| [FEATURE_ROADMAP.md](./project-management/FEATURE_ROADMAP.md) | Phased implementation plan with dependencies and scope |
+| [ANONIMI_RENAME_PLAN.md](./project-management/ANONIMI_RENAME_PLAN.md) | Full anonimi -> anonimi rebrand and identifier migration plan |
+| [SECURITY_MODEL.md](./administration/SECURITY_MODEL.md) | Authentication, authorization, rate limiting, input validation |
+| [ADMIN_SYSTEM.md](./administration/ADMIN_SYSTEM.md) | Admin dashboard design, roles, permissions, workflows |
+| [SUPPORT_SYSTEM.md](./administration/SUPPORT_SYSTEM.md) | Support tickets, report lifecycle, and admin workflows |
+| [GROUP_CHAT_FEATURE.md](./features/GROUP_CHAT_FEATURE.md) | Group chat roles, invite links, join requests, and moderation |
+| [FOLDER_STRUCTURE.md](./project-management/FOLDER_STRUCTURE.md) | Complete project folder layout and organization conventions |
 
 ---
 
