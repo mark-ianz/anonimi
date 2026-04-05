@@ -462,6 +462,8 @@ export const getGroupMembers = async (groupId: string, userId: string) => {
     profileImage: m.userId.profileImage,
     role: m.role,
     nickname: m.nickname,
+    mutedUntil: m.mutedUntil,
+    muteReason: m.muteReason,
     joinedAt: m.joinedAt,
   }));
 };
@@ -1256,7 +1258,8 @@ export const muteMember = async (
   groupId: string,
   requestingUserId: string,
   targetUserId: string,
-  durationMinutes: number
+  durationMinutes: number,
+  reason: string
 ) => {
   const group = await Group.findById(groupId);
   if (!group) throw new NotFoundError("Group not found");
@@ -1291,11 +1294,13 @@ export const muteMember = async (
   }
 
   targetMembership.mutedUntil = new Date(Date.now() + durationMinutes * 60 * 1000);
+  targetMembership.muteReason = reason;
   await targetMembership.save();
 
   return {
     message: "Member muted",
     mutedUntil: targetMembership.mutedUntil,
+    muteReason: targetMembership.muteReason,
   };
 };
 
@@ -1326,6 +1331,7 @@ export const unmuteMember = async (
   }
 
   targetMembership.mutedUntil = undefined;
+  targetMembership.muteReason = undefined;
   await targetMembership.save();
 
   return { message: "Member unmuted" };

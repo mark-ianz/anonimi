@@ -706,9 +706,16 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
       {isGroupMuted && (
         <div className="mx-4 mt-3 rounded-xl border border-destructive/35 bg-destructive/10 px-4 py-3 shrink-0">
           <p className="text-sm font-medium text-foreground">You are muted in this group</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            You cannot send messages until {groupMutedUntil?.toLocaleString() ?? "unmuted"}.
-          </p>
+          <div className="mt-1 space-y-1">
+            {currentMember?.muteReason && (
+              <p className="text-sm font-medium text-destructive">
+                Reason: {currentMember.muteReason}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              You cannot send messages until {groupMutedUntil?.toLocaleString() ?? "unmuted"}.
+            </p>
+          </div>
         </div>
       )}
 

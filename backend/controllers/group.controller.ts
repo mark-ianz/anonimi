@@ -334,12 +334,13 @@ export const muteMember = async (
 ): Promise<void> => {
   try {
     const { groupId, userId } = req.params;
-    const { durationMinutes } = req.body;
+    const { durationMinutes, reason } = req.body;
     const result = await groupService.muteMember(
       groupId,
       req.user!._id.toString(),
       userId,
-      durationMinutes || 60
+      durationMinutes || 60,
+      reason || ""
     );
     const group = await Group.findById(groupId).select("conversationId");
     if (group?.conversationId) {
@@ -347,6 +348,7 @@ export const muteMember = async (
         groupId,
         userId,
         mutedUntil: result.mutedUntil ?? null,
+        muteReason: result.muteReason ?? null,
       });
     }
     apiSuccess(res, result);

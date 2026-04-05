@@ -35,6 +35,7 @@ export interface GroupMember {
   joinedAt: string;
   status?: GroupMemberStatus;
   mutedUntil?: string;
+  muteReason?: string;
 }
 
 export interface GroupJoinRequest {

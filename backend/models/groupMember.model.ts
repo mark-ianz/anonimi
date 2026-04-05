@@ -9,6 +9,7 @@ const groupMemberSchema = new Schema<IGroupMember>(
     role: { type: String, enum: GroupRole, default: GroupRole.MEMBER },
     nickname: { type: String },
     mutedUntil: { type: Date },
+    muteReason: { type: String },
     joinedVia: {
       type: String,
       enum: ["group_create", "manual_add", "invite_link", "direct_request"],

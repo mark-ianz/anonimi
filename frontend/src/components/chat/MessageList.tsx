@@ -19,7 +19,16 @@ import TypingIndicator from "./TypingIndicator";
 import InfiniteScrollSentinel from "@/components/shared/InfiniteScroll";
 import LoadingSkeleton from "@/components/shared/LoadingSkeleton";
 import DateDisplay from "@/components/shared/DateDisplay";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useGroup } from "@/hooks/useGroups";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type TimestampBubblePosition = "single" | "first" | "middle" | "last";
 
@@ -72,6 +81,14 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
   const scrollTargetHandledRef = useRef<string | null>(null);
   const groupId = conversation.type === "group" ? conversation.group?.id ?? null : null;
   const bottomThreshold = 24;
+
+  const [targetUserId, setTargetUserId] = useState<string | null>(null);
+  const [showMuteDialog, setShowMuteDialog] = useState(false);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [muteDuration, setMuteDuration] = useState(60);
+  const [muteReason, setMuteReason] = useState("");
+
+  const { muteMember, unmuteMember, removeMember } = useGroup(groupId ?? "");
 
   const { data: groupMembers = [] } = useQuery({
     queryKey: ["groups", groupId, "members"],
@@ -242,6 +259,11 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
       };
     });
   }, [typingUsers, user?.id, conversation, groupMemberMetaById]);
+
+  const currentUserMembership = useMemo(() => {
+    return user?.id ? groupMembers.find((m) => m.userId === user.id) : null;
+  }, [user?.id, groupMembers]);
+  const currentUserRole = currentUserMembership?.role;
 
   const computeIsAtBottom = useCallback((node: HTMLDivElement | null) => {
     if (!node) return true;
@@ -542,10 +564,12 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
             }
           }
 
-          // Resolve sender info for group messages.
           let senderName: string | undefined;
           let senderImage: string | null = null;
           let senderAnonimiId: string | undefined;
+
+          let canManageSender = false;
+          let isSenderMuted = false;
 
           if (conversation.type === "group") {
             if (message.senderId !== user?.id) {
@@ -553,6 +577,18 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
               senderName = senderMeta?.name ?? "User";
               senderImage = senderMeta?.profileImage ?? null;
               senderAnonimiId = senderMeta?.anonimiId;
+
+              if (currentUserRole) {
+                const senderMembership = groupMembers.find(m => m.userId === message.senderId);
+                if (senderMembership) {
+                  const targetIsOwner = senderMembership.role === "owner";
+                  const targetIsAdmin = senderMembership.role === "admin";
+                  const isOwner = currentUserRole === "owner";
+                  const isAdmin = currentUserRole === "admin";
+                  canManageSender = isOwner || (isAdmin && !targetIsAdmin && !targetIsOwner);
+                  isSenderMuted = !!senderMembership.mutedUntil;
+                }
+              }
             }
           } else if (conversation.type === "private" && message.senderId !== user?.id) {
             senderName = conversation.participant?.nickname ?? conversation.participant?.username ?? "User";
@@ -593,6 +629,11 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
                 isHighlighted={highlightMessageId === message.id}
                 onEditStart={onEditStart}
                 onReply={onReplyStart}
+                canManageSender={canManageSender}
+                isSenderMuted={isSenderMuted}
+                onMuteRequest={(uid) => { setTargetUserId(uid); setMuteDuration(60); setMuteReason(""); setShowMuteDialog(true); }}
+                onUnmuteRequest={(uid) => unmuteMember(uid)}
+                onRemoveRequest={(uid) => { setTargetUserId(uid); setShowRemoveConfirm(true); }}
               />
             </div>
           );
@@ -614,6 +655,69 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
           New messages ({newMessageCount})
         </button>
       )}
+
+      {showMuteDialog && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowMuteDialog(false)} />
+          <div className="relative glass rounded-2xl p-6 w-full max-w-sm shadow-elevated animate-fade-in">
+            <h3 className="text-base font-semibold mb-2">Mute Member</h3>
+            <div className="space-y-3 mb-5">
+              <Select value={muteDuration.toString()} onValueChange={(val) => setMuteDuration(Number(val))}>
+                <SelectTrigger className="w-full h-10 rounded-xl">
+                  <SelectValue placeholder="Select duration" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5 mins</SelectItem>
+                  <SelectItem value="30">30 mins</SelectItem>
+                  <SelectItem value="60">1 hour</SelectItem>
+                  <SelectItem value="1440">1 day</SelectItem>
+                </SelectContent>
+              </Select>
+              <textarea
+                value={muteReason}
+                onChange={(e) => setMuteReason(e.target.value)}
+                placeholder="Reason for muting (required)"
+                className="w-full min-h-[80px] p-3 rounded-xl border border-border/60 bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
+                maxLength={200}
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowMuteDialog(false)}
+                className="flex-1 h-10 rounded-xl border border-border/60 text-sm font-medium hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (targetUserId) {
+                    muteMember({ userId: targetUserId, durationMinutes: muteDuration, reason: muteReason.trim() });
+                  }
+                  setShowMuteDialog(false);
+                }}
+                disabled={!muteReason.trim()}
+                className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                Mute
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={showRemoveConfirm}
+        onClose={() => setShowRemoveConfirm(false)}
+        onConfirm={() => {
+          if (targetUserId) removeMember(targetUserId);
+        }}
+        title="Remove Member?"
+        description="This user will be immediately removed from the group."
+        confirmLabel="Remove"
+        variant="destructive"
+      />
     </div>
   );
 }

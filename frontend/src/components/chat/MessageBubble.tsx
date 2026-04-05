@@ -15,7 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import api from "@/lib/api";
-import { EyeOff, MessageCircle, Pencil, User, X } from "lucide-react";
+import { EyeOff, MessageCircle, Pencil, User, X, VolumeX, Volume2, UserMinus } from "lucide-react";
 
 interface MessageBubbleProps {
   message: Message;
@@ -35,6 +35,11 @@ interface MessageBubbleProps {
   isHighlighted?: boolean;
   onEditStart?: (message: Message) => void;
   onReply?: (message: Message) => void;
+  canManageSender?: boolean;
+  isSenderMuted?: boolean;
+  onMuteRequest?: (userId: string) => void;
+  onUnmuteRequest?: (userId: string) => void;
+  onRemoveRequest?: (userId: string) => void;
 }
 
 export default function MessageBubble({
@@ -52,6 +57,11 @@ export default function MessageBubble({
   isHighlighted = false,
   onEditStart,
   onReply,
+  canManageSender,
+  isSenderMuted,
+  onMuteRequest,
+  onUnmuteRequest,
+  onRemoveRequest,
 }: MessageBubbleProps) {
   const { user } = useAuthStore();
   const router = useRouter();
@@ -171,7 +181,7 @@ export default function MessageBubble({
 
     const triggerRect = trigger.getBoundingClientRect();
     const menuHeight = avatarMenuRef.current?.offsetHeight ?? 88;
-    const menuWidth = 160;
+    const menuWidth = 192;
     const gap = 8;
 
     const spaceBelow = window.innerHeight - triggerRect.bottom;
@@ -320,7 +330,7 @@ export default function MessageBubble({
                   createPortal(
                     <div
                       ref={avatarMenuRef}
-                      className="fixed z-120 w-40 rounded-xl border border-border/60 bg-card/95 p-1 shadow-elevated backdrop-blur-sm animate-fade-in"
+                      className="fixed z-120 w-48 rounded-xl border border-border/60 bg-card/95 p-1 shadow-elevated backdrop-blur-sm animate-fade-in"
                       style={{
                         top: avatarMenuPosition.top,
                         left: avatarMenuPosition.left,
@@ -347,6 +357,48 @@ export default function MessageBubble({
                           <MessageCircle className="h-4 w-4" />
                           Send message
                         </button>
+                      )}
+
+                      {canManageSender && (
+                        <>
+                          <div className="my-1 border-t border-border/30" />
+                          {isSenderMuted ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAvatarMenuOpen(false);
+                                onUnmuteRequest?.(message.senderId);
+                              }}
+                              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/70"
+                            >
+                              <Volume2 className="h-4 w-4" />
+                              Unmute
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAvatarMenuOpen(false);
+                                onMuteRequest?.(message.senderId);
+                              }}
+                              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/70"
+                            >
+                              <VolumeX className="h-4 w-4" />
+                              Mute
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAvatarMenuOpen(false);
+                              onRemoveRequest?.(message.senderId);
+                            }}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                          >
+                            <UserMinus className="h-4 w-4" />
+                            Remove from Group
+                          </button>
+                        </>
                       )}
                     </div>,
                     document.body,

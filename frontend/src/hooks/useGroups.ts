@@ -119,8 +119,8 @@ export function useGroup(groupId: string | null) {
   });
 
   const muteMemberMutation = useMutation({
-    mutationFn: async ({ userId, durationMinutes = 60 }: { userId: string; durationMinutes?: number }) => {
-      const res = await api.post(`/groups/${groupId}/members/${userId}/mute`, { durationMinutes });
+    mutationFn: async ({ userId, durationMinutes = 60, reason }: { userId: string; durationMinutes?: number; reason: string }) => {
+      const res = await api.post(`/groups/${groupId}/members/${userId}/mute`, { durationMinutes, reason });
       return res.data.data;
     },
     onSuccess: () => {

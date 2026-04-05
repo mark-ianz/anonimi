@@ -7,6 +7,13 @@ import { cn } from "@/lib/utils";
 import type { GroupMember, GroupRole } from "@/types/group";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import UserAvatar from "@/components/shared/UserAvatar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface GroupMemberItemProps {
   member: GroupMember;
@@ -14,7 +21,7 @@ interface GroupMemberItemProps {
   currentUserId: string;
   onRemove?: (userId: string) => void;
   onChangeRole?: (userId: string, role: GroupRole) => void;
-  onMute?: (userId: string, durationMinutes: number) => void;
+  onMute?: (userId: string, durationMinutes: number, reason: string) => void;
   onUnmute?: (userId: string) => void;
   onTransferOwnership?: (userId: string) => void;
   onSendMessage?: (anonimiId: string) => void;
@@ -62,6 +69,7 @@ export default function GroupMemberItem({
   const [nicknameValue, setNicknameValue] = useState(member.nickname ?? "");
   const [showMuteDialog, setShowMuteDialog] = useState(false);
   const [muteDuration, setMuteDuration] = useState(60);
+  const [muteReason, setMuteReason] = useState("");
 
   const isSelf = member.userId === currentUserId;
   const isOwner = currentUserRole === "owner";
@@ -229,7 +237,7 @@ export default function GroupMemberItem({
                       </button>
                     ) : (
                       <button
-                        onClick={() => { setMenuOpen(false); setShowMuteDialog(true); }}
+                        onClick={() => { setMenuOpen(false); setShowMuteDialog(true); setMuteReason(""); setMuteDuration(60); }}
                         className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
                       >
                         <VolumeX className="w-4 h-4" />
@@ -263,21 +271,35 @@ export default function GroupMemberItem({
             <p className="text-sm text-muted-foreground">
               Choose how long this member should be muted.
             </p>
-            <select
-              value={muteDuration}
-              onChange={(event) => setMuteDuration(Number(event.target.value))}
-              className="w-full h-10 rounded-xl border border-border/60 bg-background px-3 text-sm"
-            >
-              {muteOptions.map((minutes) => (
-                <option key={minutes} value={minutes}>
-                  {minutes >= 1440
-                    ? `${minutes / 1440} day${minutes / 1440 === 1 ? "" : "s"}`
-                    : minutes >= 60
-                    ? `${minutes / 60} hour${minutes / 60 === 1 ? "" : "s"}`
-                    : `${minutes} min`}
-                </option>
-              ))}
-            </select>
+            <div className="space-y-3">
+              <Select
+                value={muteDuration.toString()}
+                onValueChange={(val) => setMuteDuration(Number(val))}
+              >
+                <SelectTrigger className="w-full h-10 rounded-xl">
+                  <SelectValue placeholder="Select duration" />
+                </SelectTrigger>
+                <SelectContent>
+                  {muteOptions.map((minutes) => (
+                    <SelectItem key={minutes} value={minutes.toString()}>
+                      {minutes >= 1440
+                        ? `${minutes / 1440} day${minutes / 1440 === 1 ? "" : "s"}`
+                        : minutes >= 60
+                        ? `${minutes / 60} hour${minutes / 60 === 1 ? "" : "s"}`
+                        : `${minutes} min`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <textarea
+                value={muteReason}
+                onChange={(e) => setMuteReason(e.target.value)}
+                placeholder="Reason for muting (required)"
+                className="w-full min-h-[80px] p-3 rounded-xl border border-border/60 bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
+                maxLength={200}
+              />
+            </div>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -289,10 +311,11 @@ export default function GroupMemberItem({
               <button
                 type="button"
                 onClick={() => {
-                  onMute?.(member.userId, muteDuration);
+                  onMute?.(member.userId, muteDuration, muteReason.trim());
                   setShowMuteDialog(false);
                 }}
-                className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                disabled={!muteReason.trim()}
+                className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
                 Mute
               </button>

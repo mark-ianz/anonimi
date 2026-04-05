@@ -151,6 +151,7 @@ export interface IGroupMember extends Document {
   role: "owner" | "admin" | "member";
   nickname?: string;
   mutedUntil?: Date;
+  muteReason?: string;
   joinedVia?: "group_create" | "manual_add" | "invite_link" | "direct_request";
   addedByUserId?: Types.ObjectId;
   joinedAt: Date;
