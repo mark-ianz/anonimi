@@ -10,7 +10,7 @@ import { useChatStore } from "@/stores/chatStore";
 import { getChatSocket } from "@/lib/socket";
 import api from "@/lib/api";
 import { decryptMessage, importKeyFromBase64 } from "@/lib/e2eeCrypto";
-import { getConversationKey } from "@/lib/e2eeKeyStore";
+import { getConversationKeys } from "@/lib/e2eeKeyStore";
 import type { Conversation } from "@/types/conversation";
 import type { GroupMember } from "@/types/group";
 import type { Message } from "@/types/message";
@@ -83,6 +83,17 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
     staleTime: 1000 * 30,
   });
 
+  const myJoinedAt = useMemo(() => {
+    if (!groupId || !user?.id) return null;
+    const member = groupMembers.find((m) => m.userId === user.id);
+    return member?.joinedAt ? new Date(member.joinedAt).getTime() : null;
+  }, [groupId, user?.id, groupMembers]);
+
+  const visibleMessages = useMemo(() => {
+    if (!myJoinedAt) return messages;
+    return messages.filter((m) => new Date(m.createdAt).getTime() >= myJoinedAt);
+  }, [messages, myJoinedAt]);
+
   const [decryptedContent, setDecryptedContent] = useState<Record<string, string>>({});
   const decryptedIdsRef = useRef(new Set<string>());
   const decryptingRef = useRef(false);
@@ -90,7 +101,7 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
   useEffect(() => {
     if (decryptingRef.current) return;
 
-    const pending = messages.filter(
+    const pending = visibleMessages.filter(
       (m) => m.isE2ee && m.e2eeCipher && m.e2eeIv && m.e2eeTag && !m.content && !decryptedIdsRef.current.has(m.id)
     );
 
@@ -98,13 +109,20 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
 
     decryptingRef.current = true;
 
-    getConversationKey(conversation.id).then((keyData) => {
-      if (!keyData) {
+    getConversationKeys(conversation.id).then((keys) => {
+      if (keys.length === 0) {
         decryptingRef.current = false;
         return;
       }
 
-      return importKeyFromBase64(keyData.key).then((aesKey) => {
+      const importAllKeys = async () => {
+        const importedKeys = await Promise.all(
+          keys.map(async (k) => ({
+            version: k.keyVersion,
+            aesKey: await importKeyFromBase64(k.key),
+          }))
+        );
+
         const updates: Record<string, string> = {};
 
         const decryptNext = async (index: number) => {
@@ -117,29 +135,42 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
           }
 
           const msg = pending[index];
-          try {
-            const content = await decryptMessage(msg.e2eeCipher!, msg.e2eeIv!, msg.e2eeTag!, aesKey);
-            updates[msg.id] = content;
-            decryptedIdsRef.current.add(msg.id);
-          } catch {
-            // silent
+          let decrypted = false;
+
+          for (const { version, aesKey } of importedKeys) {
+            try {
+              const content = await decryptMessage(msg.e2eeCipher!, msg.e2eeIv!, msg.e2eeTag!, aesKey);
+              updates[msg.id] = content;
+              decryptedIdsRef.current.add(msg.id);
+              decrypted = true;
+              break;
+            } catch {
+              // Try next key
+            }
           }
+
+          if (!decrypted) {
+            decryptedIdsRef.current.add(msg.id);
+          }
+
           await decryptNext(index + 1);
         };
 
         return decryptNext(0);
-      });
+      };
+
+      return importAllKeys();
     }).catch(() => {
       decryptingRef.current = false;
     });
-  }, [messages, conversation.id]);
+  }, [visibleMessages, conversation.id]);
 
   const displayMessages = useMemo(() => {
-    if (Object.keys(decryptedContent).length === 0) return messages;
-    return messages.map((m) =>
+    if (Object.keys(decryptedContent).length === 0) return visibleMessages;
+    return visibleMessages.map((m) =>
       decryptedContent[m.id] ? { ...m, content: decryptedContent[m.id] } : m
     );
-  }, [messages, decryptedContent]);
+  }, [visibleMessages, decryptedContent]);
 
   const groupMemberMetaById = useMemo(() => {
     const map: Record<string, { name: string; anonimiId: string; profileImage: string | null }> = {};
@@ -437,6 +468,23 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
           />
 
           <div className="flex-1" />
+
+          {/* Hidden messages notice for new group members */}
+          {myJoinedAt && displayMessages.length > 0 && (
+            <div className="flex items-center justify-center py-3 px-4">
+              <div className="px-3 py-1.5 rounded-full bg-muted/60 text-xs text-muted-foreground text-center">
+                You joined this group on{" "}
+                {new Date(myJoinedAt).toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+                . Previous messages are not available.
+              </div>
+            </div>
+          )}
 
           {/* Messages */}
           {displayMessages.map((message, index) => {

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import {
   getUserKeyPair,
-  getConversationKey,
+  getConversationKeys,
   saveConversationKey,
 } from "@/lib/e2eeKeyStore";
 import {
@@ -12,7 +12,6 @@ import {
   generateAesKey,
   encryptKeyWithSharedSecret,
   decryptKeyWithSharedSecret,
-  importKeyFromBase64,
 } from "@/lib/e2eeCrypto";
 import api from "@/lib/api";
 import { getChatSocket } from "@/lib/socket";
@@ -35,8 +34,8 @@ export function useGroupKeyExchange(
     isExchanging.current = true;
 
     try {
-      const existingConvKey = await getConversationKey(conversationId);
-      if (existingConvKey) {
+      const existingKeys = await getConversationKeys(conversationId);
+      if (existingKeys.length > 0) {
         isExchanging.current = false;
         retryCount.current = 0;
         return;
@@ -54,15 +53,18 @@ export function useGroupKeyExchange(
         return;
       }
 
-      const members: Array<{ userId: string }> = membersRes.data.data;
-      const memberUserIds = members.map((m) => m.userId);
+      const members: Array<{ userId: string; joinedAt: string }> = membersRes.data.data;
+      const sortedMembers = [...members].sort(
+        (a, b) => new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime()
+      );
+      const creatorId = sortedMembers[0]?.userId;
 
       const memberKeys: GroupMemberKey[] = [];
-      for (const uid of memberUserIds) {
+      for (const member of sortedMembers) {
         try {
-          const res = await api.get(`/e2ee/keys/${uid}`).catch(() => null);
+          const res = await api.get(`/e2ee/keys/${member.userId}`).catch(() => null);
           if (res?.data?.data) {
-            memberKeys.push({ userId: uid, publicKey: res.data.data.publicKey });
+            memberKeys.push({ userId: member.userId, publicKey: res.data.data.publicKey });
           }
         } catch {
           // Skip members without keys
@@ -80,39 +82,52 @@ export function useGroupKeyExchange(
         return;
       }
 
-      const groupAesKey = await generateAesKey();
-      const groupAesKeyBase64 = await exportKeyAsBase64(groupAesKey);
+      if (userKeys.id === creatorId) {
+        const groupAesKey = await generateAesKey();
+        const groupAesKeyBase64 = await exportKeyAsBase64(groupAesKey);
 
-      const encryptedKeys: Record<string, string> = {};
-      for (const member of memberKeys) {
-        if (member.userId === userKeys.id) continue;
-        try {
-          const encrypted = await encryptKeyWithSharedSecret(
-            groupAesKeyBase64,
-            userKeys.encryptedPrivateKey,
-            member.publicKey
-          );
-          encryptedKeys[member.userId] = encrypted;
-        } catch (err) {
-          console.error(`Failed to encrypt key for member ${member.userId}:`, err);
+        const encryptedKeys: Record<string, string> = {};
+        for (const member of memberKeys) {
+          if (member.userId === userKeys.id) continue;
+          try {
+            const encrypted = await encryptKeyWithSharedSecret(
+              groupAesKeyBase64,
+              userKeys.encryptedPrivateKey,
+              member.publicKey
+            );
+            encryptedKeys[member.userId] = encrypted;
+          } catch (err) {
+            console.error(`Failed to encrypt key for member ${member.userId}:`, err);
+          }
         }
-      }
 
-      if (Object.keys(encryptedKeys).length > 0) {
+        if (Object.keys(encryptedKeys).length > 0) {
+          const socket = getChatSocket();
+          socket.emit("e2ee:group:key:distribute", {
+            groupId,
+            conversationId,
+            keyVersion: 1,
+            encryptedKeys,
+          });
+        }
+
+        await saveConversationKey({
+          conversationId,
+          key: groupAesKeyBase64,
+          keyVersion: 1,
+        });
+
+        console.log("[E2EE] Group creator distributed key v1 to", Object.keys(encryptedKeys).length, "members");
+      } else {
         const socket = getChatSocket();
-        socket.emit("e2ee:group:key:distribute", {
+        socket.emit("e2ee:group:key:request", {
           groupId,
           conversationId,
-          keyVersion: 1,
-          encryptedKeys,
+          requesterId: userKeys.id,
         });
-      }
 
-      await saveConversationKey({
-        conversationId,
-        key: groupAesKeyBase64,
-        keyVersion: 1,
-      });
+        console.log("[E2EE] Requested group key from existing members");
+      }
 
       retryCount.current = 0;
     } catch (error) {
@@ -147,8 +162,8 @@ export function useGroupKeyReception() {
     isReceiving.current = true;
 
     try {
-      const existingConvKey = await getConversationKey(conversationId);
-      if (existingConvKey) {
+      const existingKeys = await getConversationKeys(conversationId);
+      if (existingKeys.length > 0) {
         isReceiving.current = false;
         return;
       }
@@ -178,6 +193,8 @@ export function useGroupKeyReception() {
         key: decryptedKeyBase64,
         keyVersion: 1,
       });
+
+      console.log("[E2EE] Received group key v1 from", senderUserId);
     } catch (error) {
       console.error("Failed to receive group key:", error);
     } finally {

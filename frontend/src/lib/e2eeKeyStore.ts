@@ -1,5 +1,5 @@
 const DB_NAME = "e2ee-keys";
-const DB_VERSION = 1;
+const DB_VERSION = 4;
 const STORE_KEYS = "keys";
 const STORE_CONVERSATIONS = "conversations";
 const STORE_SESSION = "session";
@@ -7,17 +7,23 @@ const STORE_SESSION = "session";
 const openDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains(STORE_KEYS)) {
-        db.createObjectStore(STORE_KEYS, { keyPath: "id" });
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+
+      if (db.objectStoreNames.contains(STORE_CONVERSATIONS)) {
+        db.deleteObjectStore(STORE_CONVERSATIONS);
       }
-      if (!db.objectStoreNames.contains(STORE_CONVERSATIONS)) {
-        db.createObjectStore(STORE_CONVERSATIONS, { keyPath: "id" });
+      if (db.objectStoreNames.contains(STORE_KEYS)) {
+        db.deleteObjectStore(STORE_KEYS);
       }
-      if (!db.objectStoreNames.contains(STORE_SESSION)) {
-        db.createObjectStore(STORE_SESSION, { keyPath: "id" });
+      if (db.objectStoreNames.contains(STORE_SESSION)) {
+        db.deleteObjectStore(STORE_SESSION);
       }
+
+      db.createObjectStore(STORE_KEYS, { keyPath: "id" });
+      const convStore = db.createObjectStore(STORE_CONVERSATIONS, { keyPath: "id", autoIncrement: true });
+      convStore.createIndex("conversationId", "conversationId", { unique: false });
+      db.createObjectStore(STORE_SESSION, { keyPath: "id" });
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -101,23 +107,57 @@ export const getUserKeyPair = async (): Promise<UserKeyPair | null> => {
 };
 
 export const saveConversationKey = async (key: Omit<ConversationKey, "id" | "createdAt">) => {
-  await putItem(STORE_CONVERSATIONS, {
-    ...key,
-    id: key.conversationId,
-    createdAt: new Date().toISOString(),
+  const db = await openDB();
+  return new Promise<void>((resolve, reject) => {
+    const tx = db.transaction("conversations", "readwrite");
+    const store = tx.objectStore("conversations");
+    const index = store.index("conversationId");
+    const request = index.getAll(key.conversationId);
+    request.onsuccess = () => {
+      const existing = request.result as ConversationKey[];
+      const hasNewerOrEqual = existing.some((k) => k.keyVersion >= key.keyVersion);
+      if (hasNewerOrEqual) {
+        resolve();
+        return;
+      }
+      const addRequest = store.add({
+        ...key,
+        createdAt: new Date().toISOString(),
+      });
+      addRequest.onsuccess = () => resolve();
+      addRequest.onerror = () => reject(addRequest.error);
+    };
+    request.onerror = () => reject(request.error);
   });
 };
 
 export const getConversationKey = async (conversationId: string): Promise<ConversationKey | null> => {
-  return getItem<ConversationKey>(STORE_CONVERSATIONS, conversationId);
+  const keys = await getConversationKeys(conversationId);
+  return keys[0] ?? null;
+};
+
+export const getConversationKeys = async (conversationId: string): Promise<ConversationKey[]> => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("conversations", "readonly");
+    const store = tx.objectStore("conversations");
+    const index = store.index("conversationId");
+    const request = index.getAll(conversationId);
+    request.onsuccess = () => {
+      const results = request.result as ConversationKey[];
+      results.sort((a, b) => b.keyVersion - a.keyVersion);
+      resolve(results);
+    };
+    request.onerror = () => reject(request.error);
+  });
 };
 
 export const deleteConversationKey = async (conversationId: string) => {
-  await deleteItem(STORE_CONVERSATIONS, conversationId);
+  await deleteItem("conversations", conversationId);
 };
 
 export const getAllConversationKeys = async (): Promise<ConversationKey[]> => {
-  return getAllItems<ConversationKey>(STORE_CONVERSATIONS);
+  return getAllItems<ConversationKey>("conversations");
 };
 
 export const clearAllKeys = async () => {

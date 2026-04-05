@@ -211,4 +211,50 @@ export const setupE2EEHandler = (io: Server, socket: Socket): void => {
       console.error("Error in e2ee:group:key:rotate:", error);
     }
   });
+
+  socket.on("e2ee:group:key:request", async (payload: { groupId: string; conversationId: string; requesterId: string }) => {
+    try {
+      const requesterId = payload.requesterId;
+      const { groupId, conversationId } = payload;
+
+      const group = await Group.findById(groupId).select("conversationId");
+      if (!group) return;
+
+      const groupMember = await GroupMember.findOne({ groupId, userId: new Types.ObjectId(requesterId) }).lean();
+      if (!groupMember) return;
+
+      const otherMembers = await GroupMember.find({
+        groupId,
+        userId: { $ne: new Types.ObjectId(requesterId) },
+      }).select("userId").lean();
+
+      const otherUserIds = otherMembers.map((m: any) => m.userId.toString());
+
+      for (const memberId of otherUserIds) {
+        emitToUser(memberId, "e2ee:group:key:request:received", {
+          groupId,
+          conversationId,
+          requesterId,
+        });
+      }
+    } catch (error) {
+      console.error("Error in e2ee:group:key:request:", error);
+    }
+  });
+
+  socket.on("e2ee:group:key:response", async (payload: { groupId: string; conversationId: string; requesterId: string; keyVersion: number; encryptedKey: string }) => {
+    try {
+      const { groupId, conversationId, requesterId, keyVersion, encryptedKey } = payload;
+
+      emitToUser(requesterId, "e2ee:group:key:response:received", {
+        groupId,
+        conversationId,
+        keyVersion,
+        encryptedKey,
+        senderId: socket.data.user?.userId,
+      });
+    } catch (error) {
+      console.error("Error in e2ee:group:key:response:", error);
+    }
+  });
 };

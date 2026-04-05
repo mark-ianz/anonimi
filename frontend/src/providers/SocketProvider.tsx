@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { getChatSocket, disconnectSockets } from "@/lib/socket";
 import api from "@/lib/api";
 import { decryptMessage, importKeyFromBase64, importPrivateKey, deriveSharedSecret, exportKeyAsBase64, decryptKeyWithSharedSecret } from "@/lib/e2eeCrypto";
-import { getConversationKey, getUserKeyPair, saveConversationKey } from "@/lib/e2eeKeyStore";
+import { getConversationKey, getConversationKeys, getUserKeyPair, saveConversationKey } from "@/lib/e2eeKeyStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useSocketStore } from "@/stores/socketStore";
 import { useChatStore } from "@/stores/chatStore";
@@ -979,6 +979,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     socket.on("e2ee:group:key:distributed", async (payload: { groupId: string; conversationId: string; keyVersion: number; encryptedKey: string; senderId: string }) => {
       try {
+        const existing = await getConversationKey(payload.conversationId);
+        if (existing) return;
+
         const userKeys = await getUserKeyPair();
         if (!userKeys) return;
 
@@ -1005,6 +1008,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     socket.on("e2ee:group:key:rotated", async (payload: { groupId: string; conversationId: string; keyVersion: number; encryptedKey: string; senderId: string }) => {
       try {
+        const existing = await getConversationKey(payload.conversationId);
+        if (existing) return;
+
         const userKeys = await getUserKeyPair();
         if (!userKeys) return;
 
@@ -1026,6 +1032,72 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         });
       } catch (error) {
         console.error("Failed to process group key rotation:", error);
+      }
+    });
+
+    socket.on("e2ee:group:key:request:received", async (payload: { groupId: string; conversationId: string; requesterId: string }) => {
+      try {
+        const existingKeys = await getConversationKeys(payload.conversationId);
+        if (existingKeys.length === 0) return;
+
+        const userKeys = await getUserKeyPair();
+        if (!userKeys) return;
+
+        const requesterKeyRes = await api.get(`/e2ee/keys/${payload.requesterId}`).catch(() => null);
+        if (!requesterKeyRes?.data?.data) return;
+
+        const requesterPublicKey = requesterKeyRes.data.data.publicKey;
+        const latestKey = existingKeys[0];
+
+        const { encryptKeyWithSharedSecret } = await import("@/lib/e2eeCrypto");
+        const encrypted = await encryptKeyWithSharedSecret(
+          latestKey.key,
+          userKeys.encryptedPrivateKey,
+          requesterPublicKey
+        );
+
+        socket.emit("e2ee:group:key:response", {
+          groupId: payload.groupId,
+          conversationId: payload.conversationId,
+          requesterId: payload.requesterId,
+          keyVersion: latestKey.keyVersion,
+          encryptedKey: encrypted,
+        });
+
+        console.log("[E2EE] Responded to group key request from", payload.requesterId);
+      } catch (error) {
+        console.error("Failed to respond to group key request:", error);
+      }
+    });
+
+    socket.on("e2ee:group:key:response:received", async (payload: { groupId: string; conversationId: string; keyVersion: number; encryptedKey: string; senderId: string }) => {
+      try {
+        const existing = await getConversationKey(payload.conversationId);
+        if (existing) return;
+
+        const userKeys = await getUserKeyPair();
+        if (!userKeys) return;
+
+        const senderKeyRes = await api.get(`/e2ee/keys/${payload.senderId}`).catch(() => null);
+        if (!senderKeyRes?.data?.data) return;
+
+        const senderPublicKey = senderKeyRes.data.data.publicKey;
+
+        const decryptedKeyBase64 = await decryptKeyWithSharedSecret(
+          payload.encryptedKey,
+          userKeys.encryptedPrivateKey,
+          senderPublicKey
+        );
+
+        await saveConversationKey({
+          conversationId: payload.conversationId,
+          key: decryptedKeyBase64,
+          keyVersion: payload.keyVersion,
+        });
+
+        console.log("[E2EE] Received group key v", payload.keyVersion, "from", payload.senderId);
+      } catch (error) {
+        console.error("Failed to process group key response:", error);
       }
     });
 
@@ -1069,6 +1141,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       socket.off("e2ee:message:receive");
       socket.off("e2ee:group:key:distributed");
       socket.off("e2ee:group:key:rotated");
+      socket.off("e2ee:group:key:request:received");
+      socket.off("e2ee:group:key:response:received");
     };
   }, [
     isAuthenticated,
