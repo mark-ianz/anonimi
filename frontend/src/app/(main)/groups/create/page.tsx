@@ -9,8 +9,8 @@ import { useContacts } from "@/hooks/useContacts";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
 import { cn } from "@/lib/utils";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
-import { UploadSource, validateUploadFile } from "@/lib/uploadPolicy";
 import { useAuthStore } from "@/stores/authStore";
+import UserAvatar from "@/components/shared/UserAvatar";
 import TemporaryAccountModal from "@/components/shared/TemporaryAccountModal";
 
 export default function CreateGroupPage() {
@@ -406,18 +406,12 @@ export default function CreateGroupPage() {
                       isSelected ? "bg-primary/10" : "hover:bg-muted/50"
                     )}
                   >
-                    <div className="w-10 h-10 rounded-xl overflow-hidden bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-sm font-medium shrink-0">
-                      {contact.profileImage ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={resolveMediaUrl(contact.profileImage)}
-                          alt={contact.username}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        contact.username[0].toUpperCase()
-                      )}
-                    </div>
+                    <UserAvatar
+                      imageUrl={contact.profileImage}
+                      name={contact.nickname ?? contact.username}
+                      className="w-10 h-10 rounded-xl shrink-0"
+                      roundedClassName="rounded-xl"
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">
                         {contact.nickname ?? contact.username}

@@ -64,7 +64,6 @@ export default function UserAvatar({
             onError={() => setSvgError(true)}
           />
         ) : (
-          <>
           <svg
             viewBox="0 0 64 64"
             aria-hidden="true"
@@ -87,15 +86,6 @@ export default function UserAvatar({
               strokeLinecap="round"
             />
           </svg>
-          <span
-            className={cn(
-              "absolute inset-0 flex items-center justify-center text-white font-semibold",
-              textClassName
-            )}
-          >
-            {initial}
-          </span>
-          </>
         )
       )}
     </div>
