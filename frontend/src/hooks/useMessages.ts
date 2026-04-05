@@ -162,9 +162,10 @@ export function useMessages(conversationId: string | null) {
       const isStealth = !!payload.stealthDuration;
       const stealthExpiresAt = getStealthExpiresAt(payload.stealthDuration);
 
-      let e2eeCipher: string | undefined;
-      let e2eeIv: string | undefined;
-      let e2eeTag: string | undefined;
+      let contentCipher: string | undefined;
+      let contentIv: string | undefined;
+      let contentTag: string | undefined;
+      let contentKeyVersion: number | undefined;
       let contentToSend = payload.content;
 
       if (payload.content && !isStealth) {
@@ -174,9 +175,10 @@ export function useMessages(conversationId: string | null) {
             console.log("[E2EE] Encrypting message for conversation", payload.conversationId);
             const aesKey = await importKeyFromBase64(convKeyData.key);
             const encrypted = await encryptMessage(payload.content, aesKey);
-            e2eeCipher = encrypted.cipherText;
-            e2eeIv = encrypted.iv;
-            e2eeTag = encrypted.tag;
+            contentCipher = encrypted.cipherText;
+            contentIv = encrypted.iv;
+            contentTag = encrypted.tag;
+            contentKeyVersion = convKeyData.keyVersion;
             contentToSend = null;
           } else {
             console.warn("[E2EE] No conversation key found for", payload.conversationId, "- sending plaintext");
@@ -196,11 +198,12 @@ export function useMessages(conversationId: string | null) {
         isStealth,
         stealthExpiresAt,
         stealthExpiredAt: null,
-        stealthContentLength: isStealth ? (payload.content ?? "").length : null,
-        isE2ee: !!e2eeCipher,
-        e2eeCipher: e2eeCipher ?? null,
-        e2eeIv: e2eeIv ?? null,
-        e2eeTag: e2eeTag ?? null,
+        contentLength: isStealth ? (payload.content ?? "").length : null,
+        isE2ee: !!contentCipher,
+        contentCipher: contentCipher ?? null,
+        contentIv: contentIv ?? null,
+        contentTag: contentTag ?? null,
+        contentKeyVersion: contentKeyVersion ?? null,
         mediaUrl: payload.mediaUrl ?? null,
         fileName: payload.fileName ?? null,
         fileSize: payload.fileSize ?? null,
@@ -217,14 +220,15 @@ export function useMessages(conversationId: string | null) {
 
       addMessage(payload.conversationId, optimistic);
       updateConversationLastMessage(payload.conversationId, {
-        content: isStealth ? "[Stealth]" : (e2eeCipher ? null : payload.content),
+        content: isStealth ? "[Stealth]" : (contentCipher ? null : payload.content),
         senderId: user.id,
         type: payload.type,
         timestamp: optimistic.createdAt,
-        isE2ee: !!e2eeCipher,
-        e2eeCipher: e2eeCipher ?? null,
-        e2eeIv: e2eeIv ?? null,
-        e2eeTag: e2eeTag ?? null,
+        isE2ee: !!contentCipher,
+        contentCipher: contentCipher ?? null,
+        contentIv: contentIv ?? null,
+        contentTag: contentTag ?? null,
+        contentKeyVersion: contentKeyVersion ?? null,
       });
 
       qc.invalidateQueries({ queryKey: ["conversations"] });
@@ -236,10 +240,10 @@ export function useMessages(conversationId: string | null) {
         content: contentToSend,
       };
 
-      if (e2eeCipher) {
-        socketPayload.e2eeCipher = e2eeCipher;
-        socketPayload.e2eeIv = e2eeIv;
-        socketPayload.e2eeTag = e2eeTag;
+      if (contentCipher) {
+        socketPayload.contentCipher = contentCipher;
+        socketPayload.contentIv = contentIv;
+        socketPayload.contentTag = contentTag;
       }
 
       const socket = getChatSocket();
@@ -347,9 +351,32 @@ export function useMessages(conversationId: string | null) {
   });
 
   const editMessageMutation = useMutation({
-    mutationFn: async (payload: { messageId: string; content: string }) => {
+    mutationFn: async (payload: { messageId: string; content: string; conversationId: string }) => {
+      let contentCipher: string | undefined;
+      let contentIv: string | undefined;
+      let contentTag: string | undefined;
+      let contentToSend: string | null = payload.content;
+
+      try {
+        const convKeyData = await getConvKeyFromStore(payload.conversationId);
+        if (convKeyData) {
+          console.log("[E2EE] Encrypting edit for conversation", payload.conversationId);
+          const aesKey = await importKeyFromBase64(convKeyData.key);
+          const encrypted = await encryptMessage(payload.content, aesKey);
+          contentCipher = encrypted.cipherText;
+          contentIv = encrypted.iv;
+          contentTag = encrypted.tag;
+          contentToSend = null;
+        }
+      } catch (err) {
+        console.error("[E2EE] Encryption failed for edit:", err);
+      }
+
       const res = await api.patch(`/messages/${payload.messageId}/edit`, {
-        content: payload.content,
+        content: contentToSend,
+        contentCipher,
+        contentIv,
+        contentTag,
       });
       return res.data.data as Message;
     },

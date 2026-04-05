@@ -76,23 +76,24 @@ export interface MessageReceivePayload {
   isStealth?: boolean;
   stealthExpiresAt?: string | null;
   stealthExpiredAt?: string | null;
-  stealthContentLength?: number | null;
+  contentLength?: number | null;
   mediaUrl: string | null;
   fileName: string | null;
   fileSize: number | null;
   timestamp: string;
   suppressUnread?: boolean;
   isE2ee?: boolean;
-  e2eeCipher?: string | null;
-  e2eeIv?: string | null;
-  e2eeTag?: string | null;
+  contentCipher?: string | null;
+  contentIv?: string | null;
+  contentTag?: string | null;
+  contentKeyVersion?: number | null;
 }
 
 export interface MessageStealthExpiredPayload {
   messageId: string;
   conversationId: string;
   stealthExpiredAt: string;
-  stealthContentLength: number;
+  contentLength: number;
 }
 
 export interface MessageUnsentPayload {
@@ -276,12 +277,12 @@ export interface E2EEReceivePayload {
   senderUsername: string;
   senderProfileImage: string | null;
   type: MessageType;
-  cipherText: string;
-  iv: string;
-  tag: string;
+  contentCipher: string;
+  contentIv: string;
+  contentTag: string;
   isStealth?: boolean;
   stealthExpiresAt?: string | null;
-  stealthContentLength?: number | null;
+  contentLength?: number | null;
   mediaUrl: string | null;
   fileName: string | null;
   fileSize: number | null;

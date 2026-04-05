@@ -119,7 +119,7 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
     if (decryptingRef.current) return;
 
     const pending = visibleMessages.filter(
-      (m) => m.isE2ee && m.e2eeCipher && m.e2eeIv && m.e2eeTag && !m.content && !decryptedIdsRef.current.has(m.id)
+      (m) => m.isE2ee && m.contentCipher && m.contentIv && m.contentTag && !m.content && !decryptedIdsRef.current.has(m.id)
     );
 
     if (pending.length === 0) return;
@@ -156,7 +156,7 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
 
           for (const { version, aesKey } of importedKeys) {
             try {
-              const content = await decryptMessage(msg.e2eeCipher!, msg.e2eeIv!, msg.e2eeTag!, aesKey);
+              const content = await decryptMessage(msg.contentCipher!, msg.contentIv!, msg.contentTag!, aesKey);
               updates[msg.id] = content;
               decryptedIdsRef.current.add(msg.id);
               decrypted = true;

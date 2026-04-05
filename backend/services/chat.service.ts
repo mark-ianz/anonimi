@@ -131,7 +131,7 @@ const serializeStealth = (message: any) => {
       content: null,
       stealthExpiresAt: message.stealthExpiresAt ? new Date(message.stealthExpiresAt) : null,
       stealthExpiredAt: message.stealthExpiredAt ?? null,
-      stealthContentLength: message.stealthContentLength ?? 0,
+      stealthContentLength: message.contentLength ?? 0,
     };
   }
 
@@ -150,11 +150,11 @@ const serializeStealth = (message: any) => {
 
   let content: string | null = null;
   try {
-    if (message.stealthContentCipher && message.stealthContentIv && message.stealthContentTag) {
+    if (message.contentCipher && message.contentIv && message.contentTag) {
       content = decryptStealthContent(
-        message.stealthContentCipher,
-        message.stealthContentIv,
-        message.stealthContentTag
+        message.contentCipher,
+        message.contentIv,
+        message.contentTag
       );
     }
   } catch {
@@ -166,7 +166,7 @@ const serializeStealth = (message: any) => {
     content,
     stealthExpiresAt: expiresAt,
     stealthExpiredAt: message.stealthExpiredAt ?? null,
-    stealthContentLength: message.stealthContentLength ?? (content ? content.length : 0),
+    stealthContentLength: message.contentLength ?? (content ? content.length : 0),
   };
 };
 
@@ -473,7 +473,7 @@ export const getConversations = async (
           deletedFor: { $ne: userObjectId },
         })
           .sort({ createdAt: -1 })
-          .select("senderId type content createdAt isE2ee e2eeCipher e2eeIv e2eeTag")
+          .select("senderId type content createdAt isE2ee contentCipher contentIv contentTag contentKeyVersion")
           .lean();
 
         const lastMessageSender = latestVisibleMessage?.senderId
@@ -521,9 +521,10 @@ export const getConversations = async (
                 timestamp: latestVisibleMessage.createdAt,
                 senderUsername: lastMessageSender?.username,
                 isE2ee: latestVisibleMessage.isE2ee ?? false,
-                e2eeCipher: latestVisibleMessage.e2eeCipher ?? null,
-                e2eeIv: latestVisibleMessage.e2eeIv ?? null,
-                e2eeTag: latestVisibleMessage.e2eeTag ?? null,
+                contentCipher: latestVisibleMessage.contentCipher ?? null,
+                contentIv: latestVisibleMessage.contentIv ?? null,
+                contentTag: latestVisibleMessage.contentTag ?? null,
+                contentKeyVersion: latestVisibleMessage.contentKeyVersion ?? null,
               }
             : null,
           unreadCount,
@@ -537,16 +538,21 @@ export const getConversations = async (
         if (!group) {
           return null;
         }
+
+        const membership = await GroupMember.findOne({
+          groupId: group._id,
+          userId: userObjectId,
+        }).select("joinedAt").lean();
+        const joinedAt = membership?.joinedAt || new Date(0);
+
         const memberCount = await GroupMember.countDocuments({
           groupId: group?._id,
         });
-        const fallbackMembers = group
-          ? await GroupMember.find({ groupId: group._id })
-              .sort({ joinedAt: 1 })
-              .limit(3)
-              .populate("userId", "profileImage")
-              .lean()
-          : [];
+        const fallbackMembers = await GroupMember.find({ groupId: group._id })
+          .sort({ joinedAt: 1 })
+          .limit(3)
+          .populate("userId", "profileImage")
+          .lean();
         const fallbackProfileImages = fallbackMembers.map(
           (m: any) => m.userId?.profileImage ?? null
         );
@@ -560,14 +566,16 @@ export const getConversations = async (
               senderId: { $ne: userObjectId },
               readBy: { $ne: userObjectId },
               deletedFor: { $ne: userObjectId },
+              createdAt: { $gte: joinedAt },
             });
 
         const latestVisibleMessage = await Message.findOne({
           conversationId: conv._id,
           deletedFor: { $ne: userObjectId },
+          createdAt: { $gte: joinedAt },
         })
           .sort({ createdAt: -1 })
-          .select("senderId type content createdAt isE2ee e2eeCipher e2eeIv e2eeTag")
+          .select("senderId type content createdAt isE2ee contentCipher contentIv contentTag contentKeyVersion")
           .lean();
 
         const lastMessageSender = latestVisibleMessage?.senderId
@@ -594,9 +602,10 @@ export const getConversations = async (
                 timestamp: latestVisibleMessage.createdAt,
                 senderUsername: lastMessageSender?.username,
                 isE2ee: latestVisibleMessage.isE2ee ?? false,
-                e2eeCipher: latestVisibleMessage.e2eeCipher ?? null,
-                e2eeIv: latestVisibleMessage.e2eeIv ?? null,
-                e2eeTag: latestVisibleMessage.e2eeTag ?? null,
+                contentCipher: latestVisibleMessage.contentCipher ?? null,
+                contentIv: latestVisibleMessage.contentIv ?? null,
+                contentTag: latestVisibleMessage.contentTag ?? null,
+                contentKeyVersion: latestVisibleMessage.contentKeyVersion ?? null,
               }
             : null,
           unreadCount,
@@ -711,6 +720,12 @@ export const getConversation = async (
     if (!group) {
       throw new NotFoundError("Conversation not found");
     }
+    const membership = await GroupMember.findOne({
+      groupId: group._id,
+      userId: new Types.ObjectId(userId),
+    }).select("joinedAt").lean();
+    const joinedAt = membership?.joinedAt || new Date(0);
+
     const memberCount = group
       ? await GroupMember.countDocuments({ groupId: group._id })
       : 0;
@@ -725,7 +740,10 @@ export const getConversation = async (
       (m: any) => m.userId?.profileImage ?? null
     );
 
-    const lastMessageSender = conversation.lastMessage?.senderId
+    const isLastMessageVisible = conversation.lastMessage?.timestamp && 
+                                  new Date(conversation.lastMessage.timestamp) >= joinedAt;
+
+    const lastMessageSender = isLastMessageVisible && conversation.lastMessage?.senderId
       ? await User.findById(conversation.lastMessage.senderId).select("username").lean()
       : null;
     const archivedRow = await ConversationArchive.findOne({
@@ -747,14 +765,20 @@ export const getConversation = async (
         fallbackProfileImages,
         disbandedAt: group?.disbandedAt ?? null,
       },
-      lastMessage: conversation.lastMessage
+      lastMessage: isLastMessageVisible && conversation.lastMessage
         ? {
-            ...conversation.lastMessage,
+            content: conversation.lastMessage.isE2ee ? null : conversation.lastMessage.content,
+            senderId: conversation.lastMessage.senderId?.toString(),
+            type: conversation.lastMessage.type,
+            timestamp: conversation.lastMessage.timestamp,
             senderUsername: lastMessageSender?.username,
+            isE2ee: conversation.lastMessage.isE2ee ?? false,
+            contentCipher: conversation.lastMessage.contentCipher ?? null,
+            contentIv: conversation.lastMessage.contentIv ?? null,
+            contentTag: conversation.lastMessage.contentTag ?? null,
+            contentKeyVersion: (conversation.lastMessage as any).contentKeyVersion ?? null,
           }
         : null,
-      requestStatus: conversation.requestStatus,
-      createdAt: conversation.createdAt,
     };
   }
 };
@@ -784,6 +808,21 @@ export const getMessages = async (
     deletedFor: { $ne: new Types.ObjectId(userId) },
   };
 
+  if (conversation.type === "group") {
+    const group = await Group.findOne({ conversationId: conversation._id });
+    if (group) {
+      const membership = await GroupMember.findOne({
+        groupId: group._id,
+        userId: new Types.ObjectId(userId),
+      })
+        .select("joinedAt")
+        .lean();
+      if (membership) {
+        query.createdAt = { $gte: membership.joinedAt };
+      }
+    }
+  }
+
   if (cursor) {
     query._id = { $lt: new Types.ObjectId(cursor) };
   }
@@ -810,9 +849,9 @@ export const getMessages = async (
         stealthExpiredAt: stealth.stealthExpiredAt,
         stealthContentLength: stealth.stealthContentLength,
         isE2ee: m.isE2ee ?? false,
-        e2eeCipher: m.e2eeCipher ?? null,
-        e2eeIv: m.e2eeIv ?? null,
-        e2eeTag: m.e2eeTag ?? null,
+        contentCipher: m.contentCipher ?? null,
+        contentIv: m.contentIv ?? null,
+        contentTag: m.contentTag ?? null,
         mediaUrl: m.mediaUrl,
         fileName: m.fileName,
         fileSize: m.fileSize,
@@ -865,12 +904,36 @@ export const searchMessages = async (
       limit,
     };
   }
-
   const conversationIds = conversations.map((conv: any) => conv._id);
   const queryRegex = new RegExp(escapeRegex(trimmed), "i");
 
+  const groupMemberships = await GroupMember.find({
+    userId: userObjectId,
+    groupId: { $in: conversations.filter(c => c.type === "group").map(c => groupByConversationId.get(c._id.toString())?._id) }
+  }).select("groupId joinedAt").lean();
+
+  const joinDateByConvId = new Map<string, Date>();
+  for (const conv of conversations) {
+    if (conv.type === "group") {
+      const g = groupByConversationId.get(conv._id.toString());
+      const m = groupMemberships.find(ms => ms.groupId.toString() === g?._id.toString());
+      if (m) joinDateByConvId.set(conv._id.toString(), m.joinedAt);
+    }
+  }
+
+  const orParts: any[] = [];
+  for (const convId of conversationIds) {
+    const cid = convId.toString();
+    const joinedAt = joinDateByConvId.get(cid);
+    if (joinedAt) {
+      orParts.push({ conversationId: convId, createdAt: { $gte: joinedAt } });
+    } else {
+      orParts.push({ conversationId: convId });
+    }
+  }
+
   const messageQuery: Record<string, unknown> = {
-    conversationId: { $in: conversationIds },
+    $or: orParts,
     deletedFor: { $ne: userObjectId },
     unsent: false,
     isStealth: { $ne: true },
@@ -1059,9 +1122,10 @@ export const sendMessage = async (
     suppressNotificationUserIds?: string[];
     stealthDuration?: string;
     replyToId?: string;
-    e2eeCipher?: string;
-    e2eeIv?: string;
-    e2eeTag?: string;
+    contentCipher?: string;
+    contentIv?: string;
+    contentTag?: string;
+    contentKeyVersion?: number;
   }
 ) => {
   const conversation = await Conversation.findById(conversationId);
@@ -1104,7 +1168,7 @@ export const sendMessage = async (
 
   if (conversation.type === "private") {
     const recipientId = conversation.participants.find(
-      (p) => p.toString() !== senderId
+      (p: Types.ObjectId) => p.toString() !== senderId
     );
 
     if (!recipientId) {
@@ -1226,7 +1290,7 @@ export const sendMessage = async (
 
     const stealthExpiresAt = isStealth ? new Date(Date.now() + stealthDurationMs!) : undefined;
     const stealthPayload = isStealth ? encryptStealthContent(trimmedContent) : null;
-    const isE2ee = !!options?.e2eeCipher;
+    const isE2ee = !!options?.contentCipher;
 
     const message = await Message.create({
       conversationId: conversation._id,
@@ -1235,14 +1299,11 @@ export const sendMessage = async (
       content: isStealth || isE2ee ? undefined : content,
       isStealth,
       isE2ee,
-      e2eeCipher: options?.e2eeCipher,
-      e2eeIv: options?.e2eeIv,
-      e2eeTag: options?.e2eeTag,
+      contentCipher: options?.contentCipher || stealthPayload?.cipherText,
+      contentIv: options?.contentIv || stealthPayload?.iv,
+      contentTag: options?.contentTag || stealthPayload?.tag,
       stealthExpiresAt,
-      stealthContentCipher: stealthPayload?.cipherText,
-      stealthContentIv: stealthPayload?.iv,
-      stealthContentTag: stealthPayload?.tag,
-      stealthContentLength: isStealth ? trimmedContent.length : undefined,
+      contentLength: isStealth ? trimmedContent.length : undefined,
       mediaUrl,
       fileName,
       fileSize,
@@ -1255,16 +1316,18 @@ export const sendMessage = async (
     });
 
     if (!isShadowDelivery) {
-      conversation.lastMessage = {
-        content: isE2ee ? null : (isStealth ? "[Stealth]" : (content || (mediaUrl ? "[Media]" : "[Message]"))),
-        senderId: new Types.ObjectId(senderId),
-        type,
-        timestamp: message.createdAt,
-        isE2ee,
-        e2eeCipher: isE2ee ? message.e2eeCipher : undefined,
-        e2eeIv: isE2ee ? message.e2eeIv : undefined,
-        e2eeTag: isE2ee ? message.e2eeTag : undefined,
-      };
+      if (message) {
+        conversation.lastMessage = {
+          content: isE2ee || isStealth ? null : (content || (mediaUrl ? "[Media]" : "[Message]")),
+          senderId: new Types.ObjectId(senderId),
+          type,
+          timestamp: message.createdAt,
+          isE2ee,
+          contentCipher: isE2ee || isStealth ? (options?.contentCipher || stealthPayload?.cipherText) : undefined,
+          contentIv: isE2ee || isStealth ? (options?.contentIv || stealthPayload?.iv) : undefined,
+          contentTag: isE2ee || isStealth ? (options?.contentTag || stealthPayload?.tag) : undefined,
+        };
+      }
       conversation.updatedAt = new Date();
       await conversation.save();
     }
@@ -1318,12 +1381,13 @@ export const sendMessage = async (
         content: responseContent,
         isStealth,
         isE2ee,
-        e2eeCipher: message.e2eeCipher ?? null,
-        e2eeIv: message.e2eeIv ?? null,
-        e2eeTag: message.e2eeTag ?? null,
+        contentCipher: message.contentCipher ?? null,
+        contentIv: message.contentIv ?? null,
+        contentTag: message.contentTag ?? null,
+        contentKeyVersion: message.contentKeyVersion ?? null,
         stealthExpiresAt: stealthExpiresAt ?? null,
         stealthExpiredAt: null,
-        stealthContentLength: isStealth ? trimmedContent.length : null,
+        contentLength: isStealth ? trimmedContent.length : null,
         mediaUrl: message.mediaUrl,
         fileName: message.fileName,
         fileSize: message.fileSize,
@@ -1376,7 +1440,7 @@ export const sendMessage = async (
 
   const stealthExpiresAt = isStealth ? new Date(Date.now() + stealthDurationMs!) : undefined;
   const stealthPayload = isStealth ? encryptStealthContent(trimmedContent) : null;
-  const isE2ee = !!options?.e2eeCipher;
+  const isE2ee = !!options?.contentCipher;
 
   const message = await Message.create({
     conversationId: conversation._id,
@@ -1385,14 +1449,12 @@ export const sendMessage = async (
     content: isStealth || isE2ee ? undefined : content,
     isStealth,
     isE2ee,
-    e2eeCipher: options?.e2eeCipher,
-    e2eeIv: options?.e2eeIv,
-    e2eeTag: options?.e2eeTag,
+    contentCipher: options?.contentCipher || stealthPayload?.cipherText,
+    contentIv: options?.contentIv || stealthPayload?.iv,
+    contentTag: options?.contentTag || stealthPayload?.tag,
+    contentKeyVersion: options?.contentKeyVersion,
     stealthExpiresAt,
-    stealthContentCipher: stealthPayload?.cipherText,
-    stealthContentIv: stealthPayload?.iv,
-    stealthContentTag: stealthPayload?.tag,
-    stealthContentLength: isStealth ? trimmedContent.length : undefined,
+    contentLength: isStealth ? trimmedContent.length : undefined,
     mediaUrl,
     fileName,
     fileSize,
@@ -1403,18 +1465,21 @@ export const sendMessage = async (
     unsent: false,
   });
 
-  conversation.lastMessage = {
-    content: isE2ee ? null : (isStealth ? "[Stealth]" : (content || (mediaUrl ? "[Media]" : "[Message]"))),
-    senderId: new Types.ObjectId(senderId),
-    type,
-    timestamp: message.createdAt,
-    isE2ee,
-    e2eeCipher: isE2ee ? message.e2eeCipher : undefined,
-    e2eeIv: isE2ee ? message.e2eeIv : undefined,
-    e2eeTag: isE2ee ? message.e2eeTag : undefined,
-  };
-  conversation.updatedAt = new Date();
-  await conversation.save();
+  if (message) {
+    conversation.lastMessage = {
+      content: isE2ee || isStealth ? null : (content || (mediaUrl ? "[Media]" : "[Message]")),
+      senderId: new Types.ObjectId(senderId),
+      type,
+      timestamp: message.createdAt,
+      isE2ee,
+      contentCipher: isE2ee || isStealth ? (options?.contentCipher || stealthPayload?.cipherText) : undefined,
+      contentIv: isE2ee || isStealth ? (options?.contentIv || stealthPayload?.iv) : undefined,
+      contentTag: isE2ee || isStealth ? (options?.contentTag || stealthPayload?.tag) : undefined,
+      contentKeyVersion: options?.contentKeyVersion,
+    };
+    conversation.updatedAt = new Date();
+    await conversation.save();
+  }
 
   const sender = await User.findById(senderId).select("anonimiId username profileImage");
 
@@ -1465,12 +1530,13 @@ export const sendMessage = async (
       content: responseContent,
       isStealth,
       isE2ee,
-      e2eeCipher: message.e2eeCipher ?? null,
-      e2eeIv: message.e2eeIv ?? null,
-      e2eeTag: message.e2eeTag ?? null,
-      stealthExpiresAt: stealthExpiresAt ?? null,
+      contentCipher: (message as any).contentCipher ?? null,
+      contentIv: (message as any).contentIv ?? null,
+      contentTag: (message as any).contentTag ?? null,
+      contentKeyVersion: (message as any).contentKeyVersion ?? null,
+      stealthExpiresAt: (message as any).stealthExpiresAt?.toISOString() ?? null,
       stealthExpiredAt: null,
-      stealthContentLength: isStealth ? trimmedContent.length : null,
+      contentLength: isStealth ? (trimmedContent?.length || 0) : null,
       mediaUrl: message.mediaUrl,
       fileName: message.fileName,
       fileSize: message.fileSize,
@@ -1853,7 +1919,13 @@ export const unsendMessage = async (
 export const editMessage = async (
   messageId: string,
   editorId: string,
-  content: string
+  content: string | undefined,
+  options?: {
+    contentCipher?: string;
+    contentIv?: string;
+    contentTag?: string;
+    contentKeyVersion?: number;
+  }
 ) => {
   const message = await Message.findById(messageId);
 
@@ -1905,6 +1977,7 @@ export const editMessage = async (
     };
   }
 
+  const isE2eeUpdate = !!options?.contentCipher;
   const editedAt = new Date();
   const historyEntry = {
     content: message.content ?? "",
@@ -1913,7 +1986,19 @@ export const editMessage = async (
   };
 
   message.editHistory = [...(message.editHistory ?? []), historyEntry];
-  message.content = trimmed;
+  
+  if (isE2eeUpdate) {
+    message.content = undefined;
+    message.isE2ee = true;
+    message.contentCipher = options.contentCipher;
+    message.contentIv = options?.contentIv;
+    message.contentTag = options?.contentTag;
+    message.contentKeyVersion = options?.contentKeyVersion;
+  } else {
+    message.content = trimmed;
+    // We don't change isE2ee status on edit for now (standard text edit)
+  }
+  
   message.editedAt = editedAt;
   message.editedBy = new Types.ObjectId(editorId);
   await message.save();
@@ -1926,7 +2011,10 @@ export const editMessage = async (
     },
     {
       $set: {
-        "lastMessage.content": trimmed,
+        "lastMessage.content": isE2eeUpdate ? null : trimmed,
+        "lastMessage.contentCipher": options?.contentCipher,
+        "lastMessage.contentIv": options?.contentIv,
+        "lastMessage.contentTag": options?.contentTag,
       },
     }
   );

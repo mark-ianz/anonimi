@@ -121,7 +121,7 @@ export default function MessageBubble({
     : 0;
   const stealthPlaceholderLength = Math.max(
     3,
-    Math.min(message.stealthContentLength ?? 0, 240),
+    Math.min(message.contentLength ?? 0, 240),
   );
 
   const replyPreview = message.replyPreview;
@@ -578,7 +578,7 @@ export default function MessageBubble({
                 <p className="whitespace-pre-wrap break-all">
                   {message.content}
                 </p>
-              ) : message.isE2ee && message.e2eeCipher ? (
+              ) : message.isE2ee && message.contentCipher ? (
                 <div className="flex items-center gap-1.5 py-0.5">
                   <div className="h-4 w-24 rounded bg-muted/60 animate-pulse" />
                 </div>

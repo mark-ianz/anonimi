@@ -81,7 +81,7 @@ export default function ConversationItem({
 
   useEffect(() => {
     const lm = conversation.lastMessage;
-    if (!lm?.isE2ee || lm.content || !lm.e2eeCipher || !lm.e2eeIv || !lm.e2eeTag) return;
+    if (!lm?.isE2ee || lm.content || !lm.contentCipher || !lm.contentIv || !lm.contentTag) return;
 
     let cancelled = false;
     (async () => {
@@ -90,7 +90,7 @@ export default function ConversationItem({
         if (!keyData || cancelled) return;
         const aesKey = await importKeyFromBase64(keyData.key);
         if (cancelled) return;
-        const content = await decryptMessage(lm.e2eeCipher!, lm.e2eeIv!, lm.e2eeTag!, aesKey);
+        const content = await decryptMessage(lm.contentCipher!, lm.contentIv!, lm.contentTag!, aesKey);
         if (!cancelled) setDecryptedPreview(content);
       } catch {
         // silent

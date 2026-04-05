@@ -45,9 +45,10 @@ export interface IConversation extends Document {
     type: string;
     timestamp: Date;
     isE2ee?: boolean;
-    e2eeCipher?: string;
-    e2eeIv?: string;
-    e2eeTag?: string;
+    contentCipher?: string;
+    contentIv?: string;
+    contentTag?: string;
+    contentKeyVersion?: number;
   };
   requestStatus?: string;
   createdAt: Date;
@@ -73,10 +74,10 @@ export interface IMessage extends Document {
   isStealth?: boolean;
   stealthExpiresAt?: Date;
   stealthExpiredAt?: Date | null;
-  stealthContentCipher?: string;
-  stealthContentIv?: string;
-  stealthContentTag?: string;
-  stealthContentLength?: number;
+  contentCipher?: string;
+  contentIv?: string;
+  contentTag?: string;
+  contentLength?: number;
   mediaUrl?: string;
   fileName?: string;
   fileSize?: number;
@@ -109,10 +110,7 @@ export interface IMessage extends Document {
   deletedFor: Types.ObjectId[];
   unsent: boolean;
   isE2ee?: boolean;
-  e2eeCipher?: string;
-  e2eeIv?: string;
-  e2eeTag?: string;
-  e2eeKeyId?: string;
+  contentKeyVersion?: number;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -37,10 +37,10 @@ export interface Message {
   isStealth?: boolean;
   stealthExpiresAt?: string | null;
   stealthExpiredAt?: string | null;
-  stealthContentLength?: number | null;
   mediaUrl: string | null;
   fileName: string | null;
   fileSize: number | null;
+  contentLength?: number | null;
   readBy: string[];
   readByAt?: Record<string, string>;
   reactions: MessageReaction[];
@@ -50,9 +50,10 @@ export interface Message {
   unsent: boolean;
   unsentAt?: string | null;
   isE2ee?: boolean;
-  e2eeCipher?: string | null;
-  e2eeIv?: string | null;
-  e2eeTag?: string | null;
+  contentCipher?: string | null;
+  contentIv?: string | null;
+  contentTag?: string | null;
+  contentKeyVersion?: number | null;
   createdAt: string;
   // Optimistic UI fields
   tempId?: string;
@@ -72,6 +73,10 @@ export interface SendMessagePayload {
   replyToId?: string | null;
   stealthDuration?: "1m" | "5m" | "15m" | "30m" | "1h" | "3h" | "6h" | "12h" | "24h";
   tempId: string;
+  contentCipher?: string;
+  contentIv?: string;
+  contentTag?: string;
+  contentKeyVersion?: number;
 }
 
 export interface MessageSearchHit {

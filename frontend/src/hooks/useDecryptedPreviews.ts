@@ -23,10 +23,10 @@ export function useDecryptedPreviews(conversations: Conversation[]) {
       if (lm.content && !lm.isE2ee) return false;
 
       // Check if we have cipher data either from lastMessage or from store messages
-      const hasCipher = !!(lm.e2eeCipher && lm.e2eeIv && lm.e2eeTag);
+      const hasCipher = !!(lm.contentCipher && lm.contentIv && lm.contentTag);
       const storeMsgs = storeMessages[conv.id] ?? [];
       const lastStoreMsg = storeMsgs[storeMsgs.length - 1];
-      const hasStoreCipher = !!(lastStoreMsg?.isE2ee && lastStoreMsg?.e2eeCipher);
+      const hasStoreCipher = !!(lastStoreMsg?.isE2ee && lastStoreMsg?.contentCipher);
 
       return (lm.isE2ee && !lm.content) && (hasCipher || hasStoreCipher);
     });
@@ -41,9 +41,9 @@ export function useDecryptedPreviews(conversations: Conversation[]) {
           const lastStoreMsg = storeMsgs[storeMsgs.length - 1];
 
           // Prefer store message cipher fields (more reliable), fall back to lastMessage
-          const cipher = lastStoreMsg?.e2eeCipher ?? lm?.e2eeCipher;
-          const iv = lastStoreMsg?.e2eeIv ?? lm?.e2eeIv;
-          const tag = lastStoreMsg?.e2eeTag ?? lm?.e2eeTag;
+          const cipher = lastStoreMsg?.contentCipher ?? lm?.contentCipher;
+          const iv = lastStoreMsg?.contentIv ?? lm?.contentIv;
+          const tag = lastStoreMsg?.contentTag ?? lm?.contentTag;
 
           if (!cipher || !iv || !tag) {
             decryptingRef.current.delete(conv.id);

@@ -17,16 +17,16 @@ interface MessageSendPayload {
   stealthDuration?: "1m" | "5m" | "15m" | "30m" | "1h" | "3h" | "6h" | "12h" | "24h";
   replyToId?: string;
   tempId: string;
-  e2eeCipher?: string;
-  e2eeIv?: string;
-  e2eeTag?: string;
+  contentCipher?: string;
+  contentIv?: string;
+  contentTag?: string;
 }
 
 export const setupChatHandler = (io: Server, socket: Socket): void => {
   socket.data.activeConversationId = null;
 
   socket.on("message:send", async (payload: MessageSendPayload) => {
-    const { conversationId, type, content, mediaUrl, fileName, fileSize, stealthDuration, replyToId, tempId, e2eeCipher, e2eeIv, e2eeTag } = payload;
+    const { conversationId, type, content, mediaUrl, fileName, fileSize, stealthDuration, replyToId, tempId, contentCipher, contentIv, contentTag } = payload;
     try {
       const userId = socket.data.user?.userId;
 
@@ -65,7 +65,7 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
         mediaUrl,
         fileName,
         fileSize,
-        { suppressNotificationUserIds, stealthDuration, replyToId, e2eeCipher, e2eeIv, e2eeTag }
+        { suppressNotificationUserIds, stealthDuration, replyToId, contentCipher, contentIv, contentTag }
       );
 
       socket.emit("message:ack", {
@@ -96,11 +96,11 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
           isStealth: result.message.isStealth,
           stealthExpiresAt: result.message.stealthExpiresAt,
           stealthExpiredAt: result.message.stealthExpiredAt,
-          stealthContentLength: result.message.stealthContentLength,
+          contentLength: result.message.contentLength,
           isE2ee: result.message.isE2ee,
-          e2eeCipher: result.message.e2eeCipher,
-          e2eeIv: result.message.e2eeIv,
-          e2eeTag: result.message.e2eeTag,
+          contentCipher: result.message.contentCipher,
+          contentIv: result.message.contentIv,
+          contentTag: result.message.contentTag,
           mediaUrl: result.message.mediaUrl,
           fileName: result.message.fileName,
           fileSize: result.message.fileSize,

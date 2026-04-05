@@ -40,6 +40,7 @@ import type {
   GroupUpdatedPayload,
   GroupRoleChangedPayload,
   ContactNicknameUpdatedPayload,
+  E2EEReceivePayload,
 } from "@/types/socket";
 interface SocketContextValue {
   chatSocket: Socket | null;
@@ -295,16 +296,16 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       const suppressUnread = !!payload.suppressUnread;
 
       let decryptedContent: string | null = payload.content;
-      if (payload.isE2ee && payload.e2eeCipher && payload.e2eeIv && payload.e2eeTag) {
+      if (payload.isE2ee && payload.contentCipher && payload.contentIv && payload.contentTag) {
         try {
           const convKeyData = await getConversationKey(payload.conversationId);
           if (convKeyData) {
             console.log("[E2EE] Decrypting incoming message for", payload.conversationId);
             const aesKey = await importKeyFromBase64(convKeyData.key);
             decryptedContent = await decryptMessage(
-              payload.e2eeCipher,
-              payload.e2eeIv,
-              payload.e2eeTag,
+              payload.contentCipher,
+              payload.contentIv,
+              payload.contentTag,
               aesKey
             );
             console.log("[E2EE] Decrypted successfully, content length:", decryptedContent.length);
@@ -329,11 +330,11 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         isStealth: payload.isStealth ?? false,
         stealthExpiresAt: payload.stealthExpiresAt ?? null,
         stealthExpiredAt: payload.stealthExpiredAt ?? null,
-        stealthContentLength: payload.stealthContentLength ?? null,
+        contentLength: payload.contentLength ?? null,
         isE2ee: payload.isE2ee ?? false,
-        e2eeCipher: payload.e2eeCipher ?? null,
-        e2eeIv: payload.e2eeIv ?? null,
-        e2eeTag: payload.e2eeTag ?? null,
+        contentCipher: payload.contentCipher ?? null,
+        contentIv: payload.contentIv ?? null,
+        contentTag: payload.contentTag ?? null,
         mediaUrl: payload.mediaUrl,
         fileName: payload.fileName,
         fileSize: payload.fileSize,
@@ -351,9 +352,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         type: payload.type,
         timestamp: payload.timestamp,
         isE2ee: payload.isE2ee,
-        e2eeCipher: payload.e2eeCipher,
-        e2eeIv: payload.e2eeIv,
-        e2eeTag: payload.e2eeTag,
+        contentCipher: payload.contentCipher,
+        contentIv: payload.contentIv,
+        contentTag: payload.contentTag,
       });
 
       qc.invalidateQueries({ queryKey: ["conversations"] });
@@ -611,7 +612,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
                       content: null,
                       isStealth: true,
                       stealthExpiredAt: payload.stealthExpiredAt,
-                      stealthContentLength: payload.stealthContentLength,
+                      contentLength: payload.contentLength,
                     }
                   : message
               ),
@@ -624,7 +625,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         content: null,
         isStealth: true,
         stealthExpiredAt: payload.stealthExpiredAt,
-        stealthContentLength: payload.stealthContentLength,
+        contentLength: payload.contentLength,
       });
     });
 
@@ -895,30 +896,13 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       qc.invalidateQueries({ queryKey: ["conversations"] });
     });
 
-    socket.on("e2ee:message:receive", async (payload: {
-      messageId: string;
-      conversationId: string;
-      senderId: string;
-      senderUsername: string;
-      senderProfileImage: string | null;
-      type: string;
-      cipherText: string;
-      iv: string;
-      tag: string;
-      isStealth?: boolean;
-      stealthExpiresAt?: string | null;
-      stealthContentLength?: number | null;
-      mediaUrl: string | null;
-      fileName: string | null;
-      fileSize: number | null;
-      timestamp: string;
-    }) => {
+    socket.on("e2ee:message:receive", async (payload: E2EEReceivePayload) => {
       let decryptedContent: string | null = null;
       try {
         const convKeyData = await getConversationKey(payload.conversationId);
         if (convKeyData) {
           const aesKey = await importKeyFromBase64(convKeyData.key);
-          decryptedContent = await decryptMessage(payload.cipherText, payload.iv, payload.tag, aesKey);
+          decryptedContent = await decryptMessage(payload.contentCipher, payload.contentIv, payload.contentTag, aesKey);
         }
       } catch {
         // Leave as null — MessageBubble will handle
@@ -933,11 +917,11 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         isStealth: payload.isStealth ?? false,
         stealthExpiresAt: payload.stealthExpiresAt ?? null,
         stealthExpiredAt: null,
-        stealthContentLength: payload.stealthContentLength ?? null,
+        contentLength: payload.contentLength ?? null,
         isE2ee: true,
-        e2eeCipher: payload.cipherText,
-        e2eeIv: payload.iv,
-        e2eeTag: payload.tag,
+        contentCipher: payload.contentCipher,
+        contentIv: payload.contentIv,
+        contentTag: payload.contentTag,
         mediaUrl: payload.mediaUrl,
         fileName: payload.fileName,
         fileSize: payload.fileSize,
@@ -955,9 +939,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         type: payload.type as Message["type"],
         timestamp: payload.timestamp,
         isE2ee: true,
-        e2eeCipher: payload.cipherText,
-        e2eeIv: payload.iv,
-        e2eeTag: payload.tag,
+        contentCipher: payload.contentCipher,
+        contentIv: payload.contentIv,
+        contentTag: payload.contentTag,
       });
 
       const { activeConversationId: currentActiveConversationId } = useChatStore.getState();

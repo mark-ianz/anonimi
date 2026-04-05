@@ -15,6 +15,7 @@ import {
 } from "@/lib/e2eeCrypto";
 import api from "@/lib/api";
 import { getChatSocket } from "@/lib/socket";
+import { useAuthStore } from "@/stores/authStore";
 
 interface GroupMemberKey {
   userId: string;
@@ -25,6 +26,7 @@ export function useGroupKeyExchange(
   conversationId: string | null,
   groupId: string | null
 ) {
+  const { user } = useAuthStore();
   const isExchanging = useRef(false);
   const retryCount = useRef(0);
   const MAX_RETRIES = 5;
@@ -82,7 +84,7 @@ export function useGroupKeyExchange(
         return;
       }
 
-      if (userKeys.id === creatorId) {
+      if (user?.id === creatorId) {
         const groupAesKey = await generateAesKey();
         const groupAesKeyBase64 = await exportKeyAsBase64(groupAesKey);
 

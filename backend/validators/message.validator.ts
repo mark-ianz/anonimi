@@ -29,6 +29,9 @@ export const sendMessageSchema = z.object({
     stealthDuration: z
       .enum(["1m", "5m", "15m", "30m", "1h", "3h", "6h", "12h", "24h"])
       .optional(),
+    contentCipher: z.string().optional(),
+    contentIv: z.string().optional(),
+    contentTag: z.string().optional(),
   }),
 });
 
@@ -43,7 +46,10 @@ export const editMessageSchema = z.object({
     messageId: z.string(),
   }),
   body: z.object({
-    content: z.string().trim().min(1).max(256),
+    content: z.string().trim().max(256).optional(),
+    contentCipher: z.string().optional(),
+    contentIv: z.string().optional(),
+    contentTag: z.string().optional(),
   }),
 });
 
