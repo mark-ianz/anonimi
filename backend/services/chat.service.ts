@@ -473,7 +473,7 @@ export const getConversations = async (
           deletedFor: { $ne: userObjectId },
         })
           .sort({ createdAt: -1 })
-          .select("senderId type content createdAt")
+          .select("senderId type content createdAt isE2ee e2eeCipher e2eeIv e2eeTag")
           .lean();
 
         const lastMessageSender = latestVisibleMessage?.senderId
@@ -515,11 +515,15 @@ export const getConversations = async (
           participant,
           lastMessage: latestVisibleMessage
             ? {
-                content: latestVisibleMessage.content,
+                content: latestVisibleMessage.isE2ee ? null : latestVisibleMessage.content,
                 senderId: latestVisibleMessage.senderId?.toString(),
                 type: latestVisibleMessage.type,
                 timestamp: latestVisibleMessage.createdAt,
                 senderUsername: lastMessageSender?.username,
+                isE2ee: latestVisibleMessage.isE2ee ?? false,
+                e2eeCipher: latestVisibleMessage.e2eeCipher ?? null,
+                e2eeIv: latestVisibleMessage.e2eeIv ?? null,
+                e2eeTag: latestVisibleMessage.e2eeTag ?? null,
               }
             : null,
           unreadCount,
@@ -563,7 +567,7 @@ export const getConversations = async (
           deletedFor: { $ne: userObjectId },
         })
           .sort({ createdAt: -1 })
-          .select("senderId type content createdAt")
+          .select("senderId type content createdAt isE2ee e2eeCipher e2eeIv e2eeTag")
           .lean();
 
         const lastMessageSender = latestVisibleMessage?.senderId
@@ -584,11 +588,15 @@ export const getConversations = async (
           },
           lastMessage: latestVisibleMessage
             ? {
-                content: latestVisibleMessage.content,
+                content: latestVisibleMessage.isE2ee ? null : latestVisibleMessage.content,
                 senderId: latestVisibleMessage.senderId?.toString(),
                 type: latestVisibleMessage.type,
                 timestamp: latestVisibleMessage.createdAt,
                 senderUsername: lastMessageSender?.username,
+                isE2ee: latestVisibleMessage.isE2ee ?? false,
+                e2eeCipher: latestVisibleMessage.e2eeCipher ?? null,
+                e2eeIv: latestVisibleMessage.e2eeIv ?? null,
+                e2eeTag: latestVisibleMessage.e2eeTag ?? null,
               }
             : null,
           unreadCount,

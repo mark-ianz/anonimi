@@ -10,7 +10,7 @@ import { CONVERSATIONS_PER_PAGE } from "@/lib/constants";
 export type ConversationListFilter = "active" | "archived";
 
 export function useConversations(filter: ConversationListFilter = "active") {
-  const { setConversations, conversations } = useChatStore();
+  const { conversations, setConversations } = useChatStore();
 
   const query = useInfiniteQuery({
     queryKey: ["conversations", filter],
@@ -33,19 +33,14 @@ export function useConversations(filter: ConversationListFilter = "active") {
   });
 
   useEffect(() => {
-    if (query.data && filter === "active") {
+    if (query.data) {
       const all = query.data.pages.flatMap((p) => p.data);
       setConversations(all);
     }
   }, [filter, query.data, setConversations]);
 
-  const resolvedConversations =
-    filter === "active"
-      ? conversations
-      : query.data?.pages.flatMap((p) => p.data) ?? [];
-
   return {
-    conversations: resolvedConversations,
+    conversations: query.data?.pages.flatMap((p) => p.data) ?? conversations,
     isLoading: query.isLoading,
     isFetchingMore: query.isFetchingNextPage,
     hasMore: query.hasNextPage,

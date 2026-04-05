@@ -9,6 +9,8 @@ import { useAuthStore } from "@/stores/authStore";
 import { useChatStore } from "@/stores/chatStore";
 import { getChatSocket } from "@/lib/socket";
 import api from "@/lib/api";
+import { decryptMessage, importKeyFromBase64 } from "@/lib/e2eeCrypto";
+import { getConversationKey } from "@/lib/e2eeKeyStore";
 import type { Conversation } from "@/types/conversation";
 import type { GroupMember } from "@/types/group";
 import type { Message } from "@/types/message";
@@ -80,6 +82,64 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
     enabled: !!groupId,
     staleTime: 1000 * 30,
   });
+
+  const [decryptedContent, setDecryptedContent] = useState<Record<string, string>>({});
+  const decryptedIdsRef = useRef(new Set<string>());
+  const decryptingRef = useRef(false);
+
+  useEffect(() => {
+    if (decryptingRef.current) return;
+
+    const pending = messages.filter(
+      (m) => m.isE2ee && m.e2eeCipher && m.e2eeIv && m.e2eeTag && !m.content && !decryptedIdsRef.current.has(m.id)
+    );
+
+    if (pending.length === 0) return;
+
+    decryptingRef.current = true;
+
+    getConversationKey(conversation.id).then((keyData) => {
+      if (!keyData) {
+        decryptingRef.current = false;
+        return;
+      }
+
+      return importKeyFromBase64(keyData.key).then((aesKey) => {
+        const updates: Record<string, string> = {};
+
+        const decryptNext = async (index: number) => {
+          if (index >= pending.length) {
+            if (Object.keys(updates).length > 0) {
+              setDecryptedContent((prev) => ({ ...prev, ...updates }));
+            }
+            decryptingRef.current = false;
+            return;
+          }
+
+          const msg = pending[index];
+          try {
+            const content = await decryptMessage(msg.e2eeCipher!, msg.e2eeIv!, msg.e2eeTag!, aesKey);
+            updates[msg.id] = content;
+            decryptedIdsRef.current.add(msg.id);
+          } catch {
+            // silent
+          }
+          await decryptNext(index + 1);
+        };
+
+        return decryptNext(0);
+      });
+    }).catch(() => {
+      decryptingRef.current = false;
+    });
+  }, [messages, conversation.id]);
+
+  const displayMessages = useMemo(() => {
+    if (Object.keys(decryptedContent).length === 0) return messages;
+    return messages.map((m) =>
+      decryptedContent[m.id] ? { ...m, content: decryptedContent[m.id] } : m
+    );
+  }, [messages, decryptedContent]);
 
   const groupMemberMetaById = useMemo(() => {
     const map: Record<string, { name: string; anonimiId: string; profileImage: string | null }> = {};
@@ -222,8 +282,8 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
   }, [isLoading, targetMessageId]);
 
   useEffect(() => {
-    if (!messages.length) return;
-    const last = messages[messages.length - 1];
+    if (!displayMessages.length) return;
+    const last = displayMessages[displayMessages.length - 1];
     const newestChanged = lastMessageIdRef.current !== last.id;
     lastMessageIdRef.current = last.id;
 
@@ -243,7 +303,7 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
         setNewMessageCount(0);
       }
     }
-  }, [messages, user?.id, isFetchingMore, isAtBottom, isUserScrolling]);
+  }, [displayMessages, user?.id, isFetchingMore, isAtBottom, isUserScrolling]);
 
   useEffect(() => {
     if (!displayTypingUsers.length) return;
@@ -261,7 +321,7 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
   useEffect(() => {
     if (!targetMessageId) return;
 
-    const targetMessage = messages.find((message) => message.id === targetMessageId);
+    const targetMessage = displayMessages.find((message) => message.id === targetMessageId);
     if (targetMessage) {
       if (scrollTargetHandledRef.current === targetMessageId) return;
 
@@ -298,13 +358,13 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
 
   // When opening a conversation, immediately mark all unread incoming messages as read.
   useEffect(() => {
-    if (!user?.id || !messages.length || !canMarkRead) return;
+    if (!user?.id || !displayMessages.length || !canMarkRead) return;
 
     // As soon as this visible, focused tab is viewing the conversation,
     // clear its local unread badge in the left conversation list.
     clearUnread(conversation.id);
 
-    const unreadIncomingIds = messages
+    const unreadIncomingIds = displayMessages
       .filter((message) => {
         if (message.senderId === user.id) return false;
         if (message.unsent) return false;
@@ -322,7 +382,7 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
       conversationId: conversation.id,
       messageIds: unreadIncomingIds,
     });
-  }, [messages, conversation.id, user?.id, canMarkRead, clearUnread]);
+  }, [displayMessages, conversation.id, user?.id, canMarkRead, clearUnread]);
 
   // Participant lookup for group conversations
   const participantCount =
@@ -330,7 +390,7 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
       ? (conversation.group?.memberCount ?? 2)
       : 2;
 
-  const latestReadOutgoingIndex = messages.reduce((latest, msg, idx) => {
+  const latestReadOutgoingIndex = displayMessages.reduce((latest, msg, idx) => {
     if (msg.senderId !== user?.id) return latest;
     if (msg.pending || msg.failed || msg.unsent) return latest;
     const isReadByOther = (msg.readBy ?? []).some((readerId) => readerId !== user?.id);
@@ -338,7 +398,7 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
     return idx;
   }, -1);
 
-  const latestSentOutgoingIndex = messages.reduce((latest, msg, idx) => {
+  const latestSentOutgoingIndex = displayMessages.reduce((latest, msg, idx) => {
     if (msg.senderId !== user?.id) return latest;
     if (msg.pending || msg.failed || msg.unsent) return latest;
     const isReadByOther = (msg.readBy ?? []).some((readerId) => readerId !== user?.id);
@@ -379,9 +439,9 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
           <div className="flex-1" />
 
           {/* Messages */}
-          {messages.map((message, index) => {
-        const prev = messages[index - 1];
-        const next = messages[index + 1];
+          {displayMessages.map((message, index) => {
+        const prev = displayMessages[index - 1];
+        const next = displayMessages[index + 1];
         const showDivider = shouldShowDateDivider(prev?.createdAt, message.createdAt);
         const showTimeCluster = shouldShowTimeDivider(prev?.createdAt, message.createdAt);
         const isFirst = !prev || prev.senderId !== message.senderId || showDivider;
@@ -419,8 +479,8 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
                 index === latestSentOutgoingIndex;
             } else {
               let nextMineIndex = -1;
-              for (let i = index + 1; i < messages.length; i += 1) {
-                const candidate = messages[i];
+              for (let i = index + 1; i < displayMessages.length; i += 1) {
+                const candidate = displayMessages[i];
                 if (candidate.senderId !== user?.id) continue;
                 if (getTimeBucketKey(candidate.createdAt) !== bucketKey) continue;
                 nextMineIndex = i;

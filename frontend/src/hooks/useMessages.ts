@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useMemo } from "react";
 import {
   useInfiniteQuery,
   useMutation,
@@ -20,7 +20,7 @@ import type {
   ReplyPreview,
 } from "@/types/message";
 import { MESSAGES_PER_PAGE } from "@/lib/constants";
-import { encryptMessage, decryptMessage, importKeyFromBase64 } from "@/lib/e2eeCrypto";
+import { encryptMessage, importKeyFromBase64 } from "@/lib/e2eeCrypto";
 import { getConversationKey as getConvKeyFromStore } from "@/lib/e2eeKeyStore";
 
 const STEALTH_DURATIONS_MS: Record<string, number> = {
@@ -128,17 +128,32 @@ export function useMessages(conversationId: string | null) {
   // from chatStore (added by sendMessage optimistically or socket:receive events).
   // chatStore is the source of truth for in-flight messages; TanStack Query is the
   // source of truth for persisted history loaded from the server.
-  const queryMessages =
-    query.data?.pages
-      .flatMap((p) => p.data)
-      .reverse() ?? [];
+  const queryMessages = useMemo(
+    () => {
+      const pages = query.data?.pages;
+      if (!pages) return [];
+      return pages.flatMap((p) => p.data).reverse();
+    },
+    [query.data]
+  );
 
-  const liveMessages = storeMessages[conversationId ?? ""] ?? [];
-  // Only include store messages whose real id isn't already in the query cache.
-  // This prevents duplicates once TanStack Query is refetched.
-  const queryIds = new Set(queryMessages.map((m) => m.id));
-  const extraMessages = liveMessages.filter((m) => !queryIds.has(m.id));
-  const messages = [...queryMessages, ...extraMessages];
+  const liveMessages = useMemo(
+    () => storeMessages[conversationId ?? ""] ?? [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [conversationId, storeMessages[conversationId ?? ""]]
+  );
+  const queryIds = useMemo(
+    () => new Set(queryMessages.map((m) => m.id)),
+    [queryMessages]
+  );
+  const extraMessages = useMemo(
+    () => liveMessages.filter((m) => !queryIds.has(m.id)),
+    [liveMessages, queryIds]
+  );
+  const messages = useMemo(
+    () => [...queryMessages, ...extraMessages],
+    [queryMessages, extraMessages]
+  );
 
   const sendMessage = useCallback(
     async (payload: Omit<SendMessagePayload, "tempId"> & { replyPreview?: ReplyPreview | null }) => {
@@ -202,11 +217,17 @@ export function useMessages(conversationId: string | null) {
 
       addMessage(payload.conversationId, optimistic);
       updateConversationLastMessage(payload.conversationId, {
-        content: isStealth ? "[Stealth]" : (e2eeCipher ? "[Encrypted]" : payload.content),
+        content: isStealth ? "[Stealth]" : (e2eeCipher ? null : payload.content),
         senderId: user.id,
         type: payload.type,
         timestamp: optimistic.createdAt,
+        isE2ee: !!e2eeCipher,
+        e2eeCipher: e2eeCipher ?? null,
+        e2eeIv: e2eeIv ?? null,
+        e2eeTag: e2eeTag ?? null,
       });
+
+      qc.invalidateQueries({ queryKey: ["conversations"] });
 
       const { replyPreview, ...payloadToSend } = payload;
       const socketPayload: Record<string, unknown> = {
@@ -421,83 +442,6 @@ export function useMessages(conversationId: string | null) {
     },
     onError: () => toast.error("Failed to remove reaction."),
   });
-
-  const decryptedIds = useRef(new Set<string>());
-  const processingRef = useRef(false);
-
-  useEffect(() => {
-    if (!conversationId || messages.length === 0 || processingRef.current) return;
-
-    const e2eeMessages = messages.filter(
-      (m) => m.isE2ee && m.e2eeCipher && m.e2eeIv && m.e2eeTag && !decryptedIds.current.has(m.id) && !m.content
-    );
-
-    if (e2eeMessages.length === 0) return;
-
-    processingRef.current = true;
-
-    getConvKeyFromStore(conversationId).then((keyData) => {
-      if (!keyData) {
-        processingRef.current = false;
-        return;
-      }
-
-      return importKeyFromBase64(keyData.key).then((aesKey) => {
-        const updates: Record<string, string> = {};
-
-        const decryptNext = async (index: number) => {
-          if (index >= e2eeMessages.length) {
-            if (Object.keys(updates).length > 0) {
-              for (const [id, content] of Object.entries(updates)) {
-                updateMessage(conversationId, id, { content });
-              }
-              qc.setQueryData(
-                ["messages", conversationId],
-                (old: { pages: { data: Message[] }[] } | undefined) => {
-                  if (!old) return old;
-                  return {
-                    ...old,
-                    pages: old.pages.map((page) => ({
-                      ...page,
-                      data: page.data.map((m) =>
-                        updates[m.id] ? { ...m, content: updates[m.id] } : m
-                      ),
-                    })),
-                  };
-                }
-              );
-
-              const latestMsg = e2eeMessages[e2eeMessages.length - 1];
-              if (updates[latestMsg.id]) {
-                updateConversationLastMessage(conversationId, {
-                  content: updates[latestMsg.id],
-                  senderId: latestMsg.senderId ?? "",
-                  type: latestMsg.type,
-                  timestamp: latestMsg.createdAt,
-                });
-              }
-            }
-            processingRef.current = false;
-            return;
-          }
-
-          const msg = e2eeMessages[index];
-          try {
-            const decrypted = await decryptMessage(msg.e2eeCipher!, msg.e2eeIv!, msg.e2eeTag!, aesKey);
-            updates[msg.id] = decrypted;
-            decryptedIds.current.add(msg.id);
-          } catch {
-            // Skip failed
-          }
-          await decryptNext(index + 1);
-        };
-
-        return decryptNext(0);
-      });
-    }).catch(() => {
-      processingRef.current = false;
-    });
-  }, [conversationId, messages]);
 
   return {
     messages,

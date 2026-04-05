@@ -356,9 +356,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         e2eeTag: payload.e2eeTag,
       });
 
-      if (!conversations.some((conv) => conv.id === payload.conversationId)) {
-        qc.invalidateQueries({ queryKey: ["conversations"] });
-      }
+      qc.invalidateQueries({ queryKey: ["conversations"] });
       qc.invalidateQueries({ queryKey: ["conversations", "archived"] });
 
       // Fallback sync: if message-request:new is missed, this ensures request list catches up.
