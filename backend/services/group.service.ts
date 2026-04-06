@@ -702,14 +702,31 @@ export const leaveGroup = async (groupId: string, userId: string) => {
     const admins = await GroupMember.find({
       groupId: group._id,
       role: GroupRole.ADMIN,
-    });
+    }).sort({ joinedAt: 1, createdAt: 1 });
 
-    if (admins.length > 0) {
-      admins[0].role = GroupRole.OWNER;
-      await admins[0].save();
+    const remainingMembers = await GroupMember.find({
+      groupId: group._id,
+      userId: { $ne: new Types.ObjectId(userId) },
+      role: GroupRole.MEMBER,
+    }).sort({ joinedAt: 1, createdAt: 1 });
 
-      const newOwner = await User.findById(admins[0].userId).select("username").lean();
-      const newOwnerName = newOwner?.username ?? "an admin";
+    const nextOwnerMembership = admins[0] ?? remainingMembers[0] ?? null;
+
+    if (nextOwnerMembership) {
+      nextOwnerMembership.role = GroupRole.OWNER;
+      await nextOwnerMembership.save();
+
+      group.ownerId = new Types.ObjectId(nextOwnerMembership.userId.toString());
+      await group.save();
+
+      await GroupMember.deleteOne({ _id: membership._id });
+      await Conversation.updateOne(
+        { _id: group.conversationId },
+        { $pull: { participants: new Types.ObjectId(userId) } }
+      );
+
+      const newOwner = await User.findById(nextOwnerMembership.userId).select("username").lean();
+      const newOwnerName = newOwner?.username ?? (admins.length > 0 ? "an admin" : "a member");
 
       await createGroupSystemMessage(
         group.conversationId,
@@ -717,12 +734,10 @@ export const leaveGroup = async (groupId: string, userId: string) => {
         `${leavingName} left the group. Ownership was transferred to ${newOwnerName}.`
       );
 
-      await GroupMember.deleteOne({ _id: membership._id });
-
       return {
         message: "You have left the group.",
         ownershipTransferred: true,
-        newOwnerId: admins[0].userId.toString(),
+        newOwnerId: nextOwnerMembership.userId.toString(),
       };
     }
   }
