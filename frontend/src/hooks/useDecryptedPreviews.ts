@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { decryptConversationPayload } from "@/lib/e2eeMessageCrypto";
+import { ensureConversationKeyForConversation } from "@/lib/e2eeConversationRecovery";
 import { useChatStore } from "@/stores/chatStore";
 import type { Conversation } from "@/types/conversation";
 
@@ -50,6 +51,8 @@ export function useDecryptedPreviews(conversations: Conversation[]) {
             decryptingRef.current.delete(conv.id);
             return;
           }
+
+          await ensureConversationKeyForConversation(conv);
 
           const content = await decryptConversationPayload({
             conversationId: conv.id,

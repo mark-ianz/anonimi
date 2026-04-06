@@ -43,6 +43,9 @@ export function useAuth() {
       }
     },
     onSettled: () => {
+      void import("@/lib/e2eeKeyStore")
+        .then(({ clearAllKeys }) => clearAllKeys())
+        .catch(() => undefined);
       clearAuth();
       disconnectSockets();
       qc.clear();

@@ -92,6 +92,7 @@ export interface SessionState {
   id: string;
   initialized: boolean;
   lastSync: string;
+  userId?: string;
 }
 
 export const saveUserKeyPair = async (keyPair: Omit<UserKeyPair, "id" | "createdAt">) => {
@@ -104,6 +105,16 @@ export const saveUserKeyPair = async (keyPair: Omit<UserKeyPair, "id" | "created
 
 export const getUserKeyPair = async (): Promise<UserKeyPair | null> => {
   return getItem<UserKeyPair>(STORE_KEYS, "user");
+};
+
+export const hasUsableUserKeyPair = (keyPair: UserKeyPair | null | undefined): keyPair is UserKeyPair => {
+  return !!(
+    keyPair &&
+    typeof keyPair.publicKey === "string" &&
+    keyPair.publicKey.trim() &&
+    typeof keyPair.encryptedPrivateKey === "string" &&
+    keyPair.encryptedPrivateKey.trim()
+  );
 };
 
 export const saveConversationKey = async (key: Omit<ConversationKey, "id" | "createdAt">) => {
@@ -205,11 +216,12 @@ export const markMigrationComplete = async () => {
   });
 };
 
-export const markSessionInitialized = async () => {
+export const markSessionInitialized = async (userId?: string) => {
   await putItem(STORE_SESSION, {
     id: "session",
     initialized: true,
     lastSync: new Date().toISOString(),
+    userId: userId ?? null,
   });
 };
 

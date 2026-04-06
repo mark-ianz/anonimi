@@ -10,6 +10,7 @@ import { useChatStore } from "@/stores/chatStore";
 import { getChatSocket } from "@/lib/socket";
 import api from "@/lib/api";
 import { decryptConversationPayload } from "@/lib/e2eeMessageCrypto";
+import { ensureConversationKeyForConversation } from "@/lib/e2eeConversationRecovery";
 import type { Conversation } from "@/types/conversation";
 import type { GroupMember } from "@/types/group";
 import type { Message } from "@/types/message";
@@ -127,6 +128,8 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
 
     const decryptPending = async () => {
       const updates: Record<string, string> = {};
+
+      await ensureConversationKeyForConversation(conversation);
 
       for (const msg of pending) {
         const content = await decryptConversationPayload({

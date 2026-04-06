@@ -9,9 +9,11 @@ import type { Conversation } from "@/types/conversation";
 import { toast } from "sonner";
 import { getChatSocket, disconnectSockets } from "@/lib/socket";
 import api from "@/lib/api";
-import { decryptKeyWithSharedSecret } from "@/lib/e2eeCrypto";
+import { decryptKeyWithSharedSecret, deriveSharedSecretFromBase64, exportKeyAsBase64 } from "@/lib/e2eeCrypto";
 import { decryptConversationPayload } from "@/lib/e2eeMessageCrypto";
-import { getConversationKeyByVersion, getConversationKeys, getUserKeyPair, saveConversationKey } from "@/lib/e2eeKeyStore";
+import { getConversationKeyByVersion, getConversationKeys, saveConversationKey } from "@/lib/e2eeKeyStore";
+import { ensureLocalE2EEKeyPair } from "@/lib/e2eeRecovery";
+import { ensureConversationKeyForConversation } from "@/lib/e2eeConversationRecovery";
 import { useAuthStore } from "@/stores/authStore";
 import { useSocketStore } from "@/stores/socketStore";
 import { useChatStore } from "@/stores/chatStore";
@@ -64,11 +66,57 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   } = useChatStore();
   const { setPresence } = usePresenceStore();
   const { setTyping } = useTypingStore();
-  useE2EEKeyRegistration();
+  const { registerKeys } = useE2EEKeyRegistration();
   const socketRef = useRef<Socket | null>(null);
   const hadOfflineRef = useRef(false);
-  const e2eeRegistered = useRef(false);
   const pendingDecryptRetryRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  const recoverConversationKey = async (conversationId: string, senderId: string) => {
+    try {
+      const currentConversation =
+        useChatStore.getState().conversations.find((conv) => conv.id === conversationId) ??
+        (qc.getQueryData(["conversation", conversationId]) as Conversation | undefined) ??
+        ((await api.get(`/conversations/${conversationId}`).catch(() => null))?.data?.data as Conversation | undefined);
+
+      if (!currentConversation) return;
+
+      const recovered = await ensureConversationKeyForConversation(currentConversation);
+      if (recovered) {
+        return;
+      }
+
+      if (currentConversation.type === "group" && currentConversation.group?.id && user?.id) {
+        getChatSocket().emit("e2ee:group:key:request", {
+          groupId: currentConversation.group.id,
+          conversationId,
+          requesterId: user.id,
+        });
+        return;
+      }
+
+      if (currentConversation.type === "private") {
+        const userKeys = await ensureLocalE2EEKeyPair();
+        if (!userKeys?.encryptedPrivateKey) return;
+
+        const peerKeyRes = await api.get(`/e2ee/keys/${senderId}`).catch(() => null);
+        if (!peerKeyRes?.data?.data?.publicKey) return;
+
+        const sharedSecretKey = await deriveSharedSecretFromBase64(
+          userKeys.encryptedPrivateKey,
+          peerKeyRes.data.data.publicKey
+        );
+        const sharedSecret = await exportKeyAsBase64(sharedSecretKey);
+
+        await saveConversationKey({
+          conversationId,
+          key: sharedSecret,
+          keyVersion: 1,
+        });
+      }
+    } catch (error) {
+      console.error("[E2EE] Conversation key recovery failed:", error);
+    }
+  };
 
   const clearPendingDecryptRetry = (retryKey: string) => {
     const timeout = pendingDecryptRetryRef.current[retryKey];
@@ -100,6 +148,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     if (attempt >= 8) return;
 
     pendingDecryptRetryRef.current[retryKey] = setTimeout(async () => {
+      if (attempt === 0) {
+        await recoverConversationKey(payload.conversationId, payload.senderId);
+      }
+
       const decryptedContent = await decryptConversationPayload({
         conversationId: payload.conversationId,
         cipherText: payload.contentCipher,
@@ -133,68 +185,6 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         });
       }
     }, 800 * (attempt + 1));
-  };
-
-  const registerE2EEKeys = async () => {
-    if (e2eeRegistered.current || !user) return;
-    e2eeRegistered.current = true;
-
-    try {
-      const { getUserKeyPair, saveUserKeyPair, markSessionInitialized, needsMigration, clearAllKeys, markMigrationComplete } = await import("@/lib/e2eeKeyStore");
-
-      // Migration: clear stale IndexedDB data from pre-E2EE sessions
-      const shouldMigrate = await needsMigration();
-      if (shouldMigrate) {
-        console.log("[E2EE-socket] Running migration v1 - clearing stale IndexedDB");
-        await clearAllKeys();
-        await markMigrationComplete();
-      }
-
-      console.log("[E2EE-socket] Checking keys for user", user.id);
-      const serverRes = await api.get(`/e2ee/keys/${user.id}`).catch(() => null);
-
-      if (serverRes?.data?.data) {
-        console.log("[E2EE-socket] Keys already exist on server");
-        const localKeys = await getUserKeyPair();
-        if (!localKeys) {
-          await saveUserKeyPair({
-            publicKey: serverRes.data.data.publicKey,
-            encryptedPrivateKey: "",
-            iv: "",
-            tag: "",
-          });
-        }
-        await markSessionInitialized();
-        return;
-      }
-
-      console.log("[E2EE-socket] Generating new key pair");
-      const { generateKeyPair, exportPublicKey, exportPrivateKey } = await import("@/lib/e2eeCrypto");
-
-      const keyPair = await generateKeyPair();
-      const publicKey = await exportPublicKey(keyPair.publicKey);
-      const privateKey = await exportPrivateKey(keyPair.privateKey);
-
-      await saveUserKeyPair({
-        publicKey,
-        encryptedPrivateKey: privateKey,
-        iv: "",
-        tag: "",
-      });
-
-      await api.post("/e2ee/keys/register", {
-        publicKey,
-        encryptedPrivateKey: privateKey,
-        iv: "",
-        tag: "",
-      });
-
-      console.log("[E2EE-socket] Registration complete for user", user.id);
-      await markSessionInitialized();
-    } catch (error: any) {
-      console.error("[E2EE-socket] Registration failed:", error?.response?.data ?? error.message);
-      e2eeRegistered.current = false;
-    }
   };
 
   const baseTitleRef = useRef("anonimi - Real-time Chat");
@@ -267,7 +257,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         hadOfflineRef.current = false;
       }
       // Ensure E2EE keys are registered on every connect
-      registerE2EEKeys();
+      void registerKeys();
     };
 
     const handleDisconnect = () => {
@@ -1084,8 +1074,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         );
         if (existing) return;
 
-        const userKeys = await getUserKeyPair();
-        if (!userKeys) return;
+        const userKeys = await ensureLocalE2EEKeyPair();
+        if (!userKeys?.encryptedPrivateKey) return;
 
         const senderKeyRes = await api.get(`/e2ee/keys/${payload.senderId}`).catch(() => null);
         if (!senderKeyRes?.data?.data) return;
@@ -1116,8 +1106,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         );
         if (existing) return;
 
-        const userKeys = await getUserKeyPair();
-        if (!userKeys) return;
+        const userKeys = await ensureLocalE2EEKeyPair();
+        if (!userKeys?.encryptedPrivateKey) return;
 
         const senderKeyRes = await api.get(`/e2ee/keys/${payload.senderId}`).catch(() => null);
         if (!senderKeyRes?.data?.data) return;
@@ -1145,8 +1135,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         const existingKeys = await getConversationKeys(payload.conversationId);
         if (existingKeys.length === 0) return;
 
-        const userKeys = await getUserKeyPair();
-        if (!userKeys) return;
+        const userKeys = await ensureLocalE2EEKeyPair();
+        if (!userKeys?.encryptedPrivateKey) return;
 
         const requesterKeyRes = await api.get(`/e2ee/keys/${payload.requesterId}`).catch(() => null);
         if (!requesterKeyRes?.data?.data) return;
@@ -1183,8 +1173,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         );
         if (existing) return;
 
-        const userKeys = await getUserKeyPair();
-        if (!userKeys) return;
+        const userKeys = await ensureLocalE2EEKeyPair();
+        if (!userKeys?.encryptedPrivateKey) return;
 
         const senderKeyRes = await api.get(`/e2ee/keys/${payload.senderId}`).catch(() => null);
         if (!senderKeyRes?.data?.data) return;

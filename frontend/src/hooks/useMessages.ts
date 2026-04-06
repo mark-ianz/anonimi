@@ -22,6 +22,7 @@ import type {
 import { MESSAGES_PER_PAGE } from "@/lib/constants";
 import { encryptMessage, importKeyFromBase64 } from "@/lib/e2eeCrypto";
 import { getConversationKey as getConvKeyFromStore } from "@/lib/e2eeKeyStore";
+import { ensureConversationKeyForConversation } from "@/lib/e2eeConversationRecovery";
 
 const STEALTH_DURATIONS_MS: Record<string, number> = {
   "1m": 60 * 1000,
@@ -170,7 +171,20 @@ export function useMessages(conversationId: string | null) {
 
       if (payload.content && !isStealth) {
         try {
-          const convKeyData = await getConvKeyFromStore(payload.conversationId);
+          let convKeyData = await getConvKeyFromStore(payload.conversationId);
+          if (!convKeyData) {
+            const currentConversation =
+              useChatStore.getState().conversations.find((conv) => conv.id === payload.conversationId) ??
+              ((await api.get(`/conversations/${payload.conversationId}`).catch(() => null))?.data?.data ?? null);
+
+            if (currentConversation) {
+              const recovered = await ensureConversationKeyForConversation(currentConversation);
+              if (recovered) {
+                convKeyData = await getConvKeyFromStore(payload.conversationId);
+              }
+            }
+          }
+
           if (convKeyData) {
             console.log("[E2EE] Encrypting message for conversation", payload.conversationId);
             const aesKey = await importKeyFromBase64(convKeyData.key);
@@ -360,7 +374,20 @@ export function useMessages(conversationId: string | null) {
       let contentToSend: string | null = payload.content;
 
       try {
-        const convKeyData = await getConvKeyFromStore(payload.conversationId);
+        let convKeyData = await getConvKeyFromStore(payload.conversationId);
+        if (!convKeyData) {
+          const currentConversation =
+            useChatStore.getState().conversations.find((conv) => conv.id === payload.conversationId) ??
+            ((await api.get(`/conversations/${payload.conversationId}`).catch(() => null))?.data?.data ?? null);
+
+          if (currentConversation) {
+            const recovered = await ensureConversationKeyForConversation(currentConversation);
+            if (recovered) {
+              convKeyData = await getConvKeyFromStore(payload.conversationId);
+            }
+          }
+        }
+
         if (convKeyData) {
           console.log("[E2EE] Encrypting edit for conversation", payload.conversationId);
           const aesKey = await importKeyFromBase64(convKeyData.key);

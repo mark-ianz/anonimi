@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import {
-  getUserKeyPair,
   getConversationKeys,
   saveConversationKey,
 } from "@/lib/e2eeKeyStore";
@@ -16,6 +15,9 @@ import {
 import api from "@/lib/api";
 import { getChatSocket } from "@/lib/socket";
 import { useAuthStore } from "@/stores/authStore";
+import { ensureLocalE2EEKeyPair } from "@/lib/e2eeRecovery";
+import type { Conversation } from "@/types/conversation";
+import { ensureConversationKeyForConversation } from "@/lib/e2eeConversationRecovery";
 
 interface GroupMemberKey {
   userId: string;
@@ -36,6 +38,11 @@ export function useGroupKeyExchange(
     isExchanging.current = true;
 
     try {
+      if (!user?.id) {
+        isExchanging.current = false;
+        return;
+      }
+
       const existingKeys = await getConversationKeys(conversationId);
       if (existingKeys.length > 0) {
         isExchanging.current = false;
@@ -43,8 +50,27 @@ export function useGroupKeyExchange(
         return;
       }
 
-      const userKeys = await getUserKeyPair();
-      if (!userKeys) {
+      const recoveredFromServer = await ensureConversationKeyForConversation({
+        id: conversationId,
+        type: "group",
+        group: {
+          id: groupId,
+          name: "",
+          image: null,
+          memberCount: 0,
+        },
+        lastMessage: null,
+        unreadCount: 0,
+        updatedAt: new Date().toISOString(),
+      } as Conversation);
+      if (recoveredFromServer) {
+        isExchanging.current = false;
+        retryCount.current = 0;
+        return;
+      }
+
+      const userKeys = await ensureLocalE2EEKeyPair();
+      if (!userKeys?.encryptedPrivateKey) {
         isExchanging.current = false;
         return;
       }
@@ -85,12 +111,29 @@ export function useGroupKeyExchange(
       }
 
       if (user?.id === creatorId) {
+        const shouldTryRecoveryFromMembersFirst =
+          sortedMembers.length > 1 && retryCount.current < MAX_RETRIES;
+
+        if (shouldTryRecoveryFromMembersFirst) {
+          const socket = getChatSocket();
+          socket.emit("e2ee:group:key:request", {
+            groupId,
+            conversationId,
+            requesterId: user.id,
+          });
+
+          retryCount.current++;
+          isExchanging.current = false;
+          setTimeout(() => exchangeKeys(), 2000 * retryCount.current);
+          console.log("[E2EE] Creator requested existing group key from members before rotating");
+          return;
+        }
+
         const groupAesKey = await generateAesKey();
         const groupAesKeyBase64 = await exportKeyAsBase64(groupAesKey);
 
         const encryptedKeys: Record<string, string> = {};
         for (const member of memberKeys) {
-          if (member.userId === userKeys.id) continue;
           try {
             const encrypted = await encryptKeyWithSharedSecret(
               groupAesKeyBase64,
@@ -125,7 +168,7 @@ export function useGroupKeyExchange(
         socket.emit("e2ee:group:key:request", {
           groupId,
           conversationId,
-          requesterId: userKeys.id,
+          requesterId: user?.id,
         });
 
         console.log("[E2EE] Requested group key from existing members");
@@ -143,7 +186,7 @@ export function useGroupKeyExchange(
     } finally {
       isExchanging.current = false;
     }
-  }, [conversationId, groupId]);
+  }, [conversationId, groupId, user?.id]);
 
   useEffect(() => {
     exchangeKeys();
@@ -170,8 +213,8 @@ export function useGroupKeyReception() {
         return;
       }
 
-      const userKeys = await getUserKeyPair();
-      if (!userKeys) {
+      const userKeys = await ensureLocalE2EEKeyPair();
+      if (!userKeys?.encryptedPrivateKey) {
         isReceiving.current = false;
         return;
       }

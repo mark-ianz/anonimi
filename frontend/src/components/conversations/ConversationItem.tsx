@@ -17,6 +17,7 @@ import DateDisplay from "@/components/shared/DateDisplay";
 import GroupAvatar from "@/components/shared/GroupAvatar";
 import UserAvatar from "@/components/shared/UserAvatar";
 import { decryptConversationPayload } from "@/lib/e2eeMessageCrypto";
+import { ensureConversationKeyForConversation } from "@/lib/e2eeConversationRecovery";
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -85,6 +86,7 @@ export default function ConversationItem({
     let cancelled = false;
     (async () => {
       try {
+        await ensureConversationKeyForConversation(conversation);
         const content = await decryptConversationPayload({
           conversationId: conversation.id,
           cipherText: lm.contentCipher!,

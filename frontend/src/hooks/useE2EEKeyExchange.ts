@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import {
-  getUserKeyPair,
   getConversationKey,
   saveConversationKey,
 } from "@/lib/e2eeKeyStore";
@@ -10,6 +9,7 @@ import {
   deriveSharedSecretFromBase64,
   exportKeyAsBase64,
 } from "@/lib/e2eeCrypto";
+import { ensureLocalE2EEKeyPair } from "@/lib/e2eeRecovery";
 import api from "@/lib/api";
 
 export function useE2EEKeyExchange(conversationId: string | null, participantUserId: string | null) {
@@ -29,8 +29,8 @@ export function useE2EEKeyExchange(conversationId: string | null, participantUse
         return;
       }
 
-      const userKeys = await getUserKeyPair();
-      if (!userKeys) {
+      const userKeys = await ensureLocalE2EEKeyPair();
+      if (!userKeys?.encryptedPrivateKey) {
         console.warn("[E2EE] No local key pair yet for", participantUserId);
         isExchanging.current = false;
         return;
