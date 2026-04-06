@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import ScrollToHash from "@/components/marketing/ScrollToHash";
+import SecuritySpotlight from "@/components/marketing/SecuritySpotlight";
 import {
   AnimatedSection,
   AnimatedText,
@@ -51,6 +52,18 @@ export default function FeaturesPage() {
         </AnimatedSection>
 
         <div className="space-y-24 md:space-y-32">
+          <AnimatedSection direction="up">
+            <SecuritySpotlight
+              badge="Encryption Layer"
+              title="End-to-end encryption is part of the product story, not a hidden checkbox."
+              description="anonimi uses conversation-level encryption so private chats and group rooms can keep readable content on participant devices while the server handles transport, delivery, and coordination. It is a clearer model for identity-safe messaging."
+              ctaHref="/register"
+              ctaLabel="Start encrypted chats"
+              secondaryHref="/about"
+              secondaryLabel="Read the philosophy"
+            />
+          </AnimatedSection>
+
           {/* Real-time Messaging - OPEN LAYOUT (no container box) */}
           <AnimatedSection direction="up">
             <section className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
@@ -68,7 +81,7 @@ export default function FeaturesPage() {
                 <AnimatedText delay={0.15}>
                   <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
                     Fast delivery, read state, and reactions that stay in sync
-                    across every device. Messages arrive instantly with end-to-end reliability.
+                    across every device. Messages arrive instantly without losing the privacy layer underneath.
                   </p>
                 </AnimatedText>
                 <AnimatedElement delay={0.2} className="mt-8 flex flex-wrap gap-2 text-xs font-semibold text-emerald-800 dark:text-emerald-200">
@@ -167,7 +180,7 @@ export default function FeaturesPage() {
                       </p>
                     </div>
                     <p className="mt-3 text-sm text-muted-foreground">
-                      Share this instead of your email or phone number.
+                      Share this instead of your email or phone number, then let encryption handle the message layer.
                     </p>
                   </AnimatedCard>
                 </div>

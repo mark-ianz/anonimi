@@ -2,6 +2,7 @@ import HeroSection from "@/components/marketing/HeroSection";
 import FeatureGrid from "@/components/marketing/FeatureGrid";
 import CTASection from "@/components/marketing/CTASection";
 import HowItWorksStep from "@/components/marketing/HowItWorksStep";
+import SecuritySpotlight from "@/components/marketing/SecuritySpotlight";
 import ScrollAnimator from "@/components/ScrollAnimator";
 import { UserPlus, Share2, MessageCircle } from "lucide-react";
 import Link from "next/link";
@@ -58,6 +59,16 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      <SecuritySpotlight
+        badge="Proof, Not Promise"
+        title="Highlight end-to-end encryption where trust decisions happen."
+        description="The strongest part of anonimi is not just private identity. It is the combination of AID-first discovery, conversation-level encryption, and history boundaries that help people understand who can read what and when."
+        ctaHref="/features#end-to-end-encryption"
+        ctaLabel="Explore the security layer"
+        secondaryHref="/about"
+        secondaryLabel="Why we built it"
+      />
 
       <FeatureGrid />
 

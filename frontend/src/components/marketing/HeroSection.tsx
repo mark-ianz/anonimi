@@ -11,7 +11,7 @@ export default function HeroSection() {
       <div className="grid gap-10 border-y border-border/70 py-12 md:grid-cols-[0.62fr_0.38fr] md:gap-12 md:py-14">
           <div data-scroll style={{ ['--delay' as any]: '0ms' }} className="scroll-reveal">
             <p className="inline-flex rounded-full border border-border/70 bg-background/80 px-3 py-1 font-mono text-[0.68rem] font-medium uppercase tracking-[0.16em] text-foreground/88">
-              AID-First Messaging
+              AID-First Private Messaging
             </p>
 
             <h1 className="mt-6 max-w-[26ch] text-4xl leading-[0.95] font-semibold sm:text-5xl md:text-6xl whitespace-normal break-words" data-typing data-texts={JSON.stringify([
@@ -25,7 +25,7 @@ export default function HeroSection() {
 
             <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
               anonimi gives every user a private AID instead of exposing personal contact data.
-              Share it once, keep control with requests, and keep messaging focused.
+              Share it once, keep control with requests, and keep messages protected with conversation-level encryption.
             </p>
 
             <div className="mt-9 flex flex-wrap items-center gap-3">
@@ -46,9 +46,9 @@ export default function HeroSection() {
             </div>
 
             <div className="mt-10 grid max-w-2xl grid-cols-1 gap-2 font-mono text-[0.72rem] uppercase tracking-[0.08em] text-muted-foreground sm:grid-cols-3">
-              <p>Encrypted transport</p>
-              <p>AID-only discovery</p>
-              <p>Verification resume</p>
+              <p className="text-start sm:text-center">End-to-end encryption</p>
+              <p className="text-start sm:text-center">AID-only discovery</p>
+              <p className="text-start sm:text-center">Stealth + temporary access</p>
             </div>
           </div>
 
@@ -57,19 +57,42 @@ export default function HeroSection() {
               <div className="rounded-2xl border border-border/65 bg-background/85 p-5">
                 <div className="mb-5 flex items-center justify-between border-b border-border/55 pb-3">
                   <p className="font-mono text-[0.68rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-                    Message Preview
+                    Encrypted Preview
                   </p>
-                  <p className="font-mono text-[0.68rem] font-medium uppercase tracking-[0.06em] text-foreground/85">12 ms</p>
+                  <p className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 font-mono text-[0.62rem] font-medium uppercase tracking-[0.08em] text-emerald-700 dark:text-emerald-200">Key live</p>
                 </div>
                 <div className="space-y-3">
-                  <div className="max-w-[82%] rounded-2xl rounded-bl-sm border border-border/65 bg-card px-4 py-3 text-sm leading-relaxed text-foreground animate-drift">
+                  <div className="rounded-2xl border border-border/60 bg-card px-4 py-3">
+                    <p className="font-mono text-[0.62rem] uppercase tracking-[0.14em] text-muted-foreground">
+                      sender payload
+                    </p>
+                    <p className="mt-2 break-all font-mono text-xs leading-relaxed text-foreground/75 animate-drift">
+                      4fY2mKp...3dQ8nL...9cX1
+                    </p>
+                  </div>
+                  <div className="max-w-[82%] rounded-2xl rounded-bl-sm border border-border/65 bg-card px-4 py-3 text-sm leading-relaxed text-foreground">
                     Need a secure group room for tonight&apos;s drop?
                   </div>
                   <div className="ml-auto max-w-[82%] rounded-2xl rounded-br-sm bg-primary px-4 py-3 text-sm leading-relaxed text-primary-foreground">
                     Created. Invite link expires in 10 minutes.
                   </div>
-                  <div className="max-w-[82%] rounded-2xl rounded-bl-sm border border-border/65 bg-card px-4 py-3 text-sm leading-relaxed text-foreground">
-                    Perfect. Sending anonimi now.
+                  <div className="grid grid-cols-2 gap-3 pt-2">
+                    <div className="rounded-2xl border border-border/60 bg-card px-4 py-3">
+                      <p className="font-mono text-[0.62rem] uppercase tracking-[0.14em] text-muted-foreground">
+                        identity
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-foreground">
+                        Shared via AID
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-border/60 bg-card px-4 py-3">
+                      <p className="font-mono text-[0.62rem] uppercase tracking-[0.14em] text-muted-foreground">
+                        history control
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-foreground">
+                        Stealth ready
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>

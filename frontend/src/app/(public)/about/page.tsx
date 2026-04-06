@@ -42,7 +42,7 @@ export default function AboutPage() {
           </AnimatedText>
           <AnimatedText delay={0.2}>
             <p className="mt-6 max-w-3xl text-base leading-relaxed text-muted-foreground md:text-lg">
-              anonimi exists because private communication should not demand personal exposure. Our platform is designed around AIDs, recovery-safe onboarding, and moderation controls that keep people in control.
+              anonimi exists because private communication should not demand personal exposure. Our platform is designed around AIDs, end-to-end encrypted conversations, recovery-safe onboarding, and moderation controls that keep people in control.
             </p>
           </AnimatedText>
           <AnimatedElement delay={0.3} className="mt-8 flex flex-wrap gap-3">
@@ -86,6 +86,44 @@ export default function AboutPage() {
               </div>
             </StaggerItem>
           </StaggerContainer>
+        </AnimatedSection>
+
+        <AnimatedSection delay={0.12} className="mt-12">
+          <div className="grid gap-6 rounded-[2rem] border border-emerald-500/20 bg-gradient-to-br from-emerald-500/8 via-background to-background p-6 md:grid-cols-[1.1fr_0.9fr] md:p-8">
+            <div>
+              <AnimatedBadge className="inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 font-mono text-[0.66rem] uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-200">
+                Security Philosophy
+              </AnimatedBadge>
+              <AnimatedText delay={0.08}>
+                <h2 className="mt-4 text-3xl font-semibold leading-tight md:text-4xl">
+                  Encryption should be understandable, not mystical.
+                </h2>
+              </AnimatedText>
+              <AnimatedText delay={0.12}>
+                <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
+                  We care about making privacy legible. That means helping people understand identity boundaries, message lifetime, and who can read a thread after membership changes. Strong security is only useful when users can trust the behavior they see.
+                </p>
+              </AnimatedText>
+            </div>
+            <div className="grid gap-4">
+              <AnimatedCard delay={0.16} className="rounded-2xl border border-border/60 bg-background/70 p-5">
+                <p className="text-sm font-semibold text-foreground">What we optimize for</p>
+                <AnimatedList className="mt-4 space-y-2 text-sm text-muted-foreground">
+                  <AnimatedListItem>Private identity before connection</AnimatedListItem>
+                  <AnimatedListItem>End-to-end encrypted conversations by default</AnimatedListItem>
+                  <AnimatedListItem>Clear recovery paths when things go wrong</AnimatedListItem>
+                </AnimatedList>
+              </AnimatedCard>
+              <AnimatedCard delay={0.2} className="rounded-2xl border border-border/60 bg-background/70 p-5">
+                <p className="text-sm font-semibold text-foreground">What we avoid</p>
+                <AnimatedList className="mt-4 space-y-2 text-sm text-muted-foreground">
+                  <AnimatedListItem>Phone-number-first identity requirements</AnimatedListItem>
+                  <AnimatedListItem>Security claims that only live in footnotes</AnimatedListItem>
+                  <AnimatedListItem>Fragile flows that punish ordinary mistakes</AnimatedListItem>
+                </AnimatedList>
+              </AnimatedCard>
+            </div>
+          </div>
         </AnimatedSection>
 
         {/* Mission & Difference Section */}

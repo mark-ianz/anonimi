@@ -10,7 +10,7 @@ import {
   Zap,
   Bell,
   Image as ImageIcon,
-  FileText,
+  KeyRound,
 } from "lucide-react";
 
 type IconName =
@@ -20,7 +20,7 @@ type IconName =
   | "Zap"
   | "Bell"
   | "ImageIcon"
-  | "FileText";
+  | "KeyRound";
 
 const iconMap = {
   MessageCircle,
@@ -29,7 +29,7 @@ const iconMap = {
   Zap,
   Bell,
   ImageIcon,
-  FileText,
+  KeyRound,
 };
 
 interface FeatureCardProps {
@@ -164,10 +164,10 @@ const features: {
     size: "medium",
   },
   {
-    iconName: "FileText",
-    title: "Audit Logs",
+    iconName: "KeyRound",
+    title: "Conversation Keys",
     description:
-      "Immutable audit trails and moderation logs for compliance and admin workflows.",
+      "End-to-end encrypted rooms with conversation-level keys built for private messaging flows.",
     size: "medium",
   },
 ];
@@ -190,7 +190,7 @@ export default function FeatureGrid() {
             Feature Set
           </p>
           <h2 className="mt-4 max-w-3xl text-balance text-3xl font-semibold leading-tight sm:text-4xl md:text-[2.95rem]">
-            Private chat primitives, composed like a system.
+            Private messaging layers, composed like a system.
           </h2>
           <p className="mt-4 max-w-2xl text-pretty text-base text-muted-foreground md:text-lg">
             A bento layout built around identity safety, speed, and control—not
