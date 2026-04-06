@@ -16,8 +16,7 @@ import type { Conversation } from "@/types/conversation";
 import DateDisplay from "@/components/shared/DateDisplay";
 import GroupAvatar from "@/components/shared/GroupAvatar";
 import UserAvatar from "@/components/shared/UserAvatar";
-import { decryptMessage, importKeyFromBase64 } from "@/lib/e2eeCrypto";
-import { getConversationKey } from "@/lib/e2eeKeyStore";
+import { decryptConversationPayload } from "@/lib/e2eeMessageCrypto";
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -86,11 +85,14 @@ export default function ConversationItem({
     let cancelled = false;
     (async () => {
       try {
-        const keyData = await getConversationKey(conversation.id);
-        if (!keyData || cancelled) return;
-        const aesKey = await importKeyFromBase64(keyData.key);
-        if (cancelled) return;
-        const content = await decryptMessage(lm.contentCipher!, lm.contentIv!, lm.contentTag!, aesKey);
+        const content = await decryptConversationPayload({
+          conversationId: conversation.id,
+          cipherText: lm.contentCipher!,
+          iv: lm.contentIv!,
+          tag: lm.contentTag!,
+          contentKeyVersion: lm.contentKeyVersion ?? null,
+        });
+        if (content == null || cancelled) return;
         if (!cancelled) setDecryptedPreview(content);
       } catch {
         // silent

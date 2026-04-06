@@ -127,7 +127,7 @@ export const sendMessage = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { conversationId, type, content, mediaUrl, fileName, fileSize, replyToId, stealthDuration, contentCipher, contentIv, contentTag } = req.body;
+    const { conversationId, type, content, mediaUrl, fileName, fileSize, replyToId, stealthDuration, contentCipher, contentIv, contentTag, contentKeyVersion } = req.body;
     const result = await chatService.sendMessage(
       req.user!._id.toString(),
       conversationId,
@@ -136,7 +136,7 @@ export const sendMessage = async (
       mediaUrl,
       fileName,
       fileSize,
-      { stealthDuration, replyToId, contentCipher, contentIv, contentTag }
+      { stealthDuration, replyToId, contentCipher, contentIv, contentTag, contentKeyVersion }
     );
     apiSuccess(res, result.message, 201);
   } catch (error) {
@@ -151,12 +151,12 @@ export const editMessage = async (
 ): Promise<void> => {
   try {
     const messageId = req.params.messageId as string;
-    const { content, contentCipher, contentIv, contentTag } = req.body;
+    const { content, contentCipher, contentIv, contentTag, contentKeyVersion } = req.body;
     const result = await chatService.editMessage(
       messageId,
       req.user!._id.toString(),
       content,
-      { contentCipher, contentIv, contentTag }
+      { contentCipher, contentIv, contentTag, contentKeyVersion }
     );
     apiSuccess(res, result);
   } catch (error) {

@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { decryptMessage, importKeyFromBase64 } from "@/lib/e2eeCrypto";
-import { getConversationKey } from "@/lib/e2eeKeyStore";
+import { decryptConversationPayload } from "@/lib/e2eeMessageCrypto";
 import { useChatStore } from "@/stores/chatStore";
 import type { Conversation } from "@/types/conversation";
 
@@ -44,20 +43,22 @@ export function useDecryptedPreviews(conversations: Conversation[]) {
           const cipher = lastStoreMsg?.contentCipher ?? lm?.contentCipher;
           const iv = lastStoreMsg?.contentIv ?? lm?.contentIv;
           const tag = lastStoreMsg?.contentTag ?? lm?.contentTag;
+          const contentKeyVersion =
+            lastStoreMsg?.contentKeyVersion ?? lm?.contentKeyVersion ?? null;
 
           if (!cipher || !iv || !tag) {
             decryptingRef.current.delete(conv.id);
             return;
           }
 
-          const keyData = await getConversationKey(conv.id);
-          if (!keyData) {
-            decryptingRef.current.delete(conv.id);
-            return;
-          }
-
-          const aesKey = await importKeyFromBase64(keyData.key);
-          const content = await decryptMessage(cipher, iv, tag, aesKey);
+          const content = await decryptConversationPayload({
+            conversationId: conv.id,
+            cipherText: cipher,
+            iv,
+            tag,
+            contentKeyVersion,
+          });
+          if (content == null) return;
 
           setDecryptedMap((prev) => ({ ...prev, [conv.id]: content }));
 

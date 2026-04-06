@@ -2,35 +2,76 @@ const ALGO = { name: "AES-GCM", length: 256 };
 const ECDH_ALGO = { name: "ECDH", namedCurve: "P-256" };
 const IV_LENGTH = 12;
 
+/**
+ * Safely get the Web Crypto object to avoid SSR errors in Next.js
+ */
+const getCrypto = (): Crypto => {
+  if (typeof window !== "undefined" && window.crypto) return window.crypto;
+  if (typeof globalThis !== "undefined" && globalThis.crypto) return globalThis.crypto;
+  throw new Error("Web Crypto API is not available in this environment.");
+};
+
+const getSubtle = (): SubtleCrypto => {
+  const crypto = getCrypto();
+  if (!crypto.subtle) {
+    throw new Error("Web Crypto Subtle API is not available (likely an insecure context).");
+  }
+  return crypto.subtle;
+};
+
+/**
+ * Robust base64 to Uint8Array conversion (handles large buffers)
+ */
+const base64ToBytes = (base64: string): Uint8Array => {
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+};
+
+/**
+ * Robust Uint8Array to base64 conversion (handles large buffers)
+ */
+const bytesToBase64 = (bytes: Uint8Array): string => {
+  let binary = "";
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+};
+
 export const generateKeyPair = async (): Promise<CryptoKeyPair> => {
-  return crypto.subtle.generateKey(ECDH_ALGO, true, ["deriveKey", "deriveBits"]);
+  return getSubtle().generateKey(ECDH_ALGO, true, ["deriveKey", "deriveBits"]);
 };
 
 export const exportPublicKey = async (key: CryptoKey): Promise<string> => {
-  const raw = await crypto.subtle.exportKey("spki", key);
-  return btoa(String.fromCharCode(...new Uint8Array(raw)));
+  const raw = await getSubtle().exportKey("spki", key);
+  return bytesToBase64(new Uint8Array(raw));
 };
 
 export const exportPrivateKey = async (key: CryptoKey): Promise<string> => {
-  const raw = await crypto.subtle.exportKey("pkcs8", key);
-  return btoa(String.fromCharCode(...new Uint8Array(raw)));
+  const raw = await getSubtle().exportKey("pkcs8", key);
+  return bytesToBase64(new Uint8Array(raw));
 };
 
 export const importPublicKey = async (base64: string): Promise<CryptoKey> => {
-  const binary = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-  return crypto.subtle.importKey("spki", binary, ECDH_ALGO, true, []);
+  const binary = base64ToBytes(base64);
+  return getSubtle().importKey("spki", binary as any, ECDH_ALGO, true, []);
 };
 
 export const importPrivateKey = async (base64: string): Promise<CryptoKey> => {
-  const binary = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-  return crypto.subtle.importKey("pkcs8", binary, ECDH_ALGO, true, ["deriveKey"]);
+  const binary = base64ToBytes(base64);
+  return getSubtle().importKey("pkcs8", binary as any, ECDH_ALGO, true, ["deriveKey", "deriveBits"]);
 };
 
 export const deriveSharedSecret = async (
   privateKey: CryptoKey,
   publicKey: CryptoKey
 ): Promise<CryptoKey> => {
-  return crypto.subtle.deriveKey(
+  return getSubtle().deriveKey(
     { name: "ECDH", public: publicKey },
     privateKey,
     ALGO,
@@ -52,13 +93,13 @@ export const encryptMessage = async (
   content: string,
   aesKey: CryptoKey
 ): Promise<{ cipherText: string; iv: string; tag: string }> => {
-  const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
+  const iv = getCrypto().getRandomValues(new Uint8Array(IV_LENGTH));
   const encoded = new TextEncoder().encode(content);
 
-  const encrypted = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
+  const encrypted = await getSubtle().encrypt(
+    { name: "AES-GCM", iv: iv as any, tagLength: 128 },
     aesKey,
-    encoded
+    encoded as any
   );
 
   const encryptedBuffer = new Uint8Array(encrypted);
@@ -66,9 +107,9 @@ export const encryptMessage = async (
   const cipherText = encryptedBuffer.slice(0, -16);
 
   return {
-    cipherText: btoa(String.fromCharCode(...cipherText)),
-    iv: btoa(String.fromCharCode(...iv)),
-    tag: btoa(String.fromCharCode(...tag)),
+    cipherText: bytesToBase64(cipherText),
+    iv: bytesToBase64(iv),
+    tag: bytesToBase64(tag),
   };
 };
 
@@ -78,35 +119,35 @@ export const decryptMessage = async (
   tag: string,
   aesKey: CryptoKey
 ): Promise<string> => {
-  const cipherBuffer = Uint8Array.from(atob(cipherText), (c) => c.charCodeAt(0));
-  const ivBuffer = Uint8Array.from(atob(iv), (c) => c.charCodeAt(0));
-  const tagBuffer = Uint8Array.from(atob(tag), (c) => c.charCodeAt(0));
+  const cipherBuffer = base64ToBytes(cipherText);
+  const ivBuffer = base64ToBytes(iv);
+  const tagBuffer = base64ToBytes(tag);
 
   const combined = new Uint8Array(cipherBuffer.length + tagBuffer.length);
   combined.set(cipherBuffer);
   combined.set(tagBuffer, cipherBuffer.length);
 
-  const decrypted = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: ivBuffer },
+  const decrypted = await getSubtle().decrypt(
+    { name: "AES-GCM", iv: ivBuffer as any, tagLength: 128 },
     aesKey,
-    combined
+    combined as any
   );
 
   return new TextDecoder().decode(decrypted);
 };
 
 export const exportKeyAsBase64 = async (key: CryptoKey): Promise<string> => {
-  const raw = await crypto.subtle.exportKey("raw", key);
-  return btoa(String.fromCharCode(...new Uint8Array(raw)));
+  const raw = await getSubtle().exportKey("raw", key);
+  return bytesToBase64(new Uint8Array(raw));
 };
 
 export const importKeyFromBase64 = async (base64: string): Promise<CryptoKey> => {
-  const raw = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-  return crypto.subtle.importKey("raw", raw, ALGO, false, ["encrypt", "decrypt"]);
+  const raw = base64ToBytes(base64);
+  return getSubtle().importKey("raw", raw as any, ALGO, false, ["encrypt", "decrypt"]);
 };
 
 export const generateAesKey = async (): Promise<CryptoKey> => {
-  return crypto.subtle.generateKey(ALGO, true, ["encrypt", "decrypt"]);
+  return getSubtle().generateKey(ALGO, true, ["encrypt", "decrypt"]);
 };
 
 export const encryptKeyWithSharedSecret = async (
@@ -118,13 +159,13 @@ export const encryptKeyWithSharedSecret = async (
     myPrivateKeyBase64,
     theirPublicKeyBase64
   );
-  const rawKey = Uint8Array.from(atob(aesKeyBase64), (c) => c.charCodeAt(0));
-  const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
+  const rawKey = base64ToBytes(aesKeyBase64);
+  const iv = getCrypto().getRandomValues(new Uint8Array(IV_LENGTH));
 
-  const encrypted = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
+  const encrypted = await getSubtle().encrypt(
+    { name: "AES-GCM", iv: iv as any, tagLength: 128 },
     sharedSecret,
-    rawKey
+    rawKey as any
   );
 
   const encryptedBuffer = new Uint8Array(encrypted);
@@ -132,9 +173,9 @@ export const encryptKeyWithSharedSecret = async (
   const cipherText = encryptedBuffer.slice(0, -16);
 
   return JSON.stringify({
-    cipherText: btoa(String.fromCharCode(...cipherText)),
-    iv: btoa(String.fromCharCode(...iv)),
-    tag: btoa(String.fromCharCode(...tag)),
+    cipherText: bytesToBase64(cipherText),
+    iv: bytesToBase64(iv),
+    tag: bytesToBase64(tag),
   });
 };
 
@@ -149,19 +190,19 @@ export const decryptKeyWithSharedSecret = async (
     theirPublicKeyBase64
   );
 
-  const cipherBuffer = Uint8Array.from(atob(cipherText), (c) => c.charCodeAt(0));
-  const ivBuffer = Uint8Array.from(atob(iv), (c) => c.charCodeAt(0));
-  const tagBuffer = Uint8Array.from(atob(tag), (c) => c.charCodeAt(0));
+  const cipherBuffer = base64ToBytes(cipherText);
+  const ivBuffer = base64ToBytes(iv);
+  const tagBuffer = base64ToBytes(tag);
 
   const combined = new Uint8Array(cipherBuffer.length + tagBuffer.length);
   combined.set(cipherBuffer);
   combined.set(tagBuffer, cipherBuffer.length);
 
-  const decrypted = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: ivBuffer },
+  const decrypted = await getSubtle().decrypt(
+    { name: "AES-GCM", iv: ivBuffer as any, tagLength: 128 },
     sharedSecret,
-    combined
+    combined as any
   );
 
-  return btoa(String.fromCharCode(...new Uint8Array(decrypted)));
+  return bytesToBase64(new Uint8Array(decrypted));
 };

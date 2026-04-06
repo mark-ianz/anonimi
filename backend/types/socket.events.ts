@@ -7,6 +7,10 @@ export interface MessageSendPayload {
   fileSize?: number;
   stealthDuration?: "1m" | "5m" | "15m" | "30m" | "1h" | "3h" | "6h" | "12h" | "24h";
   tempId: string;
+  contentCipher?: string;
+  contentIv?: string;
+  contentTag?: string;
+  contentKeyVersion?: number;
 }
 
 export interface MessageTypingPayload {
@@ -50,6 +54,24 @@ export interface MessageReceivePayload {
   fileName?: string;
   fileSize?: number;
   timestamp: string;
+  isE2ee?: boolean;
+  contentCipher?: string | null;
+  contentIv?: string | null;
+  contentTag?: string | null;
+  contentKeyVersion?: number | null;
+  replyToId?: string | null;
+  replyPreview?: {
+    messageId: string;
+    senderId: string | null;
+    senderUsername?: string | null;
+    type: string;
+    content: string | null;
+    mediaUrl?: string | null;
+    fileName?: string | null;
+    createdAt?: string;
+  } | null;
+  contentLength?: number | null;
+  suppressUnread?: boolean;
 }
 
 export interface MessageStealthExpiredPayload {
@@ -67,10 +89,15 @@ export interface MessageUnsentPayload {
 export interface MessageEditedPayload {
   messageId: string;
   conversationId: string;
-  content: string;
+  content: string | null;
   editedAt: string;
   editedBy: string;
   createdAt: string;
+  isE2ee?: boolean;
+  contentCipher?: string | null;
+  contentIv?: string | null;
+  contentTag?: string | null;
+  contentKeyVersion?: number | null;
   editHistory: Array<{
     content: string;
     editedAt: string;
@@ -255,6 +282,7 @@ export interface E2EEReceivePayload {
   cipherText: string;
   iv: string;
   tag: string;
+  contentKeyVersion?: number | null;
   isStealth?: boolean;
   stealthExpiresAt?: string;
   stealthContentLength?: number;

@@ -1302,6 +1302,7 @@ export const sendMessage = async (
       contentCipher: options?.contentCipher || stealthPayload?.cipherText,
       contentIv: options?.contentIv || stealthPayload?.iv,
       contentTag: options?.contentTag || stealthPayload?.tag,
+      contentKeyVersion: options?.contentKeyVersion,
       stealthExpiresAt,
       contentLength: isStealth ? trimmedContent.length : undefined,
       mediaUrl,
@@ -1326,6 +1327,7 @@ export const sendMessage = async (
           contentCipher: isE2ee || isStealth ? (options?.contentCipher || stealthPayload?.cipherText) : undefined,
           contentIv: isE2ee || isStealth ? (options?.contentIv || stealthPayload?.iv) : undefined,
           contentTag: isE2ee || isStealth ? (options?.contentTag || stealthPayload?.tag) : undefined,
+          contentKeyVersion: options?.contentKeyVersion,
         };
       }
       conversation.updatedAt = new Date();
@@ -2015,6 +2017,7 @@ export const editMessage = async (
         "lastMessage.contentCipher": options?.contentCipher,
         "lastMessage.contentIv": options?.contentIv,
         "lastMessage.contentTag": options?.contentTag,
+        "lastMessage.contentKeyVersion": options?.contentKeyVersion,
       },
     }
   );
@@ -2022,9 +2025,14 @@ export const editMessage = async (
   emitToConversation(message.conversationId.toString(), "message:edited", {
     messageId: message._id.toString(),
     conversationId: message.conversationId.toString(),
-    content: trimmed,
+    content: isE2eeUpdate ? null : trimmed,
     editedAt: editedAt.toISOString(),
     editedBy: editorId,
+    isE2ee: isE2eeUpdate,
+    contentCipher: options?.contentCipher ?? null,
+    contentIv: options?.contentIv ?? null,
+    contentTag: options?.contentTag ?? null,
+    contentKeyVersion: options?.contentKeyVersion ?? null,
     editHistory: serializeEditHistory(message.editHistory),
     createdAt: message.createdAt.toISOString(),
   });
@@ -2035,6 +2043,11 @@ export const editMessage = async (
     senderId: message.senderId?.toString(),
     type: message.type,
     content: message.content,
+    isE2ee: message.isE2ee,
+    contentCipher: message.contentCipher ?? null,
+    contentIv: message.contentIv ?? null,
+    contentTag: message.contentTag ?? null,
+    contentKeyVersion: message.contentKeyVersion ?? null,
     mediaUrl: message.mediaUrl,
     fileName: message.fileName,
     fileSize: message.fileSize,

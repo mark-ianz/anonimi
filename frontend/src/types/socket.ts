@@ -14,6 +14,10 @@ export interface MessageSendPayload {
   replyToId?: string | null;
   stealthDuration?: "1m" | "5m" | "15m" | "30m" | "1h" | "3h" | "6h" | "12h" | "24h";
   tempId: string;
+  contentCipher?: string;
+  contentIv?: string;
+  contentTag?: string;
+  contentKeyVersion?: number;
 }
 
 export interface MessageTypingPayload {
@@ -105,10 +109,15 @@ export interface MessageUnsentPayload {
 export interface MessageEditedPayload {
   messageId: string;
   conversationId: string;
-  content: string;
+  content: string | null;
   editedAt: string;
   editedBy: string;
   createdAt: string;
+  isE2ee?: boolean;
+  contentCipher?: string | null;
+  contentIv?: string | null;
+  contentTag?: string | null;
+  contentKeyVersion?: number | null;
   editHistory: Array<{
     content: string;
     editedAt: string;
@@ -280,6 +289,7 @@ export interface E2EEReceivePayload {
   contentCipher: string;
   contentIv: string;
   contentTag: string;
+  contentKeyVersion?: number | null;
   isStealth?: boolean;
   stealthExpiresAt?: string | null;
   contentLength?: number | null;

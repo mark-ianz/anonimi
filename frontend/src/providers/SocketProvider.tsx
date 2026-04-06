@@ -9,8 +9,9 @@ import type { Conversation } from "@/types/conversation";
 import { toast } from "sonner";
 import { getChatSocket, disconnectSockets } from "@/lib/socket";
 import api from "@/lib/api";
-import { decryptMessage, importKeyFromBase64, importPrivateKey, deriveSharedSecret, exportKeyAsBase64, decryptKeyWithSharedSecret } from "@/lib/e2eeCrypto";
-import { getConversationKey, getConversationKeys, getUserKeyPair, saveConversationKey } from "@/lib/e2eeKeyStore";
+import { decryptKeyWithSharedSecret } from "@/lib/e2eeCrypto";
+import { decryptConversationPayload } from "@/lib/e2eeMessageCrypto";
+import { getConversationKeyByVersion, getConversationKeys, getUserKeyPair, saveConversationKey } from "@/lib/e2eeKeyStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useSocketStore } from "@/stores/socketStore";
 import { useChatStore } from "@/stores/chatStore";
@@ -20,7 +21,6 @@ import { useE2EEKeyRegistration } from "@/hooks/useE2EEKeyRegistration";
 import type {
   MessageAckPayload,
   MessageReceivePayload,
-  MessageReadPayload,
   MessageReadReceiptPayload,
   MessageReactionAddedPayload,
   MessageReactionRemovedPayload,
@@ -35,28 +35,11 @@ import type {
   MessageRequestNewPayload,
   MessageRequestAcceptedPayload,
   NotificationPayload,
-  GroupMemberJoinedPayload,
-  GroupMemberLeftPayload,
-  GroupUpdatedPayload,
-  GroupRoleChangedPayload,
   ContactNicknameUpdatedPayload,
   E2EEReceivePayload,
 } from "@/types/socket";
 interface SocketContextValue {
   chatSocket: Socket | null;
-}
-
-interface SupportTicketEventPayload {
-  ticketId: string;
-}
-
-interface SupportMessageEventPayload {
-  ticketId: string;
-  messageId: string;
-}
-
-interface SupportReportEventPayload {
-  reportId: string;
 }
 
 const SocketContext = createContext<SocketContextValue>({ chatSocket: null });
@@ -85,6 +68,72 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const socketRef = useRef<Socket | null>(null);
   const hadOfflineRef = useRef(false);
   const e2eeRegistered = useRef(false);
+  const pendingDecryptRetryRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  const clearPendingDecryptRetry = (retryKey: string) => {
+    const timeout = pendingDecryptRetryRef.current[retryKey];
+    if (timeout) {
+      clearTimeout(timeout);
+      delete pendingDecryptRetryRef.current[retryKey];
+    }
+  };
+
+  const schedulePendingDecryptRetry = (
+    payload: {
+      conversationId: string;
+      messageId: string;
+      senderId: string;
+      senderUsername?: string;
+      type: Message["type"];
+      timestamp: string;
+      contentCipher: string;
+      contentIv: string;
+      contentTag: string;
+      contentKeyVersion?: number | null;
+      isStealth?: boolean;
+    },
+    attempt: number = 0
+  ) => {
+    const retryKey = `${payload.conversationId}:${payload.messageId}`;
+    clearPendingDecryptRetry(retryKey);
+
+    if (attempt >= 8) return;
+
+    pendingDecryptRetryRef.current[retryKey] = setTimeout(async () => {
+      const decryptedContent = await decryptConversationPayload({
+        conversationId: payload.conversationId,
+        cipherText: payload.contentCipher,
+        iv: payload.contentIv,
+        tag: payload.contentTag,
+        contentKeyVersion: payload.contentKeyVersion ?? null,
+      });
+
+      if (decryptedContent == null) {
+        schedulePendingDecryptRetry(payload, attempt + 1);
+        return;
+      }
+
+      clearPendingDecryptRetry(retryKey);
+      updateMessage(payload.conversationId, payload.messageId, { content: decryptedContent });
+
+      const { conversations } = useChatStore.getState();
+      const conversation = conversations.find((conv) => conv.id === payload.conversationId);
+      if (conversation?.lastMessage?.timestamp === payload.timestamp) {
+        updateConversationLastMessage(payload.conversationId, {
+          content: payload.isStealth ? "[Stealth]" : decryptedContent,
+          senderId: payload.senderId,
+          senderUsername: payload.senderUsername,
+          type: payload.type,
+          timestamp: payload.timestamp,
+          isE2ee: true,
+          contentCipher: payload.contentCipher,
+          contentIv: payload.contentIv,
+          contentTag: payload.contentTag,
+          contentKeyVersion: payload.contentKeyVersion ?? null,
+        });
+      }
+    }, 800 * (attempt + 1));
+  };
 
   const registerE2EEKeys = async () => {
     if (e2eeRegistered.current || !user) return;
@@ -292,26 +341,23 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     // New message from another user
     socket.on("message:receive", async (payload: MessageReceivePayload) => {
-      const { conversations } = useChatStore.getState();
       const suppressUnread = !!payload.suppressUnread;
 
       let decryptedContent: string | null = payload.content;
       if (payload.isE2ee && payload.contentCipher && payload.contentIv && payload.contentTag) {
         try {
-          const convKeyData = await getConversationKey(payload.conversationId);
-          if (convKeyData) {
-            console.log("[E2EE] Decrypting incoming message for", payload.conversationId);
-            const aesKey = await importKeyFromBase64(convKeyData.key);
-            decryptedContent = await decryptMessage(
-              payload.contentCipher,
-              payload.contentIv,
-              payload.contentTag,
-              aesKey
-            );
+          console.log("[E2EE] Decrypting incoming message for", payload.conversationId);
+          decryptedContent = await decryptConversationPayload({
+            conversationId: payload.conversationId,
+            cipherText: payload.contentCipher,
+            iv: payload.contentIv,
+            tag: payload.contentTag,
+            contentKeyVersion: payload.contentKeyVersion ?? null,
+          });
+          if (decryptedContent) {
             console.log("[E2EE] Decrypted successfully, content length:", decryptedContent.length);
           } else {
             console.warn("[E2EE] No conversation key for", payload.conversationId, "- cannot decrypt");
-            decryptedContent = null;
           }
         } catch (err) {
           console.error("[E2EE] Decryption failed:", err);
@@ -335,6 +381,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         contentCipher: payload.contentCipher ?? null,
         contentIv: payload.contentIv ?? null,
         contentTag: payload.contentTag ?? null,
+        contentKeyVersion: payload.contentKeyVersion ?? null,
         mediaUrl: payload.mediaUrl,
         fileName: payload.fileName,
         fileSize: payload.fileSize,
@@ -345,6 +392,27 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         createdAt: payload.timestamp,
       };
       addMessage(payload.conversationId, msg);
+      if (
+        payload.isE2ee &&
+        decryptedContent == null &&
+        payload.contentCipher &&
+        payload.contentIv &&
+        payload.contentTag
+      ) {
+        schedulePendingDecryptRetry({
+          conversationId: payload.conversationId,
+          messageId: payload.messageId,
+          senderId: payload.senderId,
+          senderUsername: payload.senderUsername,
+          type: payload.type,
+          timestamp: payload.timestamp,
+          contentCipher: payload.contentCipher,
+          contentIv: payload.contentIv,
+          contentTag: payload.contentTag,
+          contentKeyVersion: payload.contentKeyVersion ?? null,
+          isStealth: payload.isStealth ?? false,
+        });
+      }
       updateConversationLastMessage(payload.conversationId, {
         content: payload.isStealth ? "[Stealth]" : decryptedContent,
         senderId: payload.senderId,
@@ -355,6 +423,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         contentCipher: payload.contentCipher,
         contentIv: payload.contentIv,
         contentTag: payload.contentTag,
+        contentKeyVersion: payload.contentKeyVersion,
       });
 
       qc.invalidateQueries({ queryKey: ["conversations"] });
@@ -534,7 +603,23 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       qc.invalidateQueries({ queryKey: ["conversations"] });
     });
 
-    socket.on("message:edited", (payload: MessageEditedPayload) => {
+    socket.on("message:edited", async (payload: MessageEditedPayload) => {
+      let nextContent = payload.content;
+
+      if (payload.isE2ee && payload.contentCipher && payload.contentIv && payload.contentTag) {
+        try {
+          nextContent = await decryptConversationPayload({
+            conversationId: payload.conversationId,
+            cipherText: payload.contentCipher,
+            iv: payload.contentIv,
+            tag: payload.contentTag,
+            contentKeyVersion: payload.contentKeyVersion ?? null,
+          });
+        } catch {
+          nextContent = null;
+        }
+      }
+
       qc.setQueryData(
         ["messages", payload.conversationId],
         (old:
@@ -553,7 +638,12 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
                 message.id === payload.messageId
                   ? {
                       ...message,
-                      content: payload.content,
+                      content: nextContent,
+                      isE2ee: payload.isE2ee ?? message.isE2ee,
+                      contentCipher: payload.contentCipher ?? message.contentCipher,
+                      contentIv: payload.contentIv ?? message.contentIv,
+                      contentTag: payload.contentTag ?? message.contentTag,
+                      contentKeyVersion: payload.contentKeyVersion ?? message.contentKeyVersion,
                       editedAt: payload.editedAt,
                       editedBy: payload.editedBy,
                       editHistory: payload.editHistory,
@@ -566,7 +656,12 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       );
 
       updateMessage(payload.conversationId, payload.messageId, {
-        content: payload.content,
+        content: nextContent,
+        isE2ee: payload.isE2ee,
+        contentCipher: payload.contentCipher,
+        contentIv: payload.contentIv,
+        contentTag: payload.contentTag,
+        contentKeyVersion: payload.contentKeyVersion,
         editedAt: payload.editedAt,
         editedBy: payload.editedBy,
         editHistory: payload.editHistory,
@@ -580,10 +675,16 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         conv.lastMessage.timestamp === payload.createdAt
       ) {
         updateConversationLastMessage(payload.conversationId, {
-          content: payload.content,
+          content: nextContent,
           senderId: conv.lastMessage.senderId,
           type: conv.lastMessage.type,
           timestamp: conv.lastMessage.timestamp,
+          isE2ee: payload.isE2ee ?? conv.lastMessage.isE2ee,
+          contentCipher: payload.contentCipher ?? conv.lastMessage.contentCipher,
+          contentIv: payload.contentIv ?? conv.lastMessage.contentIv,
+          contentTag: payload.contentTag ?? conv.lastMessage.contentTag,
+          contentKeyVersion:
+            payload.contentKeyVersion ?? conv.lastMessage.contentKeyVersion,
         });
       }
 
@@ -897,16 +998,13 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     });
 
     socket.on("e2ee:message:receive", async (payload: E2EEReceivePayload) => {
-      let decryptedContent: string | null = null;
-      try {
-        const convKeyData = await getConversationKey(payload.conversationId);
-        if (convKeyData) {
-          const aesKey = await importKeyFromBase64(convKeyData.key);
-          decryptedContent = await decryptMessage(payload.contentCipher, payload.contentIv, payload.contentTag, aesKey);
-        }
-      } catch {
-        // Leave as null — MessageBubble will handle
-      }
+      const decryptedContent = await decryptConversationPayload({
+        conversationId: payload.conversationId,
+        cipherText: payload.contentCipher,
+        iv: payload.contentIv,
+        tag: payload.contentTag,
+        contentKeyVersion: payload.contentKeyVersion ?? null,
+      });
 
       const msg: Message = {
         id: payload.messageId,
@@ -922,6 +1020,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         contentCipher: payload.contentCipher,
         contentIv: payload.contentIv,
         contentTag: payload.contentTag,
+        contentKeyVersion: payload.contentKeyVersion ?? null,
         mediaUrl: payload.mediaUrl,
         fileName: payload.fileName,
         fileSize: payload.fileSize,
@@ -932,6 +1031,21 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         createdAt: payload.timestamp,
       };
       addMessage(payload.conversationId, msg);
+      if (decryptedContent == null) {
+        schedulePendingDecryptRetry({
+          conversationId: payload.conversationId,
+          messageId: payload.messageId,
+          senderId: payload.senderId,
+          senderUsername: payload.senderUsername,
+          type: payload.type as Message["type"],
+          timestamp: payload.timestamp,
+          contentCipher: payload.contentCipher,
+          contentIv: payload.contentIv,
+          contentTag: payload.contentTag,
+          contentKeyVersion: payload.contentKeyVersion ?? null,
+          isStealth: payload.isStealth ?? false,
+        });
+      }
       updateConversationLastMessage(payload.conversationId, {
         content: payload.isStealth ? "[Stealth]" : decryptedContent,
         senderId: payload.senderId,
@@ -942,6 +1056,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         contentCipher: payload.contentCipher,
         contentIv: payload.contentIv,
         contentTag: payload.contentTag,
+        contentKeyVersion: payload.contentKeyVersion ?? null,
       });
 
       const { activeConversationId: currentActiveConversationId } = useChatStore.getState();
@@ -963,7 +1078,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     socket.on("e2ee:group:key:distributed", async (payload: { groupId: string; conversationId: string; keyVersion: number; encryptedKey: string; senderId: string }) => {
       try {
-        const existing = await getConversationKey(payload.conversationId);
+        const existing = await getConversationKeyByVersion(
+          payload.conversationId,
+          payload.keyVersion
+        );
         if (existing) return;
 
         const userKeys = await getUserKeyPair();
@@ -992,7 +1110,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     socket.on("e2ee:group:key:rotated", async (payload: { groupId: string; conversationId: string; keyVersion: number; encryptedKey: string; senderId: string }) => {
       try {
-        const existing = await getConversationKey(payload.conversationId);
+        const existing = await getConversationKeyByVersion(
+          payload.conversationId,
+          payload.keyVersion
+        );
         if (existing) return;
 
         const userKeys = await getUserKeyPair();
@@ -1056,7 +1177,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     socket.on("e2ee:group:key:response:received", async (payload: { groupId: string; conversationId: string; keyVersion: number; encryptedKey: string; senderId: string }) => {
       try {
-        const existing = await getConversationKey(payload.conversationId);
+        const existing = await getConversationKeyByVersion(
+          payload.conversationId,
+          payload.keyVersion
+        );
         if (existing) return;
 
         const userKeys = await getUserKeyPair();
@@ -1086,6 +1210,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => {
+      Object.keys(pendingDecryptRetryRef.current).forEach(clearPendingDecryptRetry);
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
       socket.off("connect", handleConnect);

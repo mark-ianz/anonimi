@@ -9,8 +9,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useChatStore } from "@/stores/chatStore";
 import { getChatSocket } from "@/lib/socket";
 import api from "@/lib/api";
-import { decryptMessage, importKeyFromBase64 } from "@/lib/e2eeCrypto";
-import { getConversationKeys } from "@/lib/e2eeKeyStore";
+import { decryptConversationPayload } from "@/lib/e2eeMessageCrypto";
 import type { Conversation } from "@/types/conversation";
 import type { GroupMember } from "@/types/group";
 import type { Message } from "@/types/message";
@@ -126,58 +125,33 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
 
     decryptingRef.current = true;
 
-    getConversationKeys(conversation.id).then((keys) => {
-      if (keys.length === 0) {
-        decryptingRef.current = false;
-        return;
+    const decryptPending = async () => {
+      const updates: Record<string, string> = {};
+
+      for (const msg of pending) {
+        const content = await decryptConversationPayload({
+          conversationId: conversation.id,
+          cipherText: msg.contentCipher!,
+          iv: msg.contentIv!,
+          tag: msg.contentTag!,
+          contentKeyVersion: msg.contentKeyVersion ?? null,
+        });
+
+        decryptedIdsRef.current.add(msg.id);
+
+        if (content != null) {
+          updates[msg.id] = content;
+        }
       }
 
-      const importAllKeys = async () => {
-        const importedKeys = await Promise.all(
-          keys.map(async (k) => ({
-            version: k.keyVersion,
-            aesKey: await importKeyFromBase64(k.key),
-          }))
-        );
+      if (Object.keys(updates).length > 0) {
+        setDecryptedContent((prev) => ({ ...prev, ...updates }));
+      }
+    };
 
-        const updates: Record<string, string> = {};
-
-        const decryptNext = async (index: number) => {
-          if (index >= pending.length) {
-            if (Object.keys(updates).length > 0) {
-              setDecryptedContent((prev) => ({ ...prev, ...updates }));
-            }
-            decryptingRef.current = false;
-            return;
-          }
-
-          const msg = pending[index];
-          let decrypted = false;
-
-          for (const { version, aesKey } of importedKeys) {
-            try {
-              const content = await decryptMessage(msg.contentCipher!, msg.contentIv!, msg.contentTag!, aesKey);
-              updates[msg.id] = content;
-              decryptedIdsRef.current.add(msg.id);
-              decrypted = true;
-              break;
-            } catch {
-              // Try next key
-            }
-          }
-
-          if (!decrypted) {
-            decryptedIdsRef.current.add(msg.id);
-          }
-
-          await decryptNext(index + 1);
-        };
-
-        return decryptNext(0);
-      };
-
-      return importAllKeys();
-    }).catch(() => {
+    decryptPending().catch(() => {
+      decryptingRef.current = false;
+    }).finally(() => {
       decryptingRef.current = false;
     });
   }, [visibleMessages, conversation.id]);

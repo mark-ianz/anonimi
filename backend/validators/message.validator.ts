@@ -32,6 +32,7 @@ export const sendMessageSchema = z.object({
     contentCipher: z.string().optional(),
     contentIv: z.string().optional(),
     contentTag: z.string().optional(),
+    contentKeyVersion: z.number().int().positive().optional(),
   }),
 });
 
@@ -50,6 +51,7 @@ export const editMessageSchema = z.object({
     contentCipher: z.string().optional(),
     contentIv: z.string().optional(),
     contentTag: z.string().optional(),
+    contentKeyVersion: z.number().int().positive().optional(),
   }),
 });
 

@@ -136,6 +136,18 @@ export const getConversationKey = async (conversationId: string): Promise<Conver
   return keys[0] ?? null;
 };
 
+export const getConversationKeyByVersion = async (
+  conversationId: string,
+  keyVersion?: number | null
+): Promise<ConversationKey | null> => {
+  if (keyVersion == null) {
+    return getConversationKey(conversationId);
+  }
+
+  const keys = await getConversationKeys(conversationId);
+  return keys.find((key) => key.keyVersion === keyVersion) ?? null;
+};
+
 export const getConversationKeys = async (conversationId: string): Promise<ConversationKey[]> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {

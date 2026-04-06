@@ -244,6 +244,7 @@ export function useMessages(conversationId: string | null) {
         socketPayload.contentCipher = contentCipher;
         socketPayload.contentIv = contentIv;
         socketPayload.contentTag = contentTag;
+        socketPayload.contentKeyVersion = contentKeyVersion;
       }
 
       const socket = getChatSocket();
@@ -355,6 +356,7 @@ export function useMessages(conversationId: string | null) {
       let contentCipher: string | undefined;
       let contentIv: string | undefined;
       let contentTag: string | undefined;
+      let contentKeyVersion: number | undefined;
       let contentToSend: string | null = payload.content;
 
       try {
@@ -366,6 +368,7 @@ export function useMessages(conversationId: string | null) {
           contentCipher = encrypted.cipherText;
           contentIv = encrypted.iv;
           contentTag = encrypted.tag;
+          contentKeyVersion = convKeyData.keyVersion;
           contentToSend = null;
         }
       } catch (err) {
@@ -377,6 +380,7 @@ export function useMessages(conversationId: string | null) {
         contentCipher,
         contentIv,
         contentTag,
+        contentKeyVersion,
       });
       return res.data.data as Message;
     },

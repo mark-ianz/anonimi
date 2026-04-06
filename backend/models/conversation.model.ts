@@ -21,6 +21,7 @@ const conversationSchema = new Schema<IConversation>(
       contentCipher: { type: String },
       contentIv: { type: String },
       contentTag: { type: String },
+      contentKeyVersion: { type: Number },
     },
     requestStatus: { type: String },
   },

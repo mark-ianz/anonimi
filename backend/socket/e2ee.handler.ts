@@ -20,6 +20,7 @@ interface E2EESendPayload {
   replyToId?: string;
   stealthDuration?: string;
   tempId: string;
+  contentKeyVersion?: number;
 }
 
 export const setupE2EEHandler = (io: Server, socket: Socket): void => {
@@ -36,6 +37,7 @@ export const setupE2EEHandler = (io: Server, socket: Socket): void => {
       replyToId,
       stealthDuration,
       tempId,
+      contentKeyVersion,
     } = payload;
 
     try {
@@ -77,6 +79,7 @@ export const setupE2EEHandler = (io: Server, socket: Socket): void => {
         contentCipher: cipherText,
         contentIv: iv,
         contentTag: tag,
+        contentKeyVersion,
         isStealth,
         stealthExpiresAt,
         contentLength: isStealth ? (cipherText.length) : undefined,
@@ -94,6 +97,11 @@ export const setupE2EEHandler = (io: Server, socket: Socket): void => {
         senderId: new Types.ObjectId(userId),
         type,
         timestamp: message.createdAt,
+        isE2ee: true,
+        contentCipher: cipherText,
+        contentIv: iv,
+        contentTag: tag,
+        contentKeyVersion,
       };
       conversation.updatedAt = new Date();
       await conversation.save();
@@ -122,6 +130,7 @@ export const setupE2EEHandler = (io: Server, socket: Socket): void => {
           contentCipher: (message as any).contentCipher,
           contentIv: (message as any).contentIv,
           contentTag: (message as any).contentTag,
+          contentKeyVersion: (message as any).contentKeyVersion ?? null,
           isE2ee: message.isE2ee,
           isStealth: message.isStealth,
           stealthExpiresAt: message.stealthExpiresAt?.toISOString() ?? null,
