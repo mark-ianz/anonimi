@@ -725,6 +725,34 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
           <p className="mt-1 text-xs text-muted-foreground">
             Be cautious when sharing sensitive details. This account can be deleted after 24 hours.
           </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => (isArchived ? unarchiveMutation.mutate() : archiveMutation.mutate())}
+              disabled={archiveMutation.isPending || unarchiveMutation.isPending}
+              className="h-8 px-3 rounded-lg border border-border/50 text-xs font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+            >
+              {isArchived ? "Unarchive" : "Archive"}
+            </button>
+            <button
+              onClick={() => setConfirmBlock(true)}
+              disabled={blockMutation.isPending || isBlockedByMe}
+              className="h-8 px-3 rounded-lg border border-amber-500/40 text-xs font-medium text-amber-700 hover:bg-amber-500/15 transition-colors disabled:opacity-50 dark:text-amber-200"
+            >
+              {isBlockedByMe ? "Blocked" : blockMutation.isPending ? "Blocking..." : "Block"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setConfirmDelete(true);
+                setDeleteConfirmText("");
+              }}
+              disabled={deleteConversationMutation.isPending}
+              className="inline-flex h-8 items-center gap-1.5 px-3 rounded-lg border border-destructive/40 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {deleteConversationMutation.isPending ? "Deleting..." : "Delete Conversation"}
+            </button>
+          </div>
         </div>
       )}
 

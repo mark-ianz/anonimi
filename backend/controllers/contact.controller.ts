@@ -128,7 +128,7 @@ export const acceptContactRequest = async (
       contactId
     );
 
-    const accepter = await User.findById(req.user!._id).select("username anonimiId");
+    const accepter = await User.findById(req.user!._id).select("username anonimiId profileImage");
     if (requester?.userId) {
       await createAndEmitNotification({
         userId: requester.userId,
@@ -140,6 +140,12 @@ export const acceptContactRequest = async (
           acceptedByAnonimiId: accepter?.anonimiId,
           href: "/contacts",
         },
+      });
+      emitToUser(requester.userId, "contact:accepted", {
+        contactId: req.user!._id.toString(),
+        anonimiId: accepter?.anonimiId ?? "",
+        username: accepter?.username ?? "User",
+        profileImage: accepter?.profileImage ?? null,
       });
     }
 

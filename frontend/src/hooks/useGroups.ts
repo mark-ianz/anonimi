@@ -85,12 +85,38 @@ export function useGroup(groupId: string | null) {
   const addMembersMutation = useMutation({
     mutationFn: async (memberAnonimiIds: string[]) => {
       const res = await api.post(`/groups/${groupId}/members`, { memberAnonimiIds });
-      return res.data.data;
+      return res.data.data as {
+        added?: Array<{ anonimiId: string; status: string }>;
+        invited?: Array<{ anonimiId: string; status: string }>;
+        pendingApproval?: Array<{ anonimiId: string; status: string; requestId: string }>;
+      };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["groups", groupId, "members"] });
       qc.invalidateQueries({ queryKey: ["conversations"] });
-      toast.success("Members added.");
+      qc.invalidateQueries({ queryKey: ["groups", groupId, "join-requests"] });
+
+      const addedCount = data?.added?.length ?? 0;
+      const invitedCount = data?.invited?.length ?? 0;
+      const pendingCount = data?.pendingApproval?.length ?? 0;
+      const totalAdded = addedCount + invitedCount;
+
+      if (pendingCount > 0 && totalAdded === 0) {
+        toast.info("Member request submitted. Waiting for approval.");
+        return;
+      }
+
+      if (pendingCount > 0) {
+        toast.success("Members added. Some require approval.");
+        return;
+      }
+
+      if (totalAdded > 0) {
+        toast.success("Members added.");
+        return;
+      }
+
+      toast.info("No new members were added.");
     },
     onError: () => toast.error("Failed to add members."),
   });

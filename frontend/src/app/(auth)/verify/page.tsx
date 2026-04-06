@@ -33,6 +33,8 @@ function VerifyForm() {
   const [isResending, setIsResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
+  const submitLock = useRef(false);
+  const lastSubmittedCode = useRef<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -135,13 +137,16 @@ function VerifyForm() {
   };
 
   const submit = async () => {
-    if (isCheckingContext) return;
+    if (isCheckingContext || isSubmitting || submitLock.current) return;
 
     const fullCode = code.join("");
     if (fullCode.length < 6) {
       toast.error("Please enter the full 6-digit code.");
       return;
     }
+    if (lastSubmittedCode.current === fullCode) return;
+    submitLock.current = true;
+    lastSubmittedCode.current = fullCode;
     setIsSubmitting(true);
     try {
       const endpoint = type === "email" ? "/auth/verify-email" : "/auth/verify-phone";
@@ -162,15 +167,20 @@ function VerifyForm() {
           ?.response?.data?.error?.message ?? "Invalid verification code.";
       toast.error(msg);
       setCode(["", "", "", "", "", ""]);
+      lastSubmittedCode.current = null;
       inputs.current[0]?.focus();
     } finally {
       setIsSubmitting(false);
+      submitLock.current = false;
     }
   };
 
   useEffect(() => {
     if (code.every((c) => c !== "") && !isSubmitting && !isCheckingContext) {
-      void submit();
+      const fullCode = code.join("");
+      if (lastSubmittedCode.current !== fullCode) {
+        void submit();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code, isCheckingContext, isSubmitting]);
