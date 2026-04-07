@@ -8,7 +8,7 @@ import { useGroups } from "@/hooks/useGroups";
 import { useContacts } from "@/hooks/useContacts";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
 import { cn } from "@/lib/utils";
-import { resolveMediaUrl } from "@/lib/mediaUrl";
+import { validateUploadFile, type UploadSource } from "@/lib/uploadPolicy";
 import { useAuthStore } from "@/stores/authStore";
 import UserAvatar from "@/components/shared/UserAvatar";
 import TemporaryAccountModal from "@/components/shared/TemporaryAccountModal";

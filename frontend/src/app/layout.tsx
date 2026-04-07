@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Fraunces, Manrope, Fira_Mono, Sora } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
@@ -7,33 +6,6 @@ import { QueryProvider } from "@/providers/QueryProvider";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { Toaster } from "sonner";
 import { baseMetadata } from "@/lib/metadata";
-
-const display = Fraunces({
-  variable: "--font-editorial",
-  subsets: ["latin"],
-  display: "swap",
-  weight: ["500", "600", "700"],
-});
-
-const manrope = Manrope({
-  variable: "--font-manrope",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const firaMono = Fira_Mono({
-  variable: "--font-fira-mono",
-  subsets: ["latin"],
-  display: "swap",
-  weight: ["400", "500", "700"],
-});
-
-const logoFont = Sora({
-  variable: "--font-logo",
-  subsets: ["latin"],
-  display: "swap",
-  weight: ["500", "600", "700"],
-});
 
 export const metadata: Metadata = baseMetadata;
 
@@ -46,9 +18,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <Analytics />
       <SpeedInsights />
-      <body
-        className={`${display.variable} ${manrope.variable} ${firaMono.variable} ${logoFont.variable} antialiased`}
-      >
+      <body className="antialiased">
         <QueryProvider>
           <ThemeProvider>
             {children}

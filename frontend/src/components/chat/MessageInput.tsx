@@ -165,7 +165,11 @@ export default function MessageInput({
     if (disabled) return;
 
     if (editMessageId) {
-      await editMessageAsync({ messageId: editMessageId, content: trimmed });
+      await editMessageAsync({
+        messageId: editMessageId,
+        content: trimmed,
+        conversationId,
+      });
       setText("");
       onBlur();
       onEditSaved?.();
