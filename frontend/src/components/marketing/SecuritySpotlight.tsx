@@ -48,7 +48,7 @@ export default function SecuritySpotlight({
 
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <div className="overflow-hidden rounded-[2rem] border border-border/75 bg-card/65 shadow-soft">
-          <div className="grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="grid gap-0 lg:grid-cols-2">
             <div className="border-b border-border/60 p-7 sm:p-8 lg:border-b-0 lg:border-r">
               <p className="inline-flex rounded-full border border-border/70 bg-background/80 px-3 py-1 font-mono text-[0.68rem] font-medium uppercase tracking-[0.14em] text-muted-foreground">
                 {badge}
