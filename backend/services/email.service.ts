@@ -10,6 +10,8 @@ import { Resend } from "resend";
 // Helper: Paths & Templates
 // --------------------
 const templatePath = path.join(__dirname, "..", "templates", "email-template.ejs");
+const logoPath = path.join(__dirname, "..", "images", "logo", "anonimi-logo-no-bg.png");
+const logoCid = "anonimi-logo";
 
 // --------------------
 // Helper: Resolve sender
@@ -82,6 +84,13 @@ const sendEmail = async (params: {
       to: params.to,
       subject: params.subject,
       html: params.html,
+      attachments: [
+        {
+          filename: "anonimi-logo-no-bg.png",
+          path: logoPath,
+          cid: logoCid,
+        },
+      ],
     });
   } else if (env.EMAIL_PROVIDER === "RESEND") {
     if (!resendClient) throw new ApiError("Resend client not initialized", 500);
@@ -90,6 +99,13 @@ const sendEmail = async (params: {
       to: [params.to],
       subject: params.subject,
       html: params.html,
+      attachments: [
+        {
+          filename: "anonimi-logo-no-bg.png",
+          path: logoPath,
+          contentId: logoCid,
+        },
+      ],
     });
     if (error) {
       console.error("Resend email error:", error);
@@ -111,7 +127,7 @@ export const sendVerificationEmail = async (params: {
   const html = await ejs.renderFile(templatePath, {
     type: "verification-code",
     code: params.code,
-    logoUrl: "https://i.ibb.co/YF54g82z/anonimi-logo-no-bg.png",
+    logoUrl: `cid:${logoCid}`,
     actionUrl: params.link,
   });
 
@@ -128,7 +144,7 @@ export const sendPasswordResetEmail = async (params: {
 }): Promise<void> => {
   const html = await ejs.renderFile(templatePath, {
     type: "password-reset",
-    logoUrl: "https://i.ibb.co/YF54g82z/anonimi-logo-no-bg.png",
+    logoUrl: `cid:${logoCid}`,
     actionUrl: params.link,
   });
 
