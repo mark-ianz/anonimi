@@ -9,7 +9,7 @@ export default function HeroSection() {
 
       <div className="mx-auto max-w-6xl">
       <div className="grid gap-10 border-y border-border/70 py-12 md:grid-cols-[0.62fr_0.38fr] md:gap-12 md:py-14">
-          <div data-scroll style={{ ['--delay' as any]: '0ms' }} className="scroll-reveal">
+          <div data-scroll style={{ ['--delay' as string | number]: '0ms' }} className="scroll-reveal">
             <p className="inline-flex rounded-full border border-border/70 bg-background/80 px-3 py-1 font-mono text-[0.68rem] font-medium uppercase tracking-[0.16em] text-foreground/88">
               AID-First Private Messaging
             </p>
@@ -46,13 +46,13 @@ export default function HeroSection() {
             </div>
 
             <div className="mt-10 grid max-w-2xl grid-cols-1 gap-2 font-mono text-[0.72rem] uppercase tracking-[0.08em] text-muted-foreground sm:grid-cols-3">
-              <p className="text-start sm:text-center">End-to-end encryption</p>
+              <p className="text-start sm:text-start">End-to-end encryption</p>
               <p className="text-start sm:text-center">AID-only discovery</p>
-              <p className="text-start sm:text-center">Stealth + temporary access</p>
+              <p className="text-start sm:text-end">Stealth + temporary access</p>
             </div>
           </div>
 
-          <div data-scroll style={{ ['--delay' as any]: '140ms' }} className="scroll-reveal">
+          <div data-scroll style={{ ['--delay' as string | number]: '140ms' }} className="scroll-reveal">
             <div className="rounded-[1.5rem] border border-border/75 bg-card/70 p-5 shadow-soft">
               <div className="rounded-2xl border border-border/65 bg-background/85 p-5">
                 <div className="mb-5 flex items-center justify-between border-b border-border/55 pb-3">
