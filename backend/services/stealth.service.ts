@@ -11,7 +11,7 @@ const expireStealthMessages = async () => {
     stealthExpiredAt: { $exists: false },
     stealthExpiresAt: { $lte: now },
   })
-    .select("_id conversationId stealthContentLength stealthExpiresAt")
+    .select("_id conversationId contentLength stealthExpiresAt")
     .lean();
 
   if (!expired.length) return;
@@ -38,7 +38,7 @@ const expireStealthMessages = async () => {
       conversationId: message.conversationId.toString(),
       messageId: message._id.toString(),
       stealthExpiredAt: now.toISOString(),
-      stealthContentLength: message.stealthContentLength ?? 0,
+      stealthContentLength: message.contentLength ?? 0,
     });
   });
 };

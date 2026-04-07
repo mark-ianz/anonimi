@@ -906,16 +906,33 @@ export const searchMessages = async (
   }
   const conversationIds = conversations.map((conv: any) => conv._id);
   const queryRegex = new RegExp(escapeRegex(trimmed), "i");
+  const groupConversationIds = conversations
+    .filter((conv: any) => conv.type === "group")
+    .map((conv: any) => conv._id);
+  const allGroups = groupConversationIds.length
+    ? await Group.find({
+        conversationId: { $in: groupConversationIds },
+      })
+        .select("conversationId name image")
+        .lean()
+    : [];
+  const allGroupsByConversationId = new Map(
+    (allGroups as any[]).map((group) => [group.conversationId.toString(), group])
+  );
 
   const groupMemberships = await GroupMember.find({
     userId: userObjectId,
-    groupId: { $in: conversations.filter(c => c.type === "group").map(c => groupByConversationId.get(c._id.toString())?._id) }
+    groupId: {
+      $in: (allGroups as any[])
+        .map((group) => group._id)
+        .filter(Boolean),
+    },
   }).select("groupId joinedAt").lean();
 
   const joinDateByConvId = new Map<string, Date>();
   for (const conv of conversations) {
     if (conv.type === "group") {
-      const g = groupByConversationId.get(conv._id.toString());
+      const g = allGroupsByConversationId.get(conv._id.toString());
       const m = groupMemberships.find(ms => ms.groupId.toString() === g?._id.toString());
       if (m) joinDateByConvId.set(conv._id.toString(), m.joinedAt);
     }
@@ -992,13 +1009,7 @@ export const searchMessages = async (
           .select("contactId nickname")
           .lean()
       : [],
-    groupConversations.length
-      ? Group.find({
-          conversationId: { $in: groupConversations.map((conv: any) => conv._id) },
-        })
-          .select("conversationId name image")
-          .lean()
-      : [],
+    Promise.resolve(allGroups),
   ]);
 
   const otherUsersById = new Map(
@@ -1007,10 +1018,6 @@ export const searchMessages = async (
   const contactsByUserId = new Map(
     (contacts as any[]).map((contact) => [contact.contactId.toString(), contact])
   );
-  const groupByConversationId = new Map(
-    (groups as any[]).map((group) => [group.conversationId.toString(), group])
-  );
-
   const groupFallbackImagesByConversationId = new Map<string, Array<string | null>>();
   await Promise.all(
     (groups as any[]).map(async (group) => {
@@ -1062,7 +1069,7 @@ export const searchMessages = async (
         ];
       }
 
-      const group = groupByConversationId.get(conv._id.toString());
+      const group = allGroupsByConversationId.get(conv._id.toString());
       return [
         conv._id.toString(),
         {
