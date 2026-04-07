@@ -315,7 +315,7 @@ export default function FeaturesPage() {
                     </AnimatedBadge>
                   </AnimatedElement>
                   <AnimatedElement delay={0.3} className="mt-10 flex flex-wrap gap-2">
-                    {["JPG", "PNG", "GIF", "PDF", "DOC", "MP4", "MP3"].map((format, i) => (
+                    {["JPG", "PNG", "GIF", "MP4", "PDF", "ZIP"].map((format, i) => (
                       <AnimatedBadge
                         key={format}
                         delay={0.32 + i * 0.04}

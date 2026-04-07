@@ -34,11 +34,8 @@ export const ALLOWED_VIDEO_TYPES = ["video/mp4"];
 
 export const ALLOWED_DOCUMENT_TYPES = [
   "application/pdf",
-  "text/plain",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/x-rar-compressed",
-  "application/vnd.rar",
+  "application/zip",
+  "application/x-zip-compressed",
   "application/octet-stream",
 ];
 
@@ -54,10 +51,7 @@ export const ALLOWED_EXTENSIONS = [
   ".jpeg",
   ".gif",
   ".pdf",
-  ".txt",
-  ".doc",
-  ".docx",
-  ".rar",
+  ".zip",
   ".mp4",
 ];
 

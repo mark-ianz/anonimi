@@ -15,7 +15,7 @@ export type UploadCategory = "avatar" | "message" | "group";
 
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif"]);
 const VIDEO_EXTENSIONS = new Set([".mp4"]);
-const DOCUMENT_EXTENSIONS = new Set([".pdf", ".txt", ".doc", ".docx", ".rar"]);
+const DOCUMENT_EXTENSIONS = new Set([".pdf", ".zip"]);
 
 const imageMimeSet = new Set(ALLOWED_IMAGE_TYPES);
 const videoMimeSet = new Set(ALLOWED_VIDEO_TYPES);

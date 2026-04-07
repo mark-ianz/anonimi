@@ -95,7 +95,7 @@ const faqCategories: FAQCategory[] = [
       {
         question: "Can I send images and files?",
         answer:
-          "Yes, you can share images, documents, and other files directly in your conversations. We support common formats like JPG, PNG, GIF, PDF, and DOC with fast upload speeds.",
+          "Yes, you can share images, documents, and other files directly in your conversations. We support common formats like JPG, PNG, GIF, MP4, PDF and ZIP with fast upload speeds.",
       },
     ],
   },

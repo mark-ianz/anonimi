@@ -11,17 +11,14 @@ const MB = 1024 * 1024;
 
 const ALLOWED_IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif"]);
 const ALLOWED_VIDEO_EXTENSIONS = new Set([".mp4"]);
-const ALLOWED_DOCUMENT_EXTENSIONS = new Set([".pdf", ".txt", ".doc", ".docx", ".rar"]);
+const ALLOWED_DOCUMENT_EXTENSIONS = new Set([".pdf", ".zip"]);
 
 const ALLOWED_IMAGE_MIME_TYPES = new Set(["image/png", "image/jpeg", "image/gif"]);
 const ALLOWED_VIDEO_MIME_TYPES = new Set(["video/mp4"]);
 const ALLOWED_DOCUMENT_MIME_TYPES = new Set([
   "application/pdf",
-  "text/plain",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/x-rar-compressed",
-  "application/vnd.rar",
+  "application/zip",
+  "application/x-zip-compressed",
   "application/octet-stream",
 ]);
 
