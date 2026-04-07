@@ -30,14 +30,23 @@ export default function MarketingFooter() {
                   className="h-5 w-5"
                 />
               </div>
-              <span className="font-logo text-xl font-semibold">
-                anonimi
-              </span>
+              <span className="font-logo text-xl font-semibold">anonimi</span>
             </Link>
-            <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
-              Private messaging, reimagined. A secure, real-time chat platform with privacy-first identity.
-            </p>
-<div className="mt-6">
+
+            <div className="mt-4 max-w-md">
+              <p className="text-base font-medium leading-relaxed text-foreground/92 sm:text-[1.02rem]">
+                Private conversations with a clearer boundary between
+                <span className="text-primary"> identity</span>,
+                <span className="text-foreground"> access</span>, and
+                <span className="text-primary"> trust</span>.
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                Real-time messaging built around private AIDs, end-to-end encryption,
+                and the promise that your messages stay yours.
+              </p>
+            </div>
+
+            <div className="mt-6">
               <a
                 href="https://github.com/mark-ianz"
                 target="_blank"
@@ -51,7 +60,9 @@ export default function MarketingFooter() {
           </div>
 
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Product</h4>
+            <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Product
+            </h4>
             <nav className="mt-4 flex flex-col gap-2">
               {productLinks.map((link) => (
                 <Link
@@ -66,7 +77,9 @@ export default function MarketingFooter() {
           </div>
 
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Legal</h4>
+            <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Legal
+            </h4>
             <nav className="mt-4 flex flex-col gap-2">
               {legalLinks.map((link) => (
                 <Link
@@ -81,13 +94,11 @@ export default function MarketingFooter() {
           </div>
         </div>
 
-<div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border/60 pt-8 sm:flex-row">
+        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border/60 pt-8 sm:flex-row">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} anonimi. All rights reserved.
+            Copyright {new Date().getFullYear()} anonimi. All rights reserved.
           </p>
-          <p className="text-xs text-muted-foreground/70">
-            Built with privacy in mind
-          </p>
+          <p className="text-xs text-muted-foreground/70">Built with privacy in mind</p>
         </div>
       </div>
     </footer>
