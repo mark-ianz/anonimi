@@ -15,7 +15,7 @@ export const createApp = (): Express => {
 
   const allowedOrigins = process.env.CORS_ORIGIN 
     ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
-    : ["https://anonimi-messaging.vercel.app"];
+    : ["https://anonimi.cloud"];
 
   app.use(cors({
     origin: (origin, callback) => {
