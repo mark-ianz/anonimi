@@ -21,7 +21,7 @@ import {
 import { useAuthStore } from "@/stores/authStore";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import { API_BASE } from "@/lib/constants";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 
 interface NavItem {
   href: string;
@@ -138,7 +138,7 @@ export default function AdminSidebar() {
         <div className="flex items-center gap-2.5 mb-2">
           {user?.profileImage ? (
             <img
-              src={`${API_BASE.replace("/api", "")}${user.profileImage}`}
+              src={resolveMediaUrl(user.profileImage)}
               alt={user.username}
               className="w-7 h-7 rounded-full object-cover"
             />

@@ -7,8 +7,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
-import { API_BASE } from "@/lib/constants";
 import GroupAvatar from "@/components/shared/GroupAvatar";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 
 interface GroupMember {
   userId: string;
@@ -91,7 +91,7 @@ export default function AdminGroupDetailPage() {
               <div className="bg-muted/30 border border-border/30 rounded-2xl p-4 space-y-3">
                 <div className="flex items-center gap-3">
                   <GroupAvatar
-                    imageUrl={group.image ? `${API_BASE.replace("/api", "")}${group.image}` : null}
+                    imageUrl={group.image ? resolveMediaUrl(group.image) : null}
                     fallbackProfileImages={members.map((m) => m.profileImage)}
                     name={group.name}
                     alt={group.name}
@@ -147,7 +147,7 @@ export default function AdminGroupDetailPage() {
                     <div key={m.userId} className="flex items-center gap-3 px-3 py-2.5 border-b border-border/20 last:border-b-0">
                       <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
                         {m.profileImage ? (
-                          <img src={`${API_BASE.replace("/api", "")}${m.profileImage}`} className="w-full h-full rounded-full object-cover" alt={m.username} />
+                          <img src={resolveMediaUrl(m.profileImage)} className="w-full h-full rounded-full object-cover" alt={m.username} />
                         ) : (
                           <span className="text-xs font-semibold text-muted-foreground">{m.username[0].toUpperCase()}</span>
                         )}

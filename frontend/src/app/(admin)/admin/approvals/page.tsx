@@ -8,7 +8,7 @@ import api from "@/lib/api";
 import type { AdminDeletionRequest } from "@/types/admin";
 import { toast } from "sonner";
 import UserAvatar from "@/components/shared/UserAvatar";
-import { API_BASE } from "@/lib/constants";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 
 export default function AdminApprovalsPage() {
   const queryClient = useQueryClient();
@@ -75,7 +75,7 @@ export default function AdminApprovalsPage() {
                 <UserAvatar
                   imageUrl={
                     request.user?.profileImage
-                      ? `${API_BASE.replace("/api", "")}${request.user.profileImage}`
+                      ? resolveMediaUrl(request.user.profileImage)
                       : null
                   }
                   name={request.user?.username ?? "User"}

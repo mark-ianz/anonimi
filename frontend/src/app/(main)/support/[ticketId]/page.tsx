@@ -11,7 +11,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
 import { FilePreview } from "@/components/shared/FileUpload";
-import { ALLOWED_IMAGE_TYPES, API_BASE } from "@/lib/constants";
+import { ALLOWED_IMAGE_TYPES } from "@/lib/constants";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 import type { SupportTicketDetail, SupportMessage } from "@/types/support";
 
 const statusColors: Record<string, string> = {
@@ -35,7 +36,7 @@ const statusLabels: Record<string, string> = {
 };
 
 function MessageBubble({ msg, isOwn }: { msg: SupportMessage; isOwn: boolean }) {
-  const mediaUrl = msg.mediaUrl ? `${API_BASE.replace("/api", "")}${msg.mediaUrl}` : null;
+  const mediaUrl = msg.mediaUrl ? resolveMediaUrl(msg.mediaUrl) : null;
   const isImage = msg.type === "image" && !!mediaUrl;
 
   return (

@@ -1,26 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import path from "path";
 import { apiSuccess } from "../utils/apiResponse";
-import { env } from "../config/env";
 import { User } from "../models/user.model";
-
-const resolveFolder = (category: unknown): "avatars" | "groups" | "messages" => {
-  if (category === "avatar") return "avatars";
-  if (category === "group") return "groups";
-  return "messages";
-};
-
-const resolveFolderFromSavedFile = (filePath: string): "avatars" | "groups" | "messages" | null => {
-  const relativePath = path.relative(path.resolve(env.UPLOAD_DIR), filePath);
-  if (!relativePath || relativePath.startsWith("..")) return null;
-
-  const [folder] = relativePath.split(path.sep);
-  if (folder === "avatars" || folder === "groups" || folder === "messages") {
-    return folder;
-  }
-
-  return null;
-};
+import { uploadFileToCloudinary } from "../services/cloudinary.service";
 
 export const uploadMedia = async (
   req: Request,
@@ -35,8 +16,8 @@ export const uploadMedia = async (
       });
     }
 
-    const category = req.body?.category;
-    if (req.user?.isTemporary && category === "message") {
+    const requestedCategory = req.body?.category;
+    if (req.user?.isTemporary && requestedCategory === "message") {
       const currentCount = req.user.tempMediaCount ?? 0;
       if (currentCount >= 1) {
         res.status(403).json({
@@ -55,13 +36,15 @@ export const uploadMedia = async (
       );
     }
 
-    const folder = resolveFolderFromSavedFile(req.file.path) ?? resolveFolder(req.body.category);
-    const url = `/uploads/${folder}/${req.file.filename}`;
+    const uploadCategory = requestedCategory === "avatar" || requestedCategory === "group"
+      ? requestedCategory
+      : "message";
+    const upload = await uploadFileToCloudinary(req.file, uploadCategory);
 
     apiSuccess(
       res,
       {
-        url,
+        url: upload.url,
         fileName: req.file.originalname,
         fileSize: req.file.size,
         mimeType: req.file.mimetype,

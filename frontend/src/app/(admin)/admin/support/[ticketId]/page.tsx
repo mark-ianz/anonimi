@@ -9,7 +9,7 @@ import api from "@/lib/api";
 import { getAdminSocket } from "@/lib/socket";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { API_BASE } from "@/lib/constants";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 import type { SupportTicketDetail, SupportMessage } from "@/types/support";
 
 const statusLabels: Record<string, string> = {
@@ -35,7 +35,7 @@ const statusOptions = [
 function MessageBubble({ msg }: { msg: SupportMessage }) {
   const isStaff = msg.senderRole === "staff";
   const label = msg.senderUsername ?? "User";
-  const mediaUrl = msg.mediaUrl ? `${API_BASE.replace("/api", "")}${msg.mediaUrl}` : null;
+  const mediaUrl = msg.mediaUrl ? resolveMediaUrl(msg.mediaUrl) : null;
   const isImage = msg.type === "image" && !!mediaUrl;
   return (
     <div className={cn("flex", isStaff ? "justify-end" : "justify-start")}>

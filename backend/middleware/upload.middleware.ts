@@ -1,9 +1,6 @@
 import multer from "multer";
 import path from "path";
-import fs from "fs";
 import { Request, Response, NextFunction, RequestHandler } from "express";
-import { v4 as uuidv4 } from "uuid";
-import { env } from "../config/env";
 import { ApiError } from "../utils/apiError";
 
 export type UploadCategory = "avatar" | "message" | "group";
@@ -74,27 +71,6 @@ const isMimeAllowedForKind = (kind: UploadKind, mimeType: string): boolean => {
 const getMaxBytes = (kind: UploadKind, source: UploadSource): number =>
   MAX_BYTES_BY_KIND[kind] + (source === "camera" && (kind === "image" || kind === "video") ? CAMERA_BONUS_BYTES : 0);
 
-const removeUploadedFile = (filePath: string): void => {
-  void fs.promises.unlink(filePath).catch(() => undefined);
-};
-
-const buildUploadPath = (category: UploadCategory): string => {
-  const folder = category === "avatar" ? "avatars" : category === "group" ? "groups" : "messages";
-  const destination = path.join(env.UPLOAD_DIR, folder);
-  fs.mkdirSync(destination, { recursive: true });
-  return destination;
-};
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, buildUploadPath(resolveCategory(req)));
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `${uuidv4()}${ext}`);
-  },
-});
-
 const fileFilter = (
   req: Express.Request,
   file: Express.Multer.File,
@@ -115,7 +91,7 @@ const fileFilter = (
 };
 
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   fileFilter,
   limits: {
     fileSize: MAX_MULTER_FILE_BYTES,
@@ -138,26 +114,22 @@ const validateUploadedFile = (
   const kind = getKindFromExtension(file.originalname);
 
   if (!kind) {
-    removeUploadedFile(file.path);
     next(new ApiError("File extension is not allowed", 400, "INVALID_FILE_TYPE"));
     return;
   }
 
   if (category !== "message" && kind !== "image") {
-    removeUploadedFile(file.path);
     next(new ApiError("Only image files are allowed for this upload", 400, "INVALID_FILE_TYPE"));
     return;
   }
 
   if (!isMimeAllowedForKind(kind, file.mimetype)) {
-    removeUploadedFile(file.path);
     next(new ApiError("File content type does not match extension", 400, "INVALID_FILE_TYPE"));
     return;
   }
 
   const maxBytes = getMaxBytes(kind, source);
   if (file.size > maxBytes) {
-    removeUploadedFile(file.path);
     next(
       new ApiError(
         "File size exceeds allowed limit",

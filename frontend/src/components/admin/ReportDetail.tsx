@@ -7,7 +7,7 @@ import api from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Report } from "@/types/report";
-import { API_BASE } from "@/lib/constants";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 
 const reasonLabels: Record<string, string> = {
   harassment: "Harassment",
@@ -138,7 +138,7 @@ export default function ReportDetail({ report }: ReportDetailProps) {
   const targetUser = report.targetUser ?? null;
 
   const profileImageUrl = (value?: string | null) =>
-    value ? `${API_BASE.replace("/api", "")}${value}` : null;
+    value ? resolveMediaUrl(value) : null;
 
   return (
     <div className="space-y-4">

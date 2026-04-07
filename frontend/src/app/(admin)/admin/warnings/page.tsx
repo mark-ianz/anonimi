@@ -7,13 +7,11 @@ import { AlertTriangle, Search } from "lucide-react";
 import AdminRoute from "@/components/shared/AdminRoute";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { API_BASE } from "@/lib/constants";
 import type { AdminWarning } from "@/types/admin";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 
 function WarningRow({ warning }: { warning: AdminWarning }) {
-  const profileImage = warning.profileImage
-    ? `${API_BASE.replace("/api", "")}${warning.profileImage}`
-    : null;
+  const profileImage = warning.profileImage ? resolveMediaUrl(warning.profileImage) : null;
 
   const userLabel = warning.username ? `@${warning.username}` : "Unknown user";
   const userMeta = warning.anonimiId ? `(${warning.anonimiId})` : "";

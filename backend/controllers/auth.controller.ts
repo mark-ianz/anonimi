@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import path from "path";
 import * as authService from "../services/auth.service";
+import { uploadFileToCloudinary } from "../services/cloudinary.service";
 import { apiSuccess, apiError } from "../utils/apiResponse";
 
 export const register = async (
@@ -270,11 +270,10 @@ export const updateAvatar = async (
       return;
     }
 
-    const parentFolder = path.basename(path.dirname(req.file.path));
-    const profileImage = `/uploads/${parentFolder}/${req.file.filename}`;
+    const upload = await uploadFileToCloudinary(req.file, "avatar");
     const result = await authService.updateAvatar(
       req.user!._id.toString(),
-      profileImage
+      upload.url
     );
     apiSuccess(res, result);
   } catch (error) {

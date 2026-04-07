@@ -7,10 +7,10 @@ import AdminRoute from "@/components/shared/AdminRoute";
 import api from "@/lib/api";
 import type { AdminUser } from "@/types/admin";
 import Link from "next/link";
-import { API_BASE } from "@/lib/constants";
 import UserAvatar from "@/components/shared/UserAvatar";
 import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 import {
   Select,
   SelectContent,
@@ -138,9 +138,7 @@ export default function AdminUsersPage() {
               >
                 <UserAvatar
                   imageUrl={
-                    user.profileImage
-                      ? `${API_BASE.replace("/api", "")}${user.profileImage}`
-                      : null
+                    user.profileImage ? resolveMediaUrl(user.profileImage) : null
                   }
                   name={user.username}
                   alt={user.username}

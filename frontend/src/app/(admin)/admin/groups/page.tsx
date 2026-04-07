@@ -7,8 +7,8 @@ import api from "@/lib/api";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
-import { API_BASE } from "@/lib/constants";
 import GroupAvatar from "@/components/shared/GroupAvatar";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 
 interface AdminGroup {
   id: string;
@@ -67,7 +67,7 @@ export default function AdminGroupsPage() {
                 className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border/20 last:border-b-0"
               >
                 <GroupAvatar
-                  imageUrl={group.image ? `${API_BASE.replace("/api", "")}${group.image}` : null}
+                  imageUrl={group.image ? resolveMediaUrl(group.image) : null}
                   fallbackProfileImages={(group.memberPreview ?? []).map((m) => m.profileImage)}
                   name={group.name}
                   alt={group.name}

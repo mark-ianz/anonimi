@@ -8,7 +8,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import type { Ban } from "@/types/admin";
 import { cn } from "@/lib/utils";
-import { API_BASE } from "@/lib/constants";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 
 const statusLabels: Record<string, string> = {
   active: "Active",
@@ -19,9 +19,7 @@ const statusLabels: Record<string, string> = {
 function BanRow({ ban, onUnban, canUnban }: { ban: Ban; onUnban: (id: string) => void; canUnban: boolean }) {
   const isPermanent = !ban.expiresAt;
   const isExpired = !ban.active;
-  const profileImage = ban.profileImage
-    ? `${API_BASE.replace("/api", "")}${ban.profileImage}`
-    : null;
+  const profileImage = ban.profileImage ? resolveMediaUrl(ban.profileImage) : null;
   const formattedExpiry = !ban.expiresAt
     ? "Permanent"
     : new Date(ban.expiresAt).toLocaleString();

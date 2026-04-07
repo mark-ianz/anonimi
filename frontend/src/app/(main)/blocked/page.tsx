@@ -6,7 +6,7 @@ import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { toast } from "sonner";
-import { API_BASE } from "@/lib/constants";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 
 interface BlockEntry {
   blockId: string;
@@ -27,7 +27,7 @@ function BlockedUserRow({ entry, onUnblock }: { entry: BlockEntry; onUnblock: (i
       <div className="relative shrink-0">
         {entry.blockedUser.profileImage ? (
           <img
-            src={`${API_BASE.replace("/api", "")}${entry.blockedUser.profileImage}`}
+            src={resolveMediaUrl(entry.blockedUser.profileImage)}
             alt={entry.blockedUser.username}
             className="w-10 h-10 rounded-full object-cover"
           />
