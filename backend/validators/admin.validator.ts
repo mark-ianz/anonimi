@@ -56,12 +56,6 @@ export const updateTicketSchema = z.object({
   }),
 });
 
-export const adminConversationParamsSchema = z.object({
-  params: z.object({
-    convId: z.string(),
-  }),
-});
-
 export const reportParamsSchema = z.object({
   params: z.object({
     reportId: z.string(),

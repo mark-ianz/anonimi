@@ -9,7 +9,6 @@ import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import { API_BASE } from "@/lib/constants";
 import GroupAvatar from "@/components/shared/GroupAvatar";
-import Link from "next/link";
 
 interface GroupMember {
   userId: string;
@@ -118,13 +117,10 @@ export default function AdminGroupDetailPage() {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2">
-                <Link
-                  href={`/admin/messages?conversationId=${group.conversationId}`}
-                  className="flex-1 flex items-center justify-center h-9 rounded-xl border border-border/40 text-sm text-muted-foreground hover:bg-muted/40 transition-colors"
-                >
-                  View Messages
-                </Link>
+              <div className="space-y-2">
+                <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-200">
+                  Group messages remain end-to-end encrypted. Admins and moderators can manage the group, but they cannot open message contents.
+                </div>
                 {isSuperAdmin && (
                   <button
                     onClick={() => {

@@ -16,7 +16,7 @@ export default function PrivacyPage() {
         
         <div className="mt-8 prose prose-lg dark:prose-invert">
           <p className="text-lg text-muted-foreground">
-            Last updated: April 3, 2026
+            Last updated: April 7, 2026
           </p>
 
           <h2 className="text-2xl font-semibold mt-12">1. Introduction</h2>
@@ -32,10 +32,15 @@ export default function PrivacyPage() {
           <ul className="mt-4 space-y-2">
             <li>Account information (email, username)</li>
             <li>Profile information (display name, avatar)</li>
-            <li>Messages and content you send</li>
+            <li>Encrypted message envelopes and related delivery metadata needed to route messages</li>
             <li>Contact information you choose to share</li>
             <li>Temporary session metadata (temporary username, expiration time)</li>
           </ul>
+
+          <p className="mt-4">
+            For end-to-end encrypted conversations, message content is intended to be readable only on participant devices.
+            Our administrators, moderators, and support staff are not given a tool to read encrypted message bodies.
+          </p>
 
           <p className="mt-4">
             We also collect limited usage and device information such as IP address, device identifiers, browser type,
@@ -50,7 +55,7 @@ export default function PrivacyPage() {
             <li>Provide, maintain, and improve our services</li>
             <li>Send you technical notices and support messages</li>
             <li>Respond to your comments and questions</li>
-            <li>Communicate with you about products, services, and events</li>
+            <li>Communicate with you about service-related updates and events</li>
           </ul>
 
           <h2 className="text-2xl font-semibold mt-12">4. How We Share Information</h2>
@@ -63,54 +68,61 @@ export default function PrivacyPage() {
             <li>Corporate transactions if the business is reorganized or transferred</li>
           </ul>
 
-          <h2 className="text-2xl font-semibold mt-12">5. Data Retention</h2>
+          <h2 className="text-2xl font-semibold mt-12">5. Encrypted Messages</h2>
+          <p className="mt-4">
+            End-to-end encrypted message content is not available through the admin panel. Moderators and super admins can
+            review reports, account status, and operational logs, but they cannot open encrypted message contents through
+            ordinary platform tooling.
+          </p>
+
+          <h2 className="text-2xl font-semibold mt-12">6. Data Retention</h2>
           <p className="mt-4">
             We retain information for as long as needed to provide the service and meet legal obligations. Temporary accounts
             and their related session data are removed after expiration unless claimed.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-12">6. Data Security</h2>
+          <h2 className="text-2xl font-semibold mt-12">7. Data Security</h2>
           <p className="mt-4">
             We implement appropriate technical and organizational security measures to protect 
             your personal information against unauthorized access, alteration, disclosure, or destruction.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-12">7. Stealth Messages</h2>
+          <h2 className="text-2xl font-semibold mt-12">8. Stealth Messages</h2>
           <p className="mt-4">
             Stealth Mode messages are designed to expire on a timer. Once expired, the content is no longer
             available and only an expired placeholder remains in the conversation.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-12">8. Temporary Accounts</h2>
+          <h2 className="text-2xl font-semibold mt-12">9. Temporary Accounts</h2>
           <p className="mt-4">
             Temporary accounts expire after 24 hours unless claimed. Expired temporary accounts and related
             session data are removed as part of automated cleanup.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-12">9. Your Rights</h2>
+          <h2 className="text-2xl font-semibold mt-12">10. Your Rights</h2>
           <p className="mt-4">
             You have the right to access, update, or delete your personal information at any time. 
             You can also opt out of certain communications from us.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-12">10. International Transfers</h2>
+          <h2 className="text-2xl font-semibold mt-12">11. International Transfers</h2>
           <p className="mt-4">
             If you access the service from outside our primary operating region, your information may be processed in
             locations where we or our service providers operate.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-12">11. Children&apos;s Privacy</h2>
+          <h2 className="text-2xl font-semibold mt-12">12. Children&apos;s Privacy</h2>
           <p className="mt-4">
             anonimi is not directed to children under the age required by local law to consent to data processing. If you
             believe a minor has provided personal information, contact us.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-12">12. Changes to This Policy</h2>
+          <h2 className="text-2xl font-semibold mt-12">13. Changes to This Policy</h2>
           <p className="mt-4">
             We may update this Privacy Policy from time to time. The "Last updated" date reflects the latest revision.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-12">13. Contact Us</h2>
+          <h2 className="text-2xl font-semibold mt-12">14. Contact Us</h2>
           <p className="mt-4">
             If you have any questions about this Privacy Policy, please contact us at anonimi.main@gmail.com.
           </p>

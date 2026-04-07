@@ -1028,58 +1028,6 @@ export const deleteGroup = async (adminId: string, groupId: string, ipAddress?: 
   return { message: "Group deleted" };
 };
 
-export const getConversationMessages = async (
-  adminId: string,
-  conversationId: string,
-  limit: number = 50,
-  cursor?: string,
-  ipAddress?: string
-) => {
-  const conversation = await Conversation.findById(conversationId);
-
-  if (!conversation) {
-    throw new NotFoundError("Conversation not found");
-  }
-
-  const query: Record<string, unknown> = {
-    conversationId: conversation._id,
-  };
-
-  if (cursor) {
-    query._id = { $lt: new Types.ObjectId(cursor) };
-  }
-
-  const messages = await Message.find(query)
-    .sort({ createdAt: -1 })
-    .limit(limit + 1)
-    .lean();
-
-  const hasMore = messages.length > limit;
-  const data = hasMore ? messages.slice(0, limit) : messages;
-
-  await createAdminLog(
-    adminId,
-    "view_conversation",
-    "conversation",
-    conversationId,
-    { limit, cursor: cursor ?? null },
-    ipAddress
-  );
-
-  return {
-    messages: data.map((m: any) => ({
-      id: m._id.toString(),
-      senderId: m.senderId?.toString(),
-      type: m.type,
-      content: m.content,
-      mediaUrl: m.mediaUrl,
-      unsent: m.unsent,
-      createdAt: m.createdAt,
-    })),
-    nextCursor: hasMore ? data[data.length - 1]._id.toString() : undefined,
-  };
-};
-
 export const getBans = async (
   active?: boolean,
   limit: number = 20,

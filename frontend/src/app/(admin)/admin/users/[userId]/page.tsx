@@ -204,14 +204,10 @@ export default function AdminUserDetailPage() {
                 </div>
               )}
 
-              {/* View conversations link */}
               {canModerate && (
-                <a
-                  href={`/admin/messages?userId=${profile.id}`}
-                  className="flex items-center justify-center gap-2 h-10 rounded-xl border border-border/40 text-sm text-muted-foreground hover:bg-muted/40 transition-colors"
-                >
-                  View Conversations
-                </a>
+                <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-200">
+                  Conversation contents are not available in admin tools. Moderation can act on accounts and reports without decrypting private messages.
+                </div>
               )}
             </div>
           )}

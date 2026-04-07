@@ -16,7 +16,7 @@ export default function TermsPage() {
         
         <div className="mt-8 prose prose-lg dark:prose-invert">
           <p className="text-lg text-muted-foreground">
-            Last updated: April 3, 2026
+            Last updated: April 7, 2026
           </p>
 
           <h2 className="text-2xl font-semibold mt-12">1. Acceptance of Terms</h2>
@@ -66,60 +66,67 @@ export default function TermsPage() {
             host, store, reproduce, and display your content solely to operate, improve, and provide the service.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-12">8. Stealth Mode</h2>
+          <h2 className="text-2xl font-semibold mt-12">8. Encrypted Messages</h2>
+          <p className="mt-4">
+            anonimi is designed so encrypted message contents are not readable through admin tooling. Moderators, support
+            staff, and super admins may enforce these Terms using reports, metadata, account actions, and audit logs, but
+            they are not provided ordinary access to encrypted message bodies.
+          </p>
+
+          <h2 className="text-2xl font-semibold mt-12">9. Stealth Mode</h2>
           <p className="mt-4">
             Stealth Mode messages are designed to expire after a selected time window. Once expired, the content is no longer
             available and is replaced by an expired placeholder in the conversation.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-12">9. Moderation and Enforcement</h2>
+          <h2 className="text-2xl font-semibold mt-12">10. Moderation and Enforcement</h2>
           <p className="mt-4">
             We may review, limit, or remove content and access to enforce these Terms, respond to reports, or comply with law.
             We may suspend or terminate accounts that violate these Terms.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-12">10. Third-Party Services</h2>
+          <h2 className="text-2xl font-semibold mt-12">11. Third-Party Services</h2>
           <p className="mt-4">
             The service may link to or integrate with third-party services. We are not responsible for third-party content,
             policies, or practices.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-12">11. Termination</h2>
+          <h2 className="text-2xl font-semibold mt-12">12. Termination</h2>
           <p className="mt-4">
             We may suspend or terminate your access at any time for conduct that violates these Terms, harms other users, or
             threatens the service. You may stop using the service at any time.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-12">12. Disclaimers</h2>
+          <h2 className="text-2xl font-semibold mt-12">13. Disclaimers</h2>
           <p className="mt-4">
             The service is provided on an "as is" and "as available" basis. We do not warrant that the service will be
             uninterrupted, secure, or error-free.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-12">13. Limitation of Liability</h2>
+          <h2 className="text-2xl font-semibold mt-12">14. Limitation of Liability</h2>
           <p className="mt-4">
             To the maximum extent permitted by law, anonimi shall not be liable for indirect, incidental, special,
             consequential, or punitive damages arising from your use of the service.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-12">14. Indemnification</h2>
+          <h2 className="text-2xl font-semibold mt-12">15. Indemnification</h2>
           <p className="mt-4">
             You agree to defend and indemnify anonimi from claims arising out of your use of the service or violation of
             these Terms.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-12">15. Governing Law</h2>
+          <h2 className="text-2xl font-semibold mt-12">16. Governing Law</h2>
           <p className="mt-4">
             These Terms are governed by the laws of the jurisdiction where anonimi is established, without regard to conflict
             of law principles.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-12">16. Changes to These Terms</h2>
+          <h2 className="text-2xl font-semibold mt-12">17. Changes to These Terms</h2>
           <p className="mt-4">
             We may update these Terms from time to time. The "Last updated" date reflects the latest revision.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-12">17. Contact Information</h2>
+          <h2 className="text-2xl font-semibold mt-12">18. Contact Information</h2>
           <p className="mt-4">
             If you have any questions about these Terms, please contact us at anonimi.main@gmail.com.
           </p>

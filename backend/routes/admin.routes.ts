@@ -10,7 +10,6 @@ import {
   warnUserSchema,
   changeRoleSchema,
   resolveReportSchema,
-  adminConversationParamsSchema,
   reportParamsSchema,
   adminGroupParamsSchema,
   updateTicketSchema,
@@ -88,13 +87,6 @@ router.get(
   adminController.getGroupById
 );
 router.delete("/groups/:groupId", validate(adminGroupParamsSchema), requireRole(UserRole.SUPER_ADMIN), adminController.deleteGroup);
-
-router.get(
-  "/conversations/:convId/messages",
-  validate(adminConversationParamsSchema),
-  requireRole(UserRole.MODERATOR, UserRole.SUPER_ADMIN),
-  adminController.getConversationMessages
-);
 
 router.get("/bans", requireRole(UserRole.MODERATOR, UserRole.SUPER_ADMIN), adminController.getBans);
 router.get("/bans/history", requireRole(UserRole.MODERATOR, UserRole.SUPER_ADMIN), adminController.getBanHistory);

@@ -56,7 +56,7 @@ export default function FeaturesPage() {
             <SecuritySpotlight
               badge="Encryption Layer"
               title="End-to-end encryption is part of the product story, not a hidden checkbox."
-              description="anonimi uses conversation-level encryption so private chats and group rooms can keep readable content on participant devices while the server handles transport, delivery, and coordination. It is a clearer model for identity-safe messaging."
+              description="anonimi uses conversation-level encryption so private chats and group rooms keep readable content on participant devices while the server handles transport, delivery, and coordination. Even moderators and super admins cannot open encrypted message content."
               ctaHref="/register"
               ctaLabel="Start encrypted chats"
               secondaryHref="/about"
@@ -112,6 +112,12 @@ export default function FeaturesPage() {
                     <div className="flex items-center gap-3">
                       <span className="h-2 w-2 rounded-full bg-emerald-500" />
                       <span>Offline queue for reliability</span>
+                    </div>
+                  </AnimatedListItem>
+                  <AnimatedListItem>
+                    <div className="flex items-center gap-3">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                      <span>Encrypted content stays unreadable to admins</span>
                     </div>
                   </AnimatedListItem>
                 </AnimatedList>
@@ -410,7 +416,7 @@ export default function FeaturesPage() {
                 <AnimatedText delay={0.3}>
                   <p className="mt-4 text-muted-foreground">
                     A dedicated moderation layer keeps the platform safe without
-                    slowing down the experience.
+                    becoming a backdoor into private conversations.
                   </p>
                 </AnimatedText>
                 <AnimatedList className="mt-6 space-y-3 text-sm text-muted-foreground" staggerDelay={0.06}>
@@ -432,6 +438,12 @@ export default function FeaturesPage() {
                       <span>Full activity audit logs</span>
                     </div>
                   </AnimatedListItem>
+                  <AnimatedListItem>
+                    <div className="flex items-center gap-3">
+                      <span className="h-2 w-2 rounded-full bg-slate-500" />
+                      <span>No admin message browser for encrypted chats</span>
+                    </div>
+                  </AnimatedListItem>
                 </AnimatedList>
                 <AnimatedImage delay={0.4} className="mt-6 overflow-hidden rounded-xl">
                   <Image
@@ -443,6 +455,26 @@ export default function FeaturesPage() {
                   />
                 </AnimatedImage>
               </AnimatedCard>
+            </section>
+          </AnimatedSection>
+
+          <AnimatedSection direction="up">
+            <section className="rounded-[2rem] border border-cyan-500/25 bg-gradient-to-r from-cyan-500/10 via-background to-background p-8 md:p-10">
+              <AnimatedElement delay={0.05}>
+                <p className="inline-flex rounded-full border border-cyan-500/30 bg-cyan-500/15 px-3 py-1 font-mono text-[0.66rem] uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-200">
+                  Privacy Promise
+                </p>
+              </AnimatedElement>
+              <AnimatedText delay={0.1}>
+                <h2 className="mt-4 text-3xl font-bold sm:text-4xl">
+                  Not even our admin panel can read your encrypted chats.
+                </h2>
+              </AnimatedText>
+              <AnimatedText delay={0.15}>
+                <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted-foreground">
+                  Moderation still works through reports, account controls, and audit trails, but encrypted message bodies are not exposed to moderators, support staff, or super admins.
+                </p>
+              </AnimatedText>
             </section>
           </AnimatedSection>
         </div>

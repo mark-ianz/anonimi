@@ -101,7 +101,7 @@ export default function AboutPage() {
               </AnimatedText>
               <AnimatedText delay={0.12}>
                 <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
-                  We care about making privacy legible. That means helping people understand identity boundaries, message lifetime, and who can read a thread after membership changes. Strong security is only useful when users can trust the behavior they see.
+                  We care about making privacy legible. That means helping people understand identity boundaries, message lifetime, and exactly who cannot read a thread. Strong security is only useful when users can trust the behavior they see.
                 </p>
               </AnimatedText>
             </div>
@@ -111,6 +111,7 @@ export default function AboutPage() {
                 <AnimatedList className="mt-4 space-y-2 text-sm text-muted-foreground">
                   <AnimatedListItem>Private identity before connection</AnimatedListItem>
                   <AnimatedListItem>End-to-end encrypted conversations by default</AnimatedListItem>
+                  <AnimatedListItem>Message content unavailable to admins and moderators</AnimatedListItem>
                   <AnimatedListItem>Clear recovery paths when things go wrong</AnimatedListItem>
                 </AnimatedList>
               </AnimatedCard>
@@ -123,6 +124,24 @@ export default function AboutPage() {
                 </AnimatedList>
               </AnimatedCard>
             </div>
+          </div>
+        </AnimatedSection>
+
+        <AnimatedSection delay={0.14} className="mt-8">
+          <div className="rounded-[1.75rem] border border-cyan-500/25 bg-gradient-to-br from-cyan-500/10 via-background to-background p-6 md:p-7">
+            <AnimatedBadge className="inline-flex rounded-full border border-cyan-500/30 bg-cyan-500/15 px-3 py-1 font-mono text-[0.66rem] uppercase tracking-[0.14em] text-cyan-700 dark:text-cyan-200">
+              Plain-language privacy
+            </AnimatedBadge>
+            <AnimatedText delay={0.08}>
+              <h2 className="mt-4 text-2xl font-semibold md:text-3xl">
+                We can run the service without reading your encrypted messages.
+              </h2>
+            </AnimatedText>
+            <AnimatedText delay={0.12}>
+              <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground md:text-base">
+                That includes moderators and super admins. Admin tools can handle reports, bans, support, and audit logs, but they do not expose the contents of end-to-end encrypted conversations.
+              </p>
+            </AnimatedText>
           </div>
         </AnimatedSection>
 
@@ -313,7 +332,7 @@ export default function AboutPage() {
               </AnimatedText>
               <AnimatedText delay={0.15}>
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">
-                  We are designers and engineers focused on privacy UX, real-time systems, and resilient account architecture. Every major flow is reviewed for clarity, failure recovery, and user trust.
+                  We are designers and engineers focused on privacy UX, real-time systems, and resilient account architecture. Every major flow is reviewed for clarity, failure recovery, and user trust, including how we keep admin access away from encrypted content.
                 </p>
               </AnimatedText>
               <AnimatedText delay={0.2}>

@@ -10,7 +10,6 @@ import {
   LifeBuoy,
   AlertTriangle,
   Users2,
-  MessageSquare,
   Ban,
   BarChart2,
   ScrollText,
@@ -18,7 +17,6 @@ import {
   LogOut,
   MessageCircle,
   Mail,
-  MessageCircleMore,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useAuth } from "@/hooks/useAuth";
@@ -53,7 +51,6 @@ const navSections: NavSection[] = [
     items: [
       { href: "/admin/users", label: "Users", icon: Users, roles: ADMIN_ROLES },
       { href: "/admin/groups", label: "Groups", icon: Users2, roles: MOD_ROLES },
-      { href: "/admin/messages", label: "Messages", icon: MessageSquare, roles: MOD_ROLES },
     ],
   },
   {

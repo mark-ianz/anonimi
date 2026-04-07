@@ -399,32 +399,6 @@ export const deleteGroup = async (
   }
 };
 
-export const getConversationMessages = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const { convId } = req.params;
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
-    const cursor = req.query.cursor as string | undefined;
-    const result = await adminService.getConversationMessages(
-      req.user!._id.toString(),
-      convId,
-      limit,
-      cursor,
-      req.ip || undefined
-    );
-    apiPaginated(res, result.messages, {
-      nextCursor: result.nextCursor,
-      hasMore: !!result.nextCursor,
-      limit,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
 export const getBans = async (
   req: Request,
   res: Response,
