@@ -13,7 +13,7 @@ import { decryptConversationPayload } from "@/lib/e2eeMessageCrypto";
 import { ensureConversationKeyForConversation } from "@/lib/e2eeConversationRecovery";
 import type { Conversation } from "@/types/conversation";
 import type { GroupMember } from "@/types/group";
-import type { Message } from "@/types/message";
+import type { Message, MessageType, ReplyPreview } from "@/types/message";
 import MessageBubble from "./MessageBubble";
 import TypingIndicator from "./TypingIndicator";
 import InfiniteScrollSentinel from "@/components/shared/InfiniteScroll";
@@ -70,6 +70,7 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
   const scrollIdleTimeoutRef = useRef<number | null>(null);
   const searchParams = useSearchParams();
   const targetMessageId = searchParams.get("messageId");
+  const jumpToken = searchParams.get("jump");
   const isFirstLoad = useRef(true);
   const lastMessageIdRef = useRef<string | null>(null);
   const emittedReadIdsRef = useRef<Set<string>>(new Set());
@@ -166,6 +167,12 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
     );
   }, [visibleMessages, decryptedContent]);
 
+  const messageById = useMemo(() => {
+    const map: Record<string, Message> = {};
+    for (const msg of displayMessages) map[msg.id] = msg;
+    return map;
+  }, [displayMessages]);
+
   const groupMemberMetaById = useMemo(() => {
     const map: Record<string, { name: string; anonimiId: string; profileImage: string | null }> = {};
     groupMembers.forEach((member) => {
@@ -177,6 +184,102 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
     });
     return map;
   }, [groupMembers]);
+
+  const messagesWithResolvedReplyPreviews = useMemo(() => {
+    const getPreviewContent = (original: Message): string | null => {
+      if (original.unsent) return "Message removed";
+      if (original.isStealth) return "[Stealth]";
+      if (original.type === "image") return "Photo";
+      if (original.type === "video") return "Video";
+      if (original.type === "audio") return "Audio";
+      if (original.type === "file") return original.fileName || "File";
+      if (original.content) return original.content;
+      if (original.isE2ee && original.contentCipher) return "Decrypting...";
+      return "Message unavailable";
+    };
+
+    const getSenderUsername = (senderId: string | null | undefined): string | null => {
+      if (!senderId) return null;
+      if (senderId === user?.id) return "You";
+      if (conversation.type === "private") {
+        return (
+          conversation.participant?.nickname?.trim() ||
+          conversation.participant?.username ||
+          "Member"
+        );
+      }
+      return groupMemberMetaById[senderId]?.name ?? "Member";
+    };
+
+    let changed = false;
+
+    const next = displayMessages.map((msg) => {
+      const replyId = msg.replyPreview?.messageId ?? msg.replyToId ?? null;
+      if (!replyId) return msg;
+
+      const original = messageById[replyId];
+
+      if (!original) {
+        // If we don't have the original message loaded locally, keep existing metadata but
+        // provide a safe fallback so we never show a misleading "Message" placeholder.
+        if (!msg.replyPreview) {
+          changed = true;
+          const fallback: ReplyPreview = {
+            messageId: replyId,
+            senderId: null,
+            senderUsername: null,
+            type: "text",
+            content: "Message unavailable",
+          };
+          return { ...msg, replyPreview: fallback };
+        }
+
+        const isTextLike = msg.replyPreview.type === "text" || msg.replyPreview.type === "system";
+        if (isTextLike && !msg.replyPreview.content) {
+          changed = true;
+          return {
+            ...msg,
+            replyPreview: { ...msg.replyPreview, content: "Message unavailable" },
+          };
+        }
+
+        return msg;
+      }
+
+      const resolved: ReplyPreview = {
+        messageId: original.id,
+        senderId: original.senderId ?? null,
+        senderUsername: getSenderUsername(original.senderId),
+        type: original.type as MessageType,
+        content: getPreviewContent(original),
+        mediaUrl: original.mediaUrl ?? null,
+        fileName: original.fileName ?? null,
+        createdAt: original.createdAt,
+      };
+
+      const sameAsExisting =
+        msg.replyPreview?.messageId === resolved.messageId &&
+        msg.replyPreview?.type === resolved.type &&
+        msg.replyPreview?.content === resolved.content &&
+        msg.replyPreview?.fileName === resolved.fileName &&
+        msg.replyPreview?.mediaUrl === resolved.mediaUrl &&
+        msg.replyPreview?.senderId === resolved.senderId &&
+        msg.replyPreview?.senderUsername === resolved.senderUsername;
+
+      if (sameAsExisting) return msg;
+
+      changed = true;
+      return { ...msg, replyPreview: resolved };
+    });
+
+    return changed ? next : displayMessages;
+  }, [
+    displayMessages,
+    messageById,
+    conversation,
+    groupMemberMetaById,
+    user?.id,
+  ]);
 
   const reactionUserMetaById = useMemo(() => {
     const map: Record<string, { name?: string; profileImage?: string | null; anonimiId?: string }> = {};
@@ -292,7 +395,7 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
     setNewMessageCount(0);
     setIsAtBottom(true);
     setIsUserScrolling(false);
-  }, [conversation.id, targetMessageId]);
+  }, [conversation.id, targetMessageId, jumpToken]);
 
   useEffect(() => {
     return () => {
@@ -353,9 +456,10 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
 
     const targetMessage = displayMessages.find((message) => message.id === targetMessageId);
     if (targetMessage) {
-      if (scrollTargetHandledRef.current === targetMessageId) return;
+      const targetKey = `${targetMessageId}:${jumpToken ?? ""}`;
+      if (scrollTargetHandledRef.current === targetKey) return;
 
-      scrollTargetHandledRef.current = targetMessageId;
+      scrollTargetHandledRef.current = targetKey;
       setHighlightMessageId(targetMessageId);
 
       const rafId = window.requestAnimationFrame(() => {
@@ -380,6 +484,7 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
     }
   }, [
     targetMessageId,
+    jumpToken,
     messages,
     hasMore,
     isFetchingMore,
@@ -486,7 +591,7 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
           )}
 
           {/* Messages */}
-          {displayMessages.map((message, index) => {
+          {messagesWithResolvedReplyPreviews.map((message, index) => {
         const prev = displayMessages[index - 1];
         const next = displayMessages[index + 1];
         const showDivider = shouldShowDateDivider(prev?.createdAt, message.createdAt);

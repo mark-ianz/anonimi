@@ -12,7 +12,7 @@ import MessageReactions from "./MessageReactions";
 import MessageReactionPicker from "./MessageReactionPicker";
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { EyeOff, MessageCircle, Pencil, User, X, VolumeX, Volume2, UserMinus } from "lucide-react";
@@ -65,6 +65,8 @@ export default function MessageBubble({
 }: MessageBubbleProps) {
   const { user } = useAuthStore();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const isMine = message.senderId === user?.id;
   const isStealth = !!message.isStealth;
   const [now, setNow] = useState(() => Date.now());
@@ -140,6 +142,16 @@ export default function MessageBubble({
     if (replyPreview.type === "file") return replyPreview.fileName ?? "File";
     return "Message";
   })();
+
+  const handleJumpToRepliedMessage = useCallback(() => {
+    const replyId = replyPreview?.messageId ?? message.replyToId ?? null;
+    if (!replyId) return;
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("messageId", replyId);
+    params.set("jump", Date.now().toString());
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [replyPreview?.messageId, message.replyToId, router, pathname, searchParams]);
 
   const formatRemaining = (ms: number) => {
     const totalSeconds = Math.max(Math.floor(ms / 1000), 0);
@@ -469,9 +481,14 @@ export default function MessageBubble({
               )}
             >
               {replyPreview && !message.unsent && (
-                <div
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleJumpToRepliedMessage();
+                  }}
                   className={cn(
-                    "mb-2 rounded-lg border border-border/60 bg-background/60 px-2.5 py-1.5",
+                    "mb-2 w-full text-left rounded-lg border border-border/60 bg-background/60 px-2.5 py-1.5 hover:bg-background/80 transition-colors cursor-pointer",
                     isMine &&
                       "bg-primary-foreground/10 border-primary-foreground/20",
                   )}
@@ -484,7 +501,7 @@ export default function MessageBubble({
                       {replyPreviewText}
                     </p>
                   )}
-                </div>
+                </button>
               )}
               {/* Hover timestamp tooltip (desktop) */}
               <div

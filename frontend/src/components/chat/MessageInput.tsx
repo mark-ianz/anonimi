@@ -73,6 +73,7 @@ export default function MessageInput({
   const [pendingSource, setPendingSource] = useState<UploadSource>("file");
   const [stealthEnabled, setStealthEnabled] = useState(false);
   const [stealthDuration, setStealthDuration] = useState<StealthDuration>("5m");
+  const replyToId = replyTo?.id ?? null;
 
   const resolveReplyPreviewContent = (message: Message) => {
     if (message.unsent) return "Message removed";
@@ -81,7 +82,9 @@ export default function MessageInput({
     if (message.type === "video") return "Video";
     if (message.type === "audio") return "Audio";
     if (message.type === "file") return message.fileName || "File";
-    return message.content || "Message";
+    if (message.content) return message.content;
+    if (message.isE2ee && message.contentCipher) return "Decrypting...";
+    return "Message unavailable";
   };
 
   const replyPreview: ReplyPreview | null = replyTo
@@ -149,6 +152,19 @@ export default function MessageInput({
 
     return () => window.cancelAnimationFrame(frame);
   }, [conversationId, disabled]);
+
+  // When user taps "Reply", focus the input so they can start typing immediately.
+  useEffect(() => {
+    if (disabled) return;
+    if (!replyToId) return;
+    if (editMessageId) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      textareaRef.current?.focus({ preventScroll: true });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [replyToId, disabled, editMessageId]);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>, source: UploadSource) => {
     const file = e.target.files?.[0];
@@ -256,15 +272,7 @@ export default function MessageInput({
               Replying
             </p>
             <p className="truncate text-sm text-foreground">
-              {replyTo.type === "image"
-                ? "Photo"
-                : replyTo.type === "video"
-                ? "Video"
-                : replyTo.type === "audio"
-                ? "Audio"
-                : replyTo.type === "file"
-                ? replyTo.fileName || "File"
-                : replyTo.content || "Message"}
+              {resolveReplyPreviewContent(replyTo)}
             </p>
           </div>
           <button
