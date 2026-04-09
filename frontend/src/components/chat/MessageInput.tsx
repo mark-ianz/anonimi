@@ -175,6 +175,30 @@ export default function MessageInput({
     e.target.value = "";
   }, []);
 
+  const handlePaste = useCallback(
+    (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      if (disabled || !!editMessageId) return;
+
+      const items = Array.from(event.clipboardData.items);
+      const imageItem = items.find((item) => item.type.startsWith("image/"));
+      const itemFile = imageItem?.getAsFile() ?? null;
+      const fileFromFiles =
+        Array.from(event.clipboardData.files).find((fileItem) =>
+          fileItem.type.startsWith("image/")
+        ) ?? null;
+      const file = itemFile ?? fileFromFiles;
+      if (!file) return;
+
+      event.preventDefault();
+      setPendingFile(file);
+      setPendingSource("file");
+      if (stealthEnabled) {
+        setStealthEnabled(false);
+      }
+    },
+    [disabled, editMessageId, stealthEnabled]
+  );
+
   const handleSend = useCallback(async () => {
     const trimmed = text.trim();
     if (!trimmed && !pendingFile) return;
@@ -395,6 +419,7 @@ export default function MessageInput({
             onInputChange();
           }}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           onBlur={onBlur}
           disabled={disabled}
           placeholder={placeholder}
