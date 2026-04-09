@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
+import { usePresenceStore } from "@/stores/presenceStore";
 import { disconnectSockets } from "@/lib/socket";
 import type { AuthUser } from "@/types/user";
 import type { UploadSource } from "@/lib/uploadPolicy";
@@ -46,6 +47,7 @@ export function useAuth() {
       void import("@/lib/e2eeKeyStore")
         .then(({ clearAllKeys }) => clearAllKeys())
         .catch(() => undefined);
+      usePresenceStore.getState().clearPresence();
       clearAuth();
       disconnectSockets();
       qc.clear();

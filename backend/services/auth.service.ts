@@ -146,6 +146,22 @@ const isTemporaryExpired = (user: { isTemporary?: boolean; tempExpiresAt?: Date 
   return user.tempExpiresAt.getTime() <= Date.now();
 };
 
+const syncPresenceOnAuth = async (user: {
+  appearanceStatus: AppearanceStatus;
+  onlineStatus: OnlineStatus;
+  lastSeen?: Date | null;
+  save: () => Promise<unknown>;
+}) => {
+  const effectiveStatus =
+    user.appearanceStatus === AppearanceStatus.INVISIBLE
+      ? OnlineStatus.OFFLINE
+      : (user.appearanceStatus as unknown as OnlineStatus);
+
+  user.onlineStatus = effectiveStatus;
+  user.lastSeen = new Date();
+  await user.save();
+};
+
 export const createTemporaryAccount = async (): Promise<LoginResult> => {
   const tempUsername = await generateTempUsername();
   const now = new Date();
@@ -160,6 +176,8 @@ export const createTemporaryAccount = async (): Promise<LoginResult> => {
     tempCreatedAt: now,
     tempExpiresAt,
   });
+
+  await syncPresenceOnAuth(user);
 
   const tokens = await generateTokens(user._id.toString(), user.anonimiId, user.role);
 
@@ -256,7 +274,7 @@ export const verifyEmail = async (
   user.emailVerificationTokenHash = undefined;
   user.emailVerificationTokenExpiresAt = undefined;
   user.status = UserStatus.ACTIVE;
-  await user.save();
+  await syncPresenceOnAuth(user);
 
   const tokens = await generateTokens(user._id.toString(), user.anonimiId, user.role);
 
@@ -314,7 +332,7 @@ export const verifyEmailLink = async (token: string): Promise<LoginResult> => {
   user.emailVerificationTokenHash = undefined;
   user.emailVerificationTokenExpiresAt = undefined;
   user.status = UserStatus.ACTIVE;
-  await user.save();
+  await syncPresenceOnAuth(user);
 
   const tokens = await generateTokens(user._id.toString(), user.anonimiId, user.role);
 
@@ -362,7 +380,7 @@ export const verifyPhone = async (
   user.verificationCode = undefined;
   user.verificationCodeExpiresAt = undefined;
   user.status = UserStatus.ACTIVE;
-  await user.save();
+  await syncPresenceOnAuth(user);
 
   const tokens = await generateTokens(user._id.toString(), user.anonimiId, user.role);
 
@@ -550,6 +568,8 @@ export const login = async (
     throw new UnauthorizedError(`Account is banned${reason}`);
   }
 
+  await syncPresenceOnAuth(user);
+
   const tokens = await generateTokens(user._id.toString(), user.anonimiId, user.role);
 
   return {
@@ -701,7 +721,7 @@ export const resetPassword = async (
   user.passwordHash = await hashPassword(newPassword);
   user.passwordResetToken = undefined;
   user.passwordResetExpiresAt = undefined;
-  await user.save();
+  await syncPresenceOnAuth(user);
 
   await RefreshToken.deleteMany({ userId: user._id });
 

@@ -64,7 +64,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     setUnreadCount,
     unreadCounts,
   } = useChatStore();
-  const { setPresence } = usePresenceStore();
+  const { setPresence, clearPresence } = usePresenceStore();
   const { setTyping } = useTypingStore();
   const { registerKeys } = useE2EEKeyRegistration();
   const socketRef = useRef<Socket | null>(null);
@@ -237,6 +237,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isAuthenticated) {
       disconnectSockets();
+      clearPresence();
       setChatStatus("disconnected");
       if (typeof document !== "undefined") {
         document.title = baseTitleRef.current;
@@ -1273,6 +1274,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     updateConversationLastMessage,
     incrementUnread,
     setPresence,
+    clearPresence,
     setTyping,
     router,
   ]);

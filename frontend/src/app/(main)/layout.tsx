@@ -132,9 +132,11 @@ export default function MainLayout({ children }: SidebarProps) {
     }).length;
   }, [notifications]);
 
-  const currentStatus = (user?.onlineStatus ?? "offline") as OnlineStatus;
   const currentAppearance = (user?.appearanceStatus ??
     "online") as AppearanceStatus;
+  const currentStatus = (currentAppearance === "invisible"
+    ? "offline"
+    : currentAppearance) as OnlineStatus;
 
   const appearanceLabelMap: Record<AppearanceStatus, string> = {
     online: "Online",
