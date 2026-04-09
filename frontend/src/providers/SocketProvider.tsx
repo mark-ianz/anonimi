@@ -260,16 +260,27 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       void registerKeys();
     };
 
-    const handleDisconnect = () => {
+    const handleDisconnect = (reason: string) => {
       hadOfflineRef.current = true;
-      setChatStatus("disconnected");
+      if (!navigator.onLine || reason === "io client disconnect") {
+        setChatStatus("disconnected");
+        return;
+      }
+      setChatStatus("reconnecting");
     };
 
-    const handleConnectError = () => setChatStatus("error");
+    const handleConnectError = () => {
+      if (!navigator.onLine) {
+        setChatStatus("disconnected");
+        return;
+      }
+      setChatStatus("reconnecting");
+    };
     const handleReconnectAttempt = () => setChatStatus("reconnecting");
     const handleReconnect = () => setChatStatus("connected");
-    const handleReconnectError = () => setChatStatus("error");
-    const handleReconnectFailed = () => setChatStatus("error");
+    const handleReconnectError = () =>
+      setChatStatus(navigator.onLine ? "reconnecting" : "disconnected");
+    const handleReconnectFailed = () => setChatStatus("disconnected");
 
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
@@ -292,6 +303,14 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
+
+    const syncStatusInterval = window.setInterval(() => {
+      if (!navigator.onLine) {
+        setChatStatus("disconnected");
+        return;
+      }
+      setChatStatus(socket.connected ? "connected" : "reconnecting");
+    }, 2000);
 
     // Message ack — replace optimistic message, preserving its original content/type/senderId
     socket.on("message:ack", (payload: MessageAckPayload) => {
@@ -1201,6 +1220,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       Object.keys(pendingDecryptRetryRef.current).forEach(clearPendingDecryptRetry);
+      window.clearInterval(syncStatusInterval);
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
       socket.off("connect", handleConnect);

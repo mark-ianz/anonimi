@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { usePresence } from "@/hooks/usePresence";
 import { useChatStore } from "@/stores/chatStore";
 import { useAuthStore } from "@/stores/authStore";
+import { useSocketStore } from "@/stores/socketStore";
 import { getChatSocket } from "@/lib/socket";
 import api from "@/lib/api";
 import type { Conversation } from "@/types/conversation";
@@ -38,6 +39,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
   const qc = useQueryClient();
   const { setActiveConversation, clearUnread, conversations, setConversations, setMessages } = useChatStore();
   const { user: currentUser } = useAuthStore();
+  const chatStatus = useSocketStore((state) => state.chatStatus);
 
   // Header menu state
   const [menuOpen, setMenuOpen] = useState(false);
@@ -108,7 +110,8 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
   const currentMember = groupMembers.find((member) => member.userId === currentUser?.id);
   const groupMutedUntil = currentMember?.mutedUntil ? new Date(currentMember.mutedUntil) : null;
   const isGroupMuted = !!groupMutedUntil && groupMutedUntil.getTime() > Date.now();
-  const isInputDisabledWithMute = isInputDisabled || isGroupMuted;
+  const isSocketUnavailable = chatStatus !== "connected";
+  const isInputDisabledWithMute = isInputDisabled || isGroupMuted || isSocketUnavailable;
 
   const handleEditStart = (message: { id: string; content: string | null }) => {
     setEditTarget({ id: message.id, content: message.content ?? "" });
@@ -948,6 +951,8 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
               ? "Accept the request to reply..."
               : isGroupMuted
               ? "You are muted in this group..."
+              : isSocketUnavailable
+              ? "Reconnecting... wait until you're online to send messages."
               : "Message..."
           }
         />

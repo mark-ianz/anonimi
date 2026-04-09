@@ -265,25 +265,11 @@ export function useMessages(conversationId: string | null) {
       if (socket.connected) {
         socket.emit("message:send", socketPayload);
       } else {
-        // Fallback to REST
-        api
-          .post("/messages", socketPayload)
-          .then((res) => {
-            replaceTempMessage(
-              payload.conversationId,
-              tempId,
-              res.data.data as Message
-            );
-          })
-          .catch((error) => {
-            updateMessage(payload.conversationId, tempId, {
-              failed: true,
-              pending: false,
-            });
-            const message =
-              error?.response?.data?.message ?? "Failed to send message.";
-            toast.error(message);
-          });
+        updateMessage(payload.conversationId, tempId, {
+          failed: true,
+          pending: false,
+        });
+        toast.error("You are disconnected. Reconnect before sending messages.");
       }
     },
     [user, addMessage, replaceTempMessage, updateConversationLastMessage, updateMessage]

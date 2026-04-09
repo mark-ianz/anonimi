@@ -55,11 +55,13 @@
 **Issues:**
 - Status stuck on "reconnecting" or "disconnected"
 - User can still send messages despite incorrect status
+- And sometimes it's just reconnecting or disconnected, and user is not sync on the socket.
 
 **Goals:**
 - Fix WebSocket/Socket.io state sync
 - Ensure UI reflects actual connection state
 - Add fallback or retry logic if needed
+- Make sure that it actually tries to reconnect and not get stucked.
 
 ---
 
