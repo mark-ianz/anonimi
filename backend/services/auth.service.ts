@@ -12,6 +12,7 @@ import {
 } from "../utils/jwt";
 import { ConflictError, UnauthorizedError, NotFoundError, ForbiddenError } from "../utils/apiError";
 import { AppearanceStatus, OnlineStatus, UserRole, UserStatus } from "../types/enums";
+import { normalizePhoneNumber, tryNormalizePhoneNumber } from "../utils/phone";
 import { createAdminLog } from "./admin.service";
 import { env } from "../config/env";
 import { sendPasswordResetEmail, sendVerificationEmail } from "./email.service";
@@ -340,7 +341,8 @@ export const verifyPhone = async (
   phone: string,
   code: string
 ): Promise<LoginResult> => {
-  const user = await User.findOne({ phone, verificationCode: code });
+  const normalizedPhone = normalizePhoneNumber(phone);
+  const user = await User.findOne({ phone: normalizedPhone, verificationCode: code });
 
   if (!user) {
     throw new UnauthorizedError("Invalid verification code");
@@ -387,7 +389,10 @@ export const getVerificationStatus = async (
   type: "email" | "phone",
   target: string
 ): Promise<VerificationStatusResult> => {
-  const normalizedTarget = type === "email" ? target.trim().toLowerCase() : target.trim();
+  const normalizedTarget =
+    type === "email"
+      ? target.trim().toLowerCase()
+      : normalizePhoneNumber(target);
   const user =
     type === "email"
       ? await User.findOne({ email: normalizedTarget })
@@ -451,7 +456,10 @@ export const resendVerificationCode = async (
   type: "email" | "phone",
   target: string
 ): Promise<ResendVerificationResult> => {
-  const normalizedTarget = type === "email" ? target.trim().toLowerCase() : target.trim();
+  const normalizedTarget =
+    type === "email"
+      ? target.trim().toLowerCase()
+      : normalizePhoneNumber(target);
   const user =
     type === "email"
       ? await User.findOne({ email: normalizedTarget })
@@ -509,7 +517,10 @@ export const login = async (
   identifier: string,
   password: string
 ): Promise<LoginResult> => {
-  const normalizedIdentifier = identifier.trim().toLowerCase();
+  const trimmedIdentifier = identifier.trim();
+  const normalizedIdentifier = trimmedIdentifier.includes("@")
+    ? trimmedIdentifier.toLowerCase()
+    : (tryNormalizePhoneNumber(trimmedIdentifier) ?? trimmedIdentifier);
   const user = await User.findOne({
     $or: [{ email: normalizedIdentifier }, { phone: normalizedIdentifier }],
   }).select("+passwordHash");
@@ -763,7 +774,7 @@ export const getProfile = async (userId: string) => {
 
 export const updateProfile = async (
   userId: string,
-  updates: { username?: string; phone?: string; appearanceStatus?: AppearanceStatus }
+  updates: { username?: string; phone?: string | null; appearanceStatus?: AppearanceStatus }
 ) => {
   const user = await User.findById(userId);
 
@@ -792,8 +803,28 @@ export const updateProfile = async (
     user.usernameChangedAt = new Date();
   }
 
-  if (updates.phone) {
-    user.phone = updates.phone;
+  if (Object.prototype.hasOwnProperty.call(updates, "phone")) {
+    const normalizedPhone = updates.phone?.trim()
+      ? normalizePhoneNumber(updates.phone)
+      : null;
+
+    if (normalizedPhone && normalizedPhone !== user.phone) {
+      const existingPhoneUser = await User.findOne({
+        phone: normalizedPhone,
+        _id: { $ne: userId },
+      });
+
+      if (existingPhoneUser) {
+        throw new ConflictError("Phone number already in use");
+      }
+    }
+
+    if ((user.phone ?? null) !== normalizedPhone) {
+      user.phone = normalizedPhone ?? undefined;
+      user.phoneVerified = false;
+      user.verificationCode = undefined;
+      user.verificationCodeExpiresAt = undefined;
+    }
   }
 
   if (updates.appearanceStatus) {

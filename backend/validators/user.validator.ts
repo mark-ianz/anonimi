@@ -19,7 +19,7 @@ export const updateProfileSchema = z.object({
         "Username can only contain letters, numbers, underscores and periods"
       )
       .optional(),
-    phone: z.string().optional(),
+    phone: z.string().nullable().optional(),
     appearanceStatus: z.enum(["online", "away", "dnd", "invisible"]).optional(),
   }),
 });

@@ -35,17 +35,14 @@ export default function UserProfileEditor({ pendingAvatar, pendingAvatarRemoval,
   } = useAuth();
 
   const [username, setUsername] = useState(user?.username ?? "");
-  const [phone, setPhone] = useState(user?.phone ?? "");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [savePlan, setSavePlan] = useState<SavePlan | null>(null);
   const canEditUsername = user?.usernameCanEdit ?? false;
   const isSaving = isUpdatingProfile || isUpdatingAvatar;
 
   const trimmedUsername = username.trim();
-  const trimmedPhone = phone.trim();
   const hasChanges =
     (trimmedUsername && trimmedUsername !== (user?.username ?? "")) ||
-    trimmedPhone !== (user?.phone ?? "") ||
     !!pendingAvatar ||
     !!pendingAvatarRemoval;
   const canSave = hasChanges && !isSaving;
@@ -70,12 +67,7 @@ export default function UserProfileEditor({ pendingAvatar, pendingAvatarRemoval,
       changes.push(`Username: ${user?.username ?? "(empty)"} -> ${nextUsername}`);
     }
 
-    if (trimmedPhone !== (user?.phone ?? "")) {
-      patch.phone = trimmedPhone || undefined;
-      const previousPhone = user?.phone?.trim() ? user.phone : "(empty)";
-      const nextPhone = trimmedPhone || "(empty)";
-      changes.push(`Phone: ${previousPhone} -> ${nextPhone}`);
-    }
+    // Phone updates are intentionally paused for now.
 
     if (pendingAvatar) {
       changes.push(`Profile photo: ${pendingAvatar.file.name}`);
@@ -178,17 +170,7 @@ export default function UserProfileEditor({ pendingAvatar, pendingAvatarRemoval,
         </p>
       </div>
 
-      <div className="space-y-1.5">
-        <label className="text-sm font-medium">Phone</label>
-        <input
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="+1 234 567 8900"
-          type="tel"
-          className="w-full h-10 px-3 rounded-xl bg-muted/50 border-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-        />
-        <p className="text-xs text-muted-foreground">Optional. Add a phone number for account recovery and extra security.</p>
-      </div>
+      {/* Phone input is temporarily out of scope and intentionally hidden. */}
 
       <div className="space-y-1.5">
         <label className="text-sm font-medium">Email</label>
