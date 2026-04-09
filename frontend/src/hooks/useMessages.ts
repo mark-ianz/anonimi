@@ -409,7 +409,8 @@ export function useMessages(conversationId: string | null) {
         contentTag,
         contentKeyVersion,
       });
-      return res.data.data as Message;
+      const updated = res.data.data as Message;
+      return contentCipher ? { ...updated, content: payload.content } : updated;
     },
     onSuccess: (updated) => {
       if (!conversationId) return;
@@ -435,6 +436,11 @@ export function useMessages(conversationId: string | null) {
           senderId: updated.senderId,
           type: updated.type,
           timestamp: updated.createdAt,
+          isE2ee: updated.isE2ee ?? false,
+          contentCipher: updated.contentCipher ?? null,
+          contentIv: updated.contentIv ?? null,
+          contentTag: updated.contentTag ?? null,
+          contentKeyVersion: updated.contentKeyVersion ?? null,
         });
       }
     },

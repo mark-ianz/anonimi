@@ -112,15 +112,25 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
     return messages.filter((m) => new Date(m.createdAt).getTime() >= myJoinedAt);
   }, [messages, myJoinedAt]);
 
-  const [decryptedContent, setDecryptedContent] = useState<Record<string, string>>({});
-  const decryptedIdsRef = useRef(new Set<string>());
+  const [decryptedContent, setDecryptedContent] = useState<
+    Record<string, { content: string; signature: string }>
+  >({});
   const decryptingRef = useRef(false);
+
+  const getCipherSignature = (message: Message) =>
+    `${message.contentCipher ?? ""}:${message.contentIv ?? ""}:${message.contentTag ?? ""}:${message.contentKeyVersion ?? ""}`;
 
   useEffect(() => {
     if (decryptingRef.current) return;
 
     const pending = visibleMessages.filter(
-      (m) => m.isE2ee && m.contentCipher && m.contentIv && m.contentTag && !m.content && !decryptedIdsRef.current.has(m.id)
+      (m) =>
+        m.isE2ee &&
+        m.contentCipher &&
+        m.contentIv &&
+        m.contentTag &&
+        !m.content &&
+        decryptedContent[m.id]?.signature !== getCipherSignature(m)
     );
 
     if (pending.length === 0) return;
@@ -128,7 +138,7 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
     decryptingRef.current = true;
 
     const decryptPending = async () => {
-      const updates: Record<string, string> = {};
+      const updates: Record<string, { content: string; signature: string }> = {};
 
       await ensureConversationKeyForConversation(conversation);
 
@@ -140,11 +150,10 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
           tag: msg.contentTag!,
           contentKeyVersion: msg.contentKeyVersion ?? null,
         });
-
-        decryptedIdsRef.current.add(msg.id);
+        const signature = getCipherSignature(msg);
 
         if (content != null) {
-          updates[msg.id] = content;
+          updates[msg.id] = { content, signature };
         }
       }
 
@@ -158,13 +167,18 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
     }).finally(() => {
       decryptingRef.current = false;
     });
-  }, [visibleMessages, conversation.id]);
+  }, [visibleMessages, conversation, decryptedContent]);
 
   const displayMessages = useMemo(() => {
     if (Object.keys(decryptedContent).length === 0) return visibleMessages;
-    return visibleMessages.map((m) =>
-      decryptedContent[m.id] ? { ...m, content: decryptedContent[m.id] } : m
-    );
+    return visibleMessages.map((m) => {
+      if (m.content) return m;
+      const cached = decryptedContent[m.id];
+      if (!cached) return m;
+      return cached.signature === getCipherSignature(m)
+        ? { ...m, content: cached.content }
+        : m;
+    });
   }, [visibleMessages, decryptedContent]);
 
   const messageById = useMemo(() => {

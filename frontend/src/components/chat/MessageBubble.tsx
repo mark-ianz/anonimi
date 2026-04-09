@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { decryptConversationPayload } from "@/lib/e2eeMessageCrypto";
 import { EyeOff, MessageCircle, Pencil, User, X, VolumeX, Volume2, UserMinus } from "lucide-react";
 
 interface MessageBubbleProps {
@@ -74,6 +75,7 @@ export default function MessageBubble({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [decryptedHistory, setDecryptedHistory] = useState<Record<string, string>>({});
   const [mobileSelected, setMobileSelected] = useState(false);
   const [avatarMenuPosition, setAvatarMenuPosition] = useState({
     top: 0,
@@ -183,6 +185,56 @@ export default function MessageBubble({
   const tooltipPositionClass = isMine
     ? "right-[calc(100%+8px)] top-1/2 -translate-y-1/2"
     : "left-[calc(100%+8px)] top-1/2 -translate-y-1/2";
+
+  useEffect(() => {
+    if (!historyOpen) return;
+    if (!message.editHistory?.length) return;
+
+    const pendingEntries = message.editHistory.filter(
+      (entry) =>
+        entry.isE2ee &&
+        entry.contentCipher &&
+        entry.contentIv &&
+        entry.contentTag &&
+        !decryptedHistory[`${entry.editedAt}:${entry.editedBy}`]
+    );
+
+    if (!pendingEntries.length) return;
+
+    let cancelled = false;
+
+    const decryptHistory = async () => {
+      const updates: Record<string, string> = {};
+
+      for (const entry of pendingEntries) {
+        try {
+          const content = await decryptConversationPayload({
+            conversationId: message.conversationId,
+            cipherText: entry.contentCipher!,
+            iv: entry.contentIv!,
+            tag: entry.contentTag!,
+            contentKeyVersion: entry.contentKeyVersion ?? null,
+          });
+
+          if (content != null) {
+            updates[`${entry.editedAt}:${entry.editedBy}`] = content;
+          }
+        } catch {
+          updates[`${entry.editedAt}:${entry.editedBy}`] = "Unable to decrypt";
+        }
+      }
+
+      if (!cancelled && Object.keys(updates).length > 0) {
+        setDecryptedHistory((prev) => ({ ...prev, ...updates }));
+      }
+    };
+
+    decryptHistory().catch(() => null);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [historyOpen, message.editHistory, message.conversationId, decryptedHistory]);
   const sideControlPositionClass = isMine
     ? "right-[calc(100%+8px)] top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0"
     : "left-[calc(100%+8px)] top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0";
@@ -712,6 +764,11 @@ export default function MessageBubble({
                     const editorName = isEditor
                       ? "You"
                       : (readByUsersById?.[entry.editedBy]?.name ?? "User");
+                    const historyKey = `${entry.editedAt}:${entry.editedBy}`;
+                    const entryContent =
+                      entry.isE2ee
+                        ? decryptedHistory[historyKey] ?? "Decrypting..."
+                        : (entry.content ?? "Message unavailable");
 
                     return (
                       <div
@@ -729,7 +786,7 @@ export default function MessageBubble({
                           />
                         </div>
                         <p className="mt-2 whitespace-pre-wrap break-all text-sm text-foreground">
-                          {entry.content}
+                          {entryContent}
                         </p>
                       </div>
                     );

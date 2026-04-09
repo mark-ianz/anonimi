@@ -75,10 +75,24 @@ const serializeReactions = (
 ) => (isUnsent ? [] : (reactions ?? []).map(serializeReaction));
 
 const serializeEditHistory = (
-  history: Array<{ content: string; editedAt: Date; editedBy: Types.ObjectId }> | undefined
+  history: Array<{
+    content?: string | null;
+    isE2ee?: boolean;
+    contentCipher?: string;
+    contentIv?: string;
+    contentTag?: string;
+    contentKeyVersion?: number;
+    editedAt: Date;
+    editedBy: Types.ObjectId;
+  }> | undefined
 ) =>
   (history ?? []).map((entry) => ({
-    content: entry.content,
+    content: entry.content ?? null,
+    isE2ee: entry.isE2ee ?? false,
+    contentCipher: entry.contentCipher ?? null,
+    contentIv: entry.contentIv ?? null,
+    contentTag: entry.contentTag ?? null,
+    contentKeyVersion: entry.contentKeyVersion ?? null,
     editedAt: entry.editedAt,
     editedBy: entry.editedBy?.toString(),
   }));
@@ -1928,7 +1942,7 @@ export const unsendMessage = async (
 export const editMessage = async (
   messageId: string,
   editorId: string,
-  content: string | undefined,
+  content: string | null | undefined,
   options?: {
     contentCipher?: string;
     contentIv?: string;
@@ -1936,6 +1950,10 @@ export const editMessage = async (
     contentKeyVersion?: number;
   }
 ) => {
+  if (!Types.ObjectId.isValid(messageId)) {
+    throw new NotFoundError("Message not found");
+  }
+
   const message = await Message.findById(messageId);
 
   if (!message) {
@@ -1963,8 +1981,19 @@ export const editMessage = async (
     throw new ForbiddenError("Edit time window expired (24 hours)");
   }
 
-  const trimmed = content.trim();
-  if (trimmed === (message.content ?? "")) {
+  const isE2eeUpdate = !!options?.contentCipher;
+
+  if (isE2eeUpdate && (!options?.contentIv || !options?.contentTag)) {
+    throw new ForbiddenError("Encrypted edit payload is incomplete");
+  }
+
+  const trimmed = isE2eeUpdate ? "" : (content ?? "").trim();
+
+  if (!isE2eeUpdate && !trimmed) {
+    throw new ForbiddenError("Message content is required");
+  }
+
+  if (!isE2eeUpdate && trimmed === (message.content ?? "")) {
     return {
       id: message._id.toString(),
       conversationId: message.conversationId.toString(),
@@ -1986,10 +2015,14 @@ export const editMessage = async (
     };
   }
 
-  const isE2eeUpdate = !!options?.contentCipher;
   const editedAt = new Date();
   const historyEntry = {
-    content: message.content ?? "",
+    content: message.isE2ee ? null : (message.content ?? null),
+    isE2ee: message.isE2ee ?? false,
+    contentCipher: message.contentCipher ?? undefined,
+    contentIv: message.contentIv ?? undefined,
+    contentTag: message.contentTag ?? undefined,
+    contentKeyVersion: message.contentKeyVersion ?? undefined,
     editedAt,
     editedBy: new Types.ObjectId(editorId),
   };
@@ -2005,12 +2038,35 @@ export const editMessage = async (
     message.contentKeyVersion = options?.contentKeyVersion;
   } else {
     message.content = trimmed;
-    // We don't change isE2ee status on edit for now (standard text edit)
+    message.isE2ee = false;
+    message.contentCipher = undefined;
+    message.contentIv = undefined;
+    message.contentTag = undefined;
+    message.contentKeyVersion = undefined;
   }
   
   message.editedAt = editedAt;
   message.editedBy = new Types.ObjectId(editorId);
   await message.save();
+
+  const lastMessageSet: Record<string, unknown> = {
+    "lastMessage.content": isE2eeUpdate ? null : trimmed,
+    "lastMessage.isE2ee": isE2eeUpdate,
+  };
+  const lastMessageUnset: Record<string, unknown> = {};
+
+  if (isE2eeUpdate) {
+    lastMessageSet["lastMessage.contentCipher"] = options?.contentCipher;
+    lastMessageSet["lastMessage.contentIv"] = options?.contentIv;
+    lastMessageSet["lastMessage.contentTag"] = options?.contentTag;
+    lastMessageSet["lastMessage.contentKeyVersion"] =
+      options?.contentKeyVersion ?? null;
+  } else {
+    lastMessageUnset["lastMessage.contentCipher"] = "";
+    lastMessageUnset["lastMessage.contentIv"] = "";
+    lastMessageUnset["lastMessage.contentTag"] = "";
+    lastMessageUnset["lastMessage.contentKeyVersion"] = "";
+  }
 
   await Conversation.collection.updateOne(
     {
@@ -2018,15 +2074,14 @@ export const editMessage = async (
       "lastMessage.senderId": message.senderId,
       "lastMessage.timestamp": message.createdAt,
     },
-    {
-      $set: {
-        "lastMessage.content": isE2eeUpdate ? null : trimmed,
-        "lastMessage.contentCipher": options?.contentCipher,
-        "lastMessage.contentIv": options?.contentIv,
-        "lastMessage.contentTag": options?.contentTag,
-        "lastMessage.contentKeyVersion": options?.contentKeyVersion,
-      },
-    }
+    Object.keys(lastMessageUnset).length
+      ? {
+          $set: lastMessageSet,
+          $unset: lastMessageUnset,
+        }
+      : {
+          $set: lastMessageSet,
+        }
   );
 
   emitToConversation(message.conversationId.toString(), "message:edited", {

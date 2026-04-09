@@ -155,7 +155,7 @@ export const editMessage = async (
     const result = await chatService.editMessage(
       messageId,
       req.user!._id.toString(),
-      content,
+      content as string | null | undefined,
       { contentCipher, contentIv, contentTag, contentKeyVersion }
     );
     apiSuccess(res, result);

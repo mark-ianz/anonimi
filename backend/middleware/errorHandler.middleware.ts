@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import multer from "multer";
 import { ApiError } from "../utils/apiError";
 import { logger } from "../utils/logger";
+import { env } from "../config/env";
 
 export const errorHandler = (
   err: Error,
@@ -49,7 +50,13 @@ export const errorHandler = (
     success: false,
     error: {
       code: "INTERNAL_ERROR",
-      message: "An unexpected error occurred",
+      message:
+        env.NODE_ENV === "development"
+          ? err.message || "An unexpected error occurred"
+          : "An unexpected error occurred",
+      ...(env.NODE_ENV === "development" && err.stack
+        ? { details: [{ stack: err.stack }] }
+        : {}),
     },
   });
 };

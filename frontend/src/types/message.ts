@@ -12,7 +12,12 @@ export interface MessageReaction {
 }
 
 export interface MessageEditHistoryEntry {
-  content: string;
+  content: string | null;
+  isE2ee?: boolean;
+  contentCipher?: string | null;
+  contentIv?: string | null;
+  contentTag?: string | null;
+  contentKeyVersion?: number | null;
   editedAt: string;
   editedBy: string;
 }

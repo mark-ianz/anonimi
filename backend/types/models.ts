@@ -101,7 +101,12 @@ export interface IMessage extends Document {
     createdAt: Date;
   }>;
   editHistory?: Array<{
-    content: string;
+    content?: string | null;
+    isE2ee?: boolean;
+    contentCipher?: string;
+    contentIv?: string;
+    contentTag?: string;
+    contentKeyVersion?: number;
     editedAt: Date;
     editedBy: Types.ObjectId;
   }>;

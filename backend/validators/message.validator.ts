@@ -21,7 +21,7 @@ export const sendMessageSchema = z.object({
   body: z.object({
     conversationId: z.string(),
     type: z.enum(["text", "image", "video", "audio", "file"]),
-    content: z.string().trim().max(256).optional(),
+    content: z.string().trim().max(256).nullable().optional(),
     mediaUrl: z.string().optional(),
     fileName: z.string().optional(),
     fileSize: z.number().int().positive().optional(),
@@ -32,7 +32,7 @@ export const sendMessageSchema = z.object({
     contentCipher: z.string().optional(),
     contentIv: z.string().optional(),
     contentTag: z.string().optional(),
-    contentKeyVersion: z.number().int().positive().optional(),
+    contentKeyVersion: z.number().int().nonnegative().optional(),
   }),
 });
 
@@ -47,11 +47,11 @@ export const editMessageSchema = z.object({
     messageId: z.string(),
   }),
   body: z.object({
-    content: z.string().trim().max(256).optional(),
+    content: z.string().trim().max(256).nullable().optional(),
     contentCipher: z.string().optional(),
     contentIv: z.string().optional(),
     contentTag: z.string().optional(),
-    contentKeyVersion: z.number().int().positive().optional(),
+    contentKeyVersion: z.number().int().nonnegative().optional(),
   }),
 });
 

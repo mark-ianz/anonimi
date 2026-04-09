@@ -40,7 +40,12 @@ const messageSchema = new Schema<IMessage>(
     ],
     editHistory: [
       {
-        content: { type: String, required: true },
+        content: { type: String },
+        isE2ee: { type: Boolean, default: false },
+        contentCipher: { type: String },
+        contentIv: { type: String },
+        contentTag: { type: String },
+        contentKeyVersion: { type: Number },
         editedAt: { type: Date, default: Date.now },
         editedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
       },
