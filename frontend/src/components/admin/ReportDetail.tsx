@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Report } from "@/types/report";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
+import { useAuthStore } from "@/stores/authStore";
+import type { UserRole } from "@/types/user";
 
 const reasonLabels: Record<string, string> = {
   harassment: "Harassment",
@@ -43,11 +45,19 @@ const resolutionActions = [
   { value: "content_removed", label: "Content Removed" },
 ];
 
+const ROLE_WEIGHT: Record<UserRole, number> = {
+  user: 0,
+  support_staff: 1,
+  moderator: 2,
+  super_admin: 3,
+};
+
 interface ReportDetailProps {
   report: Report;
 }
 
 export default function ReportDetail({ report }: ReportDetailProps) {
+  const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [notes, setNotes] = useState("");
   const [action, setAction] = useState("no_action");
@@ -64,9 +74,11 @@ export default function ReportDetail({ report }: ReportDetailProps) {
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as { action?: string; notes?: string; reporterNote?: string };
-        if (parsed.action) setAction(parsed.action);
-        if (typeof parsed.notes === "string") setNotes(parsed.notes);
-        if (typeof parsed.reporterNote === "string") setReporterNote(parsed.reporterNote);
+        window.setTimeout(() => {
+          if (parsed.action) setAction(parsed.action);
+          if (typeof parsed.notes === "string") setNotes(parsed.notes);
+          if (typeof parsed.reporterNote === "string") setReporterNote(parsed.reporterNote);
+        }, 0);
         skipNextSaveRef.current = true;
       } catch {
         window.localStorage.removeItem(storageKey);
@@ -100,7 +112,7 @@ export default function ReportDetail({ report }: ReportDetailProps) {
   const resolveMutation = useMutation({
     mutationFn: async () => {
       await api.patch(`/admin/reports/${report.id}/resolve`, {
-        resolution: action,
+        resolution: effectiveAction,
         resolutionNotes: notes.trim() || undefined,
         reporterNote: reporterNote.trim() || undefined,
       });
@@ -136,6 +148,21 @@ export default function ReportDetail({ report }: ReportDetailProps) {
 
   const reporter = report.reporter ?? null;
   const targetUser = report.targetUser ?? null;
+  const myRoleWeight = user?.role ? ROLE_WEIGHT[user.role] : -1;
+  const targetRoleWeight = targetUser?.role ? ROLE_WEIGHT[targetUser.role] : -1;
+  const canBanTargetUser =
+    !!targetUser &&
+    !!user &&
+    targetUser.id !== user.id &&
+    myRoleWeight > targetRoleWeight;
+  const availableResolutionActions = resolutionActions.filter((item) => {
+    if (item.value !== "user_banned") return true;
+    return canBanTargetUser;
+  });
+  const effectiveAction =
+    action === "user_banned" && !availableResolutionActions.some((item) => item.value === "user_banned")
+      ? "no_action"
+      : action;
 
   const profileImageUrl = (value?: string | null) =>
     value ? resolveMediaUrl(value) : null;
@@ -288,13 +315,13 @@ export default function ReportDetail({ report }: ReportDetailProps) {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Resolution Action</label>
                 <div className="grid grid-cols-2 gap-1.5">
-                  {resolutionActions.map((a) => (
+                  {availableResolutionActions.map((a) => (
                     <button
                       key={a.value}
                       onClick={() => setAction(a.value)}
                       className={cn(
                         "h-9 rounded-xl border text-xs font-medium transition-colors",
-                        action === a.value
+                        effectiveAction === a.value
                           ? "border-primary bg-primary/10 text-primary"
                           : "border-border/40 text-muted-foreground hover:bg-muted/40"
                       )}

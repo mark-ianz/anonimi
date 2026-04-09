@@ -86,6 +86,7 @@ export interface Ban {
   userId: string;
   username: string;
   anonimiId: string;
+  role?: UserRole | null;
   profileImage?: string | null;
   reason: string;
   bannedBy: string;

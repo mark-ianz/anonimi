@@ -8,6 +8,7 @@ export type ReportReason =
   | "misinformation"
   | "other";
 export type ReportStatus = "pending" | "under_review" | "claimed" | "resolved" | "dismissed";
+export type ReportTargetUserRole = "user" | "support_staff" | "moderator" | "super_admin";
 
 export interface Report {
   id: string;
@@ -26,6 +27,7 @@ export interface Report {
     username: string | null;
     anonimiId: string | null;
     profileImage: string | null;
+    role?: ReportTargetUserRole | null;
   } | null;
   reason: ReportReason;
   description: string | null;

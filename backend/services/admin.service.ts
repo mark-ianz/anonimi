@@ -36,6 +36,47 @@ export const createAdminLog = async (
   });
 };
 
+const ROLE_HIERARCHY: Record<UserRole, number> = {
+  [UserRole.USER]: 0,
+  [UserRole.SUPPORT_STAFF]: 1,
+  [UserRole.MODERATOR]: 2,
+  [UserRole.SUPER_ADMIN]: 3,
+};
+
+const getUserRoleWeight = (role: UserRole | string) =>
+  ROLE_HIERARCHY[role as UserRole] ?? -1;
+
+const getAdminActorAndTarget = async (adminId: string, targetUserId: string) => {
+  const [admin, target] = await Promise.all([
+    User.findById(adminId).select("_id role"),
+    User.findById(targetUserId),
+  ]);
+
+  if (!admin) {
+    throw new ForbiddenError("Admin user not found");
+  }
+
+  if (!target) {
+    throw new NotFoundError("User not found");
+  }
+
+  return { admin, target };
+};
+
+const assertAdminCanActOnTarget = (
+  admin: { _id: Types.ObjectId; role: UserRole | string },
+  target: { _id: Types.ObjectId; role: UserRole | string },
+  actionLabel: string
+) => {
+  if (admin._id.toString() === target._id.toString()) {
+    throw new ForbiddenError(`You cannot ${actionLabel} yourself`);
+  }
+
+  if (getUserRoleWeight(admin.role) <= getUserRoleWeight(target.role)) {
+    throw new ForbiddenError(`You cannot ${actionLabel} a user with equal or higher role`);
+  }
+};
+
 const removeUserData = async (userId: string) => {
   const id = new Types.ObjectId(userId);
 
@@ -179,11 +220,8 @@ export const warnUser = async (
   message: string,
   ipAddress?: string
 ) => {
-  const user = await User.findById(userId);
-
-  if (!user) {
-    throw new NotFoundError("User not found");
-  }
+  const { admin, target } = await getAdminActorAndTarget(adminId, userId);
+  assertAdminCanActOnTarget(admin, target, "warn");
 
   await createAdminLog(adminId, "warn_user", "user", userId, { message }, ipAddress);
 
@@ -208,15 +246,8 @@ export const banUser = async (
   expiresInDays?: number,
   ipAddress?: string
 ) => {
-  const user = await User.findById(userId);
-
-  if (!user) {
-    throw new NotFoundError("User not found");
-  }
-
-  if (user.role === UserRole.SUPER_ADMIN) {
-    throw new ForbiddenError("Cannot ban a super admin");
-  }
+  const { admin, target } = await getAdminActorAndTarget(adminId, userId);
+  assertAdminCanActOnTarget(admin, target, "ban");
 
   let expiresAt: Date | undefined;
   if (type === "temporary" && expiresInDays) {
@@ -225,7 +256,7 @@ export const banUser = async (
   }
 
   await Ban.create({
-    userId: user._id,
+    userId: target._id,
     reason,
     bannedBy: new Types.ObjectId(adminId),
     type,
@@ -233,8 +264,8 @@ export const banUser = async (
     active: true,
   });
 
-  user.status = UserStatus.BANNED;
-  await user.save();
+  target.status = UserStatus.BANNED;
+  await target.save();
 
   await createAdminLog(
     adminId,
@@ -253,19 +284,16 @@ export const unbanUser = async (
   userId: string,
   ipAddress?: string
 ) => {
-  const user = await User.findById(userId);
-
-  if (!user) {
-    throw new NotFoundError("User not found");
-  }
+  const { admin, target } = await getAdminActorAndTarget(adminId, userId);
+  assertAdminCanActOnTarget(admin, target, "unban");
 
   await Ban.updateMany(
-    { userId: user._id, active: true },
+    { userId: target._id, active: true },
     { active: false, unbannedBy: new Types.ObjectId(adminId), unbannedAt: new Date() }
   );
 
-  user.status = UserStatus.ACTIVE;
-  await user.save();
+  target.status = UserStatus.ACTIVE;
+  await target.save();
 
   await createAdminLog(adminId, "unban_user", "user", userId, {}, ipAddress);
 
@@ -277,18 +305,11 @@ export const requestUserDeletion = async (
   userId: string,
   reason?: string
 ) => {
-  const user = await User.findById(userId).select("role");
-
-  if (!user) {
-    throw new NotFoundError("User not found");
-  }
-
-  if (user.role === UserRole.SUPER_ADMIN) {
-    throw new ForbiddenError("Cannot delete a super admin");
-  }
+  const { admin, target } = await getAdminActorAndTarget(adminId, userId);
+  assertAdminCanActOnTarget(admin, target, "request deletion for");
 
   const existing = await UserDeletionRequest.findOne({
-    userId: user._id,
+    userId: target._id,
     status: "pending",
   }).lean();
 
@@ -297,7 +318,7 @@ export const requestUserDeletion = async (
   }
 
   const request = await UserDeletionRequest.create({
-    userId: user._id,
+    userId: target._id,
     requestedBy: new Types.ObjectId(adminId),
     status: "pending",
     reason: reason?.trim() || undefined,
@@ -319,17 +340,10 @@ export const deleteUser = async (
   userId: string,
   ipAddress?: string
 ) => {
-  const user = await User.findById(userId).select("role");
+  const { admin, target } = await getAdminActorAndTarget(adminId, userId);
+  assertAdminCanActOnTarget(admin, target, "delete");
 
-  if (!user) {
-    throw new NotFoundError("User not found");
-  }
-
-  if (user.role === UserRole.SUPER_ADMIN) {
-    throw new ForbiddenError("Cannot delete a super admin");
-  }
-
-  await removeUserData(userId);
+  await removeUserData(target._id.toString());
 
   await createAdminLog(adminId, "delete_user", "user", userId, {}, ipAddress);
 
@@ -341,18 +355,11 @@ export const changeUserRole = async (
   userId: string,
   role: UserRole
 ) => {
-  const targetUser = await User.findById(userId);
+  const { admin, target } = await getAdminActorAndTarget(adminId, userId);
+  assertAdminCanActOnTarget(admin, target, "change role for");
 
-  if (!targetUser) {
-    throw new NotFoundError("User not found");
-  }
-
-  if (targetUser.role === UserRole.SUPER_ADMIN) {
-    throw new ForbiddenError("Cannot change super admin role");
-  }
-
-  targetUser.role = role;
-  await targetUser.save();
+  target.role = role;
+  await target.save();
 
   await createAdminLog(adminId, "promote_admin", "user", userId, { role });
 
@@ -424,7 +431,7 @@ export const getReportById = async (reportId: string) => {
   }
 
   const targetUser = targetUserId
-    ? await User.findById(targetUserId).select("username anonimiId profileImage").lean()
+    ? await User.findById(targetUserId).select("username anonimiId profileImage role").lean()
     : null;
 
   return {
@@ -467,6 +474,7 @@ export const getReportById = async (reportId: string) => {
           username: (targetUser as any).username ?? null,
           anonimiId: (targetUser as any).anonimiId ?? null,
           profileImage: (targetUser as any).profileImage ?? null,
+          role: (targetUser as any).role ?? null,
         }
       : null,
   };
@@ -585,15 +593,29 @@ export const resolveReport = async (
   await report.save();
 
   if (resolution === "user_banned") {
+    const reportedUserId =
+      report.targetType === "user"
+        ? report.targetId?.toString?.() ?? null
+        : report.targetType === "message"
+        ? report.messageSnapshot?.senderId?.toString?.() ?? null
+        : null;
+
+    if (!reportedUserId) {
+      throw new ForbiddenError("Cannot ban a user for this report target");
+    }
+
+    const { admin, target } = await getAdminActorAndTarget(adminId, reportedUserId);
+    assertAdminCanActOnTarget(admin, target, "ban");
+
     await Ban.create({
-      userId: report.targetId,
+      userId: target._id,
       reason: `Reported: ${report.reason}`,
       bannedBy: new Types.ObjectId(adminId),
       type: "permanent",
       active: true,
     });
 
-    await User.updateOne({ _id: report.targetId }, { status: "banned" });
+    await User.updateOne({ _id: target._id }, { status: "banned" });
   }
 
   if (resolution === "content_removed" && report.targetType === "message") {
@@ -1044,7 +1066,7 @@ export const getBans = async (
   }
 
   const bans = await Ban.find(query)
-    .populate("userId", "username anonimiId profileImage")
+    .populate("userId", "username anonimiId profileImage role")
     .populate("bannedBy", "username")
     .sort({ createdAt: -1 })
     .limit(limit + 1)
@@ -1060,6 +1082,7 @@ export const getBans = async (
       username: b.userId?.username,
       anonimiId: b.userId?.anonimiId,
       profileImage: b.userId?.profileImage ?? null,
+      role: b.userId?.role ?? null,
       reason: b.reason,
       type: b.type,
       expiresAt: b.expiresAt,
@@ -1299,9 +1322,16 @@ export const approveDeletionRequest = async (
     throw new NotFoundError("User not found");
   }
 
-  if (user.role === UserRole.SUPER_ADMIN) {
-    throw new ForbiddenError("Cannot delete a super admin");
+  const admin = await User.findById(adminId).select("_id role");
+  if (!admin) {
+    throw new ForbiddenError("Admin user not found");
   }
+
+  assertAdminCanActOnTarget(
+    { _id: admin._id, role: admin.role as UserRole },
+    { _id: user._id, role: user.role as UserRole },
+    "delete"
+  );
 
   await removeUserData(user._id.toString());
 

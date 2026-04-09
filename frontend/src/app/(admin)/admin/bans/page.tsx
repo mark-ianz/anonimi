@@ -9,11 +9,19 @@ import { toast } from "sonner";
 import type { Ban } from "@/types/admin";
 import { cn } from "@/lib/utils";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
+import type { UserRole } from "@/types/user";
 
 const statusLabels: Record<string, string> = {
   active: "Active",
   expired: "Expired",
   lifted: "Lifted",
+};
+
+const ROLE_WEIGHT: Record<UserRole, number> = {
+  user: 0,
+  support_staff: 1,
+  moderator: 2,
+  super_admin: 3,
 };
 
 function BanRow({ ban, onUnban, canUnban }: { ban: Ban; onUnban: (id: string) => void; canUnban: boolean }) {
@@ -77,6 +85,7 @@ export default function AdminBansPage() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const isSuperAdmin = user?.role === "super_admin";
+  const myRoleWeight = user?.role ? ROLE_WEIGHT[user.role] : -1;
   const [showHistory, setShowHistory] = useState(false);
   const [pendingUnban, setPendingUnban] = useState<Ban | null>(null);
 
@@ -143,7 +152,11 @@ export default function AdminBansPage() {
                   key={ban.id}
                   ban={ban}
                   onUnban={() => setPendingUnban(ban)}
-                  canUnban={true}
+                  canUnban={
+                    !!user &&
+                    ban.userId !== user.id &&
+                    (!!ban.role ? myRoleWeight > ROLE_WEIGHT[ban.role] : true)
+                  }
                 />
               ))
             )}

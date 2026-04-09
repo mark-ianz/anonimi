@@ -14,11 +14,19 @@ import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import type { AdminUser } from "@/types/admin";
 import { cn } from "@/lib/utils";
+import type { UserRole } from "@/types/user";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-500/15 text-green-600 dark:text-green-400",
   banned: "bg-destructive/15 text-destructive",
   pending_verification: "bg-orange-500/15 text-orange-500",
+};
+
+const ROLE_WEIGHT: Record<UserRole, number> = {
+  user: 0,
+  support_staff: 1,
+  moderator: 2,
+  super_admin: 3,
 };
 
 export default function AdminUserDetailPage() {
@@ -79,6 +87,10 @@ export default function AdminUserDetailPage() {
   const isSuperAdmin = me?.role === "super_admin";
   const isModerator = me?.role === "moderator";
   const canModerate = isSuperAdmin || isModerator;
+  const isSelf = !!profile && me?.id === profile.id;
+  const myRoleWeight = me?.role ? ROLE_WEIGHT[me.role] : -1;
+  const targetRoleWeight = profile?.role ? ROLE_WEIGHT[profile.role as UserRole] : -1;
+  const canActOnTarget = canModerate && !!profile && !isSelf && myRoleWeight > targetRoleWeight;
 
   return (
     <AdminRoute>
@@ -146,7 +158,7 @@ export default function AdminUserDetailPage() {
               </div>
 
               {/* Actions */}
-              {canModerate ? (
+              {canModerate && canActOnTarget ? (
                 <div className="space-y-2">
                   <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     Moderation Actions
@@ -200,7 +212,9 @@ export default function AdminUserDetailPage() {
                 </div>
               ) : (
                 <div className="rounded-xl border border-border/40 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-                  Support staff have view-only access for user profiles.
+                  {canModerate
+                    ? "You cannot moderate this account due to role hierarchy."
+                    : "Support staff have view-only access for user profiles."}
                 </div>
               )}
 
