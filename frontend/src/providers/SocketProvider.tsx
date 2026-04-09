@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState, createContext, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 import type { Socket } from "socket.io-client";
 import type { Message } from "@/types/message";
 import type { Conversation } from "@/types/conversation";
 import { toast } from "sonner";
-import { getChatSocket, disconnectSockets } from "@/lib/socket";
+import { getChatSocket, disconnectSockets, updateSocketToken } from "@/lib/socket";
 import api from "@/lib/api";
+import { API_BASE_URL, ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/lib/constants";
 import { decryptKeyWithSharedSecret, deriveSharedSecretFromBase64, exportKeyAsBase64 } from "@/lib/e2eeCrypto";
 import { decryptConversationPayload } from "@/lib/e2eeMessageCrypto";
 import { getConversationKeyByVersion, getConversationKeys, saveConversationKey } from "@/lib/e2eeKeyStore";
@@ -270,18 +272,75 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       setChatStatus("reconnecting");
     };
 
-    const handleConnectError = () => {
+    let isRefreshingSocketAuth = false;
+    let retryTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const refreshSocketAuth = async () => {
+      if (isRefreshingSocketAuth) return;
+      isRefreshingSocketAuth = true;
+      try {
+        const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+        if (!refreshToken) return;
+
+        const { data } = await axios.post(`${API_BASE_URL}/auth/refresh-token`, {
+          refreshToken,
+        });
+
+        const newAccessToken: string = data.data.accessToken;
+        const newRefreshToken: string = data.data.refreshToken;
+
+        localStorage.setItem(ACCESS_TOKEN_KEY, newAccessToken);
+        localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
+        document.cookie = `access_token=${newAccessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+        useAuthStore.setState((state) => ({
+          ...state,
+          accessToken: newAccessToken,
+          refreshToken: newRefreshToken,
+          isAuthenticated: true,
+        }));
+        updateSocketToken(newAccessToken);
+
+        if (!socket.connected) {
+          socket.connect();
+        }
+      } catch {
+        setChatStatus("disconnected");
+      } finally {
+        isRefreshingSocketAuth = false;
+      }
+    };
+
+    const handleConnectError = (error: Error) => {
       if (!navigator.onLine) {
         setChatStatus("disconnected");
         return;
       }
       setChatStatus("reconnecting");
+      const message = (error?.message ?? "").toLowerCase();
+      const authError =
+        message.includes("invalid token") ||
+        message.includes("no token") ||
+        message.includes("jwt") ||
+        message.includes("unauthorized");
+      if (authError) {
+        void refreshSocketAuth();
+      }
     };
     const handleReconnectAttempt = () => setChatStatus("reconnecting");
     const handleReconnect = () => setChatStatus("connected");
     const handleReconnectError = () =>
       setChatStatus(navigator.onLine ? "reconnecting" : "disconnected");
-    const handleReconnectFailed = () => setChatStatus("disconnected");
+    const handleReconnectFailed = () => {
+      setChatStatus("reconnecting");
+      if (retryTimeout) {
+        clearTimeout(retryTimeout);
+      }
+      retryTimeout = setTimeout(() => {
+        if (navigator.onLine && !socket.connected) {
+          socket.connect();
+        }
+      }, 1500);
+    };
 
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
@@ -309,6 +368,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       if (!navigator.onLine) {
         setChatStatus("disconnected");
         return;
+      }
+      if (!socket.connected && !socket.active) {
+        socket.connect();
       }
       setChatStatus(socket.connected ? "connected" : "reconnecting");
     }, 2000);
@@ -1221,6 +1283,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       Object.keys(pendingDecryptRetryRef.current).forEach(clearPendingDecryptRetry);
+      if (retryTimeout) {
+        clearTimeout(retryTimeout);
+      }
       window.clearInterval(syncStatusInterval);
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);

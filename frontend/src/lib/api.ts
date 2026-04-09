@@ -1,5 +1,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { API_BASE_URL, ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "./constants";
+import { updateSocketToken } from "./socket";
+import { useAuthStore } from "@/stores/authStore";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -51,6 +53,21 @@ function processQueue(error: unknown, token: string | null) {
   failedQueue = [];
 }
 
+function persistAuthTokens(newAccessToken: string, newRefreshToken: string) {
+  if (typeof window === "undefined") return;
+
+  localStorage.setItem(ACCESS_TOKEN_KEY, newAccessToken);
+  localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
+  document.cookie = `access_token=${newAccessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+  updateSocketToken(newAccessToken);
+  useAuthStore.setState((state) => ({
+    ...state,
+    accessToken: newAccessToken,
+    refreshToken: newRefreshToken,
+    isAuthenticated: true,
+  }));
+}
+
 api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
@@ -95,10 +112,7 @@ api.interceptors.response.use(
         const newAccessToken: string = data.data.accessToken;
         const newRefreshToken: string = data.data.refreshToken;
 
-        localStorage.setItem(ACCESS_TOKEN_KEY, newAccessToken);
-        localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
-        // Keep the middleware cookie in sync with the refreshed token.
-        document.cookie = `access_token=${newAccessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+        persistAuthTokens(newAccessToken, newRefreshToken);
 
         processQueue(null, newAccessToken);
 
