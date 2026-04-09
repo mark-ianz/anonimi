@@ -73,6 +73,7 @@ export default function MessageInput({
   const [pendingSource, setPendingSource] = useState<UploadSource>("file");
   const [stealthEnabled, setStealthEnabled] = useState(false);
   const [stealthDuration, setStealthDuration] = useState<StealthDuration>("5m");
+  const [isSending, setIsSending] = useState(false);
   const replyToId = replyTo?.id ?? null;
 
   const resolveReplyPreviewContent = (message: Message) => {
@@ -200,64 +201,73 @@ export default function MessageInput({
   );
 
   const handleSend = useCallback(async () => {
+    if (isSending || isUploading) return;
+
     const trimmed = text.trim();
     if (!trimmed && !pendingFile) return;
     if (disabled) return;
 
-    if (editMessageId) {
-      await editMessageAsync({
-        messageId: editMessageId,
-        content: trimmed,
+    setIsSending(true);
+    try {
+      if (editMessageId) {
+        await editMessageAsync({
+          messageId: editMessageId,
+          content: trimmed,
+          conversationId,
+        });
+        setText("");
+        onBlur();
+        onEditSaved?.();
+        textareaRef.current?.focus();
+        return;
+      }
+
+      let mediaUrl: string | undefined;
+      let fileName: string | undefined;
+      let fileSize: number | undefined;
+      let type: MessageType = "text";
+
+      if (pendingFile) {
+        const result = await upload(pendingFile, "message", { source: pendingSource });
+        if (!result) return;
+        mediaUrl = result.url;
+        fileName = result.fileName;
+        fileSize = result.fileSize;
+        type = ALLOWED_IMAGE_TYPES.includes(pendingFile.type)
+          ? "image"
+          : pendingFile.type.startsWith("video/")
+          ? "video"
+          : pendingFile.type.startsWith("audio/")
+          ? "audio"
+          : "file";
+        setPendingFile(null);
+        setPendingSource("file");
+      }
+
+      sendMessage({
         conversationId,
+        type,
+        content: trimmed || null,
+        mediaUrl,
+        fileName,
+        fileSize,
+        replyToId: replyTo?.id ?? null,
+        replyPreview,
+        stealthDuration: stealthEnabled ? stealthDuration : undefined,
       });
+
+      onMessageSent?.();
+      onCancelReply?.();
+
       setText("");
       onBlur();
-      onEditSaved?.();
       textareaRef.current?.focus();
-      return;
+    } finally {
+      setIsSending(false);
     }
-
-    let mediaUrl: string | undefined;
-    let fileName: string | undefined;
-    let fileSize: number | undefined;
-    let type: MessageType = "text";
-
-    if (pendingFile) {
-      const result = await upload(pendingFile, "message", { source: pendingSource });
-      if (!result) return;
-      mediaUrl = result.url;
-      fileName = result.fileName;
-      fileSize = result.fileSize;
-      type = ALLOWED_IMAGE_TYPES.includes(pendingFile.type)
-        ? "image"
-        : pendingFile.type.startsWith("video/")
-        ? "video"
-        : pendingFile.type.startsWith("audio/")
-        ? "audio"
-        : "file";
-      setPendingFile(null);
-      setPendingSource("file");
-    }
-
-    sendMessage({
-      conversationId,
-      type,
-      content: trimmed || null,
-      mediaUrl,
-      fileName,
-      fileSize,
-      replyToId: replyTo?.id ?? null,
-      replyPreview,
-      stealthDuration: stealthEnabled ? stealthDuration : undefined,
-    });
-
-    onMessageSent?.();
-    onCancelReply?.();
-
-    setText("");
-    onBlur();
-    textareaRef.current?.focus();
   }, [
+    isSending,
+    isUploading,
     text,
     pendingFile,
     pendingSource,
@@ -273,6 +283,8 @@ export default function MessageInput({
     replyTo,
     replyPreview,
     onCancelReply,
+    stealthEnabled,
+    stealthDuration,
   ]);
 
   const handleKeyDown = useCallback(
@@ -285,7 +297,11 @@ export default function MessageInput({
     [handleSend]
   );
 
-  const canSend = (text.trim().length > 0 || pendingFile !== null) && !disabled && !isEditingMessage;
+  const canSend =
+    (text.trim().length > 0 || pendingFile !== null) &&
+    !disabled &&
+    !isEditingMessage &&
+    !isSending;
 
   return (
       <div className="overflow-hidden border-t border-border/50 p-2 sm:p-3 bg-background">
@@ -433,7 +449,7 @@ export default function MessageInput({
         {/* Send */}
         <button
           type="button"
-          disabled={!canSend || isUploading}
+          disabled={!canSend || isUploading || isSending}
           onClick={handleSend}
           className={cn(
             "shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all mb-0.5",
