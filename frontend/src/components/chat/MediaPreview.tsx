@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import type { Message } from "@/types/message";
-import { File, Music, Video } from "lucide-react";
+import { File, Music, Play, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
+import InAppMediaViewer from "@/components/shared/InAppMediaViewer";
 
 interface MediaPreviewProps {
   message: Message;
@@ -17,34 +19,90 @@ function formatBytes(bytes: number): string {
 }
 
 export default function MediaPreview({ message, className }: MediaPreviewProps) {
+  const [viewerOpen, setViewerOpen] = useState(false);
   if (!message.mediaUrl) return null;
   const mediaUrl = resolveMediaUrl(message.mediaUrl);
 
   if (message.type === "image") {
     return (
-      <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="block mb-1">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={mediaUrl}
-          alt={message.fileName ?? "Image"}
-          className={cn(
-            "max-w-full max-h-64 rounded-xl object-cover cursor-pointer hover:opacity-95 transition-opacity",
-            className
-          )}
-        />
-      </a>
+      <>
+        <button
+          type="button"
+          className="mb-1 block cursor-pointer text-left"
+          onClick={(event) => {
+            event.stopPropagation();
+            setViewerOpen(true);
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={mediaUrl}
+            alt={message.fileName ?? "Image"}
+            className={cn(
+              "max-h-64 max-w-full rounded-xl object-cover cursor-pointer hover:opacity-95 transition-opacity",
+              className
+            )}
+          />
+        </button>
+        {viewerOpen && (
+          <InAppMediaViewer
+            open={viewerOpen}
+            onClose={() => setViewerOpen(false)}
+            src={mediaUrl}
+            type="image"
+            alt={message.fileName ?? "Image"}
+          />
+        )}
+      </>
     );
   }
 
   if (message.type === "video") {
     return (
-      <div className="mb-1">
-        <video
-          src={mediaUrl}
-          controls
-          className={cn("max-w-full max-h-48 rounded-xl", className)}
-        />
-      </div>
+      <>
+        <button
+          type="button"
+          className={cn(
+            "group mb-1 block cursor-pointer overflow-hidden rounded-xl border border-border/40 bg-black/35 text-white hover:bg-black/50 transition-colors",
+            className
+          )}
+          onClick={(event) => {
+            event.stopPropagation();
+            setViewerOpen(true);
+          }}
+        >
+          <div className="relative">
+            <video
+              src={mediaUrl}
+              muted
+              playsInline
+              preload="metadata"
+              className="max-h-56 w-full object-cover"
+            />
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/35 group-hover:bg-black/45 transition-colors">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-xs font-medium text-white">
+                <Play className="h-3.5 w-3.5 fill-current" />
+                Play video
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-2">
+            <Video className="h-4 w-4" />
+            <span className="truncate text-xs font-medium">
+              {message.fileName ?? "Video"}
+            </span>
+          </div>
+        </button>
+        {viewerOpen && (
+          <InAppMediaViewer
+            open={viewerOpen}
+            onClose={() => setViewerOpen(false)}
+            src={mediaUrl}
+            type="video"
+            alt={message.fileName ?? "Video"}
+          />
+        )}
+      </>
     );
   }
 
