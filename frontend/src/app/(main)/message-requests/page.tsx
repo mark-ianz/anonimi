@@ -91,7 +91,9 @@ export default function MessageRequestsPage() {
               const name = isGroup
                 ? conv.group?.name ?? "Group"
                 : conv.participant?.username ?? "Unknown";
-              const preview = conv.lastMessage?.content ?? "Sent a message";
+              const preview = conv.lastMessage?.isStealth
+                ? "[Stealth Message]"
+                : conv.lastMessage?.content ?? "Sent a message";
               const requestId = conv.requestId ?? "";
 
               return (

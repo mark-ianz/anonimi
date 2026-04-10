@@ -97,6 +97,7 @@ export const setupE2EEHandler = (io: Server, socket: Socket): void => {
         senderId: new Types.ObjectId(userId),
         type,
         timestamp: message.createdAt,
+        isStealth,
         isE2ee: true,
         contentCipher: cipherText,
         contentIv: iv,

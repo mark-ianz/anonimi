@@ -17,6 +17,7 @@ const conversationSchema = new Schema<IConversation>(
       senderId: { type: Schema.Types.ObjectId, ref: "User" },
       type: { type: String },
       timestamp: { type: Date },
+      isStealth: { type: Boolean, default: false },
       isE2ee: { type: Boolean, default: false },
       contentCipher: { type: String },
       contentIv: { type: String },

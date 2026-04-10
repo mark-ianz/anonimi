@@ -271,7 +271,9 @@ function SearchPageContent() {
               conversation.participant?.username ??
               conversation.participant?.anonimiId ??
               "Conversation";
-        const preview = conversation.lastMessage?.content ?? "";
+        const preview = conversation.lastMessage?.isStealth
+          ? "[Stealth Message]"
+          : conversation.lastMessage?.content ?? "";
         const score = rankScore(title, query) + rankScore(preview, query);
         return { conversation, title, preview, score };
       })

@@ -501,7 +501,7 @@ export const getConversations = async (
           deletedFor: { $ne: userObjectId },
         })
           .sort({ createdAt: -1 })
-          .select("senderId type content createdAt isE2ee contentCipher contentIv contentTag contentKeyVersion")
+          .select("senderId type content createdAt isStealth isE2ee contentCipher contentIv contentTag contentKeyVersion")
           .lean();
 
         const lastMessageSender = latestVisibleMessage?.senderId
@@ -548,6 +548,7 @@ export const getConversations = async (
                 type: latestVisibleMessage.type,
                 timestamp: latestVisibleMessage.createdAt,
                 senderUsername: lastMessageSender?.username,
+                isStealth: latestVisibleMessage.isStealth ?? false,
                 isE2ee: latestVisibleMessage.isE2ee ?? false,
                 contentCipher: latestVisibleMessage.contentCipher ?? null,
                 contentIv: latestVisibleMessage.contentIv ?? null,
@@ -603,7 +604,7 @@ export const getConversations = async (
           createdAt: { $gte: joinedAt },
         })
           .sort({ createdAt: -1 })
-          .select("senderId type content createdAt isE2ee contentCipher contentIv contentTag contentKeyVersion")
+          .select("senderId type content createdAt isStealth isE2ee contentCipher contentIv contentTag contentKeyVersion")
           .lean();
 
         const lastMessageSender = latestVisibleMessage?.senderId
@@ -629,6 +630,7 @@ export const getConversations = async (
                 type: latestVisibleMessage.type,
                 timestamp: latestVisibleMessage.createdAt,
                 senderUsername: lastMessageSender?.username,
+                isStealth: latestVisibleMessage.isStealth ?? false,
                 isE2ee: latestVisibleMessage.isE2ee ?? false,
                 contentCipher: latestVisibleMessage.contentCipher ?? null,
                 contentIv: latestVisibleMessage.contentIv ?? null,
@@ -800,6 +802,7 @@ export const getConversation = async (
             type: conversation.lastMessage.type,
             timestamp: conversation.lastMessage.timestamp,
             senderUsername: lastMessageSender?.username,
+            isStealth: (conversation.lastMessage as any).isStealth ?? false,
             isE2ee: conversation.lastMessage.isE2ee ?? false,
             contentCipher: conversation.lastMessage.contentCipher ?? null,
             contentIv: conversation.lastMessage.contentIv ?? null,
@@ -1292,6 +1295,7 @@ export const sendMessage = async (
           senderId: new Types.ObjectId(senderId),
           type,
           timestamp: message.createdAt,
+          isStealth,
           isE2ee,
           contentCipher: isE2ee || isStealth ? (options?.contentCipher || stealthPayload?.cipherText) : undefined,
           contentIv: isE2ee || isStealth ? (options?.contentIv || stealthPayload?.iv) : undefined,
@@ -1443,6 +1447,7 @@ export const sendMessage = async (
       senderId: new Types.ObjectId(senderId),
       type,
       timestamp: message.createdAt,
+      isStealth,
       isE2ee,
       contentCipher: isE2ee || isStealth ? (options?.contentCipher || stealthPayload?.cipherText) : undefined,
       contentIv: isE2ee || isStealth ? (options?.contentIv || stealthPayload?.iv) : undefined,

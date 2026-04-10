@@ -32,6 +32,7 @@ export interface LastMessage {
   senderUsername?: string;
   type: MessageType;
   timestamp: string;
+  isStealth?: boolean;
   isE2ee?: boolean;
   contentCipher?: string | null;
   contentIv?: string | null;

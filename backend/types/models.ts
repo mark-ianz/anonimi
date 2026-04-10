@@ -45,6 +45,7 @@ export interface IConversation extends Document {
     senderId: Types.ObjectId;
     type: string;
     timestamp: Date;
+    isStealth?: boolean;
     isE2ee?: boolean;
     contentCipher?: string;
     contentIv?: string;

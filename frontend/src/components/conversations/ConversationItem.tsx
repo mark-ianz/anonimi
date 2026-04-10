@@ -34,6 +34,7 @@ type ConversationsInfiniteCache = {
 function getLastMessagePreview(conversation: Conversation, decryptedPreview?: string | null): string {
   const lm = conversation.lastMessage;
   if (!lm) return "No messages yet";
+  if (lm.isStealth) return "[Stealth Message]";
   if (lm.isE2ee && !lm.content) return decryptedPreview ?? "";
   if (lm.type === "image") return "📷 Photo";
   if (lm.type === "video") return "🎥 Video";
@@ -121,16 +122,17 @@ export default function ConversationItem({
     : conversation.lastMessage?.senderUsername ?? "Member";
   const basePreview = getLastMessagePreview(conversation, decryptedPreview);
   const isSystemMessage = conversation.lastMessage?.type === "system";
+  const shouldPrefixWithMe = !isSystemMessage && !!conversation.lastMessage && lastSenderIsMe;
   const preview = isDeletedParticipant
     ? "Deleted temporary user"
     : isPending
     ? "Pending request..."
     : isSystemMessage
     ? basePreview
+    : shouldPrefixWithMe
+    ? `You: ${basePreview}`
     : isGroup && conversation.lastMessage
     ? `${lastSenderLabel}: ${basePreview}`
-    : lastSenderIsMe
-    ? `You: ${basePreview}`
     : basePreview;
   const previewText = clampPreview(preview);
   const timestamp = conversation.lastMessage?.timestamp ?? conversation.updatedAt;
