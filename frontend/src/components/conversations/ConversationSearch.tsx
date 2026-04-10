@@ -91,7 +91,7 @@ export default function ConversationSearch({
                   "flex-1 h-8 rounded-lg text-sm font-medium transition-colors",
                   conversationType === "all"
                     ? "bg-muted text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-muted-foreground hover:text-foreground cursor-pointer"
                 )}
               >
                 All
@@ -104,7 +104,7 @@ export default function ConversationSearch({
                   "flex-1 h-8 rounded-lg text-sm font-medium transition-colors",
                   conversationType === "unread"
                     ? "bg-muted text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-muted-foreground hover:text-foreground cursor-pointer"
                 )}
               >
                 Unread
@@ -117,7 +117,7 @@ export default function ConversationSearch({
                   "flex-1 h-8 rounded-lg text-sm font-medium transition-colors",
                   conversationType === "private"
                     ? "bg-muted text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-muted-foreground hover:text-foreground cursor-pointer"
                 )}
               >
                 Private
@@ -130,7 +130,7 @@ export default function ConversationSearch({
                   "flex-1 h-8 rounded-lg text-sm font-medium transition-colors",
                   conversationType === "groups"
                     ? "bg-muted text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-muted-foreground hover:text-foreground cursor-pointer"
                 )}
               >
                 Groups
@@ -148,7 +148,7 @@ export default function ConversationSearch({
                 </Link>
                 <button
                   onClick={() => setJoinDialogOpen(true)}
-                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-border/70 bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-border/70 bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted cursor-pointer"
                 >
                   <UserPlus className="h-4 w-4" />
                   Join group
