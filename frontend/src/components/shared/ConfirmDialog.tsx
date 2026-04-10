@@ -69,7 +69,7 @@ export default function ConfirmDialog({
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 h-10 rounded-xl border border-border/50 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
+            className="flex-1 h-10 rounded-xl border border-border/50 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
           >
             {cancelLabel}
           </button>
@@ -77,7 +77,7 @@ export default function ConfirmDialog({
             onClick={onConfirm}
             disabled={loading}
             className={cn(
-              "flex-1 h-10 rounded-xl text-sm font-medium transition-colors disabled:opacity-50",
+              "flex-1 h-10 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer",
               variant === "destructive"
                 ? "bg-destructive text-white hover:bg-destructive/90"
                 : "bg-primary text-primary-foreground hover:bg-primary/90"

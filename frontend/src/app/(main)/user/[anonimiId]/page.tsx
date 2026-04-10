@@ -14,6 +14,14 @@ import UserAvatar from "@/components/shared/UserAvatar";
 import { useEffect, useRef, useState } from "react";
 import TemporaryAccountBadge from "@/components/shared/TemporaryAccountBadge";
 import TemporaryAccountModal from "@/components/shared/TemporaryAccountModal";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
+
+interface BlockEntry {
+  blockId: string;
+  blockedUser: {
+    anonimiId: string;
+  };
+}
 
 export default function UserProfilePage() {
   const { anonimiId } = useParams<{ anonimiId: string }>();
@@ -24,6 +32,7 @@ export default function UserProfilePage() {
   const [reportDescription, setReportDescription] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [confirmBlockOpen, setConfirmBlockOpen] = useState(false);
   const [tempGateOpen, setTempGateOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -94,11 +103,35 @@ export default function UserProfilePage() {
       await api.post("/blocks", { targetAnonimiId: anonimiId });
     },
     onSuccess: () => {
+      setConfirmBlockOpen(false);
       toast.success("User blocked");
       queryClient.invalidateQueries({ queryKey: ["user-profile", anonimiId] });
+      queryClient.invalidateQueries({ queryKey: ["blocks"] });
     },
     onError: () => {
       toast.error("Failed to block user");
+    },
+  });
+
+  const unblockMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.get("/blocks");
+      const blocks = res.data.data as BlockEntry[];
+      const matchingBlock = blocks.find((entry) => entry.blockedUser.anonimiId === anonimiId);
+
+      if (!matchingBlock?.blockId) {
+        throw new Error("Missing block id");
+      }
+
+      await api.delete(`/blocks/${matchingBlock.blockId}`);
+    },
+    onSuccess: () => {
+      toast.success("User unblocked");
+      queryClient.invalidateQueries({ queryKey: ["user-profile", anonimiId] });
+      queryClient.invalidateQueries({ queryKey: ["blocks"] });
+    },
+    onError: () => {
+      toast.error("Failed to unblock user");
     },
   });
 
@@ -245,19 +278,25 @@ export default function UserProfilePage() {
                         <div className="absolute right-0 top-full mt-2 w-44 rounded-xl border border-border/70 bg-card p-1.5 shadow-elevated">
                           <button
                             type="button"
-                            disabled={blockMutation.isPending || !!profile.isBlocked}
+                            disabled={blockMutation.isPending || unblockMutation.isPending}
                             onClick={() => {
                               setMenuOpen(false);
                               if (isTempUser) {
                                 setTempGateOpen(true);
                                 return;
                               }
-                              blockMutation.mutate();
+                              if (profile.isBlocked) {
+                                unblockMutation.mutate();
+                                return;
+                              }
+                              setConfirmBlockOpen(true);
                             }}
                             className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                           >
                             <Ban className="h-4 w-4" />
-                            {profile.isBlocked ? "Blocked" : "Block User"}
+                            {profile.isBlocked
+                              ? (unblockMutation.isPending ? "Unblocking..." : "Unblock User")
+                              : (blockMutation.isPending ? "Blocking..." : "Block User")}
                           </button>
                           <button
                             type="button"
@@ -440,6 +479,19 @@ export default function UserProfilePage() {
           open={tempGateOpen}
           onClose={() => setTempGateOpen(false)}
         />
+
+        {!isMe && profile && (
+          <ConfirmDialog
+            open={confirmBlockOpen}
+            onClose={() => setConfirmBlockOpen(false)}
+            onConfirm={() => blockMutation.mutate()}
+            title={`Block ${profile.username}?`}
+            description="You won't receive their new messages while blocked, and you won't be able to send them messages until you unblock."
+            confirmLabel="Block"
+            variant="destructive"
+            loading={blockMutation.isPending}
+          />
+        )}
       </div>
     </ProtectedRoute>
   );
