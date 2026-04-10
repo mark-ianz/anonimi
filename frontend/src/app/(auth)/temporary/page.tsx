@@ -1,17 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import type { AuthUser } from "@/types/user";
+import { sanitizeAuthRedirect } from "@/lib/authRedirect";
 
 export default function TemporaryAccountPage() {
   const router = useRouter();
   const { setAuth } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [redirectTarget, setRedirectTarget] = useState("/chat");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setRedirectTarget(sanitizeAuthRedirect(params.get("redirect")));
+  }, []);
 
   const handleStartTemporary = async () => {
     if (isCreating) return;
@@ -25,7 +32,7 @@ export default function TemporaryAccountPage() {
         user: AuthUser;
       };
       setAuth(user, accessToken, refreshToken);
-      router.replace("/chat");
+      router.replace(redirectTarget);
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { error?: { message?: string } } } })
@@ -90,7 +97,7 @@ export default function TemporaryAccountPage() {
           </button>
           <button
             type="button"
-            onClick={() => router.push("/register")}
+            onClick={() => router.push(`/register?redirect=${encodeURIComponent(redirectTarget)}`)}
             className="flex flex-1 items-center justify-center rounded-xl border border-border/70 text-sm font-semibold text-foreground hover:bg-muted transition-colors py-3 md:py-4 cursor-pointer"
           >
             Create full account

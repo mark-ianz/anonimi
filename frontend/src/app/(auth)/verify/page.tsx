@@ -15,6 +15,7 @@ import {
   startResendCooldown,
   type VerificationType,
 } from "@/lib/verification";
+import { sanitizeAuthRedirect } from "@/lib/authRedirect";
 
 function VerifyForm() {
   const searchParams = useSearchParams();
@@ -26,6 +27,7 @@ function VerifyForm() {
   const type: VerificationType = rawType === "phone" ? "phone" : "email";
   const target = type === "email" ? rawTarget.trim().toLowerCase() : rawTarget.trim();
   const targetLabel = type === "phone" ? "phone" : "email";
+  const redirectTarget = sanitizeAuthRedirect(searchParams.get("redirect"));
 
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [isCheckingContext, setIsCheckingContext] = useState(true);
@@ -160,7 +162,7 @@ function VerifyForm() {
       setAuth(user, accessToken, refreshToken);
       clearPendingVerification();
       toast.success("Account verified! Welcome to anonimi.");
-      router.push("/chat");
+      router.push(redirectTarget);
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { error?: { message?: string } } } })

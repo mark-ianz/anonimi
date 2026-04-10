@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -17,6 +17,7 @@ import {
   savePendingVerification,
   type VerificationType,
 } from "@/lib/verification";
+import { sanitizeAuthRedirect } from "@/lib/authRedirect";
 
 const schema = z.object({
   identifier: z.string().min(1, "Email or phone is required"),
@@ -33,6 +34,12 @@ export default function LoginPage() {
     type: VerificationType;
     target: string;
   } | null>(null);
+  const [redirectTarget, setRedirectTarget] = useState("/chat");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setRedirectTarget(sanitizeAuthRedirect(params.get("redirect")));
+  }, []);
 
   const {
     register,
@@ -53,7 +60,7 @@ export default function LoginPage() {
       };
       setAuth(user, accessToken, refreshToken);
       clearPendingVerification();
-      router.push("/chat");
+      router.push(redirectTarget);
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { error?: { message?: string } } } })
@@ -182,7 +189,7 @@ export default function LoginPage() {
           Prefer a temporary session?{" "}
           <button
             type="button"
-            onClick={() => router.push("/temporary")}
+            onClick={() => router.push(`/temporary?redirect=${encodeURIComponent(redirectTarget)}`)}
             className="font-semibold text-amber-700 hover:underline"
           >
             Continue as temporary
@@ -206,7 +213,10 @@ export default function LoginPage() {
 
       <p className="text-center text-sm text-muted-foreground mt-6">
         Don&apos;t have an account?{" "}
-        <Link href="/register" className="font-semibold text-primary hover:underline">
+        <Link
+          href={`/register?redirect=${encodeURIComponent(redirectTarget)}`}
+          className="font-semibold text-primary hover:underline"
+        >
           Create one
         </Link>
       </p>

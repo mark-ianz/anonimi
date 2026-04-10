@@ -34,6 +34,13 @@ function decodeJwt(token: string): { role?: string } | null {
   }
 }
 
+function sanitizeRedirect(value: string | null): string {
+  if (!value) return "/chat";
+  if (!value.startsWith("/")) return "/chat";
+  if (value.startsWith("//")) return "/chat";
+  return value;
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -55,7 +62,10 @@ export function middleware(request: NextRequest) {
       return NextResponse.next();
     }
     if (isAuthenticated) {
-      const redirectUrl = new URL("/chat", request.url);
+      const redirectUrl = new URL(
+        sanitizeRedirect(request.nextUrl.searchParams.get("redirect")),
+        request.url
+      );
       return NextResponse.redirect(redirectUrl);
     }
     return NextResponse.next();
@@ -64,7 +74,7 @@ export function middleware(request: NextRequest) {
   if (isAppRoute(pathname)) {
     if (!isAuthenticated) {
       const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirect", pathname);
+      loginUrl.searchParams.set("redirect", `${pathname}${request.nextUrl.search}`);
       return NextResponse.redirect(loginUrl);
     }
     return NextResponse.next();
@@ -73,7 +83,7 @@ export function middleware(request: NextRequest) {
   if (isAdminRoute(pathname)) {
     if (!isAuthenticated) {
       const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirect", pathname);
+      loginUrl.searchParams.set("redirect", `${pathname}${request.nextUrl.search}`);
       return NextResponse.redirect(loginUrl);
     }
 

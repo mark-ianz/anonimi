@@ -15,6 +15,7 @@ import {
   getPendingVerification,
   savePendingVerification,
 } from "@/lib/verification";
+import { sanitizeAuthRedirect } from "@/lib/authRedirect";
 
 const schema = z
   .object({
@@ -47,6 +48,12 @@ export default function RegisterPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isCheckingResume, setIsCheckingResume] = useState(true);
+  const [redirectTarget, setRedirectTarget] = useState("/chat");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setRedirectTarget(sanitizeAuthRedirect(params.get("redirect")));
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -78,7 +85,7 @@ export default function RegisterPage() {
           verification?.reason === "no_code"
         ) {
           router.replace(
-            `/verify?target=${encodeURIComponent(pending.target)}&type=${pending.type}`
+            `/verify?target=${encodeURIComponent(pending.target)}&type=${pending.type}&redirect=${encodeURIComponent(redirectTarget)}`
           );
           return;
         }
@@ -123,7 +130,9 @@ export default function RegisterPage() {
       await api.post("/auth/register", payload);
       savePendingVerification({ type: "email", target: normalizedEmail });
       toast.success("Account created! Check your inbox for the verification code.");
-      router.push(`/verify?target=${encodeURIComponent(normalizedEmail)}&type=email`);
+      router.push(
+        `/verify?target=${encodeURIComponent(normalizedEmail)}&type=email&redirect=${encodeURIComponent(redirectTarget)}`
+      );
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { error?: { message?: string } } } })
@@ -247,7 +256,7 @@ export default function RegisterPage() {
           Want a short session?{" "}
           <button
             type="button"
-            onClick={() => router.push("/temporary")}
+            onClick={() => router.push(`/temporary?redirect=${encodeURIComponent(redirectTarget)}`)}
             className="font-semibold text-amber-700 hover:underline"
           >
             Continue as temporary
@@ -257,7 +266,10 @@ export default function RegisterPage() {
 
       <p className="text-center text-sm text-muted-foreground mt-6">
         Already have an account?{" "}
-        <Link href="/login" className="font-semibold text-primary hover:underline">
+        <Link
+          href={`/login?redirect=${encodeURIComponent(redirectTarget)}`}
+          className="font-semibold text-primary hover:underline"
+        >
           Sign in
         </Link>
       </p>
