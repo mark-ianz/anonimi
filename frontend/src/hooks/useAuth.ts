@@ -85,7 +85,9 @@ export function useAuth() {
   });
 
   const updateProfileMutation = useMutation({
-    mutationFn: async (patch: Partial<Pick<AuthUser, "username" | "phone" | "appearanceStatus">>) => {
+    mutationFn: async (
+      patch: Partial<Pick<AuthUser, "username" | "phone" | "appearanceStatus" | "fontStyle">>
+    ) => {
       const res = await api.patch("/auth/me", patch);
       return res.data.data as AuthUser;
     },
@@ -150,7 +152,9 @@ export function useAuth() {
     updateAvatarAsync: (file: File, source?: UploadSource) => updateAvatarMutation.mutateAsync({ file, source }),
     removeAvatarAsync: () => removeAvatarMutation.mutateAsync(),
     updateProfile: updateProfileMutation.mutate,
-    updateProfileAsync: (patch: Partial<Pick<AuthUser, "username" | "phone" | "appearanceStatus">>) =>
+    updateProfileAsync: (
+      patch: Partial<Pick<AuthUser, "username" | "phone" | "appearanceStatus" | "fontStyle">>
+    ) =>
       updateProfileMutation.mutateAsync(patch),
     claimTemporaryAccountAsync: (payload: { email: string; password: string }) =>
       claimTemporaryAccountMutation.mutateAsync(payload),

@@ -25,6 +25,15 @@ export enum AppearanceStatus {
   INVISIBLE = "invisible",
 }
 
+export enum FontStyle {
+  MODERN = "modern",
+  SYSTEM = "system",
+  EDITORIAL = "editorial",
+  ROUNDED = "rounded",
+  HUMANIST = "humanist",
+  MONO = "mono",
+}
+
 export enum MessageType {
   TEXT = "text",
   IMAGE = "image",

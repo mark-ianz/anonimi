@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
-import { Moon, Sun, Monitor, Bell, Shield, Lock } from "lucide-react";
+import { Moon, Sun, Monitor, Bell, Shield, Lock, Type } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/uiStore";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,7 +15,7 @@ import {
   subscribeToPush,
   unsubscribeFromPush,
 } from "@/lib/pushNotifications";
-import type { AppearanceStatus } from "@/types/user";
+import type { AppearanceStatus, FontStyle } from "@/types/user";
 
 type Theme = "light" | "dark" | "system";
 
@@ -57,6 +57,50 @@ const appearanceOptions: {
   },
 ];
 
+const fontOptions: {
+  value: FontStyle;
+  label: string;
+  description: string;
+  previewFamily: CSSProperties["fontFamily"];
+}[] = [
+  {
+    value: "modern",
+    label: "Modern",
+    description: "Manrope-inspired clean sans serif",
+    previewFamily: 'var(--font-manrope), "Segoe UI", sans-serif',
+  },
+  {
+    value: "system",
+    label: "System",
+    description: "Native platform UI font stack",
+    previewFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  },
+  {
+    value: "editorial",
+    label: "Editorial",
+    description: "Classic serif with a print-like feel",
+    previewFamily: 'Georgia, "Times New Roman", serif',
+  },
+  {
+    value: "rounded",
+    label: "Rounded",
+    description: "Softer, friendlier letterforms",
+    previewFamily: '"Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif',
+  },
+  {
+    value: "humanist",
+    label: "Humanist",
+    description: "Warm, readable sans serif with personality",
+    previewFamily: '"Gill Sans", "Trebuchet MS", Calibri, sans-serif',
+  },
+  {
+    value: "mono",
+    label: "Mono",
+    description: "Technical monospaced look",
+    previewFamily: 'var(--font-fira-mono), "SFMono-Regular", Consolas, monospace',
+  },
+];
+
 export default function SettingsPage() {
   const { theme, setTheme } = useUIStore();
   const [pushEnabled, setPushEnabled] = useState(false);
@@ -67,12 +111,18 @@ export default function SettingsPage() {
   const { chatSocket } = useSocketContext();
 
   const appearanceStatus = user?.appearanceStatus ?? "online";
+  const selectedFontStyle = user?.fontStyle ?? "modern";
 
   const handleAppearanceChange = (status: AppearanceStatus) => {
     if (!user || status === user.appearanceStatus) return;
 
     updateProfile({ appearanceStatus: status });
     chatSocket?.emit("presence:set-status", { status });
+  };
+
+  const handleFontStyleChange = (fontStyle: FontStyle) => {
+    if (!user || fontStyle === user.fontStyle) return;
+    updateProfile({ fontStyle });
   };
 
   useEffect(() => {
@@ -220,38 +270,50 @@ export default function SettingsPage() {
           </section>
 
           <section className="space-y-3 rounded-2xl border border-border/60 bg-card/45 p-5">
-            <h2 className="font-mono text-[0.68rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-              Status Visibility
-            </h2>
-            <div className="grid gap-2">
-              {appearanceOptions.map((option) => (
+            <div className="flex items-center gap-2">
+              <Type className="h-4 w-4 text-muted-foreground" />
+              <h2 className="font-mono text-[0.68rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                Font Style
+              </h2>
+            </div>
+            <div
+              className="rounded-2xl border border-border/60 bg-background px-4 py-4 text-base text-foreground"
+              style={{
+                fontFamily:
+                  fontOptions.find((option) => option.value === selectedFontStyle)?.previewFamily,
+              }}
+            >
+              The quick brown fox jumps over the lazy dog.
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {fontOptions.map((option) => (
                 <button
                   key={option.value}
-                  onClick={() => handleAppearanceChange(option.value)}
+                  type="button"
+                  onClick={() => handleFontStyleChange(option.value)}
                   disabled={isUpdatingProfile}
                   className={cn(
-                    "flex items-center justify-between rounded-xl border px-3 py-2.5 text-left transition-colors",
-                    appearanceStatus === option.value
+                    "cursor-pointer rounded-2xl border p-4 text-left transition-colors",
+                    selectedFontStyle === option.value
                       ? "border-primary/45 bg-primary/10"
                       : "border-border/60 bg-background hover:bg-muted/40",
                     isUpdatingProfile && "opacity-80"
                   )}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <span className={cn("h-2.5 w-2.5 rounded-full", option.dotClass)} />
+                  <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="text-sm font-medium text-foreground">{option.label}</p>
-                      <p className="text-xs text-muted-foreground">{option.description}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{option.description}</p>
                     </div>
+                    <span
+                      className={cn(
+                        "mt-1 h-4 w-4 rounded-full border",
+                        selectedFontStyle === option.value
+                          ? "border-primary bg-primary"
+                          : "border-border/70"
+                      )}
+                    />
                   </div>
-                  <span
-                    className={cn(
-                      "h-4 w-4 rounded-full border",
-                      appearanceStatus === option.value
-                        ? "border-primary bg-primary"
-                        : "border-border/70"
-                    )}
-                  />
                 </button>
               ))}
             </div>
@@ -297,6 +359,44 @@ export default function SettingsPage() {
                   )}
                 />
               </button>
+            </div>
+          </section>
+
+          <section className="space-y-3 rounded-2xl border border-border/60 bg-card/45 p-5">
+            <h2 className="font-mono text-[0.68rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+              Status Visibility
+            </h2>
+            <div className="grid gap-2">
+              {appearanceOptions.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => handleAppearanceChange(option.value)}
+                  disabled={isUpdatingProfile}
+                  className={cn(
+                    "flex items-center justify-between rounded-xl border px-3 py-2.5 text-left transition-colors",
+                    appearanceStatus === option.value
+                      ? "border-primary/45 bg-primary/10"
+                      : "border-border/60 bg-background hover:bg-muted/40",
+                    isUpdatingProfile && "opacity-80"
+                  )}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className={cn("h-2.5 w-2.5 rounded-full", option.dotClass)} />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{option.label}</p>
+                      <p className="text-xs text-muted-foreground">{option.description}</p>
+                    </div>
+                  </div>
+                  <span
+                    className={cn(
+                      "h-4 w-4 rounded-full border",
+                      appearanceStatus === option.value
+                        ? "border-primary bg-primary"
+                        : "border-border/70"
+                    )}
+                  />
+                </button>
+              ))}
             </div>
           </section>
 

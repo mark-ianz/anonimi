@@ -2,6 +2,7 @@ export type UserRole = "user" | "moderator" | "support_staff" | "super_admin";
 export type UserStatus = "active" | "banned" | "pending_verification";
 export type OnlineStatus = "online" | "away" | "dnd" | "offline";
 export type AppearanceStatus = "online" | "away" | "dnd" | "invisible";
+export type FontStyle = "modern" | "system" | "editorial" | "rounded" | "humanist" | "mono";
 
 export interface User {
   id: string;
@@ -11,6 +12,7 @@ export interface User {
   role: UserRole;
   status: UserStatus;
   appearanceStatus: AppearanceStatus;
+  fontStyle: FontStyle;
   onlineStatus: OnlineStatus;
   lastSeen: string;
   createdAt: string;

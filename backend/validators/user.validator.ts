@@ -21,6 +21,7 @@ export const updateProfileSchema = z.object({
       .optional(),
     phone: z.string().nullable().optional(),
     appearanceStatus: z.enum(["online", "away", "dnd", "invisible"]).optional(),
+    fontStyle: z.enum(["modern", "system", "editorial", "rounded", "humanist", "mono"]).optional(),
   }),
 });
 

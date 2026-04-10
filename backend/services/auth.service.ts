@@ -11,7 +11,13 @@ import {
   verifyRefreshToken,
 } from "../utils/jwt";
 import { ConflictError, UnauthorizedError, NotFoundError, ForbiddenError } from "../utils/apiError";
-import { AppearanceStatus, OnlineStatus, UserRole, UserStatus } from "../types/enums";
+import {
+  AppearanceStatus,
+  FontStyle,
+  OnlineStatus,
+  UserRole,
+  UserStatus,
+} from "../types/enums";
 import { normalizePhoneNumber, tryNormalizePhoneNumber } from "../utils/phone";
 import { createAdminLog } from "./admin.service";
 import { env } from "../config/env";
@@ -35,6 +41,7 @@ interface LoginResult {
     status: string;
     usernameCanEdit: boolean;
     appearanceStatus: string;
+    fontStyle: string;
     onlineStatus: string;
     lastSeen: Date | null;
     isTemporary: boolean;
@@ -192,6 +199,7 @@ export const createTemporaryAccount = async (): Promise<LoginResult> => {
       status: user.status,
       usernameCanEdit: !user.usernameChangedAt && !user.isTemporary,
       appearanceStatus: user.appearanceStatus,
+      fontStyle: user.fontStyle,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
       isTemporary: true,
@@ -289,6 +297,7 @@ export const verifyEmail = async (
       status: user.status,
       usernameCanEdit: !user.usernameChangedAt && !user.isTemporary,
       appearanceStatus: user.appearanceStatus,
+      fontStyle: user.fontStyle,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
       isTemporary: !!user.isTemporary,
@@ -347,6 +356,7 @@ export const verifyEmailLink = async (token: string): Promise<LoginResult> => {
       status: user.status,
       usernameCanEdit: !user.usernameChangedAt && !user.isTemporary,
       appearanceStatus: user.appearanceStatus,
+      fontStyle: user.fontStyle,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
       isTemporary: !!user.isTemporary,
@@ -395,6 +405,7 @@ export const verifyPhone = async (
       status: user.status,
       usernameCanEdit: !user.usernameChangedAt && !user.isTemporary,
       appearanceStatus: user.appearanceStatus,
+      fontStyle: user.fontStyle,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
       isTemporary: !!user.isTemporary,
@@ -583,6 +594,7 @@ export const login = async (
       status: user.status,
       usernameCanEdit: !user.usernameChangedAt && !user.isTemporary,
       appearanceStatus: user.appearanceStatus,
+      fontStyle: user.fontStyle,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
       isTemporary: !!user.isTemporary,
@@ -738,6 +750,7 @@ export const resetPassword = async (
       status: user.status,
       usernameCanEdit: !user.usernameChangedAt,
       appearanceStatus: user.appearanceStatus,
+      fontStyle: user.fontStyle,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
       isTemporary: !!user.isTemporary,
@@ -794,7 +807,12 @@ export const getProfile = async (userId: string) => {
 
 export const updateProfile = async (
   userId: string,
-  updates: { username?: string; phone?: string | null; appearanceStatus?: AppearanceStatus }
+  updates: {
+    username?: string;
+    phone?: string | null;
+    appearanceStatus?: AppearanceStatus;
+    fontStyle?: FontStyle;
+  }
 ) => {
   const user = await User.findById(userId);
 
@@ -854,6 +872,10 @@ export const updateProfile = async (
         ? OnlineStatus.OFFLINE
         : (updates.appearanceStatus as unknown as OnlineStatus);
     user.lastSeen = new Date();
+  }
+
+  if (updates.fontStyle) {
+    user.fontStyle = updates.fontStyle;
   }
 
   await user.save();

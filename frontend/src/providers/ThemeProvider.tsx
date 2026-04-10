@@ -2,9 +2,11 @@
 
 import { useEffect } from "react";
 import { useUIStore, type Theme } from "@/stores/uiStore";
+import { useAuthStore } from "@/stores/authStore";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { theme } = useUIStore();
+  const fontStyle = useAuthStore((state) => state.user?.fontStyle ?? "modern");
 
   useEffect(() => {
     const root = document.documentElement;
@@ -32,6 +34,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       return () => mq.removeEventListener("change", handler);
     }
   }, [theme]);
+
+  useEffect(() => {
+    document.documentElement.dataset.fontStyle = fontStyle;
+  }, [fontStyle]);
 
   return <>{children}</>;
 }
