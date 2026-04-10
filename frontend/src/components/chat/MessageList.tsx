@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useMessages } from "@/hooks/useMessages";
@@ -78,6 +78,7 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
   const [highlightMessageId, setHighlightMessageId] = useState<string | null>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [hasUserInteractedWithScroll, setHasUserInteractedWithScroll] = useState(false);
   const [newMessageCount, setNewMessageCount] = useState(0);
   const scrollTargetHandledRef = useRef<string | null>(null);
   const groupId = conversation.type === "group" ? conversation.group?.id ?? null : null;
@@ -364,11 +365,20 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
     return node.scrollTop + node.clientHeight >= node.scrollHeight - bottomThreshold;
   }, [bottomThreshold]);
 
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    viewport.scrollTo({ top: viewport.scrollHeight, behavior });
+    bottomRef.current?.scrollIntoView({ behavior, block: "end" });
+  }, []);
+
   const handleViewportScroll = useCallback(() => {
     const node = viewportRef.current;
     if (!node) return;
     setIsAtBottom(computeIsAtBottom(node));
     setIsUserScrolling(true);
+    setHasUserInteractedWithScroll(true);
     if (scrollIdleTimeoutRef.current) {
       window.clearTimeout(scrollIdleTimeoutRef.current);
     }
@@ -409,6 +419,9 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
     setNewMessageCount(0);
     setIsAtBottom(true);
     setIsUserScrolling(false);
+    setHasUserInteractedWithScroll(false);
+    isFirstLoad.current = true;
+    lastMessageIdRef.current = null;
   }, [conversation.id, targetMessageId, jumpToken]);
 
   useEffect(() => {
@@ -420,13 +433,41 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
   }, []);
 
   // Scroll to bottom on first load and when new messages arrive from me
-  useEffect(() => {
-    if (!isLoading && isFirstLoad.current && !targetMessageId) {
-      bottomRef.current?.scrollIntoView({ behavior: "instant" });
-      setIsAtBottom(true);
-      isFirstLoad.current = false;
+  useLayoutEffect(() => {
+    if (isLoading || !isFirstLoad.current || targetMessageId || !displayMessages.length) {
+      return;
     }
-  }, [isLoading, targetMessageId]);
+
+    let cancelled = false;
+    let raf1 = 0;
+    let raf2 = 0;
+    let raf3 = 0;
+
+    const forceBottom = () => {
+      if (cancelled) return;
+      scrollToBottom("auto");
+      setIsAtBottom(true);
+    };
+
+    forceBottom();
+    raf1 = window.requestAnimationFrame(() => {
+      forceBottom();
+      raf2 = window.requestAnimationFrame(() => {
+        forceBottom();
+        raf3 = window.requestAnimationFrame(() => {
+          forceBottom();
+          isFirstLoad.current = false;
+        });
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(raf1);
+      window.cancelAnimationFrame(raf2);
+      window.cancelAnimationFrame(raf3);
+    };
+  }, [isLoading, targetMessageId, displayMessages.length, scrollToBottom]);
 
   useEffect(() => {
     if (!displayMessages.length) return;
@@ -440,24 +481,39 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
 
       if (isIncoming) {
         if (isAtBottom) {
-          bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+          scrollToBottom("smooth");
           setNewMessageCount(0);
         } else {
           setNewMessageCount((count) => count + 1);
         }
       } else {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+        scrollToBottom("smooth");
         setNewMessageCount(0);
       }
     }
-  }, [displayMessages, user?.id, isFetchingMore, isAtBottom, isUserScrolling]);
+  }, [displayMessages, user?.id, isFetchingMore, isAtBottom, isUserScrolling, scrollToBottom]);
 
   useEffect(() => {
     if (!displayTypingUsers.length) return;
     if (isAtBottom) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      scrollToBottom("smooth");
     }
-  }, [displayTypingUsers.length, isAtBottom]);
+  }, [displayTypingUsers.length, isAtBottom, scrollToBottom]);
+
+  useLayoutEffect(() => {
+    if (targetMessageId || isFetchingMore || !isAtBottom) return;
+    if (!displayMessages.length) return;
+
+    scrollToBottom("auto");
+  }, [
+    decryptedContent,
+    displayMessages.length,
+    messagesWithResolvedReplyPreviews,
+    isAtBottom,
+    isFetchingMore,
+    targetMessageId,
+    scrollToBottom,
+  ]);
 
   useEffect(() => {
     if (isAtBottom) {
@@ -563,7 +619,7 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
   }
 
   const handleJumpToBottom = () => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    scrollToBottom("smooth");
     setNewMessageCount(0);
     setIsUserScrolling(false);
     setIsAtBottom(true);
@@ -582,6 +638,7 @@ export default function MessageList({ conversation, onEditStart, onReplyStart }:
             onLoadMore={() => fetchMore()}
             hasMore={hasMore ?? false}
             isLoading={isFetchingMore}
+            enabled={hasUserInteractedWithScroll}
             className="pt-2"
           />
 

@@ -6,6 +6,7 @@ interface InfiniteScrollProps {
   onLoadMore: () => void;
   hasMore: boolean;
   isLoading: boolean;
+  enabled?: boolean;
   className?: string;
 }
 
@@ -13,9 +14,10 @@ export default function InfiniteScrollSentinel({
   onLoadMore,
   hasMore,
   isLoading,
+  enabled = true,
   className,
 }: InfiniteScrollProps) {
-  const sentinelRef = useInfiniteScroll(onLoadMore, { hasMore, isLoading });
+  const sentinelRef = useInfiniteScroll(onLoadMore, { hasMore, isLoading, enabled });
 
   return (
     <div ref={sentinelRef} className={className}>

@@ -4,18 +4,22 @@ import { useEffect, useRef, useCallback } from "react";
 
 export function useInfiniteScroll(
   onLoadMore: () => void,
-  { hasMore, isLoading }: { hasMore: boolean; isLoading: boolean }
+  {
+    hasMore,
+    isLoading,
+    enabled = true,
+  }: { hasMore: boolean; isLoading: boolean; enabled?: boolean }
 ) {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const handleIntersect = useCallback(
     (entries: IntersectionObserverEntry[]) => {
       const [entry] = entries;
-      if (entry.isIntersecting && hasMore && !isLoading) {
+      if (entry.isIntersecting && hasMore && !isLoading && enabled) {
         onLoadMore();
       }
     },
-    [onLoadMore, hasMore, isLoading]
+    [onLoadMore, hasMore, isLoading, enabled]
   );
 
   useEffect(() => {
