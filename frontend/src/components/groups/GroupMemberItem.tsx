@@ -144,12 +144,12 @@ export default function GroupMemberItem({
         >
             <button
               onClick={() => setMenuOpen((v) => !v)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
             >
               <MoreVertical className="w-3.5 h-3.5" />
             </button>
             {menuOpen && (
-              <div className="absolute right-0 z-10 top-full mt-1 glass rounded-xl shadow-elevated py-1 min-w-40 animate-fade-in">
+              <div className="absolute right-0 z-10 top-full mt-1 glass rounded-xl shadow-elevated py-1 min-w-50 animate-fade-in">
                 <Link
                   href={`/user/${member.anonimiId}`}
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
@@ -162,7 +162,7 @@ export default function GroupMemberItem({
                 {!isSelf && !isPendingInvite && (
                   <button
                     onClick={() => { onSendMessage?.(member.anonimiId); setMenuOpen(false); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors cursor-pointer"
                   >
                     <MessageCircle className="w-4 h-4" />
                     Send message
@@ -175,7 +175,7 @@ export default function GroupMemberItem({
                     setMenuOpen(false);
                     setShowNicknameForm(true);
                   }}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors cursor-pointer"
                 >
                   <Pencil className="w-4 h-4" />
                   Change nickname
@@ -184,7 +184,7 @@ export default function GroupMemberItem({
                 {!isSelf && (
                   <button
                     onClick={() => { onBlock?.(member.anonimiId); setMenuOpen(false); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
                   >
                     <ShieldBan className="w-4 h-4" />
                     Block
@@ -203,7 +203,7 @@ export default function GroupMemberItem({
                     {member.role === "member" && (
                       <button
                         onClick={() => { onChangeRole?.(member.userId, "admin"); setMenuOpen(false); }}
-                        className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                        className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors cursor-pointer"
                       >
                         <Shield className="w-4 h-4" />
                         Make admin
@@ -212,7 +212,7 @@ export default function GroupMemberItem({
                     {member.role === "admin" && (
                       <button
                         onClick={() => { onChangeRole?.(member.userId, "member"); setMenuOpen(false); }}
-                        className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                        className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors cursor-pointer"
                       >
                         Demote to member
                       </button>
@@ -220,7 +220,7 @@ export default function GroupMemberItem({
                     {canTransfer && (
                       <button
                         onClick={() => { onTransferOwnership?.(member.userId); setMenuOpen(false); }}
-                        className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                        className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors cursor-pointer"
                       >
                         <Crown className="w-4 h-4 text-yellow-500" />
                         Transfer ownership
@@ -233,7 +233,7 @@ export default function GroupMemberItem({
                     {isMuted ? (
                       <button
                         onClick={() => { onUnmute?.(member.userId); setMenuOpen(false); }}
-                        className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                        className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors cursor-pointer"
                       >
                         <Volume2 className="w-4 h-4" />
                         Unmute
@@ -241,7 +241,7 @@ export default function GroupMemberItem({
                     ) : (
                       <button
                         onClick={() => { setMenuOpen(false); setShowMuteDialog(true); setMuteReason(""); setMuteDuration(60); }}
-                        className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                        className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors cursor-pointer"
                       >
                         <VolumeX className="w-4 h-4" />
                         Mute
@@ -307,7 +307,7 @@ export default function GroupMemberItem({
               <button
                 type="button"
                 onClick={() => setShowMuteDialog(false)}
-                className="flex-1 h-10 rounded-xl border border-border/70 text-sm font-medium hover:bg-muted transition-colors"
+                className="flex-1 h-10 rounded-xl border border-border/70 text-sm font-medium hover:bg-muted transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -318,7 +318,7 @@ export default function GroupMemberItem({
                   setShowMuteDialog(false);
                 }}
                 disabled={!muteReason.trim()}
-                className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 Mute
               </button>

@@ -35,14 +35,14 @@ export default function GroupSettingsPage() {
     <ProtectedRoute>
       <div className="flex flex-col h-full">
         <div className="flex items-center gap-3 p-4 border-b border-border/30">
-          <button onClick={() => router.back()} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors">
+          <button onClick={() => router.back()} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors cursor-pointer">
             <ArrowLeft className="w-4 h-4" />
           </button>
           <h1 className="font-display font-semibold flex-1 min-w-0 truncate">{group?.name ?? "Group"}</h1>
           {group && tab !== "members" && (
             <button
               onClick={() => switchTab("members")}
-              className="h-9 px-3 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors flex items-center gap-1.5"
+              className="h-9 px-3 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <UserPlus className="w-4 h-4" />
               Add Member
@@ -53,13 +53,13 @@ export default function GroupSettingsPage() {
         <div className="flex border-b border-border/30">
           <button
             onClick={() => switchTab("settings")}
-            className={`flex-1 py-3 text-sm font-medium transition-colors ${tab === "settings" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
+            className={`flex-1 py-3 text-sm font-medium transition-colors ${tab === "settings" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground cursor-pointer"}`}
           >
             Settings
           </button>
           <button
             onClick={() => switchTab("members")}
-            className={`flex-1 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${tab === "members" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
+            className={`flex-1 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${tab === "members" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground cursor-pointer"}`}
           >
             <Users className="w-4 h-4" />
             Members

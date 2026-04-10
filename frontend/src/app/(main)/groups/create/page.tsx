@@ -187,7 +187,7 @@ export default function CreateGroupPage() {
           <div className="mx-auto flex w-full max-w-3xl items-center gap-3 p-4">
             <button
               onClick={() => router.back()}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
@@ -300,7 +300,7 @@ export default function CreateGroupPage() {
             <button
               type="button"
               onClick={() => setJoinRequestEnabled((v) => !v)}
-              className="flex w-full items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30 text-left"
+              className="flex w-full items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30 text-left cursor-pointer"
             >
               <div>
                 <p className="text-sm font-medium">Require join requests</p>
@@ -331,7 +331,7 @@ export default function CreateGroupPage() {
                   current === "admins_only" ? "all_members" : "admins_only"
                 )
               }
-              className="flex w-full items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30 text-left"
+              className="flex w-full items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30 text-left cursor-pointer"
             >
               <div>
                 <p className="text-sm font-medium">Admins-only group profile editing</p>
@@ -362,7 +362,7 @@ export default function CreateGroupPage() {
                   current === "admins_only" ? "all_members" : "admins_only"
                 )
               }
-              className="flex w-full items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30 text-left"
+              className="flex w-full items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30 text-left cursor-pointer"
             >
               <div>
                 <p className="text-sm font-medium">Admins-only nickname editing</p>
@@ -403,7 +403,7 @@ export default function CreateGroupPage() {
                       {c?.nickname ?? c?.username ?? foundUser?.username ?? anonimiId}
                       <button
                         onClick={() => toggleContact(anonimiId)}
-                        className="hover:text-destructive transition-colors"
+                        className="hover:text-destructive transition-colors cursor-pointer"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -432,7 +432,7 @@ export default function CreateGroupPage() {
                     key={candidate.id}
                     onClick={() => toggleContact(candidate.anonimiId)}
                     className={cn(
-                      "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-left transition-colors",
+                      "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-left transition-colors cursor-pointer",
                       isSelected ? "bg-primary/10" : "hover:bg-muted/50"
                     )}
                   >
@@ -479,7 +479,7 @@ export default function CreateGroupPage() {
             <button
               onClick={handleCreate}
               disabled={isCreating || isUploading}
-              className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
             >
               {isCreating || isUploading ? (
                 <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />

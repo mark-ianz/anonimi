@@ -409,7 +409,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
           disabled={!canManageSettings}
           onClick={() => setJoinRequestEnabled((v) => !v)}
           className={cn(
-            "flex w-full items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30 text-left",
+            "flex w-full items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30 text-left cursor-pointer",
             !canManageSettings && "opacity-60 cursor-not-allowed"
           )}
         >
@@ -441,7 +441,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
                 current === "admins_only" ? "all_members" : "admins_only"
               )
             }
-            className="flex w-full items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30 text-left"
+            className="flex w-full items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30 text-left cursor-pointer"
           >
             <div>
               <p className="text-sm font-medium">Admins-only group profile editing</p>
@@ -472,7 +472,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
                 current === "admins_only" ? "all_members" : "admins_only"
               )
             }
-            className="flex w-full items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30 text-left"
+            className="flex w-full items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30 text-left cursor-pointer"
           >
             <div>
               <p className="text-sm font-medium">Admins-only nickname editing</p>
@@ -501,7 +501,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
           onClick={handleSave}
           disabled={!hasUnsavedChanges || isUploading}
           className={cn(
-            "w-full h-10 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors",
+            "w-full h-10 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer",
             hasUnsavedChanges && !isUploading
               ? "bg-primary text-primary-foreground hover:bg-primary/90"
               : "bg-muted text-muted-foreground cursor-not-allowed"
@@ -518,7 +518,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
           <h3 className="font-display font-semibold">Invite Links</h3>
           <button
             onClick={() => setShowInviteModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors cursor-pointer"
           >
             <LinkIcon className="w-4 h-4" />
             Create Link
@@ -550,7 +550,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => copyLink(link.joinUrl)}
-                      className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-muted transition-colors cursor-pointer"
                       title="Copy link"
                     >
                       {copiedLink === link.joinUrl ? (
@@ -562,7 +562,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
                     {link.qrCode && (
                       <button
                         onClick={() => window.open(link.qrCode, "_blank")}
-                        className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-muted transition-colors cursor-pointer"
                         title="View QR code"
                       >
                         <QrCode className="w-4 h-4" />
@@ -571,7 +571,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
                     {!link.revokedAt && (
                       <button
                         onClick={() => revokeInviteLink(link.inviteLinkId)}
-                        className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors cursor-pointer"
                         title="Revoke link"
                       >
                         <X className="w-4 h-4" />
@@ -635,7 +635,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
             setDeleteConversationConfirmText("");
           }}
           disabled={deleteChatMutation.isPending}
-          className="w-full h-10 rounded-xl bg-destructive/15 text-destructive text-sm font-medium hover:bg-destructive/25 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+          className="w-full h-10 rounded-xl bg-destructive/15 text-destructive text-sm font-medium hover:bg-destructive/25 transition-colors disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer"
         >
           <Trash2 className="w-4 h-4" />
           {deleteChatMutation.isPending ? "Deleting..." : "Delete Conversation"}
@@ -643,7 +643,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
         <button
           onClick={() => leaveGroup(undefined, { onSuccess: () => router.push("/chat") })}
           disabled={isLeaving}
-          className="w-full h-10 rounded-xl bg-destructive/15 text-destructive text-sm font-medium hover:bg-destructive/25 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+          className="w-full h-10 rounded-xl bg-destructive/15 text-destructive text-sm font-medium hover:bg-destructive/25 transition-colors disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer"
         >
           <LogOut className="w-4 h-4" />
           {isLeaving ? "Leaving..." : "Leave Group"}
@@ -652,7 +652,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
           <button
             onClick={() => setShowDisbandConfirmModal(true)}
             disabled={isDisbanding}
-            className="w-full h-10 rounded-xl bg-destructive/15 text-destructive text-sm font-medium hover:bg-destructive/25 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+            className="w-full h-10 rounded-xl bg-destructive/15 text-destructive text-sm font-medium hover:bg-destructive/25 transition-colors disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer"
           >
             <Trash2 className="w-4 h-4" />
             {isDisbanding ? "Disbanding..." : "Disband Group"}
@@ -757,7 +757,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
                   setDeleteConversationConfirmText("");
                 }}
                 disabled={deleteChatMutation.isPending}
-                className="flex-1 h-10 rounded-xl border border-border/70 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-60"
+                className="flex-1 h-10 rounded-xl border border-border/70 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-60 cursor-pointer"
               >
                 Cancel
               </button>
@@ -765,7 +765,7 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
                 type="button"
                 onClick={() => deleteChatMutation.mutate()}
                 disabled={deleteChatMutation.isPending || deleteConversationConfirmText !== "DELETE"}
-                className="flex-1 h-10 rounded-xl bg-destructive text-white text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-60"
+                className="flex-1 h-10 rounded-xl bg-destructive text-white text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-60 hover:cursor-pointer"
               >
                 {deleteChatMutation.isPending ? "Deleting..." : "Delete Conversation"}
               </button>
@@ -836,13 +836,13 @@ export default function GroupSettings({ group }: GroupSettingsProps) {
             <div className="flex gap-2">
               <button
                 onClick={() => setShowInviteModal(false)}
-                className="flex-1 h-10 rounded-xl bg-muted text-sm font-medium hover:bg-muted/80 transition-colors"
+                className="flex-1 h-10 rounded-xl bg-muted text-sm font-medium hover:bg-muted/80 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateInvite}
-                className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer"
               >
                 Create
               </button>
