@@ -10,6 +10,7 @@ import { getChatSocket } from "@/lib/socket";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import LoadingSkeleton from "@/components/shared/LoadingSkeleton";
 import EmptyState from "@/components/shared/EmptyState";
+import GroupAvatar from "@/components/shared/GroupAvatar";
 import UserAvatar from "@/components/shared/UserAvatar";
 import type { Conversation } from "@/types/conversation";
 
@@ -57,9 +58,10 @@ export default function MessageRequestsPage() {
     mutationFn: async (requestId: string) => {
       await api.patch(`/message-requests/${requestId}/ignore`);
     },
-    onSuccess: () => {
+    onSuccess: (_, requestId) => {
       qc.invalidateQueries({ queryKey: ["message-requests"] });
-      toast.success("Request ignored.");
+      const request = requests?.find((item) => item.requestId === requestId);
+      toast.success(request?.type === "group" ? "Group invite left." : "Request ignored.");
     },
     onError: () => toast.error("Failed to ignore request."),
   });
@@ -85,7 +87,10 @@ export default function MessageRequestsPage() {
             />
           ) : (
             requests.map((conv) => {
-              const name = conv.participant?.username ?? "Unknown";
+              const isGroup = conv.type === "group";
+              const name = isGroup
+                ? conv.group?.name ?? "Group"
+                : conv.participant?.username ?? "Unknown";
               const preview = conv.lastMessage?.content ?? "Sent a message";
               const requestId = conv.requestId ?? "";
 
@@ -96,24 +101,48 @@ export default function MessageRequestsPage() {
                 >
                   {/* Avatar */}
                   <button
-                    onClick={() => router.push(`/chat/${conv.id}`)}
+                    onClick={() => {
+                      if (!isGroup) {
+                        router.push(`/chat/${conv.id}`);
+                      }
+                    }}
                     className="shrink-0"
                   >
-                    <UserAvatar
-                      imageUrl={conv.participant?.profileImage}
-                      name={name}
-                      alt={name}
-                      className="w-11 h-11"
-                      textClassName="text-sm"
-                    />
+                    {isGroup ? (
+                      <GroupAvatar
+                        imageUrl={conv.group?.image ?? null}
+                        fallbackProfileImages={conv.group?.fallbackProfileImages ?? []}
+                        name={name}
+                        alt={name}
+                        className="w-11 h-11"
+                        textClassName="text-sm"
+                      />
+                    ) : (
+                      <UserAvatar
+                        imageUrl={conv.participant?.profileImage}
+                        name={name}
+                        alt={name}
+                        className="w-11 h-11"
+                        textClassName="text-sm"
+                      />
+                    )}
                   </button>
 
                   {/* Info */}
                   <button
                     className="flex-1 min-w-0 text-left"
-                    onClick={() => router.push(`/chat/${conv.id}`)}
+                    onClick={() => {
+                      if (!isGroup) {
+                        router.push(`/chat/${conv.id}`);
+                      }
+                    }}
                   >
                     <p className="text-sm font-medium truncate">{name}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {isGroup
+                        ? `Invited by ${conv.participant?.username ?? "a member"}`
+                        : `From @${conv.participant?.anonimiId ?? "unknown"}`}
+                    </p>
                     <p className="text-xs text-muted-foreground truncate">{preview}</p>
                   </button>
 
@@ -128,18 +157,20 @@ export default function MessageRequestsPage() {
                       <Check className="w-3.5 h-3.5" />
                       Accept
                     </button>
-                    <button
-                      onClick={() => acceptMutation.mutate({ requestId, addToContacts: true })}
-                      disabled={acceptMutation.isPending}
-                      title="Accept & Add to Contacts"
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-primary transition-colors disabled:opacity-50"
-                    >
-                      <UserPlus className="w-4 h-4" />
-                    </button>
+                    {!isGroup && (
+                      <button
+                        onClick={() => acceptMutation.mutate({ requestId, addToContacts: true })}
+                        disabled={acceptMutation.isPending}
+                        title="Accept & Add to Contacts"
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-primary transition-colors disabled:opacity-50"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                      </button>
+                    )}
                     <button
                       onClick={() => ignoreMutation.mutate(requestId)}
                       disabled={ignoreMutation.isPending}
-                      title="Ignore"
+                      title={isGroup ? "Leave group invite" : "Ignore"}
                       className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-destructive transition-colors disabled:opacity-50"
                     >
                       <X className="w-4 h-4" />
@@ -154,4 +185,3 @@ export default function MessageRequestsPage() {
     </ProtectedRoute>
   );
 }
-

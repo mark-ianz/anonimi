@@ -342,6 +342,7 @@ export const getConversationRequests = async (userId: string) => {
   })
     .populate("fromUserId", "anonimiId username profileImage onlineStatus isTemporary")
     .populate("conversationId", "_id updatedAt lastMessage")
+    .populate("groupId", "_id name image")
     .sort({ createdAt: -1 })
     .lean();
 
@@ -350,6 +351,7 @@ export const getConversationRequests = async (userId: string) => {
     .map((r) => {
     const fromUser = r.fromUserId ?? null;
     const fallbackFromUserId = r.fromUserId?.toString?.() ?? "";
+    const group = r.groupId ?? null;
 
     const participant = fromUser
       ? {
@@ -375,11 +377,21 @@ export const getConversationRequests = async (userId: string) => {
 
     return {
       id: r.conversationId._id.toString(),
-      type: "private" as const,
+      type: group ? ("group" as const) : ("private" as const),
       participant,
+      group: group
+        ? {
+            id: group._id.toString(),
+            name: group.name,
+            image: group.image ?? null,
+            memberCount: 0,
+            fallbackProfileImages: [],
+          }
+        : undefined,
       lastMessage: r.conversationId.lastMessage ?? null,
       requestStatus: "pending",
       requestId: r._id.toString(),
+      requestFromUserId: fromUser?._id?.toString?.() ?? fallbackFromUserId,
       unreadCount: 0,
       updatedAt: r.conversationId.updatedAt,
     };

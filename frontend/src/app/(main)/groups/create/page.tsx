@@ -2,16 +2,20 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Check, X, Camera, ChevronDown, Upload, Trash2 } from "lucide-react";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import { useGroups } from "@/hooks/useGroups";
 import { useContacts } from "@/hooks/useContacts";
+import { useDebounce } from "@/hooks/useDebounce";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
 import { cn } from "@/lib/utils";
 import { validateUploadFile, type UploadSource } from "@/lib/uploadPolicy";
+import api from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import UserAvatar from "@/components/shared/UserAvatar";
 import TemporaryAccountModal from "@/components/shared/TemporaryAccountModal";
+import type { SearchUser } from "@/types/user";
 
 export default function CreateGroupPage() {
   const router = useRouter();
@@ -34,14 +38,40 @@ export default function CreateGroupPage() {
   const [avatarPopoverOpen, setAvatarPopoverOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const debouncedSearchQuery = useDebounce(searchQuery, 350);
 
-  const filtered = contacts.filter((c) => {
+  const usersQuery = useQuery({
+    queryKey: ["groups", "create", "users-search", debouncedSearchQuery],
+    queryFn: async () => {
+      const res = await api.get("/users/search", {
+        params: { q: debouncedSearchQuery.trim(), limit: 20 },
+      });
+      return (res.data?.data ?? []) as SearchUser[];
+    },
+    enabled: debouncedSearchQuery.trim().length >= 2,
+    staleTime: 1000 * 30,
+  });
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredContacts = contacts.filter((c) => {
     const n = c.nickname ?? c.username;
     return (
-      n.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.anonimiId.toLowerCase().includes(searchQuery.toLowerCase())
+      n.toLowerCase().includes(normalizedQuery) ||
+      c.anonimiId.toLowerCase().includes(normalizedQuery)
     );
   });
+  const searchableUsers = (usersQuery.data ?? []).filter((candidate) => candidate.id !== user?.id);
+  const displayedUsers =
+    debouncedSearchQuery.trim().length >= 2
+      ? searchableUsers
+      : filteredContacts.map((contact) => ({
+          id: contact.contactId,
+          anonimiId: contact.anonimiId,
+          username: contact.nickname ?? contact.username,
+          profileImage: contact.profileImage,
+          onlineStatus: contact.onlineStatus,
+          isTemporary: false,
+        }));
 
   function toggleContact(anonimiId: string) {
     setSelectedIds((prev) =>
@@ -85,7 +115,6 @@ export default function CreateGroupPage() {
   }, [avatarPopoverOpen]);
 
   async function handleCreate() {
-    if (selectedIds.length === 0) return;
     if (isTempUser) {
       setTempGateOpen(true);
       return;
@@ -365,12 +394,13 @@ export default function CreateGroupPage() {
               <div className="flex flex-wrap gap-2">
                 {selectedIds.map((anonimiId) => {
                   const c = contacts.find((c) => c.anonimiId === anonimiId);
+                  const foundUser = searchableUsers.find((candidate) => candidate.anonimiId === anonimiId);
                   return (
                     <span
                       key={anonimiId}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium"
                     >
-                      {c?.nickname ?? c?.username ?? anonimiId}
+                      {c?.nickname ?? c?.username ?? foundUser?.username ?? anonimiId}
                       <button
                         onClick={() => toggleContact(anonimiId)}
                         className="hover:text-destructive transition-colors"
@@ -390,34 +420,34 @@ export default function CreateGroupPage() {
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search contacts..."
+              placeholder="Search any user by username or anonimi..."
               className="w-full h-10 px-3 rounded-xl bg-muted/50 border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all"
             />
 
             <div className="space-y-1 max-h-64 overflow-y-auto">
-              {filtered.map((contact) => {
-                const isSelected = selectedIds.includes(contact.anonimiId);
+              {displayedUsers.map((candidate) => {
+                const isSelected = selectedIds.includes(candidate.anonimiId);
                 return (
                   <button
-                    key={contact.contactId}
-                    onClick={() => toggleContact(contact.anonimiId)}
+                    key={candidate.id}
+                    onClick={() => toggleContact(candidate.anonimiId)}
                     className={cn(
                       "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-left transition-colors",
                       isSelected ? "bg-primary/10" : "hover:bg-muted/50"
                     )}
                   >
                     <UserAvatar
-                      imageUrl={contact.profileImage}
-                      name={contact.nickname ?? contact.username}
+                      imageUrl={candidate.profileImage}
+                      name={candidate.username}
                       className="w-10 h-10 rounded-xl shrink-0"
                       roundedClassName="rounded-xl"
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">
-                        {contact.nickname ?? contact.username}
+                        {candidate.username}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        @{contact.anonimiId}
+                        @{candidate.anonimiId}
                       </p>
                     </div>
                     {isSelected && (
@@ -428,9 +458,14 @@ export default function CreateGroupPage() {
                   </button>
                 );
               })}
-              {!filtered.length && searchQuery && (
+              {usersQuery.isFetching && (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  No contacts found
+                  Searching users...
+                </p>
+              )}
+              {!usersQuery.isFetching && !displayedUsers.length && searchQuery && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No users found
                 </p>
               )}
             </div>
@@ -443,13 +478,13 @@ export default function CreateGroupPage() {
           <div className="mx-auto w-full max-w-3xl p-4">
             <button
               onClick={handleCreate}
-              disabled={selectedIds.length === 0 || isCreating || isUploading}
+              disabled={isCreating || isUploading}
               className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isCreating || isUploading ? (
                 <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
               ) : null}
-              Create Group ({selectedIds.length} members)
+              Create Group {selectedIds.length > 0 ? `(${selectedIds.length} members)` : "(just you)"}
             </button>
           </div>
         </div>

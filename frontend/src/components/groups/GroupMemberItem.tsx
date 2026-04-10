@@ -42,6 +42,7 @@ const RoleIcon = ({ role }: { role: GroupRole }) => {
 };
 
 const getJoinSourceLabel = (member: GroupMember) => {
+  if (member.status === "invited") return member.addedBy ? `Invite pending from ${member.addedBy.username}` : "Invite pending";
   const by = member.addedBy ? `${member.addedBy.username}` : null;
   if (member.joinedVia === "group_create") return "Created this group";
   if (member.joinedVia === "invite_link") return by ? `Joined via invite link from ${by}` : "Joined via invite link";
@@ -81,6 +82,7 @@ export default function GroupMemberItem({
   const canMute = canManage && !isMemberOwner;
   const canTransfer = isOwner && !isSelf && member.role !== "owner";
   const canShowAdminActions = canManage;
+  const isPendingInvite = member.status === "invited";
   
   const isMuted = member.mutedUntil && new Date(member.mutedUntil) > new Date();
   const muteOptions = [15, 60, 240, 1440, 10080];
@@ -124,11 +126,12 @@ export default function GroupMemberItem({
         {/* Role badge */}
         <span className={cn(
           "text-xs px-2 py-0.5 rounded-full font-medium",
+          isPendingInvite ? "bg-amber-500/10 text-amber-600" :
           member.role === "owner" ? "bg-yellow-500/10 text-yellow-600" :
           member.role === "admin" ? "bg-blue-500/10 text-blue-600" :
           "bg-muted text-muted-foreground"
         )}>
-          {roleLabels[member.role]}
+          {isPendingInvite ? "Invited" : roleLabels[member.role]}
         </span>
 
         {/* Actions */}
@@ -156,7 +159,7 @@ export default function GroupMemberItem({
                   View profile
                 </Link>
 
-                {!isSelf && (
+                {!isSelf && !isPendingInvite && (
                   <button
                     onClick={() => { onSendMessage?.(member.anonimiId); setMenuOpen(false); }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"

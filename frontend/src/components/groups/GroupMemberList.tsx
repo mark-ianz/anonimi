@@ -1,14 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useGroup } from "@/hooks/useGroups";
 import { useContacts } from "@/hooks/useContacts";
+import { useDebounce } from "@/hooks/useDebounce";
 import { useAuthStore } from "@/stores/authStore";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import GroupMemberItem from "./GroupMemberItem";
 import LoadingSkeleton from "@/components/shared/LoadingSkeleton";
 import type { Group, GroupMember } from "@/types/group";
+import type { SearchUser } from "@/types/user";
 import { Search, UserPlus } from "lucide-react";
 import api from "@/lib/api";
 import UserAvatar from "@/components/shared/UserAvatar";
@@ -129,19 +132,43 @@ function AddMembersModal({
   onClose: () => void;
   onAdd: (anonimiIds: string[]) => void;
 }) {
+  const { user } = useAuthStore();
   const { contacts, isLoadingContacts } = useContacts();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
+  const debouncedSearch = useDebounce(search, 350);
 
   const existing = new Set(existingMemberAnonimiIds);
+  const usersQuery = useQuery({
+    queryKey: ["groups", "add-members", "users-search", debouncedSearch],
+    queryFn: async () => {
+      const res = await api.get("/users/search", {
+        params: { q: debouncedSearch.trim(), limit: 20 },
+      });
+      return (res.data?.data ?? []) as SearchUser[];
+    },
+    enabled: debouncedSearch.trim().length >= 2,
+    staleTime: 1000 * 30,
+  });
+
   const selectableContacts = contacts.filter((contact) => !existing.has(contact.anonimiId));
-  const filtered = search
-    ? selectableContacts.filter((c) => {
-        const display = (c.nickname ?? c.username).toLowerCase();
+  const fallbackUsers = selectableContacts.map((contact) => ({
+    id: contact.contactId,
+    anonimiId: contact.anonimiId,
+    username: contact.nickname ?? contact.username,
+    profileImage: contact.profileImage,
+    onlineStatus: contact.onlineStatus,
+    isTemporary: false,
+  }));
+  const filtered = debouncedSearch.trim().length >= 2
+    ? (usersQuery.data ?? []).filter(
+        (candidate) => !existing.has(candidate.anonimiId) && candidate.id !== user?.id
+      )
+    : fallbackUsers.filter((candidate) => {
+        const display = candidate.username.toLowerCase();
         const q = search.toLowerCase();
-        return display.includes(q) || c.anonimiId.toLowerCase().includes(q);
-      })
-    : selectableContacts;
+        return display.includes(q) || candidate.anonimiId.toLowerCase().includes(q);
+      });
 
   const toggle = (anonimiId: string) => {
     setSelected((prev) =>
@@ -158,7 +185,7 @@ function AddMembersModal({
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by username or anonimi..."
+          placeholder="Search any user by username or anonimi..."
           className="w-full h-10 px-3 rounded-xl bg-muted/50 border-0 text-sm"
           autoFocus
         />
@@ -168,33 +195,37 @@ function AddMembersModal({
             <LoadingSkeleton rows={4} className="px-1 py-2" />
           )}
 
-          {!isLoadingContacts && filtered.map((contact) => {
-            const isSelected = selected.includes(contact.anonimiId);
+          {!isLoadingContacts && filtered.map((candidate) => {
+            const isSelected = selected.includes(candidate.anonimiId);
             return (
               <button
-                key={contact.contactId}
-                onClick={() => toggle(contact.anonimiId)}
+                key={candidate.id}
+                onClick={() => toggle(candidate.anonimiId)}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-colors ${
                   isSelected ? "bg-primary/10" : "hover:bg-muted/50"
                 }`}
               >
                 <UserAvatar
-                  imageUrl={contact.profileImage}
-                  name={contact.username}
+                  imageUrl={candidate.profileImage}
+                  name={candidate.username}
                   className="w-9 h-9"
                   roundedClassName="rounded-lg"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{contact.nickname ?? contact.username}</p>
-                  <p className="text-xs text-muted-foreground truncate">@{contact.anonimiId}</p>
+                  <p className="text-sm font-medium truncate">{candidate.username}</p>
+                  <p className="text-xs text-muted-foreground truncate">@{candidate.anonimiId}</p>
                 </div>
                 {isSelected && <span className="text-xs text-primary font-medium">Selected</span>}
               </button>
             );
           })}
 
+          {usersQuery.isFetching && (
+            <p className="text-sm text-muted-foreground text-center py-6">Searching users...</p>
+          )}
+
           {!isLoadingContacts && filtered.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-6">No contacts available to add.</p>
+            <p className="text-sm text-muted-foreground text-center py-6">No users available to add.</p>
           )}
         </div>
 

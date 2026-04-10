@@ -208,6 +208,7 @@ export interface IMessageRequest extends Document {
   fromUserId: Types.ObjectId;
   toUserId: Types.ObjectId;
   status: "pending" | "accepted" | "ignored";
+  groupId?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -7,13 +7,14 @@ const messageRequestSchema = new Schema<IMessageRequest>(
     conversationId: { type: Schema.Types.ObjectId, ref: "Conversation", required: true },
     fromUserId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     toUserId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    groupId: { type: Schema.Types.ObjectId, ref: "Group" },
     status: { type: String, enum: RequestStatus, default: RequestStatus.PENDING },
   },
   { timestamps: true }
 );
 
 messageRequestSchema.index({ toUserId: 1, status: 1 });
-messageRequestSchema.index({ conversationId: 1 }, { unique: true });
+messageRequestSchema.index({ conversationId: 1, toUserId: 1 }, { unique: true });
 messageRequestSchema.index({ fromUserId: 1, toUserId: 1 });
 
 export const MessageRequest = mongoose.model<IMessageRequest>(

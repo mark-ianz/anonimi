@@ -1,15 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { X, Plus, Search } from "lucide-react";
 import { useGroups } from "@/hooks/useGroups";
 import { useContacts } from "@/hooks/useContacts";
+import { useDebounce } from "@/hooks/useDebounce";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-import { resolveMediaUrl } from "@/lib/mediaUrl";
+import api from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import TemporaryAccountModal from "@/components/shared/TemporaryAccountModal";
 import UserAvatar from "@/components/shared/UserAvatar";
+import type { SearchUser } from "@/types/user";
 
 interface CreateGroupDialogProps {
   open: boolean;
@@ -27,12 +30,39 @@ export default function CreateGroupDialog({ open, onClose }: CreateGroupDialogPr
   const [name, setName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const debouncedSearchQuery = useDebounce(searchQuery, 350);
 
-  const filtered = contacts.filter((c) => {
-    const n = c.nickname ?? c.username;
-    return n.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.anonimiId.toLowerCase().includes(searchQuery.toLowerCase());
+  const usersQuery = useQuery({
+    queryKey: ["groups", "create-dialog", "users-search", debouncedSearchQuery],
+    queryFn: async () => {
+      const res = await api.get("/users/search", {
+        params: { q: debouncedSearchQuery.trim(), limit: 20 },
+      });
+      return (res.data?.data ?? []) as SearchUser[];
+    },
+    enabled: debouncedSearchQuery.trim().length >= 2,
+    staleTime: 1000 * 30,
   });
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredContacts = contacts.filter((c) => {
+    const n = c.nickname ?? c.username;
+    return (
+      n.toLowerCase().includes(normalizedQuery) ||
+      c.anonimiId.toLowerCase().includes(normalizedQuery)
+    );
+  });
+  const displayedUsers =
+    debouncedSearchQuery.trim().length >= 2
+      ? (usersQuery.data ?? []).filter((candidate) => candidate.id !== user?.id)
+      : filteredContacts.map((contact) => ({
+          id: contact.contactId,
+          anonimiId: contact.anonimiId,
+          username: contact.nickname ?? contact.username,
+          profileImage: contact.profileImage,
+          onlineStatus: contact.onlineStatus,
+          isTemporary: false,
+        }));
 
   function toggleContact(anonimiId: string) {
     setSelectedIds((prev) =>
@@ -41,7 +71,6 @@ export default function CreateGroupDialog({ open, onClose }: CreateGroupDialogPr
   }
 
   function handleCreate() {
-    if (selectedIds.length === 0) return;
     if (isTempUser) {
       setTempGateOpen(true);
       return;
@@ -100,9 +129,10 @@ export default function CreateGroupDialog({ open, onClose }: CreateGroupDialogPr
             <div className="flex flex-wrap gap-1.5">
               {selectedIds.map((anonimiId) => {
                 const c = contacts.find((c) => c.anonimiId === anonimiId);
+                const foundUser = (usersQuery.data ?? []).find((candidate) => candidate.anonimiId === anonimiId);
                 return (
                   <span key={anonimiId} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                    {c?.nickname ?? c?.username ?? anonimiId}
+                    {c?.nickname ?? c?.username ?? foundUser?.username ?? anonimiId}
                     <button onClick={() => toggleContact(anonimiId)} className="hover:text-destructive transition-colors">
                       <X className="w-3 h-3" />
                     </button>
@@ -120,32 +150,32 @@ export default function CreateGroupDialog({ open, onClose }: CreateGroupDialogPr
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search contacts..."
+                placeholder="Search any user..."
                 className="w-full h-9 pl-9 pr-3 rounded-xl bg-muted/50 border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all"
               />
             </div>
 
             <div className="space-y-1 max-h-52 overflow-y-auto">
-              {filtered.map((contact) => {
-                const isSelected = selectedIds.includes(contact.anonimiId);
+              {displayedUsers.map((candidate) => {
+                const isSelected = selectedIds.includes(candidate.anonimiId);
                 return (
                   <button
-                    key={contact.contactId}
-                    onClick={() => toggleContact(contact.anonimiId)}
+                    key={candidate.id}
+                    onClick={() => toggleContact(candidate.anonimiId)}
                     className={cn(
                       "flex items-center gap-3 w-full px-3 py-2 rounded-xl text-left transition-colors",
                       isSelected ? "bg-primary/10" : "hover:bg-muted/50"
                     )}
                   >
                     <UserAvatar
-                      imageUrl={contact.profileImage}
-                      name={contact.nickname ?? contact.username}
+                      imageUrl={candidate.profileImage}
+                      name={candidate.username}
                       className="w-8 h-8 rounded-lg shrink-0"
                       roundedClassName="rounded-lg"
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{contact.nickname ?? contact.username}</p>
-                      <p className="text-xs text-muted-foreground">@{contact.anonimiId}</p>
+                      <p className="text-sm font-medium truncate">{candidate.username}</p>
+                      <p className="text-xs text-muted-foreground">@{candidate.anonimiId}</p>
                     </div>
                     {isSelected && (
                       <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
@@ -155,8 +185,11 @@ export default function CreateGroupDialog({ open, onClose }: CreateGroupDialogPr
                   </button>
                 );
               })}
-              {!filtered.length && (
-                <p className="text-sm text-muted-foreground text-center py-4">No contacts found</p>
+              {usersQuery.isFetching && (
+                <p className="text-sm text-muted-foreground text-center py-4">Searching users...</p>
+              )}
+              {!usersQuery.isFetching && !displayedUsers.length && (
+                <p className="text-sm text-muted-foreground text-center py-4">No users found</p>
               )}
             </div>
           </div>
@@ -166,13 +199,13 @@ export default function CreateGroupDialog({ open, onClose }: CreateGroupDialogPr
         <div className="p-4 border-t border-border/30">
           <button
             onClick={handleCreate}
-            disabled={selectedIds.length === 0 || isCreating}
+            disabled={isCreating}
             className="w-full h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isCreating ? (
               <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
             ) : null}
-            Create Group ({selectedIds.length} members)
+            Create Group {selectedIds.length > 0 ? `(${selectedIds.length} members)` : "(just you)"}
           </button>
         </div>
       </div>

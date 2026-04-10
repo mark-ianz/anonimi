@@ -620,10 +620,11 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
             }),
           }));
 
-          // Keep group settings screens in sync (e.g. /groups/:id/settings?tab=members).
-          qc.invalidateQueries({ queryKey: ["groups"] });
         }
 
+        // Keep group settings screens in sync (e.g. /groups/:id/settings?tab=members),
+        // including invite accept/decline messages that do not change memberCount text.
+        qc.invalidateQueries({ queryKey: ["groups"] });
         qc.invalidateQueries({ queryKey: ["conversations"] });
         qc.invalidateQueries({ queryKey: ["conversation", payload.conversationId] });
       }

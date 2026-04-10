@@ -128,6 +128,47 @@ const addMemberToGroup = async (
   );
 };
 
+const isAcceptedContact = async (userId: string, otherUserId: Types.ObjectId) => {
+  const contact = await Contact.findOne({
+    $or: [
+      { userId: new Types.ObjectId(userId), contactId: otherUserId, status: "accepted" },
+      { userId: otherUserId, contactId: new Types.ObjectId(userId), status: "accepted" },
+    ],
+  })
+    .select("_id")
+    .lean();
+
+  return !!contact;
+};
+
+const emitGroupInviteRequest = async (
+  conversationId: Types.ObjectId,
+  requestId: Types.ObjectId,
+  recipientUserId: Types.ObjectId,
+  senderUserId: Types.ObjectId,
+  previewContent: string
+) => {
+  const sender = await User.findById(senderUserId)
+    .select("anonimiId username profileImage")
+    .lean();
+
+  emitToUser(recipientUserId.toString(), "message-request:new", {
+    requestId: requestId.toString(),
+    conversationId: conversationId.toString(),
+    from: {
+      id: senderUserId.toString(),
+      anonimiId: sender?.anonimiId,
+      username: sender?.username,
+      profileImage: sender?.profileImage ?? null,
+    },
+    preview: {
+      content: previewContent,
+      type: MessageType.SYSTEM,
+      timestamp: new Date().toISOString(),
+    },
+  });
+};
+
 export const createGroup = async (
   ownerId: string,
   name: string | undefined,
@@ -144,30 +185,35 @@ export const createGroup = async (
   const actualOwnerId = ownerId;
   const groupName = name?.trim() ? name.trim() : formatAutoGroupName();
 
-  const participants = [new Types.ObjectId(actualOwnerId)];
-
+  const uniqueMemberAnonimiIds = [...new Set(memberAnonimiIds)].filter(
+    (anonimiId) => anonimiId && anonimiId !== owner?.anonimiId
+  );
   const memberUsers = await User.find({
-    anonimiId: { $in: memberAnonimiIds },
+    anonimiId: { $in: uniqueMemberAnonimiIds },
   });
+  const memberUserByAnonimiId = new Map(
+    memberUsers.map((user) => [user.anonimiId, user] as const)
+  );
+  const orderedMemberUsers = uniqueMemberAnonimiIds
+    .map((anonimiId) => memberUserByAnonimiId.get(anonimiId))
+    .filter((user): user is NonNullable<typeof user> => !!user);
 
-  const invitedMembers: Types.ObjectId[] = [];
-  const joinedMembers: Types.ObjectId[] = [];
+  const joinedMembers: typeof orderedMemberUsers = [];
+  const invitedMembers: typeof orderedMemberUsers = [];
 
-  for (const user of memberUsers) {
-    const isContact = await Contact.findOne({
-      $or: [
-        { userId: actualOwnerId, contactId: user._id, status: "accepted" },
-        { userId: user._id, contactId: actualOwnerId, status: "accepted" },
-      ],
-    });
-
+  for (const user of orderedMemberUsers) {
+    const isContact = await isAcceptedContact(actualOwnerId, user._id);
     if (isContact) {
-      joinedMembers.push(user._id);
+      joinedMembers.push(user);
     } else {
-      invitedMembers.push(user._id);
+      invitedMembers.push(user);
     }
-    participants.push(user._id);
   }
+
+  const participants = [
+    new Types.ObjectId(actualOwnerId),
+    ...joinedMembers.map((user) => user._id),
+  ];
 
   const conversation = await Conversation.create({
     type: "group",
@@ -204,38 +250,47 @@ export const createGroup = async (
     },
   ];
 
-  for (const user of memberUsers) {
-    const isContact = await Contact.findOne({
-      $or: [
-        { userId: actualOwnerId, contactId: user._id, status: "accepted" },
-        { userId: user._id, contactId: actualOwnerId, status: "accepted" },
-      ],
-    });
-
+  for (const user of joinedMembers) {
     await GroupMember.create({
       groupId: group._id,
       userId: user._id,
       role: GroupRole.MEMBER,
       joinedVia: "manual_add",
       addedByUserId: new Types.ObjectId(actualOwnerId),
-      joinedAt: isContact ? new Date() : undefined,
+      joinedAt: new Date(),
     });
 
     memberData.push({
       userId: user._id.toString(),
       anonimiId: user.anonimiId,
       role: "member",
-      status: isContact ? "joined" : "invited",
+      status: "joined",
+    });
+  }
+
+  for (const user of invitedMembers) {
+    memberData.push({
+      userId: user._id.toString(),
+      anonimiId: user.anonimiId,
+      role: "member",
+      status: "invited",
     });
 
-    if (!isContact) {
-      await MessageRequest.create({
-        conversationId: conversation._id,
-        fromUserId: new Types.ObjectId(actualOwnerId),
-        toUserId: user._id,
-        status: "pending",
-      });
-    }
+    const request = await MessageRequest.create({
+      conversationId: conversation._id,
+      fromUserId: new Types.ObjectId(actualOwnerId),
+      toUserId: user._id,
+      groupId: group._id,
+      status: "pending",
+    });
+
+    await emitGroupInviteRequest(
+      conversation._id,
+      request._id,
+      user._id,
+      new Types.ObjectId(actualOwnerId),
+      `${owner?.username ?? "Someone"} added you to the group chat.`
+    );
   }
 
   const ownerName = owner?.username ?? "Someone";
@@ -245,20 +300,20 @@ export const createGroup = async (
     `${ownerName} created the group chat.`
   );
 
-  if (memberUsers.length > 0) {
-    const othersCount = Math.max(memberUsers.length - 1, 0);
-    const firstMemberName = memberUsers[0]?.username ?? "a member";
+  if (orderedMemberUsers.length > 0) {
+    const othersCount = Math.max(orderedMemberUsers.length - 1, 0);
+    const firstMemberName = orderedMemberUsers[0]?.username ?? "a member";
     const ownerAddedMessage =
-      memberUsers.length === 1
+      orderedMemberUsers.length === 1
         ? `You added ${firstMemberName} to the group chat.`
         : `You added ${firstMemberName} and ${othersCount} ${othersCount === 1 ? "other" : "others"} to the group chat.`;
     const memberAddedMessage =
-      memberUsers.length === 1
+      orderedMemberUsers.length === 1
         ? `${ownerName} added you to the group chat.`
         : `${ownerName} added you and ${othersCount} ${othersCount === 1 ? "other" : "others"} to the group chat.`;
 
     const ownerObjectId = new Types.ObjectId(actualOwnerId);
-    const memberObjectIds = memberUsers.map((member) => member._id);
+    const joinedMemberObjectIds = joinedMembers.map((member) => member._id);
 
     await Message.create({
       conversationId: conversation._id,
@@ -267,20 +322,22 @@ export const createGroup = async (
       content: ownerAddedMessage,
       readBy: [ownerObjectId],
       readByAt: { [actualOwnerId]: new Date() },
-      deletedFor: memberObjectIds,
+      deletedFor: joinedMemberObjectIds,
       unsent: false,
     });
 
-    await Message.create({
-      conversationId: conversation._id,
-      senderId: ownerObjectId,
-      type: MessageType.SYSTEM,
-      content: memberAddedMessage,
-      readBy: [ownerObjectId],
-      readByAt: { [actualOwnerId]: new Date() },
-      deletedFor: [ownerObjectId],
-      unsent: false,
-    });
+    if (joinedMembers.length > 0) {
+      await Message.create({
+        conversationId: conversation._id,
+        senderId: ownerObjectId,
+        type: MessageType.SYSTEM,
+        content: memberAddedMessage,
+        readBy: [ownerObjectId],
+        readByAt: { [actualOwnerId]: new Date() },
+        deletedFor: [ownerObjectId],
+        unsent: false,
+      });
+    }
   }
 
   return {
@@ -290,7 +347,7 @@ export const createGroup = async (
     image: group.image ?? null,
     ownerId: actualOwnerId,
     members: memberData,
-    photoFallbackUserIds: memberUsers.slice(0, 3).map((m) => m._id.toString()),
+    photoFallbackUserIds: joinedMembers.slice(0, 3).map((m) => m._id.toString()),
   };
 };
 
@@ -441,7 +498,16 @@ export const getGroupMembers = async (groupId: string, userId: string) => {
     requestByUserId.set(uid, req);
   }
 
-  return members.map((m: any) => ({
+  const pendingInvites = await MessageRequest.find({
+    groupId: group._id,
+    status: "pending",
+  })
+    .populate("toUserId", "anonimiId username profileImage")
+    .populate("fromUserId", "anonimiId username")
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const mappedMembers = members.map((m: any) => ({
     joinedVia: m.joinedVia ?? requestByUserId.get(m.userId._id.toString())?.source ?? "manual_add",
     addedBy: m.addedByUserId
       ? {
@@ -466,6 +532,37 @@ export const getGroupMembers = async (groupId: string, userId: string) => {
     muteReason: m.muteReason,
     joinedAt: m.joinedAt,
   }));
+
+  const pendingInviteEntries = pendingInvites
+    .filter((invite: any) => invite.toUserId?._id)
+    .filter(
+      (invite: any) =>
+        !mappedMembers.some(
+          (member) => member.userId === invite.toUserId._id.toString()
+        )
+    )
+    .map((invite: any) => ({
+      joinedVia: "manual_add" as const,
+      addedBy: invite.fromUserId
+        ? {
+            id: invite.fromUserId._id.toString(),
+            anonimiId: invite.fromUserId.anonimiId,
+            username: invite.fromUserId.username,
+          }
+        : null,
+      userId: invite.toUserId._id.toString(),
+      anonimiId: invite.toUserId.anonimiId,
+      username: invite.toUserId.username,
+      profileImage: invite.toUserId.profileImage ?? null,
+      role: GroupRole.MEMBER,
+      nickname: null,
+      mutedUntil: undefined,
+      muteReason: undefined,
+      joinedAt: invite.createdAt,
+      status: "invited" as const,
+    }));
+
+  return [...mappedMembers, ...pendingInviteEntries];
 };
 
 export const addMembers = async (
@@ -492,7 +589,8 @@ export const addMembers = async (
     throw new ForbiddenError("Not authorized to add members");
   }
 
-  const newMembers = await User.find({ anonimiId: { $in: memberAnonimiIds } });
+  const uniqueMemberAnonimiIds = [...new Set(memberAnonimiIds)];
+  const newMembers = await User.find({ anonimiId: { $in: uniqueMemberAnonimiIds } });
 
   const added: { anonimiId: string; status: string }[] = [];
   const invited: { anonimiId: string; status: string }[] = [];
@@ -511,12 +609,18 @@ export const addMembers = async (
 
     if (existingMember) continue;
 
-    const isContact = await Contact.findOne({
-      $or: [
-        { userId: new Types.ObjectId(userId), contactId: user._id, status: "accepted" },
-        { userId: user._id, contactId: new Types.ObjectId(userId), status: "accepted" },
-      ],
-    });
+    const existingInvite = await MessageRequest.findOne({
+      conversationId: group.conversationId,
+      toUserId: user._id,
+      groupId: group._id,
+      status: "pending",
+    })
+      .select("_id")
+      .lean();
+
+    if (existingInvite) continue;
+
+    const isContact = await isAcceptedContact(userId, user._id);
 
     const requiresApproval = !!group.settings?.joinRequestEnabled && !canBypassApproval;
 
@@ -545,28 +649,48 @@ export const addMembers = async (
       continue;
     }
 
-    await addMemberToGroup(group._id, group.conversationId, user._id, {
-      joinedVia: "manual_add",
-      addedByUserId: new Types.ObjectId(userId),
-    });
-
-    await createGroupSystemMessage(
-      group.conversationId,
-      new Types.ObjectId(userId),
-      `${user.username} was added by ${actorName} (manual add).`
-    );
-
     if (isContact) {
+      await addMemberToGroup(group._id, group.conversationId, user._id, {
+        joinedVia: "manual_add",
+        addedByUserId: new Types.ObjectId(userId),
+      });
+
+      await createGroupSystemMessage(
+        group.conversationId,
+        new Types.ObjectId(userId),
+        `${user.username} was added by ${actorName} (manual add).`
+      );
+
       added.push({ anonimiId: user.anonimiId, status: "joined" });
     } else {
       invited.push({ anonimiId: user.anonimiId, status: "invited" });
 
-      await MessageRequest.create({
-        conversationId: group.conversationId,
-        fromUserId: new Types.ObjectId(userId),
-        toUserId: user._id,
-        status: "pending",
-      });
+      const request = await MessageRequest.findOneAndUpdate(
+        {
+          conversationId: group.conversationId,
+          toUserId: user._id,
+        },
+        {
+          conversationId: group.conversationId,
+          fromUserId: new Types.ObjectId(userId),
+          toUserId: user._id,
+          groupId: group._id,
+          status: "pending",
+        },
+        {
+          upsert: true,
+          new: true,
+          setDefaultsOnInsert: true,
+        }
+      );
+
+      await emitGroupInviteRequest(
+        group.conversationId,
+        request._id,
+        user._id,
+        new Types.ObjectId(userId),
+        `${actorName} added you to the group chat.`
+      );
     }
   }
 
@@ -595,7 +719,22 @@ export const removeMember = async (
   });
 
   if (!targetMembership) {
-    throw new NotFoundError("Member not found");
+    const pendingInvite = await MessageRequest.findOne({
+      groupId: group._id,
+      toUserId: new Types.ObjectId(memberUserId),
+      status: "pending",
+    });
+
+    if (!pendingInvite) {
+      throw new NotFoundError("Member not found");
+    }
+
+    if (!requestingMembership || requestingMembership.role === GroupRole.MEMBER) {
+      throw new ForbiddenError("Not authorized to remove members");
+    }
+
+    await MessageRequest.deleteOne({ _id: pendingInvite._id });
+    return { message: "Pending invite removed" };
   }
 
   if (requestingUserId !== memberUserId) {

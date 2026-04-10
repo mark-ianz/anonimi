@@ -4,13 +4,70 @@ import { User } from "../models/user.model";
 import { Message } from "../models/message.model";
 import { Conversation } from "../models/conversation.model";
 import { Contact } from "../models/contact.model";
+import { Group } from "../models/group.model";
+import { GroupMember } from "../models/groupMember.model";
 import { apiSuccess } from "../utils/apiResponse";
 import { NotFoundError } from "../utils/apiError";
+import { MessageType } from "../types/enums";
 import {
   emitToUser,
   createAndEmitNotification,
 } from "../services/notification.service";
 import mongoose from "mongoose";
+
+const createGroupSystemMessage = async (
+  conversationId: mongoose.Types.ObjectId,
+  senderUserId: mongoose.Types.ObjectId,
+  content: string
+) => {
+  const message = await Message.create({
+    conversationId,
+    senderId: senderUserId,
+    type: MessageType.SYSTEM,
+    content,
+    readBy: [senderUserId],
+    readByAt: { [senderUserId.toString()]: new Date() },
+    unsent: false,
+  });
+
+  await Conversation.updateOne(
+    { _id: conversationId },
+    {
+      $set: {
+        lastMessage: {
+          content,
+          senderId: senderUserId,
+          type: MessageType.SYSTEM,
+          timestamp: message.createdAt,
+        },
+        updatedAt: new Date(),
+      },
+    }
+  );
+
+  const [sender, conversation] = await Promise.all([
+    User.findById(senderUserId).select("username profileImage").lean(),
+    Conversation.findById(conversationId).select("participants").lean(),
+  ]);
+
+  const payload = {
+    messageId: message._id.toString(),
+    conversationId: conversationId.toString(),
+    senderId: senderUserId.toString(),
+    senderUsername: sender?.username ?? "System",
+    senderProfileImage: sender?.profileImage ?? null,
+    type: MessageType.SYSTEM,
+    content,
+    mediaUrl: null,
+    fileName: null,
+    fileSize: null,
+    timestamp: message.createdAt.toISOString(),
+  };
+
+  for (const participantId of conversation?.participants ?? []) {
+    emitToUser(participantId.toString(), "message:receive", payload);
+  }
+};
 
 export const getMessageRequests = async (
   req: Request,
@@ -24,6 +81,7 @@ export const getMessageRequests = async (
     })
       .populate("fromUserId", "anonimiId username profileImage")
       .populate("conversationId")
+      .populate("groupId", "name image")
       .sort({ createdAt: -1 })
       .lean();
 
@@ -35,10 +93,12 @@ export const getMessageRequests = async (
 
         const fromUser = r.fromUserId ?? null;
         const fallbackFromUserId = r.fromUserId?.toString?.() ?? "";
+        const group = r.groupId ?? null;
 
         return {
           id: r._id.toString(),
           conversationId: r.conversationId._id.toString(),
+          type: group ? "group" : "private",
           from: fromUser
             ? {
                 id: fromUser._id.toString(),
@@ -54,6 +114,13 @@ export const getMessageRequests = async (
                 profileImage: null,
                 isDeleted: true,
               },
+          group: group
+            ? {
+                id: group._id.toString(),
+                name: group.name,
+                image: group.image ?? null,
+              }
+            : null,
           lastMessage: lastMessage
             ? {
                 content: lastMessage.content,
@@ -94,6 +161,45 @@ export const acceptMessageRequest = async (
 
     request.status = "accepted";
     await request.save();
+
+    const group = request.groupId ? await Group.findById(request.groupId).select("conversationId") : null;
+
+    if (group) {
+      const accepter = await User.findById(req.user!._id).select("username").lean();
+      const existingMember = await GroupMember.findOne({
+        groupId: request.groupId,
+        userId: req.user!._id,
+      });
+
+      if (!existingMember) {
+        await GroupMember.create({
+          groupId: request.groupId,
+          userId: req.user!._id,
+          role: "member",
+          joinedVia: "manual_add",
+          addedByUserId: request.fromUserId,
+          joinedAt: new Date(),
+        });
+      }
+
+      await Conversation.updateOne(
+        { _id: group.conversationId },
+        { $addToSet: { participants: req.user!._id } }
+      );
+
+      await createGroupSystemMessage(
+        group.conversationId,
+        req.user!._id,
+        `${accepter?.username ?? "A user"} accepted the group invite.`
+      );
+
+      apiSuccess(res, {
+        message: "Message request accepted.",
+        conversationId: request.conversationId.toString(),
+        contactAdded: false,
+      });
+      return;
+    }
 
     if (addToContacts) {
       await Contact.findOneAndUpdate(
@@ -207,9 +313,20 @@ export const ignoreMessageRequest = async (
       throw new NotFoundError("Message request not found");
     }
 
-    await Conversation.findByIdAndUpdate(request.conversationId, {
-      requestStatus: "ignored",
-    });
+    if (request.groupId) {
+      const [group, decliner] = await Promise.all([
+        Group.findById(request.groupId).select("conversationId"),
+        User.findById(req.user!._id).select("username").lean(),
+      ]);
+
+      if (group) {
+        await createGroupSystemMessage(
+          group.conversationId,
+          req.user!._id,
+          `${decliner?.username ?? "A user"} declined the group invite.`
+        );
+      }
+    }
 
     apiSuccess(res, { message: "Message request ignored." });
   } catch (error) {

@@ -12,7 +12,7 @@ export const createGroupSchema = z.object({
         groupProfileEditPolicy: z.enum(["admins_only", "all_members"]).optional(),
       })
       .optional(),
-    memberAnonimiIds: z.array(z.string()).min(1, "At least one member is required"),
+    memberAnonimiIds: z.array(z.string()).default([]),
   }),
 });
 
