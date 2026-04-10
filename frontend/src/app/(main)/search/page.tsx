@@ -304,6 +304,8 @@ function SearchPageContent() {
           id: message.id,
           conversationId: message.conversationId,
           senderId: message.senderId ?? null,
+          senderUsername: message.senderUsername ?? null,
+          senderNickname: message.senderNickname ?? null,
           content: message.content,
           conversationType,
           conversationName,
@@ -532,7 +534,7 @@ function SearchPageContent() {
                                 ? "You"
                                 : item.conversationType === "private"
                                   ? item.conversationName
-                                  : "Member";
+                                  : item.senderNickname ?? item.senderUsername ?? "Member";
                             const snippet = item.content ? getSnippet(item.content, query) : "";
 
                             return (

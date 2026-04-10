@@ -980,8 +980,74 @@ export const searchMessages = async (
   const hasMore = messages.length > limit;
   if (hasMore) messages.pop();
 
+  const conversationIdsInResults = Array.from(
+    new Set(messages.map((message: any) => message.conversationId.toString()))
+  );
+  const senderIdsInResults = Array.from(
+    new Set(
+      messages
+        .map((message: any) => message.senderId?.toString?.())
+        .filter((senderId): senderId is string => !!senderId)
+    )
+  );
+
+  const [conversationsForResults, senders] = await Promise.all([
+    Conversation.find({ _id: { $in: conversationIdsInResults } })
+      .select("_id type")
+      .lean(),
+    User.find({ _id: { $in: senderIdsInResults } })
+      .select("_id username")
+      .lean(),
+  ]);
+
+  const senderMap = new Map(
+    senders.map((sender: any) => [sender._id.toString(), sender.username ?? null])
+  );
+
+  const groupConversationIds = conversationsForResults
+    .filter((conversation: any) => conversation.type === "group")
+    .map((conversation: any) => conversation._id);
+
+  const groups = groupConversationIds.length
+    ? await Group.find({ conversationId: { $in: groupConversationIds } })
+        .select("_id conversationId")
+        .lean()
+    : [];
+
+  const groupIdByConversationId = new Map(
+    groups.map((group: any) => [group.conversationId.toString(), group._id.toString()])
+  );
+
+  const groupMembers = groups.length
+    ? await GroupMember.find({
+        groupId: { $in: groups.map((group: any) => group._id) },
+        userId: { $in: senderIdsInResults },
+      })
+        .select("groupId userId nickname")
+        .lean()
+    : [];
+
+  const groupNicknameMap = new Map(
+    groupMembers.map((member: any) => [
+      `${member.groupId.toString()}:${member.userId.toString()}`,
+      member.nickname ?? null,
+    ])
+  );
+
   return {
     messages: messages.map((message: any) => ({
+      ...(message.senderId
+        ? {
+            senderUsername: senderMap.get(message.senderId.toString()) ?? null,
+            senderNickname:
+              groupNicknameMap.get(
+                `${groupIdByConversationId.get(message.conversationId.toString()) ?? ""}:${message.senderId.toString()}`
+              ) ?? null,
+          }
+        : {
+            senderUsername: null,
+            senderNickname: null,
+          }),
       id: message._id.toString(),
       conversationId: message.conversationId.toString(),
       senderId: message.senderId?.toString() ?? null,

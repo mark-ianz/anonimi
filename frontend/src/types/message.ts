@@ -37,6 +37,8 @@ export interface Message {
   id: string;
   conversationId: string;
   senderId: string;
+  senderUsername?: string | null;
+  senderNickname?: string | null;
   type: MessageType;
   content: string | null;
   isStealth?: boolean;
