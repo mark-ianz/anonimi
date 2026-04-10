@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useGroup } from "@/hooks/useGroups";
 import { useContacts } from "@/hooks/useContacts";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -22,12 +22,28 @@ interface GroupMemberListProps {
   group: Group;
 }
 
+interface BlockEntry {
+  blockId: string;
+  blockedUser: {
+    anonimiId: string;
+  };
+}
+
 export default function GroupMemberList({ groupId, members: initialMembers, group }: GroupMemberListProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const { members, isLoadingMembers, removeMember, changeRole, addMembers, muteMember, unmuteMember, transferOwnership, setMemberNickname } = useGroup(groupId);
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+
+  const { data: blocks = [] } = useQuery({
+    queryKey: ["blocks"],
+    queryFn: async () => {
+      const res = await api.get("/blocks");
+      return res.data.data as BlockEntry[];
+    },
+  });
 
   const displayMembers = members.length > 0 ? members : initialMembers;
   const filtered = search
@@ -62,8 +78,25 @@ export default function GroupMemberList({ groupId, members: initialMembers, grou
     try {
       await api.post("/blocks", { targetAnonimiId: anonimiId });
       toast.success("User blocked.");
+      queryClient.invalidateQueries({ queryKey: ["blocks"] });
     } catch {
       toast.error("Failed to block user.");
+    }
+  };
+
+  const handleUnblock = async (anonimiId: string) => {
+    const block = blocks.find((entry) => entry.blockedUser.anonimiId === anonimiId);
+    if (!block?.blockId) {
+      toast.error("Could not find block entry.");
+      return;
+    }
+
+    try {
+      await api.delete(`/blocks/${block.blockId}`);
+      toast.success("User unblocked.");
+      queryClient.invalidateQueries({ queryKey: ["blocks"] });
+    } catch {
+      toast.error("Failed to unblock user.");
     }
   };
 
@@ -98,6 +131,7 @@ export default function GroupMemberList({ groupId, members: initialMembers, grou
           <GroupMemberItem
             key={member.userId}
             member={member}
+            isBlocked={blocks.some((entry) => entry.blockedUser.anonimiId === member.anonimiId)}
             currentUserRole={group.myRole}
             currentUserId={user?.id ?? ""}
             onRemove={(userId) => removeMember(userId)}
@@ -108,6 +142,7 @@ export default function GroupMemberList({ groupId, members: initialMembers, grou
             onSendMessage={handleSendMessage}
             onSetNickname={(userId, nickname) => setMemberNickname({ userId, nickname })}
             onBlock={handleBlock}
+            onUnblock={handleUnblock}
           />
         ))}
       </div>
@@ -204,6 +239,8 @@ function AddMembersModal({
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-colors ${
                   isSelected ? "bg-primary/10" : "hover:bg-muted/50"
                 }`}
+                type="button"
+                style={{ cursor: "pointer" }}
               >
                 <UserAvatar
                   imageUrl={candidate.profileImage}
@@ -232,14 +269,14 @@ function AddMembersModal({
         <div className="flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 h-10 rounded-xl bg-muted text-sm font-medium hover:bg-muted/80"
+            className="flex-1 h-10 rounded-xl bg-muted text-sm font-medium hover:bg-muted/80 cursor-pointer"
           >
             Cancel
           </button>
           <button
             onClick={() => onAdd(selected)}
             disabled={selected.length === 0}
-            className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
+            className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 cursor-pointer"
           >
             Add {selected.length > 0 && `(${selected.length})`}
           </button>

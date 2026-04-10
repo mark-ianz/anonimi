@@ -17,6 +17,7 @@ import {
 
 interface GroupMemberItemProps {
   member: GroupMember;
+  isBlocked?: boolean;
   currentUserRole: GroupRole;
   currentUserId: string;
   onRemove?: (userId: string) => void;
@@ -27,6 +28,7 @@ interface GroupMemberItemProps {
   onSendMessage?: (anonimiId: string) => void;
   onSetNickname?: (userId: string, nickname: string | null) => void;
   onBlock?: (anonimiId: string) => void;
+  onUnblock?: (anonimiId: string) => void;
 }
 
 const roleLabels: Record<GroupRole, string> = {
@@ -52,6 +54,7 @@ const getJoinSourceLabel = (member: GroupMember) => {
 
 export default function GroupMemberItem({
   member,
+  isBlocked = false,
   currentUserRole,
   currentUserId,
   onRemove,
@@ -62,10 +65,15 @@ export default function GroupMemberItem({
   onSendMessage,
   onSetNickname,
   onBlock,
+  onUnblock,
 }: GroupMemberItemProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [confirmBlock, setConfirmBlock] = useState(false);
+  const [confirmUnblock, setConfirmUnblock] = useState(false);
+  const [confirmPromote, setConfirmPromote] = useState(false);
+  const [confirmTransferOwnership, setConfirmTransferOwnership] = useState(false);
   const [showNicknameForm, setShowNicknameForm] = useState(false);
   const [nicknameValue, setNicknameValue] = useState(member.nickname ?? "");
   const [showMuteDialog, setShowMuteDialog] = useState(false);
@@ -152,7 +160,7 @@ export default function GroupMemberItem({
               <div className="absolute right-0 z-10 top-full mt-1 glass rounded-xl shadow-elevated py-1 min-w-50 animate-fade-in">
                 <Link
                   href={`/user/${member.anonimiId}`}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors cursor-pointer"
                   onClick={() => setMenuOpen(false)}
                 >
                   <User className="w-4 h-4" />
@@ -183,11 +191,18 @@ export default function GroupMemberItem({
 
                 {!isSelf && (
                   <button
-                    onClick={() => { onBlock?.(member.anonimiId); setMenuOpen(false); }}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      if (isBlocked) {
+                        setConfirmUnblock(true);
+                        return;
+                      }
+                      setConfirmBlock(true);
+                    }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
                   >
                     <ShieldBan className="w-4 h-4" />
-                    Block
+                    {isBlocked ? "Unblock" : "Block"}
                   </button>
                 )}
 
@@ -202,7 +217,10 @@ export default function GroupMemberItem({
                   <>
                     {member.role === "member" && (
                       <button
-                        onClick={() => { onChangeRole?.(member.userId, "admin"); setMenuOpen(false); }}
+                        onClick={() => {
+                          setMenuOpen(false);
+                          setConfirmPromote(true);
+                        }}
                         className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors cursor-pointer"
                       >
                         <Shield className="w-4 h-4" />
@@ -219,7 +237,10 @@ export default function GroupMemberItem({
                     )}
                     {canTransfer && (
                       <button
-                        onClick={() => { onTransferOwnership?.(member.userId); setMenuOpen(false); }}
+                        onClick={() => {
+                          setMenuOpen(false);
+                          setConfirmTransferOwnership(true);
+                        }}
                         className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors cursor-pointer"
                       >
                         <Crown className="w-4 h-4 text-yellow-500" />
@@ -252,7 +273,7 @@ export default function GroupMemberItem({
                 {canShowAdminActions && (
                   <button
                     onClick={() => { setConfirmRemove(true); setMenuOpen(false); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
                   >
                     <UserMinus className="w-4 h-4" />
                     Remove
@@ -328,6 +349,56 @@ export default function GroupMemberItem({
       )}
 
       <ConfirmDialog
+        open={confirmBlock}
+        onClose={() => setConfirmBlock(false)}
+        onConfirm={() => {
+          onBlock?.(member.anonimiId);
+          setConfirmBlock(false);
+        }}
+        title={`Block ${member.nickname ?? member.username}?`}
+        description="You won't receive their new messages while blocked, and you won't be able to send them direct messages until you unblock."
+        confirmLabel="Block"
+        variant="destructive"
+      />
+
+      <ConfirmDialog
+        open={confirmUnblock}
+        onClose={() => setConfirmUnblock(false)}
+        onConfirm={() => {
+          onUnblock?.(member.anonimiId);
+          setConfirmUnblock(false);
+        }}
+        title={`Unblock ${member.nickname ?? member.username}?`}
+        description="They will be able to reach you again where other permissions allow it."
+        confirmLabel="Unblock"
+      />
+
+      <ConfirmDialog
+        open={confirmPromote}
+        onClose={() => setConfirmPromote(false)}
+        onConfirm={() => {
+          onChangeRole?.(member.userId, "admin");
+          setConfirmPromote(false);
+        }}
+        title={`Make ${member.nickname ?? member.username} an admin?`}
+        description="Admins can help manage members and moderate this group."
+        confirmLabel="Make admin"
+      />
+
+      <ConfirmDialog
+        open={confirmTransferOwnership}
+        onClose={() => setConfirmTransferOwnership(false)}
+        onConfirm={() => {
+          onTransferOwnership?.(member.userId);
+          setConfirmTransferOwnership(false);
+        }}
+        title={`Transfer ownership to ${member.nickname ?? member.username}?`}
+        description="This gives them full ownership of the group."
+        confirmLabel="Transfer"
+        variant="destructive"
+      />
+
+      <ConfirmDialog
         open={confirmRemove}
         onClose={() => setConfirmRemove(false)}
         onConfirm={() => { onRemove?.(member.userId); setConfirmRemove(false); }}
@@ -361,7 +432,7 @@ export default function GroupMemberItem({
             <div className="flex gap-3">
               <button
                 onClick={() => setShowNicknameForm(false)}
-                className="flex-1 h-10 rounded-xl border border-border/50 text-sm font-medium hover:bg-muted transition-colors"
+                className="flex-1 h-10 rounded-xl border border-border/50 text-sm font-medium hover:bg-muted transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -370,7 +441,7 @@ export default function GroupMemberItem({
                   onSetNickname?.(member.userId, nicknameValue.trim() || null);
                   setShowNicknameForm(false);
                 }}
-                className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer"
               >
                 Save
               </button>
