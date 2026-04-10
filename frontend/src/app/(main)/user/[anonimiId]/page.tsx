@@ -203,7 +203,7 @@ export default function UserProfilePage() {
           <div className="mx-auto flex w-full max-w-2xl items-center gap-3">
           <button
             onClick={() => router.back()}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted/60 transition-colors"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted/60 transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
