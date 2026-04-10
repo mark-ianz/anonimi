@@ -43,14 +43,14 @@ export default function ContactRequestCard({
       <div className="flex items-center gap-2 shrink-0">
         <button
           onClick={() => onAccept(request.requestId)}
-          className="flex items-center gap-1.5 h-8 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-1.5 h-8 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors cursor-pointer"
         >
           <Check className="w-3.5 h-3.5" />
           Accept
         </button>
         <button
           onClick={() => onDecline(request.requestId)}
-          className="w-8 h-8 rounded-xl flex items-center justify-center border border-border/50 text-muted-foreground hover:bg-muted transition-colors"
+          className="w-8 h-8 rounded-xl flex items-center justify-center border border-border/50 text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>

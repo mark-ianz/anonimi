@@ -77,7 +77,7 @@ function ContactsContent() {
             <button
               onClick={toggleAddingContact}
               title={addingContact ? "Cancel" : "Add contact"}
-              className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold transition-all ${
+              className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold transition-all cursor-pointer ${
                 addingContact
                   ? "border border-border/70 bg-muted text-foreground"
                   : "bg-primary text-primary-foreground shadow-soft hover:bg-primary/90"
@@ -99,7 +99,7 @@ function ContactsContent() {
               <div className="flex gap-1 rounded-xl border border-border/60 bg-background p-1">
                 <button
                   onClick={() => setTab("contacts")}
-                  className={`flex-1 h-8 rounded-lg text-sm font-medium transition-colors ${
+                  className={`cursor-pointer flex-1 h-8 rounded-lg text-sm font-medium transition-colors ${
                     tab === "contacts"
                       ? "bg-muted text-foreground"
                       : "text-muted-foreground hover:text-foreground"
@@ -109,7 +109,7 @@ function ContactsContent() {
                 </button>
                 <button
                   onClick={() => setTab("requests")}
-                  className={`flex-1 h-8 rounded-lg text-sm font-medium transition-colors relative ${
+                  className={`cursor-pointer flex-1 h-8 rounded-lg text-sm font-medium transition-colors relative ${
                     tab === "requests"
                       ? "bg-muted text-foreground"
                       : "text-muted-foreground hover:text-foreground"
