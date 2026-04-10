@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { SmilePlus, Plus } from "lucide-react";
+import { SmilePlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMessages } from "@/hooks/useMessages";
 import { useAuthStore } from "@/stores/authStore";
@@ -88,6 +88,7 @@ export default function MessageReactionPicker({
           onClick={() => handleEmojiSelect(emoji)}
           className={cn(
             "flex h-8 w-8 items-center justify-center rounded-full border border-transparent text-lg hover:border-border/80 hover:bg-muted/40",
+            "cursor-pointer",
             (message.reactions ?? []).some(
               (reaction) => reaction.userId === user?.id && reaction.emoji === emoji
             ) && "bg-muted/70"
@@ -96,13 +97,6 @@ export default function MessageReactionPicker({
           {emoji}
         </button>
       ))}
-      <button
-        type="button"
-        onClick={() => setPickerOpen(false)}
-        className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 text-muted-foreground hover:text-foreground"
-      >
-        <Plus className="h-4 w-4" />
-      </button>
     </>
   );
 
@@ -150,7 +144,6 @@ export default function MessageReactionPicker({
           ref={pickerRef}
           className={cn(
             "absolute z-20 bottom-full mb-2 rounded-full border border-border/60 bg-card/95 px-2 py-1 shadow-elevated backdrop-blur-sm",
-            "w-[min(90vw,16rem)]",
             effectiveSide === "right" ? "right-0" : "left-0"
           )}
         >
