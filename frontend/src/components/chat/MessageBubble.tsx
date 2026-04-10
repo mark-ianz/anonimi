@@ -16,6 +16,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { decryptConversationPayload } from "@/lib/e2eeMessageCrypto";
+import { renderLinkifiedText } from "@/lib/linkify";
 import { EyeOff, MessageCircle, Pencil, User, X, VolumeX, Volume2, UserMinus } from "lucide-react";
 
 interface MessageBubbleProps {
@@ -341,7 +342,12 @@ export default function MessageBubble({
     return (
       <div className="flex justify-center py-2 px-4">
         <span className="text-xs text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
-          {message.content}
+          {message.content
+            ? renderLinkifiedText(
+                message.content,
+                "underline underline-offset-2 break-all text-foreground/90",
+              )
+            : null}
         </span>
       </div>
     );
@@ -645,7 +651,12 @@ export default function MessageBubble({
                 </p>
               ) : message.content ? (
                 <p className="whitespace-pre-wrap break-all">
-                  {message.content}
+                  {renderLinkifiedText(
+                    message.content,
+                    isMine
+                      ? "underline underline-offset-2 break-all text-primary-foreground"
+                      : "underline underline-offset-2 break-all text-primary",
+                  )}
                 </p>
               ) : message.isE2ee && message.contentCipher ? (
                 <div className="flex items-center gap-1.5 py-0.5">
@@ -786,7 +797,7 @@ export default function MessageBubble({
                           />
                         </div>
                         <p className="mt-2 whitespace-pre-wrap break-all text-sm text-foreground">
-                          {entryContent}
+                          {renderLinkifiedText(entryContent, "underline underline-offset-2 break-all text-primary")}
                         </p>
                       </div>
                     );

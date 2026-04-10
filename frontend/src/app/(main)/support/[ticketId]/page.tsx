@@ -13,6 +13,7 @@ import { useMediaUpload } from "@/hooks/useMediaUpload";
 import { FilePreview } from "@/components/shared/FileUpload";
 import { ALLOWED_IMAGE_TYPES } from "@/lib/constants";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
+import { renderLinkifiedText } from "@/lib/linkify";
 import type { SupportTicketDetail, SupportMessage } from "@/types/support";
 
 const statusColors: Record<string, string> = {
@@ -61,7 +62,12 @@ function MessageBubble({ msg, isOwn }: { msg: SupportMessage; isOwn: boolean }) 
         ) : null}
         {msg.content && (
           <p className="leading-relaxed whitespace-pre-wrap break-words">
-            {msg.content}
+            {renderLinkifiedText(
+              msg.content,
+              isOwn
+                ? "underline underline-offset-2 break-all text-primary-foreground"
+                : "underline underline-offset-2 break-all text-primary",
+            )}
           </p>
         )}
         <p className={cn("text-[10px] mt-1", isOwn ? "text-primary-foreground/60 text-right" : "text-muted-foreground")}>

@@ -10,6 +10,7 @@ import { getAdminSocket } from "@/lib/socket";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
+import { renderLinkifiedText } from "@/lib/linkify";
 import type { SupportTicketDetail, SupportMessage } from "@/types/support";
 
 const statusLabels: Record<string, string> = {
@@ -59,7 +60,12 @@ function MessageBubble({ msg }: { msg: SupportMessage }) {
         ) : null}
         {msg.content && (
           <p className="leading-relaxed whitespace-pre-wrap break-words">
-            {msg.content}
+            {renderLinkifiedText(
+              msg.content,
+              isStaff
+                ? "underline underline-offset-2 break-all text-primary-foreground"
+                : "underline underline-offset-2 break-all text-primary",
+            )}
           </p>
         )}
         <p className={cn("text-[10px] mt-1", isStaff ? "text-primary-foreground/60 text-right" : "text-muted-foreground")}>
