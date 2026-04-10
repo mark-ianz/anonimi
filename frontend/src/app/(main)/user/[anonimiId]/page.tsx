@@ -235,7 +235,7 @@ export default function UserProfilePage() {
                       <button
                         type="button"
                         onClick={() => setMenuOpen((prev) => !prev)}
-                        className="grid h-9 w-9 place-items-center rounded-lg border border-border/70 bg-card/85 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        className="grid h-9 w-9 place-items-center rounded-lg border border-border/70 bg-card/85 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
                         aria-label="More actions"
                       >
                         <MoreHorizontal className="h-4 w-4" />
@@ -254,7 +254,7 @@ export default function UserProfilePage() {
                               }
                               blockMutation.mutate();
                             }}
-                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                           >
                             <Ban className="h-4 w-4" />
                             {profile.isBlocked ? "Blocked" : "Block User"}
@@ -269,7 +269,7 @@ export default function UserProfilePage() {
                               }
                               setReportModalOpen(true);
                             }}
-                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-amber-700 transition-colors hover:bg-amber-500/10 dark:text-amber-300"
+                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-amber-700 transition-colors hover:bg-amber-500/10 dark:text-amber-300 cursor-pointer"
                           >
                             <Flag className="h-4 w-4" />
                             Report User
@@ -331,7 +331,7 @@ export default function UserProfilePage() {
                       <button
                         onClick={handleContactAction}
                         disabled={isContactActionPending}
-                        className="flex h-11 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="flex h-11 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                       >
                         {isContactActionPending ? (
                           <div className="h-4 w-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />
@@ -352,7 +352,7 @@ export default function UserProfilePage() {
                       <button
                         onClick={() => messageMutation.mutate()}
                         disabled={messageMutation.isPending}
-                        className="flex h-11 items-center justify-center gap-2 rounded-xl border border-border/70 bg-background text-sm font-semibold transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                        className="flex h-11 items-center justify-center gap-2 rounded-xl border border-border/70 bg-background text-sm font-semibold transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                       >
                         {messageMutation.isPending ? (
                           <div className="h-4 w-4 rounded-full border-2 border-foreground/40 border-t-foreground animate-spin" />
@@ -379,7 +379,7 @@ export default function UserProfilePage() {
               <button
                 type="button"
                 onClick={() => setReportModalOpen(false)}
-                className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
                 aria-label="Close report modal"
               >
                 <X className="h-4 w-4" />
@@ -417,7 +417,7 @@ export default function UserProfilePage() {
                 <button
                   type="button"
                   onClick={() => setReportModalOpen(false)}
-                  className="h-9 rounded-lg border border-border/70 px-3 text-sm font-medium transition-colors hover:bg-muted"
+                  className="h-9 rounded-lg border border-border/70 px-3 text-sm font-medium transition-colors hover:bg-muted cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -425,7 +425,7 @@ export default function UserProfilePage() {
                   type="button"
                   onClick={() => reportMutation.mutate()}
                   disabled={reportMutation.isPending}
-                  className="inline-flex h-9 items-center gap-2 rounded-lg bg-amber-500/15 px-3 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:text-amber-300"
+                  className="inline-flex h-9 items-center gap-2 rounded-lg bg-amber-500/15 px-3 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:text-amber-300 cursor-pointer"
                 >
                   <Flag className="h-4 w-4" />
                   Submit Report
