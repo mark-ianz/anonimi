@@ -29,7 +29,7 @@ router.post(
   validate(createGroupSchema),
   groupController.createGroup
 );
-router.get("/join/:token", validate(inviteTokenParamsSchema), groupController.getGroupInfoByToken);
+router.get("/join/:token", authenticate, validate(inviteTokenParamsSchema), groupController.getGroupInfoByToken);
 router.post("/join/:token", authenticate, validate(inviteTokenParamsSchema), groupController.joinByInviteToken);
 router.get("/:groupId", authenticate, validate(groupParamsSchema), groupController.getGroup);
 router.patch("/:groupId", authenticate, validate(groupParamsSchema), validate(updateGroupSchema), groupController.updateGroup);

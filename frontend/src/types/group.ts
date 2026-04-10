@@ -80,6 +80,8 @@ export interface GroupInfoByToken {
   groupImage?: string;
   memberCount: number;
   description?: string;
+  alreadyMember?: boolean;
+  conversationId?: string;
 }
 
 export interface JoinResult {

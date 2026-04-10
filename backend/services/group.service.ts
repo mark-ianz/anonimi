@@ -1504,7 +1504,7 @@ export const getGroupPhotoFallback = async (groupId: string) => {
   }));
 };
 
-export const getGroupInfoByToken = async (token: string) => {
+export const getGroupInfoByToken = async (token: string, userId?: string | null) => {
   const invite = await GroupInviteLink.findOne({ token });
   if (!invite) throw new NotFoundError("Invite link not found");
   if (invite.revokedAt) throw new ForbiddenError("Invite link has been revoked");
@@ -1518,6 +1518,13 @@ export const getGroupInfoByToken = async (token: string) => {
   if (group.disbandedAt) throw new ForbiddenError("Group has been disbanded");
 
   const memberCount = await GroupMember.countDocuments({ groupId: group._id });
+  const alreadyMember = userId
+    ? !!(await GroupMember.findOne({
+        groupId: group._id,
+        userId: new Types.ObjectId(userId),
+        status: "joined",
+      }).select("_id").lean())
+    : false;
 
   return {
     groupId: group._id.toString(),
@@ -1525,5 +1532,7 @@ export const getGroupInfoByToken = async (token: string) => {
     groupImage: group.image,
     memberCount,
     description: group.description,
+    alreadyMember,
+    conversationId: alreadyMember ? group.conversationId.toString() : undefined,
   };
 };

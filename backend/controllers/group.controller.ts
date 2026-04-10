@@ -389,7 +389,10 @@ export const getGroupInfoByToken = async (
 ): Promise<void> => {
   try {
     const { token } = req.params;
-    const result = await groupService.getGroupInfoByToken(token);
+    const result = await groupService.getGroupInfoByToken(
+      token,
+      req.user?._id?.toString() ?? null
+    );
     apiSuccess(res, result);
   } catch (error) {
     next(error);

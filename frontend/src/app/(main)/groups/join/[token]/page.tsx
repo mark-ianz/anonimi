@@ -25,6 +25,20 @@ function JoinGroupContent() {
   const [joinedConversationId, setJoinedConversationId] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!groupInfo?.alreadyMember || !groupInfo.conversationId) return;
+
+    setJoinStatus("already_member");
+    setJoinedConversationId(groupInfo.conversationId);
+    setActiveConversation(groupInfo.conversationId);
+
+    const timer = window.setTimeout(() => {
+      router.push(`/chat/${groupInfo.conversationId}`);
+    }, 1800);
+
+    return () => window.clearTimeout(timer);
+  }, [groupInfo?.alreadyMember, groupInfo?.conversationId, router, setActiveConversation]);
+
+  useEffect(() => {
     if (!token) return;
 
     const checkError = async () => {
@@ -141,7 +155,7 @@ function JoinGroupContent() {
           </h1>
           <p className="text-muted-foreground text-sm mb-6">
             {joinStatus === "already_member"
-              ? "You are already a member of this group."
+              ? `You are already a member of this group. Redirecting you to ${groupInfo?.groupName ?? "the group"} now.`
               : `You've joined ${groupInfo?.groupName ?? "the group"} successfully.`}
           </p>
           <button
