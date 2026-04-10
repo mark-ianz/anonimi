@@ -442,7 +442,7 @@ export default function ConversationItem({
                   muteConversationMutation.mutate();
                 }
               }}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted/60"
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted/60 cursor-pointer"
             >
               <BellOff className="h-4 w-4 text-muted-foreground" />
               {isConversationMuted ? "Unmute" : "Mute"}
@@ -459,7 +459,7 @@ export default function ConversationItem({
                 }
               }}
               disabled={archiveMutation.isPending || unarchiveMutation.isPending}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted/60 disabled:opacity-50"
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted/60 disabled:opacity-50 cursor-pointer"
             >
               <Archive className="h-4 w-4 text-muted-foreground" />
               {isArchived ? "Unarchive" : "Archive"}
@@ -472,7 +472,7 @@ export default function ConversationItem({
                 setMenuOpen(false);
                 setShowDeleteConfirmModal(true);
               }}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10"
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10 cursor-pointer"
             >
               <Trash2 className="h-4 w-4" />
               Delete conversation
@@ -519,7 +519,7 @@ export default function ConversationItem({
                     setDeleteConfirmText("");
                   }}
                   disabled={deleteConversationMutation.isPending}
-                  className="flex-1 h-10 rounded-xl border border-border/70 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-60"
+                  className="flex-1 h-10 rounded-xl border border-border/70 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-60 cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -527,7 +527,7 @@ export default function ConversationItem({
                   type="button"
                   onClick={() => deleteConversationMutation.mutate()}
                   disabled={deleteConversationMutation.isPending || deleteConfirmText !== "DELETE"}
-                  className="flex-1 h-10 rounded-xl bg-destructive text-white text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-60"
+                  className="flex-1 h-10 rounded-xl bg-destructive text-white text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-60 cursor-pointer"
                 >
                   {deleteConversationMutation.isPending ? "Deleting..." : "Delete"}
                 </button>
