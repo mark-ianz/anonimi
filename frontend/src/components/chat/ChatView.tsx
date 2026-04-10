@@ -502,13 +502,13 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
         <div className="flex items-center gap-1">
           <button
             onClick={() => toast.info("Calling is not implemented yet.")}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
           >
             <Phone className="w-4 h-4" />
           </button>
           <button
             onClick={() => toast.info("Video calls are not implemented yet.")}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
           >
             <Video className="w-4 h-4" />
           </button>
@@ -518,7 +518,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
             <button
               onClick={() => setMenuOpen((v) => !v)}
               className={cn(
-                "w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors",
+                "w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors cursor-pointer",
                 menuOpen && "bg-muted text-foreground"
               )}
             >
@@ -526,7 +526,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 z-50 top-full mt-1 glass rounded-xl shadow-elevated py-1 min-w-44 animate-fade-in">
+              <div className="absolute right-0 z-50 top-full mt-1 glass rounded-xl shadow-elevated py-1 min-w-52 animate-fade-in">
                 {!isGroup && (
                   <Link
                     href={`/user/${conversation.participant?.anonimiId}`}
@@ -554,7 +554,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
                     }
                   }}
                   disabled={archiveMutation.isPending || unarchiveMutation.isPending}
-                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   <Archive className="w-4 h-4 text-muted-foreground shrink-0" />
                   {isArchived
@@ -575,7 +575,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
                       muteConversationMutation.mutate();
                     }
                   }}
-                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors cursor-pointer"
                 >
                   <BellOff className="w-4 h-4 text-muted-foreground shrink-0" />
                   {isConversationMuted ? "Unmute" : "Mute"}
@@ -591,7 +591,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
                         setDeleteConfirmText("");
                       }}
                       disabled={deleteConversationMutation.isPending}
-                      className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50 cursor-pointer"
                     >
                       <Trash2 className="w-4 h-4 shrink-0" />
                       {deleteConversationMutation.isPending ? "Deleting..." : "Delete Conversation"}
@@ -607,7 +607,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
                       <button
                         onClick={() => { setMenuOpen(false); unblockMutation.mutate(); }}
                         disabled={unblockMutation.isPending || !myBlockId}
-                        className="flex items-center gap-2.5 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-2.5 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors disabled:opacity-50 cursor-pointer"
                       >
                         <ShieldBan className="w-4 h-4 shrink-0 text-muted-foreground" />
                         {unblockMutation.isPending ? "Unblocking..." : "Unblock user"}
@@ -622,7 +622,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
                           }
                           setConfirmBlock(true);
                         }}
-                        className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                        className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
                       >
                         <ShieldBan className="w-4 h-4 shrink-0" />
                         Block user
@@ -637,7 +637,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
                         }
                         setShowReportForm(true);
                       }}
-                      className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                      className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
                     >
                       <Flag className="w-4 h-4 shrink-0" />
                       Report user
@@ -686,7 +686,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
                         setDeleteConfirmText("");
                       }}
                       disabled={deleteConversationMutation.isPending}
-                      className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50 cursor-pointer"
                     >
                       <Trash2 className="w-4 h-4 shrink-0" />
                       {deleteConversationMutation.isPending ? "Deleting..." : "Delete Conversation"}
@@ -1020,7 +1020,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
                     setDeleteConfirmText("");
                   }}
                   disabled={deleteConversationMutation.isPending}
-                  className="flex-1 h-10 rounded-xl border border-border/70 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-60"
+                  className="flex-1 h-10 rounded-xl border border-border/70 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-60 cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -1028,7 +1028,7 @@ export default function ChatView({ conversation, backHref = "/chat" }: ChatViewP
                   type="button"
                   onClick={() => deleteConversationMutation.mutate()}
                   disabled={deleteConversationMutation.isPending || deleteConfirmText !== "DELETE"}
-                  className="flex-1 h-10 rounded-xl bg-destructive text-white text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-60"
+                  className="flex-1 h-10 rounded-xl bg-destructive text-white text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-60 cursor-pointer"
                 >
                   {deleteConversationMutation.isPending ? "Deleting..." : "Delete Conversation"}
                 </button>
