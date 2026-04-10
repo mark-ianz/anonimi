@@ -69,7 +69,7 @@ export default function MessageActions({
                 setOpen(false);
                 onReply?.();
               }}
-              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-foreground/5 transition-colors cursor-pointer"
             >
               <Reply className="w-4 h-4" />
               Reply
@@ -80,7 +80,7 @@ export default function MessageActions({
                   setOpen(false);
                   onEdit?.();
                 }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-foreground/5 transition-colors cursor-pointer"
               >
                 <Pencil className="w-4 h-4" />
                 Edit
@@ -91,7 +91,7 @@ export default function MessageActions({
                 setOpen(false);
                 setConfirmDelete(true);
               }}
-              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-foreground/5 transition-colors cursor-pointer"
             >
               <Trash2 className="w-4 h-4" />
               Delete for me
@@ -102,7 +102,7 @@ export default function MessageActions({
                   setOpen(false);
                   setConfirmUnsend(true);
                 }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors cursor-pointer rounded-b-lg"
               >
                 <RotateCcw className="w-4 h-4" />
                 Unsend
