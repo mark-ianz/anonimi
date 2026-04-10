@@ -17,14 +17,12 @@ import {
   Bell,
   Check,
   ChevronDown,
-  Clock3,
   ShieldAlert,
   UserPlus2,
   MessagesSquare,
   Archive,
   LifeBuoy,
   BellDot,
-  Trash2,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -339,7 +337,7 @@ export default function MainLayout({ children }: SidebarProps) {
                         <div className="relative md:hidden max-[456px]:w-full">
                           <button
                             onClick={() => setStatusMenuOpen((prev) => !prev)}
-                            className="flex items-center gap-2 rounded-full border border-border/60 bg-card/70 px-3 py-1.5 transition-colors hover:bg-card max-[456px]:w-full"
+                            className="flex items-center gap-2 rounded-full border border-border/60 bg-card/70 px-3 py-1.5 transition-colors hover:bg-card max-[456px]:w-full cursor-pointer"
                             aria-label="Change visibility status"
                           >
                             <div
@@ -370,7 +368,7 @@ export default function MainLayout({ children }: SidebarProps) {
                                   }
                                   disabled={isUpdatingProfile}
                                   className={cn(
-                                    "flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm transition-colors",
+                                    "flex w-full items-center justify-between rounded-lg px-2.5 py-2 cursor-pointer text-left text-sm transition-colors",
                                     "hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60",
                                     currentAppearance === option.value &&
                                       "bg-primary/10",
@@ -401,7 +399,7 @@ export default function MainLayout({ children }: SidebarProps) {
                     <div className="relative mt-3 hidden md:block">
                       <button
                         onClick={() => setStatusMenuOpen((prev) => !prev)}
-                        className="flex w-full items-center justify-between gap-2 rounded-full border border-border/60 bg-card/70 px-3 py-1.5 transition-colors hover:bg-card"
+                        className="flex w-full items-center justify-between gap-2 rounded-full border border-border/60 bg-card/70 px-3 py-1.5 transition-colors hover:bg-card cursor-pointer"
                         aria-label="Change visibility status"
                       >
                         <span className="flex items-center gap-2">
@@ -431,7 +429,7 @@ export default function MainLayout({ children }: SidebarProps) {
                               onClick={() => handleStatusSelect(option.value)}
                               disabled={isUpdatingProfile}
                               className={cn(
-                                "flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm transition-colors",
+                                "flex w-full items-center justify-between rounded-lg px-2.5 py-2 cursor-pointer text-left text-sm transition-colors",
                                 "hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60",
                                 currentAppearance === option.value &&
                                   "bg-primary/10",
