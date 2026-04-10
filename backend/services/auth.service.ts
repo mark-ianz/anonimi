@@ -14,6 +14,7 @@ import { ConflictError, UnauthorizedError, NotFoundError, ForbiddenError } from 
 import {
   AppearanceStatus,
   FontStyle,
+  NotificationSound,
   OnlineStatus,
   UserRole,
   UserStatus,
@@ -42,6 +43,8 @@ interface LoginResult {
     usernameCanEdit: boolean;
     appearanceStatus: string;
     fontStyle: string;
+    notificationSoundEnabled: boolean;
+    notificationSound: string;
     onlineStatus: string;
     lastSeen: Date | null;
     isTemporary: boolean;
@@ -200,6 +203,8 @@ export const createTemporaryAccount = async (): Promise<LoginResult> => {
       usernameCanEdit: !user.usernameChangedAt && !user.isTemporary,
       appearanceStatus: user.appearanceStatus,
       fontStyle: user.fontStyle,
+      notificationSoundEnabled: user.notificationSoundEnabled,
+      notificationSound: user.notificationSound,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
       isTemporary: true,
@@ -298,6 +303,8 @@ export const verifyEmail = async (
       usernameCanEdit: !user.usernameChangedAt && !user.isTemporary,
       appearanceStatus: user.appearanceStatus,
       fontStyle: user.fontStyle,
+      notificationSoundEnabled: user.notificationSoundEnabled,
+      notificationSound: user.notificationSound,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
       isTemporary: !!user.isTemporary,
@@ -357,6 +364,8 @@ export const verifyEmailLink = async (token: string): Promise<LoginResult> => {
       usernameCanEdit: !user.usernameChangedAt && !user.isTemporary,
       appearanceStatus: user.appearanceStatus,
       fontStyle: user.fontStyle,
+      notificationSoundEnabled: user.notificationSoundEnabled,
+      notificationSound: user.notificationSound,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
       isTemporary: !!user.isTemporary,
@@ -406,6 +415,8 @@ export const verifyPhone = async (
       usernameCanEdit: !user.usernameChangedAt && !user.isTemporary,
       appearanceStatus: user.appearanceStatus,
       fontStyle: user.fontStyle,
+      notificationSoundEnabled: user.notificationSoundEnabled,
+      notificationSound: user.notificationSound,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
       isTemporary: !!user.isTemporary,
@@ -595,6 +606,8 @@ export const login = async (
       usernameCanEdit: !user.usernameChangedAt && !user.isTemporary,
       appearanceStatus: user.appearanceStatus,
       fontStyle: user.fontStyle,
+      notificationSoundEnabled: user.notificationSoundEnabled,
+      notificationSound: user.notificationSound,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
       isTemporary: !!user.isTemporary,
@@ -751,6 +764,8 @@ export const resetPassword = async (
       usernameCanEdit: !user.usernameChangedAt,
       appearanceStatus: user.appearanceStatus,
       fontStyle: user.fontStyle,
+      notificationSoundEnabled: user.notificationSoundEnabled,
+      notificationSound: user.notificationSound,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
       isTemporary: !!user.isTemporary,
@@ -812,6 +827,8 @@ export const updateProfile = async (
     phone?: string | null;
     appearanceStatus?: AppearanceStatus;
     fontStyle?: FontStyle;
+    notificationSoundEnabled?: boolean;
+    notificationSound?: NotificationSound;
   }
 ) => {
   const user = await User.findById(userId);
@@ -876,6 +893,14 @@ export const updateProfile = async (
 
   if (updates.fontStyle) {
     user.fontStyle = updates.fontStyle;
+  }
+
+  if (typeof updates.notificationSoundEnabled === "boolean") {
+    user.notificationSoundEnabled = updates.notificationSoundEnabled;
+  }
+
+  if (updates.notificationSound) {
+    user.notificationSound = updates.notificationSound;
   }
 
   await user.save();

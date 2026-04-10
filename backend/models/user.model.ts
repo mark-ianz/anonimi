@@ -6,6 +6,7 @@ import {
   OnlineStatus,
   AppearanceStatus,
   FontStyle,
+  NotificationSound,
 } from "../types/enums";
 
 const userSchema = new Schema<IUser>(
@@ -24,6 +25,8 @@ const userSchema = new Schema<IUser>(
     status: { type: String, enum: UserStatus, default: UserStatus.PENDING },
     appearanceStatus: { type: String, enum: AppearanceStatus, default: AppearanceStatus.ONLINE },
     fontStyle: { type: String, enum: FontStyle, default: FontStyle.MODERN },
+    notificationSoundEnabled: { type: Boolean, default: true },
+    notificationSound: { type: String, enum: NotificationSound, default: NotificationSound.NOTIFICATION_1 },
     onlineStatus: { type: String, enum: OnlineStatus, default: OnlineStatus.OFFLINE },
     lastSeen: { type: Date },
     emailVerified: { type: Boolean, default: false },

@@ -23,11 +23,12 @@ export function usePresence(
   status: OnlineStatus;
   lastSeen: string | null;
 } {
-  const { getPresence } = usePresenceStore();
+  const entry = usePresenceStore((state) =>
+    userId ? state.presence[userId] ?? null : null
+  );
 
   if (!userId) return { status: fallbackStatus, lastSeen: fallbackLastSeen };
 
-  const entry = getPresence(userId);
   return {
     status: entry?.status ?? fallbackStatus,
     lastSeen: entry?.lastSeen ?? fallbackLastSeen,

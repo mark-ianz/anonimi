@@ -1,5 +1,12 @@
 import { Document, Types } from "mongoose";
-import { UserRole, UserStatus, OnlineStatus, AppearanceStatus, FontStyle } from "./enums";
+import {
+  UserRole,
+  UserStatus,
+  OnlineStatus,
+  AppearanceStatus,
+  FontStyle,
+  NotificationSound,
+} from "./enums";
 
 export interface IUser extends Document {
   _id: Types.ObjectId;
@@ -17,6 +24,8 @@ export interface IUser extends Document {
   status: UserStatus;
   appearanceStatus: AppearanceStatus;
   fontStyle: FontStyle;
+  notificationSoundEnabled: boolean;
+  notificationSound: NotificationSound;
   onlineStatus: OnlineStatus;
   lastSeen?: Date;
   emailVerified: boolean;

@@ -34,6 +34,15 @@ export enum FontStyle {
   MONO = "mono",
 }
 
+export enum NotificationSound {
+  NOTIFICATION_1 = "notification_1",
+  NOTIFICATION_2 = "notification_2",
+  NOTIFICATION_3 = "notification_3",
+  NOTIFICATION_4 = "notification_4",
+  NOTIFICATION_5 = "notification_5",
+  NOTIFICATION_6 = "notification_6",
+}
+
 export enum MessageType {
   TEXT = "text",
   IMAGE = "image",

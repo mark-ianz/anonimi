@@ -3,6 +3,13 @@ export type UserStatus = "active" | "banned" | "pending_verification";
 export type OnlineStatus = "online" | "away" | "dnd" | "offline";
 export type AppearanceStatus = "online" | "away" | "dnd" | "invisible";
 export type FontStyle = "modern" | "system" | "editorial" | "rounded" | "humanist" | "mono";
+export type NotificationSound =
+  | "notification_1"
+  | "notification_2"
+  | "notification_3"
+  | "notification_4"
+  | "notification_5"
+  | "notification_6";
 
 export interface User {
   id: string;
@@ -13,6 +20,8 @@ export interface User {
   status: UserStatus;
   appearanceStatus: AppearanceStatus;
   fontStyle: FontStyle;
+  notificationSoundEnabled: boolean;
+  notificationSound: NotificationSound;
   onlineStatus: OnlineStatus;
   lastSeen: string;
   createdAt: string;

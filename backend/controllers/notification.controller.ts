@@ -1,4 +1,6 @@
 import { Request, Response, NextFunction } from "express";
+import { User } from "../models/user.model";
+import { AppearanceStatus } from "../types/enums";
 import { apiSuccess } from "../utils/apiResponse";
 import {
   deleteNotification,
@@ -156,6 +158,12 @@ export const testPush = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    const user = await User.findById(req.user!._id).select("appearanceStatus").lean();
+    if (user?.appearanceStatus === AppearanceStatus.DND) {
+      apiSuccess(res, { sent: false, suppressed: true });
+      return;
+    }
+
     await sendPushToUser(req.user!._id.toString(), {
       title: "anonimi Test",
       body: "This is a test push notification.",

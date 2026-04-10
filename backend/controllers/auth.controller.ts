@@ -208,6 +208,8 @@ export const getProfile = async (
       status: user.status,
       appearanceStatus: user.appearanceStatus,
       fontStyle: user.fontStyle,
+      notificationSoundEnabled: user.notificationSoundEnabled,
+      notificationSound: user.notificationSound,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
       emailVerified: user.emailVerified,
@@ -227,12 +229,21 @@ export const updateProfile = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { username, phone, appearanceStatus, fontStyle } = req.body;
+    const {
+      username,
+      phone,
+      appearanceStatus,
+      fontStyle,
+      notificationSoundEnabled,
+      notificationSound,
+    } = req.body;
     const user = await authService.updateProfile(req.user!._id.toString(), {
       username,
       phone,
       appearanceStatus,
       fontStyle,
+      notificationSoundEnabled,
+      notificationSound,
     });
     apiSuccess(res, {
       id: user._id.toString(),
@@ -246,6 +257,8 @@ export const updateProfile = async (
       status: user.status,
       appearanceStatus: user.appearanceStatus,
       fontStyle: user.fontStyle,
+      notificationSoundEnabled: user.notificationSoundEnabled,
+      notificationSound: user.notificationSound,
       onlineStatus: user.onlineStatus,
       lastSeen: user.lastSeen,
       emailVerified: user.emailVerified,

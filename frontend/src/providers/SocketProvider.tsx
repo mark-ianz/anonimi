@@ -16,6 +16,7 @@ import { decryptConversationPayload } from "@/lib/e2eeMessageCrypto";
 import { getConversationKeyByVersion, getConversationKeys, saveConversationKey } from "@/lib/e2eeKeyStore";
 import { ensureLocalE2EEKeyPair } from "@/lib/e2eeRecovery";
 import { ensureConversationKeyForConversation } from "@/lib/e2eeConversationRecovery";
+import { playNotificationSound, primeNotificationSound } from "@/lib/notificationSounds";
 import { useAuthStore } from "@/stores/authStore";
 import { useSocketStore } from "@/stores/socketStore";
 import { useChatStore } from "@/stores/chatStore";
@@ -72,6 +73,24 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const socketRef = useRef<Socket | null>(null);
   const hadOfflineRef = useRef(false);
   const pendingDecryptRetryRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  const playCurrentNotificationSound = async () => {
+    const currentUser = useAuthStore.getState().user;
+    if (!currentUser?.notificationSoundEnabled) return;
+    if (currentUser.appearanceStatus === "dnd") return;
+    await playNotificationSound(currentUser.notificationSound ?? "notification_1");
+  };
+
+  const isConversationMutedForSound = (conversationId: string) => {
+    const conversation = useChatStore
+      .getState()
+      .conversations.find((conv) => conv.id === conversationId);
+
+    if (!conversation?.isMuted) return false;
+    if (!conversation.mutedUntil) return true;
+
+    return new Date(conversation.mutedUntil).getTime() > Date.now();
+  };
 
   const recoverConversationKey = async (conversationId: string, senderId: string) => {
     try {
@@ -235,6 +254,11 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     return "/chat";
   };
+
+  useEffect(() => {
+    if (!user?.notificationSoundEnabled) return;
+    primeNotificationSound(user.notificationSound ?? "notification_1");
+  }, [user?.notificationSound, user?.notificationSoundEnabled]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -1028,6 +1052,14 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         payload.type === "message_received" &&
         Number.isFinite(unreadMessages) &&
         unreadMessages > 1;
+      const shouldPlaySound =
+        payload.type !== "message_received" ||
+        !payloadConversationId ||
+        !isConversationMutedForSound(payloadConversationId);
+
+      if (shouldPlaySound) {
+        void playCurrentNotificationSound();
+      }
 
       if (!isAggregatedMessageUpdate && !isActiveMessageNotification) {
         const href = resolveNotificationHref(payload.data);

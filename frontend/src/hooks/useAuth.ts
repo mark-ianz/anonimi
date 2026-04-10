@@ -11,6 +11,7 @@ import { usePresenceStore } from "@/stores/presenceStore";
 import { disconnectSockets } from "@/lib/socket";
 import type { AuthUser } from "@/types/user";
 import type { UploadSource } from "@/lib/uploadPolicy";
+import type { AppearanceStatus, FontStyle, NotificationSound } from "@/types/user";
 
 export function useAuth() {
   const router = useRouter();
@@ -86,7 +87,12 @@ export function useAuth() {
 
   const updateProfileMutation = useMutation({
     mutationFn: async (
-      patch: Partial<Pick<AuthUser, "username" | "phone" | "appearanceStatus" | "fontStyle">>
+      patch: Partial<
+        Pick<
+          AuthUser,
+          "username" | "phone" | "appearanceStatus" | "fontStyle" | "notificationSoundEnabled" | "notificationSound"
+        >
+      >
     ) => {
       const res = await api.patch("/auth/me", patch);
       return res.data.data as AuthUser;
@@ -153,7 +159,14 @@ export function useAuth() {
     removeAvatarAsync: () => removeAvatarMutation.mutateAsync(),
     updateProfile: updateProfileMutation.mutate,
     updateProfileAsync: (
-      patch: Partial<Pick<AuthUser, "username" | "phone" | "appearanceStatus" | "fontStyle">>
+      patch: Partial<{
+        username: string;
+        phone: string | null;
+        appearanceStatus: AppearanceStatus;
+        fontStyle: FontStyle;
+        notificationSoundEnabled: boolean;
+        notificationSound: NotificationSound;
+      }>
     ) =>
       updateProfileMutation.mutateAsync(patch),
     claimTemporaryAccountAsync: (payload: { email: string; password: string }) =>

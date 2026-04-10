@@ -3,11 +3,11 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
-import { Moon, Sun, Monitor, Bell, Shield, Lock, Type } from "lucide-react";
+import { Moon, Sun, Monitor, Bell, Shield, Lock, Type, Volume2, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getChatSocket } from "@/lib/socket";
 import { useUIStore } from "@/stores/uiStore";
 import { useAuth } from "@/hooks/useAuth";
-import { useSocketContext } from "@/providers/SocketProvider";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import {
@@ -15,7 +15,8 @@ import {
   subscribeToPush,
   unsubscribeFromPush,
 } from "@/lib/pushNotifications";
-import type { AppearanceStatus, FontStyle } from "@/types/user";
+import { NOTIFICATION_SOUND_OPTIONS, playNotificationSound } from "@/lib/notificationSounds";
+import type { AppearanceStatus, FontStyle, NotificationSound } from "@/types/user";
 
 type Theme = "light" | "dark" | "system";
 
@@ -108,21 +109,35 @@ export default function SettingsPage() {
   const [isPushToggling, setIsPushToggling] = useState(false);
   const [isBrave, setIsBrave] = useState(false);
   const { user, updateProfile, isUpdatingProfile } = useAuth();
-  const { chatSocket } = useSocketContext();
 
   const appearanceStatus = user?.appearanceStatus ?? "online";
   const selectedFontStyle = user?.fontStyle ?? "modern";
+  const notificationSoundEnabled = user?.notificationSoundEnabled ?? true;
+  const selectedNotificationSound = user?.notificationSound ?? "notification_1";
 
   const handleAppearanceChange = (status: AppearanceStatus) => {
     if (!user || status === user.appearanceStatus) return;
 
     updateProfile({ appearanceStatus: status });
-    chatSocket?.emit("presence:set-status", { status });
+    getChatSocket().emit("presence:set-status", { status });
   };
 
   const handleFontStyleChange = (fontStyle: FontStyle) => {
     if (!user || fontStyle === user.fontStyle) return;
     updateProfile({ fontStyle });
+  };
+
+  const handleNotificationSoundEnabledChange = (enabled: boolean) => {
+    if (!user || enabled === notificationSoundEnabled) return;
+    updateProfile({ notificationSoundEnabled: enabled });
+  };
+
+  const handleNotificationSoundChange = async (sound: NotificationSound) => {
+    if (!user) return;
+    if (sound !== selectedNotificationSound) {
+      updateProfile({ notificationSound: sound });
+    }
+    await playNotificationSound(sound);
   };
 
   useEffect(() => {
@@ -359,6 +374,76 @@ export default function SettingsPage() {
                   )}
                 />
               </button>
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-border/60 bg-background p-3">
+              <div className="flex items-center gap-2.5">
+                <Volume2 className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">Notification sound</p>
+                  <p className="text-xs text-muted-foreground">
+                    Play a sound for new messages and other notifications
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleNotificationSoundEnabledChange(!notificationSoundEnabled)}
+                disabled={isUpdatingProfile}
+                className={cn(
+                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                  notificationSoundEnabled ? "bg-primary" : "bg-muted-foreground/35",
+                  isUpdatingProfile && "opacity-60 cursor-not-allowed"
+                )}
+              >
+                <span
+                  className={cn(
+                    "absolute left-0.5 h-5 w-5 rounded-full bg-white transition-transform shadow-sm",
+                    notificationSoundEnabled ? "translate-x-5" : "translate-x-0"
+                  )}
+                />
+              </button>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {NOTIFICATION_SOUND_OPTIONS.map((option) => (
+                <div
+                  key={option.value}
+                  className={cn(
+                    "rounded-2xl border p-4 transition-colors",
+                    selectedNotificationSound === option.value
+                      ? "border-primary/45 bg-primary/10"
+                      : "border-border/60 bg-background",
+                    !notificationSoundEnabled && "opacity-55"
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => void handleNotificationSoundChange(option.value)}
+                      disabled={isUpdatingProfile}
+                      className="flex min-w-0 flex-1 cursor-pointer items-start gap-3 text-left disabled:cursor-not-allowed"
+                    >
+                      <span
+                        className={cn(
+                          "mt-1 h-4 w-4 rounded-full border",
+                          selectedNotificationSound === option.value
+                            ? "border-primary bg-primary"
+                            : "border-border/70"
+                        )}
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground">{option.label}</p>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void playNotificationSound(option.value)}
+                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-background text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+                      aria-label={`Preview ${option.label}`}
+                    >
+                      <Play className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
 

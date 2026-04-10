@@ -1,6 +1,8 @@
 import { Server } from "socket.io";
 import { Types } from "mongoose";
 import { Notification } from "../models/notification.model";
+import { User } from "../models/user.model";
+import { AppearanceStatus } from "../types/enums";
 import { NotFoundError } from "../utils/apiError";
 import { sendPushToUser } from "./push.service";
 import { env } from "../config/env";
@@ -122,6 +124,7 @@ const buildPushData = (data: Record<string, unknown>) => {
 export const createAndEmitNotification = async (
   input: CreateNotificationInput
 ) => {
+  const recipient = await User.findById(input.userId).select("appearanceStatus").lean();
   const baseData = input.data ?? {};
   let notification;
 
@@ -184,15 +187,17 @@ export const createAndEmitNotification = async (
 
   emitToUser(input.userId, "notification:new", payload);
 
-  try {
-    const pushData = buildPushData(payload.data ?? {});
-    await sendPushToUser(input.userId, {
-      title: payload.title,
-      body: payload.body,
-      data: pushData,
-    });
-  } catch {
-    // Push failures should not break in-app notifications.
+  if (recipient?.appearanceStatus !== AppearanceStatus.DND) {
+    try {
+      const pushData = buildPushData(payload.data ?? {});
+      await sendPushToUser(input.userId, {
+        title: payload.title,
+        body: payload.body,
+        data: pushData,
+      });
+    } catch {
+      // Push failures should not break in-app notifications.
+    }
   }
 
   return payload;
