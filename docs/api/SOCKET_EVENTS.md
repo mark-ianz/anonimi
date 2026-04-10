@@ -39,7 +39,7 @@ Every Socket.IO connection must authenticate during the handshake.
 ### Client Connection
 
 ```
-const socket = io("https://api.anonimi.com/chat", {
+const socket = io("https://api.anonimi.cloud/chat", {
   auth: {
     token: "<JWT access token>"
   },

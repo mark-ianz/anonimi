@@ -10,7 +10,7 @@ The Next.js frontend consumes this API from all four route groups (marketing con
 
 ```
 Development: https://anonimi-backend.vercel.app/api
-Production:  https://api.anonimi.com/api
+Production:  https://api.anonimi.cloud/api
 ```
 
 All endpoints are prefixed with `/api`.

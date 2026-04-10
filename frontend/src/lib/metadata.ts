@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://anonimi.com";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://anonimi.cloud";
 export const SITE_NAME = "anonimi";
 export const SITE_DESCRIPTION =
   "Secure, real-time messaging with AID-first identity. Private conversations without exposing personal data.";

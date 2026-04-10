@@ -109,6 +109,6 @@ Depends on steps 1 and 4.
 
 ## Further Considerations
 
-1. Recommendation: reserve and verify domain variants early (`anonimi.com`, `api.anonimi.com`, plus fallback TLDs) before public announcement.
+1. Recommendation: reserve and verify domain variants early (`anonimi.cloud`, `api.anonimi.cloud`, plus fallback TLDs) before public announcement.
 2. Recommendation: keep accepting `aid_` in user search for one release cycle with UI hinting users toward `AID` format.
 3. Recommendation: if external API consumers exist, publish a versioned deprecation timeline (e.g., 60-90 days) before removing `echoId` fields/endpoints.

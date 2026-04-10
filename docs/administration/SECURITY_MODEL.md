@@ -356,8 +356,8 @@ Cache-Control: public, max-age=31536000 (for immutable media)
 ```javascript
 {
   origin: [
-    "https://anonimi.com",              // Web frontend
-    "https://www.anonimi.com"            // www variant
+    "https://anonimi.cloud",              // Web frontend
+    "https://www.anonimi.cloud"            // www variant
     // Mobile app origins added later
   ],
   credentials: true,
