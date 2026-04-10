@@ -19,13 +19,13 @@ export default function CTASection() {
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button size="lg" className="h-11 rounded-full px-7 text-sm font-semibold" asChild>
+              <Button size="lg" className="min-w-40 h-11 rounded-full px-7 text-sm font-semibold" asChild>
                 <Link href="/register">
                   Get your AID
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="h-11 rounded-full px-7 text-sm font-semibold" asChild>
+              <Button size="lg" variant="outline" className="min-w-40 h-11 rounded-full px-7 text-sm font-semibold" asChild>
                 <Link href="/about">Learn More</Link>
               </Button>
             </div>
