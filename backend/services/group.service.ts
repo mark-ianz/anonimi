@@ -442,6 +442,13 @@ export const updateGroup = async (
     throw new ForbiddenError("Not authorized to edit group profile");
   }
 
+  const previousName = group.name;
+  const previousImage = group.image ?? null;
+  const nextName = updates.name !== undefined ? updates.name.trim() : group.name;
+  const nextImage = updates.image !== undefined ? updates.image : group.image;
+  const actor = await User.findById(userId).select("username").lean();
+  const actorName = actor?.username ?? "Someone";
+
   if (updates.name !== undefined) group.name = updates.name.trim();
   if (updates.description !== undefined) group.description = updates.description;
   if (updates.image !== undefined) group.image = updates.image;
@@ -453,6 +460,27 @@ export const updateGroup = async (
   }
 
   await group.save();
+
+  if (updates.name !== undefined && nextName !== previousName) {
+    await createGroupSystemMessage(
+      group.conversationId,
+      new Types.ObjectId(userId),
+      `${actorName} changed the group name to ${nextName}.`
+    );
+  }
+
+  if (updates.image !== undefined && nextImage !== previousImage) {
+    const photoContent =
+      nextImage
+        ? `${actorName} changed the group photo.`
+        : `${actorName} removed the group photo.`;
+
+    await createGroupSystemMessage(
+      group.conversationId,
+      new Types.ObjectId(userId),
+      photoContent
+    );
+  }
 
   return group;
 };
