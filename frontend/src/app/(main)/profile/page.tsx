@@ -261,7 +261,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => setShowClaimPassword((prev) => !prev)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                       aria-label={showClaimPassword ? "Hide password" : "Show password"}
                     >
                       {showClaimPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -272,17 +272,9 @@ export default function ProfilePage() {
                       value={claimConfirm}
                       onChange={(event) => setClaimConfirm(event.target.value)}
                       placeholder="Confirm password"
-                      type={showClaimConfirm ? "text" : "password"}
+                      type={showClaimPassword ? "text" : "password"}
                       className="w-full h-10 rounded-xl border border-border/60 bg-background px-3 pr-10 text-sm"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowClaimConfirm((prev) => !prev)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      aria-label={showClaimConfirm ? "Hide password" : "Show password"}
-                    >
-                      {showClaimConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
                   </div>
                   <p className="text-[0.7rem] text-muted-foreground">
                     Use 8+ characters with uppercase, lowercase, and a number.
@@ -294,7 +286,7 @@ export default function ProfilePage() {
                   <button
                     onClick={handleClaim}
                     disabled={isClaimingTemporary}
-                    className="w-full h-10 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-600/90 transition-colors disabled:opacity-60"
+                    className="w-full h-10 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-600/90 transition-colors disabled:opacity-60 cursor-pointer"
                   >
                     {isClaimingTemporary ? "Claiming..." : "Claim account"}
                   </button>
@@ -306,7 +298,7 @@ export default function ProfilePage() {
           {/* Logout */}
           <button
             onClick={logout}
-            className="w-full h-10 rounded-xl border border-destructive/40 text-destructive text-sm font-medium flex items-center justify-center gap-2 hover:bg-destructive/10 transition-colors"
+            className="w-full h-10 rounded-xl border border-destructive/40 text-destructive text-sm font-medium flex items-center justify-center gap-2 hover:bg-destructive/10 transition-colors cursor-pointer -mt-4"
           >
             <LogOut className="w-4 h-4" />
             Sign out
