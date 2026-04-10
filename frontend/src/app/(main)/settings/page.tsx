@@ -271,7 +271,7 @@ export default function SettingsPage() {
                   key={value}
                   onClick={() => setTheme(value)}
                   className={cn(
-                    "flex-1 flex flex-col items-center gap-1.5 rounded-xl border py-3 text-sm transition-colors",
+                    "flex-1 flex flex-col items-center gap-1.5 rounded-xl border py-3 text-sm transition-colors cursor-pointer",
                     theme === value
                       ? "border-primary/45 bg-primary/10 text-foreground"
                       : "border-border/60 bg-background hover:bg-muted/50 text-muted-foreground"
@@ -362,7 +362,7 @@ export default function SettingsPage() {
                 onClick={handlePushToggle}
                 disabled={isPushLoading || isPushToggling}
                 className={cn(
-                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer",
                   pushEnabled ? "bg-primary" : "bg-muted-foreground/35",
                   (isPushLoading || isPushToggling) && "opacity-60 cursor-not-allowed"
                 )}
@@ -389,7 +389,7 @@ export default function SettingsPage() {
                 onClick={() => handleNotificationSoundEnabledChange(!notificationSoundEnabled)}
                 disabled={isUpdatingProfile}
                 className={cn(
-                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer",
                   notificationSoundEnabled ? "bg-primary" : "bg-muted-foreground/35",
                   isUpdatingProfile && "opacity-60 cursor-not-allowed"
                 )}
@@ -436,7 +436,7 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={() => void playNotificationSound(option.value)}
-                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-background text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-background text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground cursor-pointer"
                       aria-label={`Preview ${option.label}`}
                     >
                       <Play className="h-4 w-4" />
@@ -458,7 +458,7 @@ export default function SettingsPage() {
                   onClick={() => handleAppearanceChange(option.value)}
                   disabled={isUpdatingProfile}
                   className={cn(
-                    "flex items-center justify-between rounded-xl border px-3 py-2.5 text-left transition-colors",
+                    "flex items-center justify-between rounded-xl border px-3 py-2.5 text-left transition-colors cursor-pointer",
                     appearanceStatus === option.value
                       ? "border-primary/45 bg-primary/10"
                       : "border-border/60 bg-background hover:bg-muted/40",
