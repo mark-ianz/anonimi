@@ -11,7 +11,11 @@ export const getMessagesSchema = z.object({
 
 export const searchMessagesSchema = z.object({
   query: z.object({
-    q: z.string().min(2).max(80),
+    tokens: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]).optional(),
+    conversationId: z.string().optional(),
+    senderId: z.string().optional(),
+    before: z.string().optional(),
+    after: z.string().optional(),
     cursor: z.string().optional(),
     limit: z.coerce.number().min(1).max(50).default(20),
   }),
@@ -33,6 +37,7 @@ export const sendMessageSchema = z.object({
     contentIv: z.string().optional(),
     contentTag: z.string().optional(),
     contentKeyVersion: z.number().int().nonnegative().optional(),
+    searchTokens: z.array(z.string()).optional(),
   }),
 });
 

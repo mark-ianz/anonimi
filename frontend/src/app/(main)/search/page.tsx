@@ -17,9 +17,14 @@ import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import GroupAvatar from "@/components/shared/GroupAvatar";
 import UserAvatar from "@/components/shared/UserAvatar";
 import api from "@/lib/api";
+import { decryptConversationPayload } from "@/lib/e2eeMessageCrypto";
+import { ensureConversationKeyForConversation } from "@/lib/e2eeConversationRecovery";
+import { getConversationKey } from "@/lib/e2eeKeyStore";
+import { deriveConversationSearchKey } from "@/lib/searchKey";
+import { tokenizeQuery } from "@/lib/searchTokens";
 import type { Contact, ContactRequest } from "@/types/contact";
 import type { Conversation } from "@/types/conversation";
-import type { MessageSearchHit } from "@/types/message";
+import type { Message } from "@/types/message";
 import type { SearchUser } from "@/types/user";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -126,14 +131,90 @@ function SearchPageContent() {
   });
 
   const messageSearchQuery = useQuery({
-    queryKey: ["global-search", "message-hits", query],
+    queryKey: [
+      "global-search",
+      "message-hits",
+      query,
+      (conversationsQuery.data ?? []).map((conversation) => conversation.id).join(","),
+    ],
     queryFn: async () => {
-      const res = await api.get("/messages/search", {
-        params: { q: query, limit: 30 },
-      });
-      return (res.data?.data ?? []) as MessageSearchHit[];
+      const conversations = conversationsQuery.data ?? [];
+      if (!conversations.length) {
+        return [] as Message[];
+      }
+      const messageSets = await Promise.all(
+        conversations.map(async (conversation) => {
+          try {
+            const hasConversationKey = await ensureConversationKeyForConversation(conversation);
+            if (!hasConversationKey) {
+              return [] as Message[];
+            }
+
+            const conversationKey = await getConversationKey(conversation.id);
+            if (!conversationKey) {
+              return [] as Message[];
+            }
+
+            const searchKey = await deriveConversationSearchKey(conversationKey.key);
+            const tokens = await tokenizeQuery(query, searchKey);
+            if (!tokens.length) {
+              return [] as Message[];
+            }
+
+            const params = new URLSearchParams();
+            params.set("conversationId", conversation.id);
+            tokens.forEach((token) => params.append("tokens", token));
+            params.set("limit", "30");
+
+            const res = await api.get(`/messages/search?${params.toString()}`);
+            return (res.data?.data ?? []) as Message[];
+          } catch {
+            return [] as Message[];
+          }
+        })
+      );
+
+      const messages = Array.from(
+        new Map(
+          messageSets
+            .flat()
+            .map((message) => [message.id, message] as const)
+        ).values()
+      )
+        .sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+        .slice(0, 30);
+
+      return Promise.all(
+        messages.map(async (message) => {
+          if (!message.isE2ee || !message.contentCipher || !message.contentIv || !message.contentTag) {
+            return message;
+          }
+
+          try {
+            const plaintext = await decryptConversationPayload({
+              conversationId: message.conversationId,
+              cipherText: message.contentCipher,
+              iv: message.contentIv,
+              tag: message.contentTag,
+              contentKeyVersion: message.contentKeyVersion,
+            });
+
+            return {
+              ...message,
+              content: plaintext ?? "(unable to decrypt)",
+            };
+          } catch {
+            return {
+              ...message,
+              content: "(unable to decrypt)",
+            };
+          }
+        })
+      );
     },
-    enabled: query.length >= 2,
+    enabled: query.length >= 2 && conversationsQuery.isSuccess,
     staleTime: 1000 * 30,
   });
 
@@ -202,8 +283,41 @@ function SearchPageContent() {
   }, [conversationsQuery.data, query]);
 
   const messageHits = useMemo(() => {
-    return (messageSearchQuery.data ?? []).filter((item) => item.content);
-  }, [messageSearchQuery.data]);
+    const conversationsById = new Map(
+      (conversationsQuery.data ?? []).map((conversation) => [conversation.id, conversation])
+    );
+
+    return (messageSearchQuery.data ?? [])
+      .filter((message) => !!message.content)
+      .map((message) => {
+        const conversation = conversationsById.get(message.conversationId);
+        const conversationType = conversation?.type ?? "private";
+        const conversationName =
+          conversationType === "group"
+            ? conversation?.group?.name ?? "Group"
+            : conversation?.participant?.nickname ??
+              conversation?.participant?.username ??
+              conversation?.participant?.anonimiId ??
+              "Conversation";
+
+        return {
+          id: message.id,
+          conversationId: message.conversationId,
+          senderId: message.senderId ?? null,
+          content: message.content,
+          conversationType,
+          conversationName,
+          conversationImage:
+            conversationType === "group"
+              ? conversation?.group?.image ?? null
+              : conversation?.participant?.profileImage ?? null,
+          conversationFallbackImages:
+            conversationType === "group"
+              ? conversation?.group?.fallbackProfileImages ?? []
+              : [],
+        };
+      });
+  }, [messageSearchQuery.data, conversationsQuery.data]);
 
   const groups = useMemo(() => {
     const list = (conversationsQuery.data ?? [])
@@ -416,13 +530,15 @@ function SearchPageContent() {
                             const senderLabel =
                               item.senderId && item.senderId === currentUser?.id
                                 ? "You"
-                                : item.senderUsername ?? item.senderAnonimiId ?? "User";
+                                : item.conversationType === "private"
+                                  ? item.conversationName
+                                  : "Member";
                             const snippet = item.content ? getSnippet(item.content, query) : "";
 
                             return (
                             <Link
                               key={item.id}
-                              href={`/chat/${item.conversationId}?messageId=${item.id}`}
+                              href={`/chat/${item.conversationId}?messageId=${item.id}&jump=${item.id}`}
                               className="flex gap-3 rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-sm transition-colors hover:bg-muted"
                             >
                               <div className="pt-0.5">

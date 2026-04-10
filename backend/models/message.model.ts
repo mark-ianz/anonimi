@@ -15,6 +15,7 @@ const messageSchema = new Schema<IMessage>(
     contentIv: { type: String },
     contentTag: { type: String },
     contentLength: { type: Number },
+    searchTokens: { type: [String], default: undefined },
     mediaUrl: { type: String },
     fileName: { type: String },
     fileSize: { type: Number },
@@ -56,12 +57,14 @@ const messageSchema = new Schema<IMessage>(
     unsent: { type: Boolean, default: false },
     isE2ee: { type: Boolean, default: false },
     contentKeyVersion: { type: Number },
-  },
+  } as any,
   { timestamps: true }
 );
 
 messageSchema.index({ conversationId: 1, _id: -1 });
 messageSchema.index({ conversationId: 1, createdAt: -1 });
+messageSchema.index({ searchTokens: 1 });
+messageSchema.index({ conversationId: 1, searchTokens: 1 });
 messageSchema.index({ senderId: 1 });
 messageSchema.index({ conversationId: 1, deletedFor: 1 });
 

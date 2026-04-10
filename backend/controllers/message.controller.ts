@@ -104,10 +104,22 @@ export const searchMessages = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { q, cursor, limit } = req.query;
+    const { conversationId, senderId, before, after, cursor, limit } = req.query;
+    const rawTokens = (req.query.tokens ?? req.query["tokens[]"]) as
+      | string
+      | string[]
+      | undefined;
     const result = await chatService.searchMessages(
       req.user!._id.toString(),
-      q as string,
+      {
+        tokens: rawTokens
+          ? (Array.isArray(rawTokens) ? rawTokens : [rawTokens])
+          : undefined,
+        conversationId: conversationId as string | undefined,
+        senderId: senderId as string | undefined,
+        before: before as string | undefined,
+        after: after as string | undefined,
+      },
       limit ? parseInt(limit as string) : 20,
       cursor as string
     );
@@ -127,7 +139,21 @@ export const sendMessage = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { conversationId, type, content, mediaUrl, fileName, fileSize, replyToId, stealthDuration, contentCipher, contentIv, contentTag, contentKeyVersion } = req.body;
+    const {
+      conversationId,
+      type,
+      content,
+      mediaUrl,
+      fileName,
+      fileSize,
+      replyToId,
+      stealthDuration,
+      contentCipher,
+      contentIv,
+      contentTag,
+      contentKeyVersion,
+      searchTokens,
+    } = req.body;
     const result = await chatService.sendMessage(
       req.user!._id.toString(),
       conversationId,
@@ -136,7 +162,15 @@ export const sendMessage = async (
       mediaUrl,
       fileName,
       fileSize,
-      { stealthDuration, replyToId, contentCipher, contentIv, contentTag, contentKeyVersion }
+      {
+        stealthDuration,
+        replyToId,
+        contentCipher,
+        contentIv,
+        contentTag,
+        contentKeyVersion,
+        searchTokens,
+      }
     );
     apiSuccess(res, result.message, 201);
   } catch (error) {

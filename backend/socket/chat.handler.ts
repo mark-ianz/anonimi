@@ -21,13 +21,29 @@ interface MessageSendPayload {
   contentIv?: string;
   contentTag?: string;
   contentKeyVersion?: number;
+  searchTokens?: string[];
 }
 
 export const setupChatHandler = (io: Server, socket: Socket): void => {
   socket.data.activeConversationId = null;
 
   socket.on("message:send", async (payload: MessageSendPayload) => {
-    const { conversationId, type, content, mediaUrl, fileName, fileSize, stealthDuration, replyToId, tempId, contentCipher, contentIv, contentTag, contentKeyVersion } = payload;
+    const {
+      conversationId,
+      type,
+      content,
+      mediaUrl,
+      fileName,
+      fileSize,
+      stealthDuration,
+      replyToId,
+      tempId,
+      contentCipher,
+      contentIv,
+      contentTag,
+      contentKeyVersion,
+      searchTokens,
+    } = payload;
     try {
       const userId = socket.data.user?.userId;
 
@@ -66,7 +82,16 @@ export const setupChatHandler = (io: Server, socket: Socket): void => {
         mediaUrl,
         fileName,
         fileSize,
-        { suppressNotificationUserIds, stealthDuration, replyToId, contentCipher, contentIv, contentTag, contentKeyVersion }
+        {
+          suppressNotificationUserIds,
+          stealthDuration,
+          replyToId,
+          contentCipher,
+          contentIv,
+          contentTag,
+          contentKeyVersion,
+          searchTokens,
+        }
       );
 
       socket.emit("message:ack", {

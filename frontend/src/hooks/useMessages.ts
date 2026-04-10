@@ -23,6 +23,8 @@ import { MESSAGES_PER_PAGE } from "@/lib/constants";
 import { encryptMessage, importKeyFromBase64 } from "@/lib/e2eeCrypto";
 import { getConversationKey as getConvKeyFromStore } from "@/lib/e2eeKeyStore";
 import { ensureConversationKeyForConversation } from "@/lib/e2eeConversationRecovery";
+import { deriveConversationSearchKey } from "@/lib/searchKey";
+import { tokenizeMessage } from "@/lib/searchTokens";
 
 const STEALTH_DURATIONS_MS: Record<string, number> = {
   "1m": 60 * 1000,
@@ -168,6 +170,7 @@ export function useMessages(conversationId: string | null) {
       let contentTag: string | undefined;
       let contentKeyVersion: number | undefined;
       let contentToSend = payload.content;
+      let searchTokens: string[] = [];
 
       if (payload.content && !isStealth) {
         try {
@@ -187,6 +190,10 @@ export function useMessages(conversationId: string | null) {
 
           if (convKeyData) {
             console.log("[E2EE] Encrypting message for conversation", payload.conversationId);
+            if (payload.type === "text") {
+              const searchKey = await deriveConversationSearchKey(convKeyData.key);
+              searchTokens = await tokenizeMessage(payload.content, searchKey);
+            }
             const aesKey = await importKeyFromBase64(convKeyData.key);
             const encrypted = await encryptMessage(payload.content, aesKey);
             contentCipher = encrypted.cipherText;
@@ -259,6 +266,9 @@ export function useMessages(conversationId: string | null) {
         socketPayload.contentIv = contentIv;
         socketPayload.contentTag = contentTag;
         socketPayload.contentKeyVersion = contentKeyVersion;
+      }
+      if (searchTokens.length) {
+        socketPayload.searchTokens = searchTokens;
       }
 
       const socket = getChatSocket();
