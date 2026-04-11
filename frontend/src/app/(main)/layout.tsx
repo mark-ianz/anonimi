@@ -646,7 +646,7 @@ export default function MainLayout({ children }: SidebarProps) {
               <div className="relative z-50" ref={notificationMenuRef}>
                 <button
                   onClick={() => setNotificationMenuOpen((prev) => !prev)}
-                  className="relative rounded-lg p-2 transition-colors hover:bg-muted"
+                  className="relative rounded-lg p-2 transition-colors hover:bg-muted cursor-pointer"
                   aria-label="Open notifications"
                 >
                   <Bell className="w-5 h-5 text-muted-foreground" />

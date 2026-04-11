@@ -86,7 +86,7 @@ export default function MessageReactions({ message, userMetaById, isMine, conver
                 addReaction({ messageId: message.id, emoji: group.emoji });
               }}
               className={cn(
-                "flex items-center gap-1 rounded-full border border-border/60 bg-background/80 px-2.5 py-1 text-xs text-foreground shadow-sm hover:border-border",
+                "flex items-center gap-1 rounded-full border border-border/60 bg-background/80 px-2.5 py-1 text-xs text-foreground shadow-sm hover:border-border cursor-pointer",
                 isActive && "border-foreground/50 bg-foreground/10"
               )}
             >

@@ -59,7 +59,8 @@ export default function MessageInput({
   replyTo = null,
   onCancelReply,
 }: MessageInputProps) {
-  const { sendMessage, editMessageAsync, isEditingMessage } = useMessages(conversationId);
+  const { sendMessage, editMessageAsync, isEditingMessage } =
+    useMessages(conversationId);
   const { onInputChange, onBlur } = useTyping(conversationId);
   const { upload, isUploading, progress, cancel } = useMediaUpload();
   const { draftMessages, setDraft } = useChatStore();
@@ -167,14 +168,17 @@ export default function MessageInput({
     return () => window.cancelAnimationFrame(frame);
   }, [replyToId, disabled, editMessageId]);
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>, source: UploadSource) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setPendingFile(file);
-      setPendingSource(source);
-    }
-    e.target.value = "";
-  }, []);
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>, source: UploadSource) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        setPendingFile(file);
+        setPendingSource(source);
+      }
+      e.target.value = "";
+    },
+    [],
+  );
 
   const handlePaste = useCallback(
     (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
@@ -185,7 +189,7 @@ export default function MessageInput({
       const itemFile = imageItem?.getAsFile() ?? null;
       const fileFromFiles =
         Array.from(event.clipboardData.files).find((fileItem) =>
-          fileItem.type.startsWith("image/")
+          fileItem.type.startsWith("image/"),
         ) ?? null;
       const file = itemFile ?? fileFromFiles;
       if (!file) return;
@@ -197,7 +201,7 @@ export default function MessageInput({
         setStealthEnabled(false);
       }
     },
-    [disabled, editMessageId, stealthEnabled]
+    [disabled, editMessageId, stealthEnabled],
   );
 
   const handleSend = useCallback(async () => {
@@ -228,7 +232,9 @@ export default function MessageInput({
       let type: MessageType = "text";
 
       if (pendingFile) {
-        const result = await upload(pendingFile, "message", { source: pendingSource });
+        const result = await upload(pendingFile, "message", {
+          source: pendingSource,
+        });
         if (!result) return;
         mediaUrl = result.url;
         fileName = result.fileName;
@@ -236,10 +242,10 @@ export default function MessageInput({
         type = ALLOWED_IMAGE_TYPES.includes(pendingFile.type)
           ? "image"
           : pendingFile.type.startsWith("video/")
-          ? "video"
-          : pendingFile.type.startsWith("audio/")
-          ? "audio"
-          : "file";
+            ? "video"
+            : pendingFile.type.startsWith("audio/")
+              ? "audio"
+              : "file";
         setPendingFile(null);
         setPendingSource("file");
       }
@@ -294,7 +300,7 @@ export default function MessageInput({
         handleSend();
       }
     },
-    [handleSend]
+    [handleSend],
   );
 
   const canSend =
@@ -304,7 +310,7 @@ export default function MessageInput({
     !isSending;
 
   return (
-      <div className="overflow-hidden border-t border-border/50 p-2 sm:p-3 bg-background">
+    <div className="overflow-hidden border-t border-border/50 p-2 sm:p-3 bg-background">
       {replyTo && (
         <div className="mb-2 flex items-center justify-between rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
           <div className="min-w-0">
@@ -318,7 +324,7 @@ export default function MessageInput({
           <button
             type="button"
             onClick={() => onCancelReply?.()}
-            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-foreground hover:bg-muted"
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-foreground hover:bg-muted cursor-pointer"
           >
             <X className="h-3 w-3" />
             Cancel
@@ -362,9 +368,11 @@ export default function MessageInput({
           <span className="font-medium text-foreground">Stealth duration</span>
           <Select
             value={stealthDuration}
-            onValueChange={(value) => setStealthDuration(value as StealthDuration)}
+            onValueChange={(value) =>
+              setStealthDuration(value as StealthDuration)
+            }
           >
-            <SelectTrigger className="h-8 w-[7.5rem] max-w-full">
+            <SelectTrigger className="h-8 w-[7.5rem] max-w-full cursor-pointer">
               <SelectValue placeholder="Duration" />
             </SelectTrigger>
             <SelectContent>
@@ -382,9 +390,15 @@ export default function MessageInput({
         {/* Stealth toggle */}
         <button
           type="button"
-          disabled={disabled || isUploading || !!editMessageId || stealthEnabled}
+          disabled={
+            disabled || isUploading || !!editMessageId || stealthEnabled
+          }
           onClick={() => fileInputRef.current?.click()}
-          className="shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50 mb-0.5"
+          className={cn(
+            "shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50 mb-0.5 cursor-pointer",
+            (disabled || isUploading || !!editMessageId || stealthEnabled) &&
+              "cursor-not-allowed",
+          )}
         >
           <Paperclip className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
@@ -402,11 +416,12 @@ export default function MessageInput({
             setStealthEnabled(true);
           }}
           className={cn(
-            "shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-colors mb-0.5",
+            "shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-colors mb-0.5 cursor-pointer",
             stealthEnabled
               ? "bg-amber-100/60 text-amber-700/80 dark:bg-amber-400/10 dark:text-amber-200/80"
               : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            (disabled || !!editMessageId || pendingFile !== null) && "opacity-50"
+            (disabled || !!editMessageId || pendingFile !== null) &&
+              "opacity-50",
           )}
           aria-pressed={stealthEnabled}
           aria-label="Toggle stealth mode"
@@ -442,7 +457,7 @@ export default function MessageInput({
           rows={1}
           className={cn(
             "flex-1 min-w-0 resize-none rounded-xl bg-muted/50 border-0 px-2.5 sm:px-3 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all max-h-30 leading-relaxed",
-            disabled && "opacity-50 cursor-not-allowed"
+            disabled && "opacity-50 cursor-not-allowed",
           )}
         />
 
@@ -452,10 +467,10 @@ export default function MessageInput({
           disabled={!canSend || isUploading || isSending}
           onClick={handleSend}
           className={cn(
-            "shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all mb-0.5",
+            "shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all mb-0.5 cursor-pointer",
             canSend
               ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
-              : "bg-muted text-muted-foreground cursor-not-allowed"
+              : "bg-muted text-muted-foreground cursor-not-allowed",
           )}
         >
           {isUploading ? (

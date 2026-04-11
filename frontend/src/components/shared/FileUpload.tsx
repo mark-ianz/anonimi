@@ -99,7 +99,7 @@ export function FilePreview({ file, onRemove, progress }: FilePreviewProps) {
       <button
         type="button"
         onClick={onRemove}
-        className="shrink-0 w-5 h-5 rounded-full bg-muted-foreground/20 flex items-center justify-center hover:bg-destructive/20 transition-colors"
+        className="shrink-0 w-5 h-5 rounded-full bg-muted-foreground/20 flex items-center justify-center hover:bg-destructive/20 transition-colors cursor-pointer"
       >
         <X className="w-3 h-3" />
       </button>
