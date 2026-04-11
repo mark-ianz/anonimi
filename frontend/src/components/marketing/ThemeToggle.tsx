@@ -80,7 +80,7 @@ export default function ThemeToggle() {
       aria-label={`Theme: ${title}`}
       title={`Theme: ${title}`}
       onClick={cycle}
-      className="h-9 w-9 rounded-full flex items-center justify-center bg-card/70 border border-border/60 text-muted-foreground hover:text-foreground transition-colors"
+      className="h-9 w-9 rounded-full flex items-center justify-center bg-card/70 border border-border/60 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
     >
       {theme === "light" && <Sun className="h-4 w-4" />}
       {theme === "dark" && <Moon className="h-4 w-4" />}
