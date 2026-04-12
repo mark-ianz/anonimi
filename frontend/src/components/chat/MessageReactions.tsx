@@ -124,7 +124,7 @@ export default function MessageReactions({ message, userMetaById, isMine, conver
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="rounded-full p-2 text-muted-foreground hover:bg-muted/60"
+                  className="rounded-full p-2 text-muted-foreground hover:bg-muted/60 cursor-pointer"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -135,7 +135,7 @@ export default function MessageReactions({ message, userMetaById, isMine, conver
                   type="button"
                   onClick={() => setActiveTab("all")}
                   className={cn(
-                    "rounded-full border px-3 py-1 text-xs",
+                    "rounded-full border px-3 py-1 text-xs cursor-pointer",
                     activeTab === "all"
                       ? "border-foreground bg-foreground text-background"
                       : "border-border/60 text-muted-foreground"
@@ -149,7 +149,7 @@ export default function MessageReactions({ message, userMetaById, isMine, conver
                     type="button"
                     onClick={() => setActiveTab(group.emoji)}
                     className={cn(
-                      "flex items-center gap-1 rounded-full border px-3 py-1 text-xs",
+                      "flex items-center gap-1 rounded-full border px-3 py-1 text-xs cursor-pointer",
                       activeTab === group.emoji
                         ? "border-foreground bg-foreground text-background"
                         : "border-border/60 text-muted-foreground"
@@ -227,7 +227,7 @@ export default function MessageReactions({ message, userMetaById, isMine, conver
                           <button
                             type="button"
                             onClick={() => removeReaction({ messageId: message.id, reactionId: reaction.id })}
-                            className="rounded-full px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
+                            className="rounded-full px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
                           >
                             Remove
                           </button>

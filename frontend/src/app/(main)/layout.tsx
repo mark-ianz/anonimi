@@ -618,7 +618,7 @@ export default function MainLayout({ children }: SidebarProps) {
                   aria-label={
                     isCollapsed ? "Pin sidebar open" : "Collapse sidebar"
                   }
-                  className="hidden h-11 items-center justify-center border-t border-border/50 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground md:flex"
+                  className="hidden h-11 items-center justify-center border-t border-border/50 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground md:flex cursor-pointer"
                 >
                   <Menu className="w-5 h-5" />
                 </button>
@@ -736,7 +736,7 @@ export default function MainLayout({ children }: SidebarProps) {
                 <button
                   type="submit"
                   aria-label="Search"
-                  className="absolute right-1.5 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  className="absolute right-1.5 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
                 >
                   <Search className="h-3.5 w-3.5" />
                 </button>

@@ -491,7 +491,7 @@ export default function MessageBubble({
               type="button"
               onClick={() => setHistoryOpen(true)}
               className={cn(
-                "mb-1 flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors",
+                "mb-1 flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer",
                 isMine ? "self-end" : "self-start",
               )}
             >
@@ -756,7 +756,7 @@ export default function MessageBubble({
                 <button
                   type="button"
                   onClick={() => setHistoryOpen(false)}
-                  className="rounded-full p-2 text-muted-foreground hover:bg-muted/60"
+                  className="rounded-full p-2 text-muted-foreground hover:bg-muted/60 cursor-pointer"
                 >
                   <X className="h-4 w-4" />
                 </button>

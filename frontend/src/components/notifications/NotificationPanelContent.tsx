@@ -56,7 +56,7 @@ export default function NotificationPanelContent({
         <button
           onClick={() => markAllRead()}
           disabled={isMarkingAllRead || unreadCount === 0}
-          className="text-xs font-medium text-primary transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+          className="text-xs font-medium text-primary transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
         >
           Mark all read
         </button>

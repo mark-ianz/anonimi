@@ -284,7 +284,7 @@ export default function SupportPage() {
             <button
               onClick={() => markAllReadMutation.mutate()}
               disabled={markAllReadMutation.isPending}
-              className="ml-auto h-7 px-3 rounded-lg text-xs font-medium bg-muted/50 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-60"
+              className="ml-auto h-7 px-3 rounded-lg text-xs font-medium bg-muted/50 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-60 cursor-pointer"
             >
               Mark all read
             </button>
