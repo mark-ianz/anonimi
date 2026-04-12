@@ -110,7 +110,7 @@ function JoinGroupContent() {
           </p>
           <button
             onClick={() => router.push("/chat")}
-            className="inline-flex items-center gap-2 h-10 px-6 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center gap-2 h-10 px-6 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Chats
@@ -133,7 +133,7 @@ function JoinGroupContent() {
           </p>
           <button
             onClick={() => router.push("/chat")}
-            className="inline-flex items-center gap-2 h-10 px-6 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center gap-2 h-10 px-6 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Chats
@@ -188,7 +188,7 @@ function JoinGroupContent() {
           <p className="text-muted-foreground text-sm mb-6">Could not load group information.</p>
           <button
             onClick={() => router.push("/chat")}
-            className="inline-flex items-center gap-2 h-10 px-6 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center gap-2 h-10 px-6 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Chats
