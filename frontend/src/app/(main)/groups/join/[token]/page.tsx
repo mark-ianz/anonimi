@@ -160,7 +160,7 @@ function JoinGroupContent() {
           </p>
           <button
             onClick={handleOpenConversation}
-            className="inline-flex items-center gap-2 h-10 px-6 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center gap-2 h-10 px-6 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer"
           >
             Open Conversation
           </button>
@@ -223,7 +223,7 @@ function JoinGroupContent() {
         <button
           onClick={handleJoin}
           disabled={isJoining}
-          className="w-full h-12 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full h-12 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
         >
           {isJoining ? (
             <>
@@ -237,7 +237,7 @@ function JoinGroupContent() {
 
         <button
           onClick={() => router.push("/chat")}
-          className="w-full mt-3 h-10 rounded-xl border border-border/50 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors flex items-center justify-center gap-2"
+          className="w-full mt-3 h-10 rounded-xl border border-border/50 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors flex items-center justify-center gap-2 cursor-pointer"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Chats
