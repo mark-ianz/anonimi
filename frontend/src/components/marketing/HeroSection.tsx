@@ -10,10 +10,6 @@ export default function HeroSection() {
       <div className="mx-auto max-w-6xl">
       <div className="grid gap-10 border-y border-border/70 py-12 md:grid-cols-[0.62fr_0.38fr] md:gap-12 md:py-14">
           <div data-scroll style={{ ['--delay' as string | number]: '0ms' }} className="scroll-reveal">
-            <p className="inline-flex rounded-full border border-border/70 bg-background/80 px-3 py-1 font-mono text-[0.68rem] font-medium uppercase tracking-[0.16em] text-foreground/88">
-              AID-First Private Messaging
-            </p>
-
             <h1 className="mt-6 max-w-[26ch] text-4xl leading-[0.95] font-semibold sm:text-5xl md:text-6xl whitespace-normal break-words" data-typing data-texts={JSON.stringify([
               "Private identity,\nclean conversations.",
               "Built for privacy,\ndesigned for you.",
