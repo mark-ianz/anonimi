@@ -67,8 +67,8 @@ const fontOptions: {
   {
     value: "modern",
     label: "Modern",
-    description: "Manrope-inspired clean sans serif",
-    previewFamily: 'var(--font-manrope), "Segoe UI", sans-serif',
+    description: "Inter-inspired clean sans serif",
+    previewFamily: 'var(--font-inter), "Inter", sans-serif',
   },
   {
     value: "system",
