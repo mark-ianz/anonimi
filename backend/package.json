@@ -7,7 +7,9 @@
     "dev": "ts-node-dev --respawn --transpile-only index.ts",
     "build": "tsc && node -e \"require('fs').cpSync('templates', 'dist/templates', {recursive:true})\"",
     "start": "node dist/index.js",
-    "lint": "eslint **/*.ts"
+    "lint": "eslint **/*.ts",
+    "seed": "ts-node scripts/seed.ts",
+    "seed:clear": "ts-node scripts/seed.ts --clear"
   },
   "keywords": [],
   "author": "",
