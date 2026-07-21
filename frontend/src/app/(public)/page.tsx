@@ -1,11 +1,19 @@
+"use client";
+
+import { useRef } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
 import HeroSection from "@/components/marketing/HeroSection";
 import FeatureGrid from "@/components/marketing/FeatureGrid";
+import DifferenceSection from "@/components/marketing/DifferenceSection";
 import CTASection from "@/components/marketing/CTASection";
 import HowItWorksStep from "@/components/marketing/HowItWorksStep";
 import SecuritySpotlight from "@/components/marketing/SecuritySpotlight";
-import ScrollAnimator from "@/components/ScrollAnimator";
-import { UserPlus, Share2, MessageCircle } from "lucide-react";
-import Link from "next/link";
+import MessageFlowSection from "@/components/marketing/MessageFlowSection";
+import MetricsSection from "@/components/marketing/MetricsSection";
+import TemporaryAccessSection from "@/components/marketing/TemporaryAccessSection";
+import StealthModeSection from "@/components/marketing/StealthModeSection";
+import FAQSection from "@/components/marketing/FAQSection";
+import { UserPlus, Share2, MessageCircle, Sparkles } from "lucide-react";
 
 const steps = [
   {
@@ -25,194 +33,145 @@ const steps = [
   },
 ];
 
+function ChapterDivider() {
+  return (
+    <div className="relative flex items-center justify-center py-8">
+      <div className="h-px w-full max-w-xl bg-gradient-to-r from-transparent via-gold/15 to-transparent" />
+      <div className="absolute flex h-8 w-8 items-center justify-center rounded-full border border-gold/10 bg-background">
+        <div className="h-1.5 w-1.5 rounded-full bg-gold/40" />
+      </div>
+    </div>
+  );
+}
+
+function ProgressBar() {
+  const { scrollYProgress } = useScroll();
+  const scaleX = useTransform(scrollYProgress, [0, 1], [0, 1]);
+  const opacity = useTransform(scrollYProgress, [0, 0.05, 0.95, 1], [0, 1, 1, 0]);
+
+  return (
+    <motion.div
+      style={{ scaleX, opacity }}
+      className="fixed left-0 right-0 top-0 z-[60] h-0.5 origin-left bg-gradient-to-r from-gold/60 via-gold to-gold/60"
+    />
+  );
+}
+
 export default function LandingPage() {
+  const chapter1Ref = useRef<HTMLDivElement>(null);
+  const chapter2Ref = useRef<HTMLDivElement>(null);
+  const chapter3Ref = useRef<HTMLDivElement>(null);
+  const chapter4Ref = useRef<HTMLDivElement>(null);
+
   return (
     <>
-      <ScrollAnimator />
-      <HeroSection />
+      <ProgressBar />
 
-      <section className="py-20 md:py-24">
-        <div className="mx-auto max-w-6xl px-5 sm:px-8">
-          <div data-scroll style={{ ['--delay' as any]: '120ms' }} className="mb-12 border-l border-border/70 pl-5 md:mb-14 md:pl-6 scroll-reveal">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-              Start In Minutes
-            </p>
-            <h2 className="mt-3 max-w-2xl text-3xl leading-[1.02] font-semibold sm:text-4xl md:text-[2.8rem]">
-              A quiet setup flow designed for focus.
-            </h2>
-            <p className="mt-4 max-w-xl text-base text-muted-foreground">
-              Create your identity, share it once, then talk privately across every device.
-            </p>
+      {/* CHAPTER 1: Identity — Hero + how it works + use cases */}
+      <div ref={chapter1Ref}>
+        <HeroSection />
+
+        <section className="relative w-full overflow-hidden py-20 md:py-28">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute right-0 top-0 h-[300px] w-[300px] rounded-full bg-gold/3 blur-[100px]" />
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-5">
-            {steps.map((step, index) => (
-              <div key={step.title} data-scroll style={{ ['--delay' as any]: `${index * 220}ms` }} className="scroll-reveal">
-                <HowItWorksStep
-                  number={index + 1}
-                  icon={step.icon}
-                  title={step.title}
-                  description={step.description}
+          <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
+            <div className="mx-auto mb-14 max-w-2xl text-center">
+              <div className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1">
+                <Sparkles className="h-3 w-3 text-gold" />
+                <span className="font-mono text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-gold">
+                  Start In Minutes
+                </span>
+              </div>
+              <h2 className="mt-4 text-balance text-3xl font-bold leading-tight sm:text-4xl md:text-[2.8rem]">
+                A quiet setup flow designed for focus.
+              </h2>
+              <p className="mt-4 text-pretty text-base text-muted-foreground">
+                Create your identity, share it once, then talk privately across every device.
+              </p>
+            </div>
+
+            <div className="relative">
+              <div className="absolute left-0 right-0 top-[72px] hidden h-px md:block">
+                <div className="h-full w-full bg-gradient-to-r from-gold/5 via-gold/15 to-gold/5" />
+                <motion.div
+                  initial={{ scaleX: 0 }}
+                  whileInView={{ scaleX: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 1.5, delay: 0.3, ease: [0.25, 0.4, 0.25, 1] }}
+                  className="h-full origin-left bg-gradient-to-r from-gold via-gold/40 to-transparent"
                 />
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      <SecuritySpotlight
-        badge="Proof, Not Promise"
-        title="Highlight end-to-end encryption where trust decisions happen."
-        description="The strongest part of anonimi is not just private identity. It is the combination of AID-first discovery, conversation-level encryption, and history boundaries that help people understand who can read what and when."
-        ctaHref="/features#end-to-end-encryption"
-        ctaLabel="Explore the security layer"
-        secondaryHref="/about"
-        secondaryLabel="Why we built it"
-      />
-
-      <FeatureGrid />
-
-      <section className="relative py-20 md:py-24">
-        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_10%_20%,rgba(245,158,11,0.12),transparent_40%),radial-gradient(circle_at_90%_10%,rgba(245,158,11,0.08),transparent_45%)]" />
-        <div className="mx-auto max-w-6xl px-5 sm:px-8">
-          <div data-scroll style={{ ['--delay' as any]: '0ms' }} className="mb-12 md:mb-14 scroll-reveal">
-            <p className="inline-flex rounded-full border border-border/70 bg-card/70 px-3 py-1 font-mono text-[0.68rem] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-              Temporary Access
-            </p>
-            <h2 className="mt-4 max-w-3xl text-3xl leading-[0.98] font-semibold sm:text-4xl md:text-[2.9rem]">
-              Start instantly, keep it when it matters.
-            </h2>
-            <p className="mt-4 max-w-2xl text-base text-muted-foreground md:text-lg">
-              Temporary Access gives you a full 24-hour session without commitment. The benefit: you can jump into a chat right away,
-              then convert to a permanent account the moment you decide the conversation is worth keeping.
-            </p>
-          </div>
-
-          <div data-scroll style={{ ['--delay' as any]: '80ms' }} className="group relative overflow-hidden rounded-[2rem] border border-amber-500/30 bg-gradient-to-br from-amber-500/12 via-background to-background p-7 shadow-soft scroll-reveal">
-            <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-amber-500/15 blur-2xl" />
-            <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-              <div>
-                <h3 className="text-2xl font-semibold">Fast entry, zero friction.</h3>
-                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                  Use it when you need an immediate line of communication. Keep control by claiming only when you are sure.
-                </p>
-                <div data-scroll style={{ ['--delay' as any]: '220ms' }} className="mt-6 flex flex-wrap items-center gap-2 text-xs font-semibold text-amber-700 dark:text-amber-200 scroll-reveal">
-                  <span className="rounded-full border border-amber-500/45 bg-amber-500/15 px-3 py-1">Session-only</span>
-                  <span className="rounded-full border border-amber-500/45 bg-amber-500/15 px-3 py-1">Claim to keep</span>
-                  <span className="rounded-full border border-amber-500/45 bg-amber-500/15 px-3 py-1">24h expiration</span>
-                </div>
-                <div data-scroll style={{ ['--delay' as any]: '260ms' }} className="mt-8 flex items-center gap-3 scroll-reveal">
-                  <Link
-                    href="/temporary"
-                    className="inline-flex h-10 items-center rounded-full bg-amber-600 px-5 text-xs font-semibold text-white shadow-soft transition-colors hover:bg-amber-600/90"
-                  >
-                    Start temporary session
-                  </Link>
-                  <Link
-                    href="/features#temporary-access"
-                    className="inline-flex h-10 items-center rounded-full border border-amber-500/40 px-5 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-500/10 dark:text-amber-200"
-                  >
-                    Learn how it works
-                  </Link>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <div data-scroll style={{ ['--delay' as any]: '40ms' }} className="rounded-2xl border border-amber-500/25 bg-amber-500/8 p-5 scroll-reveal">
-                  <p className="font-mono text-[0.64rem] uppercase tracking-[0.14em] text-amber-800/80">
-                    Benefit
-                  </p>
-                  <h4 className="mt-3 text-lg font-semibold">Move fast without losing your option to stay.</h4>
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    Perfect for first-time contacts, one-off collaborations, or trial conversations that may become long-term.
-                  </p>
-                </div>
-                <div data-scroll style={{ ['--delay' as any]: '80ms' }} className="rounded-2xl border border-amber-500/20 bg-background/70 p-5 scroll-reveal">
-                  <p className="text-xs font-semibold text-foreground">Best for</p>
-                  <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-                    <li>Fast intros with new partners</li>
-                    <li>Short-lived project rooms</li>
-                    <li>Trial chats before claiming</li>
-                  </ul>
-                </div>
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-3 md:gap-12">
+                {steps.map((step, index) => (
+                  <HowItWorksStep
+                    key={step.title}
+                    number={index + 1}
+                    icon={step.icon}
+                    title={step.title}
+                    description={step.description}
+                    isLast={index === steps.length - 1}
+                  />
+                ))}
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
-      <section className="relative py-20 md:py-24">
-        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_10%_20%,rgba(6,182,212,0.12),transparent_40%),radial-gradient(circle_at_90%_10%,rgba(6,182,212,0.08),transparent_45%)]" />
-        <div className="mx-auto max-w-6xl px-5 sm:px-8">
-          <div data-scroll style={{ ['--delay' as any]: '0ms' }} className="mb-12 md:mb-14 scroll-reveal">
-            <p className="inline-flex rounded-full border border-border/70 bg-card/70 px-3 py-1 font-mono text-[0.68rem] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-              Stealth Mode
-            </p>
-            <h2 className="mt-4 max-w-3xl text-3xl leading-[0.98] font-semibold sm:text-4xl md:text-[2.9rem]">
-              Keep sensitive conversations on a timer.
-            </h2>
-            <p className="mt-4 max-w-2xl text-base text-muted-foreground md:text-lg">
-              Stealth Mode lets you set a lifespan for each message. The benefit: you can share time-sensitive updates or
-              confidential details knowing they disappear on schedule.
-            </p>
+      <ChapterDivider />
+
+      {/* CHAPTER 2: The Flow — Use cases + message flow + features */}
+      <div ref={chapter2Ref}>
+        <MessageFlowSection />
+        <FeatureGrid />
+      </div>
+
+      <ChapterDivider />
+
+      {/* CHAPTER 3: The Modes — Temp access + stealth + difference + security */}
+      <div ref={chapter3Ref}>
+        <TemporaryAccessSection />
+        <StealthModeSection />
+        <DifferenceSection />
+        <SecuritySpotlight />
+      </div>
+
+      <ChapterDivider />
+
+      {/* CHAPTER 4: The Proof — Metrics + FAQ + CTA */}
+      <div ref={chapter4Ref}>
+        <MetricsSection />
+
+        <section className="relative w-full py-20 md:py-28">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute left-1/2 top-0 h-[300px] w-[400px] -translate-x-1/2 rounded-full bg-gold/3 blur-[100px]" />
           </div>
 
-          <div data-scroll style={{ ['--delay' as any]: '80ms' }} className="group relative overflow-hidden rounded-[2rem] border border-cyan-500/30 bg-gradient-to-br from-cyan-500/12 via-background to-background p-7 shadow-soft scroll-reveal">
-            <div className="absolute -left-10 -bottom-12 h-40 w-40 rounded-full bg-cyan-500/15 blur-2xl" />
-            <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-              <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/8 p-5">
-                <p className="font-mono text-[0.64rem] uppercase tracking-[0.14em] text-cyan-700/80">
-                  Benefit
-                </p>
-                <h4 className="mt-3 text-lg font-semibold">Share fast, reduce exposure.</h4>
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Best for temporary access codes, quick location drops, and sensitive collaboration moments.
-                </p>
-                <div className="mt-5 space-y-3 text-sm text-muted-foreground">
-                  <div data-scroll style={{ ['--delay' as any]: '40ms' }} className="flex items-center gap-3 scroll-reveal">
-                    <span className="h-2 w-2 rounded-full bg-cyan-500" />
-                    <span>Pick a timer per message</span>
-                  </div>
-                  <div data-scroll style={{ ['--delay' as any]: '80ms' }} className="flex items-center gap-3 scroll-reveal">
-                    <span className="h-2 w-2 rounded-full bg-cyan-500" />
-                    <span>Share what matters, then let it fade</span>
-                  </div>
-                  <div data-scroll style={{ ['--delay' as any]: '120ms' }} className="flex items-center gap-3 scroll-reveal">
-                    <span className="h-2 w-2 rounded-full bg-cyan-500" />
-                    <span>Keep the thread, not the trail</span>
-                  </div>
-                </div>
+          <div className="relative mx-auto max-w-3xl px-5 sm:px-8">
+            <div className="mx-auto mb-12 max-w-2xl text-center">
+              <div className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1">
+                <Sparkles className="h-3 w-3 text-gold" />
+                <span className="font-mono text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-gold">
+                  FAQ
+                </span>
               </div>
-              <div>
-                <h3 className="text-2xl font-semibold">Control the trail, not the conversation.</h3>
-                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                  Set timers per message and keep chats clear of lingering sensitive details while staying in the same thread.
-                </p>
-                <div className="mt-6 flex flex-wrap items-center gap-2 text-xs font-semibold text-cyan-700 dark:text-cyan-200">
-                  <span className="rounded-full border border-cyan-500/45 bg-cyan-500/15 px-3 py-1">Timed expiration</span>
-                  <span className="rounded-full border border-cyan-500/45 bg-cyan-500/15 px-3 py-1">Per-message control</span>
-                  <span className="rounded-full border border-cyan-500/45 bg-cyan-500/15 px-3 py-1">No history linger</span>
-                </div>
-                <div className="mt-8 flex items-center gap-3">
-                  <Link
-                    href="/features#stealth-mode"
-                    className="inline-flex h-10 items-center rounded-full bg-cyan-600 px-5 text-xs font-semibold text-white shadow-soft transition-colors hover:bg-cyan-600/90"
-                  >
-                    See stealth mode
-                  </Link>
-                  <Link
-                    href="/register"
-                    className="inline-flex h-10 items-center rounded-full border border-cyan-500/40 px-5 text-xs font-semibold text-cyan-700 transition-colors hover:bg-cyan-500/10"
-                  >
-                    Create account
-                  </Link>
-                </div>
-              </div>
+              <h2 className="mt-4 text-balance text-3xl font-bold leading-tight sm:text-4xl md:text-[2.8rem]">
+                Questions, answered.
+              </h2>
+              <p className="mt-4 text-pretty text-base text-muted-foreground">
+                Everything you need to know about anonimi.
+              </p>
             </div>
-          </div>
-        </div>
-      </section>
 
-      <CTASection />
+            <FAQSection />
+          </div>
+        </section>
+
+        <CTASection />
+      </div>
     </>
   );
 }
