@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useState, useRef } from "react";
+import { ChevronDown, Sparkles, Shield, MessageCircle, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence, useInView } from "framer-motion";
-import { useRef } from "react";
 
 interface FAQ {
   question: string;
@@ -14,8 +13,7 @@ interface FAQ {
 interface FAQCategory {
   id: string;
   title: string;
-  icon: string;
-  color: string;
+  icon: React.ElementType;
   faqs: FAQ[];
 }
 
@@ -23,8 +21,7 @@ const faqCategories: FAQCategory[] = [
   {
     id: "getting-started",
     title: "Getting Started",
-    icon: "rocket",
-    color: "emerald",
+    icon: Sparkles,
     faqs: [
       {
         question: "What is anonimi?",
@@ -46,8 +43,7 @@ const faqCategories: FAQCategory[] = [
   {
     id: "identity-privacy",
     title: "Identity & Privacy",
-    icon: "shield",
-    color: "violet",
+    icon: Shield,
     faqs: [
       {
         question: "What is an AID?",
@@ -74,8 +70,7 @@ const faqCategories: FAQCategory[] = [
   {
     id: "features",
     title: "Features",
-    icon: "sparkles",
-    color: "blue",
+    icon: MessageCircle,
     faqs: [
       {
         question: "What is a temporary account?",
@@ -102,8 +97,7 @@ const faqCategories: FAQCategory[] = [
   {
     id: "safety",
     title: "Safety & Moderation",
-    icon: "lock",
-    color: "rose",
+    icon: Lock,
     faqs: [
       {
         question: "How do I block or report a user?",
@@ -134,18 +128,21 @@ function FAQItem({ faq, index, isOpen, onToggle }: { faq: FAQ; index: number; is
       initial={{ opacity: 0, y: 15 }}
       animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
       transition={{ duration: 0.35, delay: index * 0.05, ease: [0.25, 0.4, 0.25, 1] }}
-      className="overflow-hidden"
+      className={cn(
+        "overflow-hidden border-b border-gold/10 transition-colors",
+        isOpen && "border-gold/30"
+      )}
     >
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between py-5 text-left font-medium transition-colors hover:text-primary"
+        className="flex w-full items-center justify-between py-5 text-left font-medium transition-colors hover:text-gold"
       >
-        <span className="text-base md:text-lg pr-4">{faq.question}</span>
+        <span className="pr-4 text-base md:text-lg">{faq.question}</span>
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.25, ease: [0.25, 0.4, 0.25, 1] }}
         >
-          <ChevronDown className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+          <ChevronDown className="h-5 w-5 flex-shrink-0 text-gold/60" />
         </motion.div>
       </button>
       <AnimatePresence initial={false}>
@@ -170,31 +167,7 @@ function CategorySection({ category, categoryIndex }: { category: FAQCategory; c
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: false, margin: "-50px" });
-
-  const colorClasses: Record<string, { bg: string; border: string; text: string }> = {
-    emerald: {
-      bg: "bg-emerald-500/10",
-      border: "border-emerald-500/25",
-      text: "text-emerald-700 dark:text-emerald-300",
-    },
-    violet: {
-      bg: "bg-violet-500/10",
-      border: "border-violet-500/25",
-      text: "text-violet-700 dark:text-violet-300",
-    },
-    blue: {
-      bg: "bg-blue-500/10",
-      border: "border-blue-500/25",
-      text: "text-blue-700 dark:text-blue-300",
-    },
-    rose: {
-      bg: "bg-rose-500/10",
-      border: "border-rose-500/25",
-      text: "text-rose-700 dark:text-rose-300",
-    },
-  };
-
-  const colors = colorClasses[category.color] || colorClasses.emerald;
+  const Icon = category.icon;
 
   return (
     <motion.div
@@ -203,23 +176,17 @@ function CategorySection({ category, categoryIndex }: { category: FAQCategory; c
       initial={{ opacity: 0, y: 30 }}
       animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
       transition={{ duration: 0.5, delay: categoryIndex * 0.1, ease: [0.25, 0.4, 0.25, 1] }}
-      className={cn(
-        "scroll-mt-28 rounded-2xl border p-6 md:p-8",
-        colors.bg,
-        colors.border
-      )}
+      className="scroll-mt-28 rounded-2xl border border-gold/10 bg-gold/[0.03] p-6 md:p-8"
     >
-      <motion.div
-        initial={{ opacity: 0, x: -15 }}
-        animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -15 }}
-        transition={{ duration: 0.4, delay: categoryIndex * 0.1 + 0.1, ease: [0.25, 0.4, 0.25, 1] }}
-        className="mb-4"
-      >
-        <h2 className={cn("text-xl font-bold md:text-2xl", colors.text)}>
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/10">
+          <Icon className="h-4 w-4 text-gold" />
+        </div>
+        <h2 className="text-xl font-bold text-gold md:text-2xl">
           {category.title}
         </h2>
-      </motion.div>
-      <div className="divide-y divide-border/40">
+      </div>
+      <div>
         {category.faqs.map((faq, index) => (
           <FAQItem
             key={index}

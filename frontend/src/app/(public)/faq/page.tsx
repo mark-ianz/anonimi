@@ -1,125 +1,105 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useRef } from "react";
+import { motion, useInView } from "framer-motion";
 import FAQAccordion from "@/components/marketing/FAQAccordion";
-import ScrollToHash from "@/components/marketing/ScrollToHash";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import {
-  AnimatedSection,
-  AnimatedText,
-  AnimatedBadge,
-  AnimatedElement,
-  AnimatedButton,
-} from "@/components/marketing/AnimatedSection";
-import { MessageCircle, Mail, FileText } from "lucide-react";
+import { MessageCircle, FileText, Sparkles } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "FAQ",
-  description: "Frequently asked questions about anonimi.",
-  alternates: {
-    canonical: "/faq",
-  },
-};
+function Section({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-80px" });
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 24 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+      transition={{ duration: 0.5, delay, ease: [0.25, 0.4, 0.25, 1] }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 export default function FAQPage() {
   return (
     <div className="relative overflow-hidden pb-20 pt-24 md:pb-24">
-      <ScrollToHash />
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-120 bg-[radial-gradient(circle_at_16%_14%,rgba(18,58,87,0.15),transparent_44%),radial-gradient(circle_at_84%_26%,rgba(57,114,129,0.14),transparent_45%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-120 bg-[radial-gradient(circle_at_50%_12%,rgba(202,138,4,0.07),transparent_50%)]" />
 
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        {/* Hero Section */}
-        <AnimatedSection className="mb-12 border-b border-border/50 pb-10 text-center md:mb-14">
-          <AnimatedBadge className="inline-flex rounded-full border border-border/70 bg-background/80 px-3 py-1 font-mono text-[0.66rem] uppercase tracking-[0.14em] text-muted-foreground">
-            Help Center
-          </AnimatedBadge>
-          <AnimatedText delay={0.1}>
-            <h1 className="mt-4 text-4xl sm:text-5xl font-display font-bold">
+        {/* Hero */}
+        <Section>
+          <div className="mb-12 border-b border-gold/10 pb-10 text-center md:mb-14">
+            <div className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1">
+              <Sparkles className="h-3 w-3 text-gold" />
+              <span className="font-mono text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-gold">
+                Help Center
+              </span>
+            </div>
+            <h1 className="mt-4 text-4xl font-bold sm:text-5xl">
               Frequently Asked Questions
             </h1>
-          </AnimatedText>
-          <AnimatedText delay={0.15}>
-            <p className="mt-4 text-lg text-muted-foreground md:text-xl">
+            <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground md:text-xl">
               Clear answers about identity, privacy, and messaging behavior.
             </p>
-          </AnimatedText>
-        </AnimatedSection>
+          </div>
+        </Section>
 
         {/* Quick Links */}
-        <AnimatedSection delay={0.1} className="mb-12">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <AnimatedElement delay={0.15} className="group">
-              <a
-                href="#getting-started"
-                className="flex items-center gap-3 rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-4 transition-all hover:bg-emerald-500/10 hover:border-emerald-500/40"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/15">
-                  <MessageCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div>
-                  <p className="font-medium">Getting Started</p>
-                  <p className="text-xs text-muted-foreground">3 questions</p>
-                </div>
-              </a>
-            </AnimatedElement>
-            <AnimatedElement delay={0.2} className="group">
-              <a
-                href="#identity-privacy"
-                className="flex items-center gap-3 rounded-xl border border-violet-500/25 bg-violet-500/5 p-4 transition-all hover:bg-violet-500/10 hover:border-violet-500/40"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-500/15">
-                  <FileText className="h-5 w-5 text-violet-600 dark:text-violet-400" />
-                </div>
-                <div>
-                  <p className="font-medium">Identity & Privacy</p>
-                  <p className="text-xs text-muted-foreground">4 questions</p>
-                </div>
-              </a>
-            </AnimatedElement>
-            <AnimatedElement delay={0.25} className="group">
-              <a
-                href="#features"
-                className="flex items-center gap-3 rounded-xl border border-blue-500/25 bg-blue-500/5 p-4 transition-all hover:bg-blue-500/10 hover:border-blue-500/40"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/15">
-                  <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <p className="font-medium">Features</p>
-                  <p className="text-xs text-muted-foreground">4 questions</p>
-                </div>
-              </a>
-            </AnimatedElement>
+        <Section delay={0.08}>
+          <div className="mb-12 grid gap-4 sm:grid-cols-3">
+            {[
+              { href: "#getting-started", icon: Sparkles, label: "Getting Started", count: "3 questions" },
+              { href: "#identity-privacy", icon: FileText, label: "Identity & Privacy", count: "4 questions" },
+              { href: "#features", icon: MessageCircle, label: "Features", count: "4 questions" },
+            ].map((item, i) => {
+              const Icon = item.icon;
+              return (
+                <motion.a
+                  key={item.href}
+                  href={item.href}
+                  initial={{ opacity: 0, y: 15 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-40px" }}
+                  transition={{ duration: 0.4, delay: i * 0.08, ease: [0.25, 0.4, 0.25, 1] }}
+                  className="glass-card group flex items-center gap-3 rounded-xl border border-gold/10 p-4 transition-all hover:border-gold/30"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/10">
+                    <Icon className="h-5 w-5 text-gold" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">{item.label}</p>
+                    <p className="text-xs text-muted-foreground">{item.count}</p>
+                  </div>
+                </motion.a>
+              );
+            })}
           </div>
-        </AnimatedSection>
+        </Section>
 
         {/* FAQ Accordion */}
-        <FAQAccordion />
+        <Section delay={0.12}>
+          <FAQAccordion />
+        </Section>
 
-        {/* Contact Section */}
-        <AnimatedSection delay={0.1} className="mt-16">
-          <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-card/80 to-background p-8 text-center md:p-12">
-            <AnimatedElement delay={0.15}>
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                <MessageCircle className="h-7 w-7 text-primary" />
-              </div>
-            </AnimatedElement>
-            <AnimatedText delay={0.2}>
-              <h2 className="text-2xl font-bold md:text-3xl">
-                Still have questions?
-              </h2>
-            </AnimatedText>
-            <AnimatedText delay={0.25}>
-              <p className="mx-auto mt-3 max-w-md text-muted-foreground">
-                Can&apos;t find the answer you&apos;re looking for? Our support team is here to help you with any questions.
-              </p>
-            </AnimatedText>
-            <AnimatedButton delay={0.3} className="mt-6 inline-block">
-              <Button size="lg" asChild>
+        {/* Contact */}
+        <Section delay={0.16}>
+          <div className="mt-16 rounded-2xl border border-gold/10 bg-gold/[0.03] p-8 text-center md:p-12">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gold/10">
+              <MessageCircle className="h-7 w-7 text-gold" />
+            </div>
+            <h2 className="text-2xl font-bold md:text-3xl">Still have questions?</h2>
+            <p className="mx-auto mt-3 max-w-md text-muted-foreground">
+              Can&apos;t find the answer you&apos;re looking for? Our support team is here to help you with any questions.
+            </p>
+            <div className="mt-6 inline-block">
+              <Button className="btn-gold rounded-full px-6 font-mono text-[0.7rem] font-medium uppercase tracking-[0.08em]" size="lg" asChild>
                 <Link href="/contact">Contact Support</Link>
               </Button>
-            </AnimatedButton>
+            </div>
           </div>
-        </AnimatedSection>
+        </Section>
       </div>
     </div>
   );
