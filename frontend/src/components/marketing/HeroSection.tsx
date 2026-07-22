@@ -23,7 +23,7 @@ export default function HeroSection() {
         {
           text: "Explore Features",
           href: "/features",
-          variant: "glow",
+          variant: "outline",
         },
       ]}
       image={{

@@ -67,28 +67,52 @@ function AnimatedKeyStream() {
 }
 
 function FloatingParticles() {
+  const positions = [
+    { left: "12%", top: "15%" },
+    { left: "28%", top: "72%" },
+    { left: "55%", top: "22%" },
+    { left: "78%", top: "68%" },
+    { left: "42%", top: "88%" },
+    { left: "88%", top: "38%" },
+    { left: "18%", top: "45%" },
+    { left: "65%", top: "55%" },
+    { left: "35%", top: "8%" },
+    { left: "92%", top: "82%" },
+    { left: "8%", top: "92%" },
+    { left: "72%", top: "8%" },
+  ];
+
+  const hexValues = [
+    "a3f8c1", "7e2d4b", "f09a3b", "4c1d8e",
+    "b6e72a", "d84f91", "0a3c5e", "f5c612",
+    "298b4d", "e71a83", "6bf4d0", "c93825",
+  ];
+
+  const durations = [5, 7, 4, 6, 8, 5, 6, 7, 4, 8, 5, 6];
+  const delays = [0, 1.5, 0.8, 2.5, 0.3, 3, 1.2, 2, 0.5, 3.5, 1.8, 0.2];
+
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {Array.from({ length: 12 }).map((_, i) => (
+      {positions.map((pos, i) => (
         <motion.div
           key={i}
           className="absolute font-mono text-[0.5rem] text-gold/20"
           style={{
-            left: `${10 + Math.random() * 80}%`,
-            top: `${10 + Math.random() * 80}%`,
+            left: pos.left,
+            top: pos.top,
           }}
           animate={{
             opacity: [0, 1, 0],
             y: [0, -40],
           }}
           transition={{
-            duration: 4 + Math.random() * 4,
+            duration: durations[i],
             repeat: Infinity,
-            delay: Math.random() * 4,
+            delay: delays[i],
             ease: "easeInOut",
           }}
         >
-          {randomHex(6)}
+          {hexValues[i]}
         </motion.div>
       ))}
     </div>

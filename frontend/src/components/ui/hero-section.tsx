@@ -12,7 +12,7 @@ interface HeroAction {
   text: string;
   href: string;
   icon?: React.ReactNode;
-  variant?: "default" | "glow";
+  variant?: "default" | "glow" | "outline";
 }
 
 interface HeroProps {

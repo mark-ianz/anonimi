@@ -25,8 +25,8 @@ export default function MarketingNavbar() {
       transition={{ duration: 0.6, ease: [0.25, 0.4, 0.25, 1] }}
       className="fixed left-4 right-4 top-4 z-50"
     >
-      <div className="glass rounded-2xl bg-background/40">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
+      <div className="rounded-2xl border border-gold/10 bg-background/20 backdrop-blur-xl">
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-8">
             <Link href="/" className="group flex items-center gap-3">
               <div className="grid h-8 w-8 place-items-center rounded-lg bg-gold/10 transition-colors duration-300 group-hover:bg-gold/20">
